@@ -20,7 +20,6 @@
 
 class Payload : public QDialog
 {
-Q_OBJECT
     bool            Closed = false;
     bool            ButtonClicked = false;
 public:
