@@ -1,0 +1,8 @@
+block {
+  block_type = "a"
+  object {
+    attr "b" {
+      type = string
+    }
+  }
+}

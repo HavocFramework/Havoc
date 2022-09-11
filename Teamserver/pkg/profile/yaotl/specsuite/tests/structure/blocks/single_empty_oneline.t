@@ -1,0 +1,1 @@
+result_type = object({})

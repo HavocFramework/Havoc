@@ -1,0 +1,17 @@
+GOCMD		= go
+BINARY_NAME	= teamserver
+GOBUILD		= GO111MODULE="on" $(GOCMD) build -ldflags="-s -w" -o bin/$(BINARY_NAME) main.go
+
+ifndef VERBOSE
+.SILENT:
+endif
+
+all:
+		echo [*] Compiling....
+		GOOS=linux GOARCH=amd64 $(GOBUILD)
+		echo [+] Finished
+
+clean:
+		rm -rf ./bin
+		rm -rf ./data/implants/windows
+		rm -rf .havoc

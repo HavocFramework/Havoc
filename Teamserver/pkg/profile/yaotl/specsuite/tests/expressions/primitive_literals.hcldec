@@ -1,0 +1,12 @@
+object {
+  attr "whole_number" { type = any }
+  attr "fractional_number" { type = any }
+  attr "fractional_number_precision" { type = any }
+  attr "string_ascii" { type = any }
+  attr "string_unicode_bmp" { type = any }
+  attr "string_unicode_astral" { type = any }
+  attr "string_unicode_nonnorm" { type = any }
+  attr "true" { type = any }
+  attr "false" { type = any }
+  attr "null" { type = any }
+}

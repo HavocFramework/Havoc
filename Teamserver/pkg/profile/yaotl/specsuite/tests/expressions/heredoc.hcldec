@@ -1,0 +1,14 @@
+variables {
+    bar       = "Bar"
+    space_bar = "  Bar"
+    words     = ["Foo", "Bar", "Baz"]
+}
+
+object {
+  attr "normal" {
+    type = map(string)
+  }
+  attr "flush" {
+    type = map(string)
+  }
+}

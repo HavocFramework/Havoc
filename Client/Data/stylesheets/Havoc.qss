@@ -1,0 +1,151 @@
+
+QMainWindow {
+    background: #313342;
+    color: #f8f8f2;
+}
+
+QWidget {
+    background: #313342;
+    color: #f8f8f2;
+}
+
+QToolButton {
+    border: 1px solid #bd93f9;
+    background-color: #282a36;
+    color: #f8f8f2;
+    padding: 3px;
+}
+
+QDialog {
+    background-color: #282a36;
+    color: #f8f8f2;
+}
+
+QPushButton {
+    padding: 3px;
+    font-size: 13px;
+    border: 1px solid #bd93f9;
+    border-radius: 2px;
+    background-color: #bd93f9;
+    color: #282a36;
+    margin-bottom: 2px;
+    padding-left:   15px;
+    padding-right:  15px;
+}
+
+QPushButton:pressed {
+    border: 1px solid #bd93f9;
+    background-color: #282a36;
+    color: #f8f8f2;
+}
+
+QListWidget {
+    margin-top: 2px;
+    background-color: #44475a;
+    color: #f8f8f2;
+}
+
+QLabel {
+    color: #f8f8f2;
+}
+
+QLineEdit {
+    background-color: #282a36;
+    color: #f8f8f2;
+    margin-bottom: 3px;
+    margin-right: 3px;
+    border-radius: 100%;
+    padding: 2px;
+}
+
+QPlainTextEdit {
+    background-color: #44475a;
+    color: #f8f8f2;
+}
+
+QTabWidget {
+    background-color: #282a36;
+    color: #f8f8f2;
+}
+
+QMessageBox {
+    background: #282a36;
+}
+
+QMessageBox QLabel {
+    color: #f8f8f2;
+}
+
+QMessageBox QPushButton {
+    padding: 3px;
+    font-size: 13px;
+    border: 1px solid #50fa7b;
+    background-color: #282a36;
+    color: #f8f8f2;
+    margin-bottom: 2px;
+}
+
+QTabBar::tab {
+    margin-left: 2px;
+    background: #282a36;
+    color: #f8f8f2;
+    padding-left: 20px;
+    padding-right: 20px;
+    border: 1px solid #44475a;
+    border-bottom-color: transparent;
+}
+
+QTabBar::tab:selected {
+        background: #44475a;
+        color: #f8f8f2;
+    border: 1px solid #ff79c6;
+    border-bottom-color: transparent;
+}
+
+QTabBar::close-button {
+    image: url(:/icons/tab-close-button);
+    subcontrol-position: right;
+}
+
+QTabBar::close-button:hover {
+    background: #282a36;
+}
+
+QTableWidget {
+    background-color: #282a36;
+    color: #f8f8f2;
+}
+
+QTableWidget::item:selected {
+    selection-background-color: #6272a4;
+    color: #6272a4;
+}
+
+QHeaderView::section {
+    background-color: #44475a;
+    color: #f8f8f2;
+}
+
+QMenu {
+    background-color: #282a36;
+    color: #f8f8f2;
+    border: 1px solid #44475a;
+}
+
+QMenu::separator {
+    background: #44475a;
+}
+
+QMenu::item:selected {
+    background: #44475a;
+}
+
+QAction {
+    background-color: #282a36;
+    color: #f8f8f2;
+}
+
+QTextEdit {
+    background: #282a36;
+    color: #f8f8f2;
+}

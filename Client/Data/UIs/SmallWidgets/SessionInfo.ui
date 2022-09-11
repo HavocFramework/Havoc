@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>402</width>
+    <height>602</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout_4">
+   <item row="2" column="0">
+    <widget class="QGroupBox" name="ProcessInfoGroup">
+     <property name="title">
+      <string>Process Info</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_3">
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+      <property name="bottomMargin">
+       <number>0</number>
+      </property>
+      <property name="spacing">
+       <number>0</number>
+      </property>
+      <item row="0" column="0">
+       <widget class="QTableWidget" name="ProcessInfoTable">
+        <attribute name="horizontalHeaderVisible">
+         <bool>false</bool>
+        </attribute>
+        <attribute name="horizontalHeaderMinimumSectionSize">
+         <number>26</number>
+        </attribute>
+        <attribute name="horizontalHeaderStretchLastSection">
+         <bool>true</bool>
+        </attribute>
+        <attribute name="verticalHeaderMinimumSectionSize">
+         <number>19</number>
+        </attribute>
+        <attribute name="verticalHeaderDefaultSectionSize">
+         <number>22</number>
+        </attribute>
+        <row>
+         <property name="text">
+          <string>Process Name</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>Process ID</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>Parent Process ID</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>Process Arch</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>Process User</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>Module Path</string>
+         </property>
+        </row>
+        <column>
+         <property name="text">
+          <string>Value</string>
+         </property>
+        </column>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="3" column="0">
+    <widget class="QGroupBox" name="HardwareInfoGroup">
+     <property name="title">
+      <string>Hardware Info</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_2">
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+      <property name="bottomMargin">
+       <number>0</number>
+      </property>
+      <property name="spacing">
+       <number>0</number>
+      </property>
+      <item row="1" column="0">
+       <widget class="QTableWidget" name="HardwareInfoTable">
+        <attribute name="horizontalHeaderVisible">
+         <bool>false</bool>
+        </attribute>
+        <attribute name="horizontalHeaderMinimumSectionSize">
+         <number>26</number>
+        </attribute>
+        <attribute name="horizontalHeaderStretchLastSection">
+         <bool>true</bool>
+        </attribute>
+        <attribute name="verticalHeaderMinimumSectionSize">
+         <number>19</number>
+        </attribute>
+        <attribute name="verticalHeaderDefaultSectionSize">
+         <number>22</number>
+        </attribute>
+        <attribute name="verticalHeaderStretchLastSection">
+         <bool>false</bool>
+        </attribute>
+        <row>
+         <property name="text">
+          <string>CPU</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>RAM</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>GPU</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>MAC Adress</string>
+         </property>
+        </row>
+        <column>
+         <property name="text">
+          <string>Title</string>
+         </property>
+        </column>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QGroupBox" name="SystemInfoGroup">
+     <property name="title">
+      <string>System Info</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout">
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+      <property name="bottomMargin">
+       <number>0</number>
+      </property>
+      <property name="spacing">
+       <number>0</number>
+      </property>
+      <item row="0" column="0">
+       <widget class="QTableWidget" name="SystemInfoTable">
+        <attribute name="horizontalHeaderVisible">
+         <bool>false</bool>
+        </attribute>
+        <attribute name="horizontalHeaderMinimumSectionSize">
+         <number>26</number>
+        </attribute>
+        <attribute name="horizontalHeaderStretchLastSection">
+         <bool>true</bool>
+        </attribute>
+        <attribute name="verticalHeaderMinimumSectionSize">
+         <number>19</number>
+        </attribute>
+        <attribute name="verticalHeaderDefaultSectionSize">
+         <number>22</number>
+        </attribute>
+        <row>
+         <property name="text">
+          <string>Username</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>Computer</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>Operating System</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>OS Version</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>System Arch</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>External IP</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>Internal IP</string>
+         </property>
+        </row>
+        <column>
+         <property name="text">
+          <string>Title</string>
+         </property>
+        </column>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="0" column="0">
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:16pt;&quot;&gt;[SessionID] INFO&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

@@ -1,0 +1,17 @@
+QMenuBar {
+      background-color: #282a36;
+      color: #f8f8f2;
+}
+
+QMenuBar::item {
+      padding: 1px 4px;
+      background: transparent;
+}
+
+QMenuBar::item:selected { /* when selected using mouse or keyboard */
+      background: #6272a4;
+}
+
+QMenuBar::item:pressed {
+      background: #44475a;
+}

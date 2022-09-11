@@ -1,0 +1,14 @@
+block_list {
+  block_type = "a"
+  object {
+    attr "b" {
+      type = string
+    }
+    attr "c" {
+      type = string
+    }
+    block_list "d" {
+      object {}
+    }
+  }
+}

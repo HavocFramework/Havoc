@@ -1,0 +1,11 @@
+object {
+  attr "a" {
+    type = string
+  }
+  attr "b" {
+    type = string
+  }
+  attr "d" {
+    type = string
+  }
+}

@@ -1,0 +1,433 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Havoc</class>
+ <widget class="QMainWindow" name="Havoc">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1162</width>
+    <height>816</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Havoc</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>../img/Havoc_x32.png</normaloff>../img/Havoc_x32.png</iconset>
+  </property>
+  <property name="styleSheet">
+   <string notr="true"/>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <property name="minimumSize">
+    <size>
+     <width>750</width>
+     <height>480</height>
+    </size>
+   </property>
+   <layout class="QFormLayout" name="formLayout">
+    <item row="0" column="1">
+     <widget class="QTabWidget" name="MainTabWidget">
+      <property name="styleSheet">
+       <string notr="true"/>
+      </property>
+      <property name="tabPosition">
+       <enum>QTabWidget::South</enum>
+      </property>
+      <property name="tabShape">
+       <enum>QTabWidget::Rounded</enum>
+      </property>
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <property name="usesScrollButtons">
+       <bool>true</bool>
+      </property>
+      <property name="documentMode">
+       <bool>false</bool>
+      </property>
+      <property name="tabsClosable">
+       <bool>false</bool>
+      </property>
+      <widget class="QWidget" name="tab">
+       <attribute name="title">
+        <string>Havoc Home</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="0" column="1">
+         <widget class="QLabel" name="havoc_img_logo">
+          <property name="text">
+           <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Cantarell'; font-size:11pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p align=&quot;center&quot; style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Sans Serif'; font-size:22pt; font-weight:600;&quot;&gt;Havoc&lt;/span&gt;&lt;/p&gt;
+&lt;p align=&quot;center&quot; style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;img src=&quot;:/Images/img/Havoc_x150.png&quot; /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Ignored</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>200</width>
+            <height>25</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="0" column="2" rowspan="5">
+         <spacer name="verticalSpacer_4">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>200</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="0" column="0" rowspan="5">
+         <spacer name="verticalSpacer_3">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>200</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="1" column="1">
+         <widget class="QPushButton" name="connect_button">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>200</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>200</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Connect to Teamserver</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1162</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="cursor">
+    <cursorShape>ArrowCursor</cursorShape>
+   </property>
+   <property name="defaultUp">
+    <bool>false</bool>
+   </property>
+   <property name="nativeMenuBar">
+    <bool>false</bool>
+   </property>
+   <widget class="QMenu" name="menuHavoc">
+    <property name="title">
+     <string>Havoc</string>
+    </property>
+    <addaction name="actionConnect"/>
+    <addaction name="actionMenu"/>
+    <addaction name="actionChat"/>
+    <addaction name="separator"/>
+    <addaction name="actionListeners"/>
+    <addaction name="actionHavoc_Terminal"/>
+    <addaction name="separator"/>
+    <addaction name="actionPreferences"/>
+    <addaction name="separator"/>
+    <addaction name="actionDisconnect"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <widget class="QMenu" name="menuAbout">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionAbout"/>
+    <addaction name="separator"/>
+    <addaction name="actionOpen_Website"/>
+    <addaction name="actionOpen_Documentation"/>
+    <addaction name="separator"/>
+    <addaction name="actionGithub_Repository"/>
+   </widget>
+   <widget class="QMenu" name="menuAttack">
+    <property name="title">
+     <string>Attack</string>
+    </property>
+    <widget class="QMenu" name="menuModules">
+     <property name="title">
+      <string>Modules</string>
+     </property>
+     <addaction name="actionPowershell"/>
+     <addaction name="actionPython"/>
+     <addaction name="separator"/>
+     <addaction name="actionNew_Module"/>
+    </widget>
+    <widget class="QMenu" name="menuGates">
+     <property name="title">
+      <string>Gates</string>
+     </property>
+     <addaction name="actionDropper"/>
+     <addaction name="actionMC_Office_Macros"/>
+     <addaction name="separator"/>
+     <addaction name="actionDemon"/>
+     <addaction name="actionLinux_Executables"/>
+     <addaction name="actionMacOS"/>
+    </widget>
+    <addaction name="menuGates"/>
+    <addaction name="menuModules"/>
+   </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <addaction name="actionSessions"/>
+    <addaction name="actionCredentials"/>
+    <addaction name="actionScreenshots"/>
+    <addaction name="actionLogs"/>
+   </widget>
+   <widget class="QMenu" name="menuScripts">
+    <property name="title">
+     <string>Yaotl</string>
+    </property>
+    <widget class="QMenu" name="menuScript">
+     <property name="title">
+      <string>Script</string>
+     </property>
+     <addaction name="actionRegister"/>
+     <addaction name="actionExecute"/>
+    </widget>
+    <widget class="QMenu" name="menuModules_2">
+     <property name="title">
+      <string>Modules</string>
+     </property>
+     <addaction name="actionRegister_Module"/>
+     <addaction name="actionExecute_Module"/>
+    </widget>
+    <addaction name="menuScript"/>
+    <addaction name="menuModules_2"/>
+    <addaction name="actionYaotl_Interpreter"/>
+   </widget>
+   <addaction name="menuHavoc"/>
+   <addaction name="menuView"/>
+   <addaction name="menuAttack"/>
+   <addaction name="menuScripts"/>
+   <addaction name="menuAbout"/>
+  </widget>
+  <action name="actionConnect">
+   <property name="text">
+    <string>Connect</string>
+   </property>
+  </action>
+  <action name="actionHelp">
+   <property name="text">
+    <string>Help</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About...</string>
+   </property>
+  </action>
+  <action name="actionPreferences">
+   <property name="text">
+    <string>Preferences</string>
+   </property>
+  </action>
+  <action name="actionSessions">
+   <property name="text">
+    <string>Sessions</string>
+   </property>
+  </action>
+  <action name="actionCredentials">
+   <property name="text">
+    <string>Credentials</string>
+   </property>
+  </action>
+  <action name="actionChat">
+   <property name="text">
+    <string>Teamserver Chat</string>
+   </property>
+  </action>
+  <action name="actionScreenshots">
+   <property name="text">
+    <string>Screenshots</string>
+   </property>
+  </action>
+  <action name="actionMenu">
+   <property name="text">
+    <string>Menu</string>
+   </property>
+  </action>
+  <action name="actionListeners">
+   <property name="text">
+    <string>Listeners</string>
+   </property>
+  </action>
+  <action name="actionPowershell">
+   <property name="text">
+    <string>Powershell</string>
+   </property>
+  </action>
+  <action name="actionPython">
+   <property name="text">
+    <string>Python</string>
+   </property>
+  </action>
+  <action name="actionNew_Module">
+   <property name="text">
+    <string>Manager</string>
+   </property>
+  </action>
+  <action name="actionHavoc_Terminal">
+   <property name="text">
+    <string>Terminal</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Quit</string>
+   </property>
+  </action>
+  <action name="actionLauncher">
+   <property name="text">
+    <string>Dropper</string>
+   </property>
+  </action>
+  <action name="actionDemon">
+   <property name="text">
+    <string>Win Executable</string>
+   </property>
+  </action>
+  <action name="actionManager">
+   <property name="text">
+    <string>Manager</string>
+   </property>
+  </action>
+  <action name="actionAdd_Script">
+   <property name="text">
+    <string>Add Script</string>
+   </property>
+  </action>
+  <action name="actionRegister">
+   <property name="text">
+    <string>Register Script</string>
+   </property>
+  </action>
+  <action name="actionExecute">
+   <property name="text">
+    <string>Load Script</string>
+   </property>
+  </action>
+  <action name="actionRegister_Module">
+   <property name="text">
+    <string>Register Module</string>
+   </property>
+  </action>
+  <action name="actionExecute_Module">
+   <property name="text">
+    <string>Load Module</string>
+   </property>
+  </action>
+  <action name="actionYaotl_Interpreter">
+   <property name="text">
+    <string>Yaotl Interpreter</string>
+   </property>
+  </action>
+  <action name="actionLogs">
+   <property name="text">
+    <string>Logs</string>
+   </property>
+  </action>
+  <action name="actionOpen_Documentation">
+   <property name="text">
+    <string>Open API Reference</string>
+   </property>
+  </action>
+  <action name="actionOpen_Website">
+   <property name="text">
+    <string>Open Help Documentation</string>
+   </property>
+  </action>
+  <action name="actionSource">
+   <property name="text">
+    <string>Source </string>
+   </property>
+  </action>
+  <action name="actionGithub_Repository">
+   <property name="text">
+    <string>Github Repository</string>
+   </property>
+  </action>
+  <action name="actionDisconnect">
+   <property name="text">
+    <string>Disconnect</string>
+   </property>
+  </action>
+  <action name="actionWindows_Exe_Stageless">
+   <property name="text">
+    <string>Win Executable (Stageless)</string>
+   </property>
+  </action>
+  <action name="actionMC_Office_Macros">
+   <property name="text">
+    <string>MC Office Macros</string>
+   </property>
+  </action>
+  <action name="actionLinux_Executables">
+   <property name="text">
+    <string>Linux Executables</string>
+   </property>
+  </action>
+  <action name="actionMacOS">
+   <property name="text">
+    <string>MacOS Executables</string>
+   </property>
+  </action>
+  <action name="actionDropper">
+   <property name="text">
+    <string>Dropper</string>
+   </property>
+  </action>
+ </widget>
+ <resources>
+  <include location="../resources/recources.qrc"/>
+ </resources>
+ <connections/>
+</ui>

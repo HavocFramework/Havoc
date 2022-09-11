@@ -1,0 +1,57 @@
+object {
+  block_map "equality" {
+    labels = ["operator"]
+
+    object {
+      attr "exactly" { type = bool }
+      attr "not" { type = bool }
+      attr "type_mismatch_number" { type = bool }
+      attr "type_mismatch_bool" { type = bool }
+    }
+  }
+  block_map "inequality" {
+    labels = ["operator"]
+
+    object {
+      attr "lt" { type = bool }
+      attr "gt" { type = bool }
+      attr "eq" { type = bool }
+    }
+  }
+  block "arithmetic" {
+    object {
+      attr "add" { type = any }
+      attr "add_big" { type = any }
+      attr "sub" { type = any }
+      attr "sub_neg" { type = any }
+      attr "mul" { type = any }
+      attr "div" { type = any }
+      attr "mod" { type = any }
+      attr "mod_frac" { type = any }
+    }
+  }
+  block_map "logical_binary" {
+    labels = ["operator"]
+
+    object {
+      attr "tt" { type = bool }
+      attr "ft" { type = bool }
+      attr "tf" { type = bool }
+      attr "ff" { type = bool }
+    }
+  }
+  block_map "logical_unary" {
+    labels = ["operator"]
+
+    object {
+      attr "t"   { type = bool }
+      attr "f"   { type = bool }
+    }
+  }
+  block "conditional" {
+    object {
+      attr "t"   { type = any }
+      attr "f"   { type = any }
+    }
+  }
+}

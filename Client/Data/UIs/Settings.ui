@@ -1,0 +1,594 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>568</width>
+    <height>374</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>568</width>
+    <height>374</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>568</width>
+    <height>374</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0">
+    <widget class="QListWidget" name="ListSettingsWidgets">
+     <item>
+      <property name="text">
+       <string>Appearance</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Tabs</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <spacer name="horizontalSpacer">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>173</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="1" column="1" colspan="2">
+    <spacer name="horizontalSpacer_2">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>365</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="1" column="3">
+    <widget class="QPushButton" name="pushButton_Save">
+     <property name="text">
+      <string>Save</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="4">
+    <widget class="QPushButton" name="pushButton_Close">
+     <property name="text">
+      <string>Close</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1" colspan="4">
+    <widget class="QStackedWidget" name="stackedWidget">
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <widget class="QWidget" name="AppearancePage">
+      <widget class="QLabel" name="label_2">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>20</y>
+         <width>61</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Font:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>50</y>
+         <width>51</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Theme:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+      <widget class="QComboBox" name="comboBox_Themes">
+       <property name="geometry">
+        <rect>
+         <x>70</x>
+         <y>50</y>
+         <width>291</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <item>
+        <property name="text">
+         <string>Dracula</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Dragon Blood</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Dracula Light</string>
+        </property>
+       </item>
+      </widget>
+      <widget class="QComboBox" name="comboBox_UI_Font">
+       <property name="geometry">
+        <rect>
+         <x>70</x>
+         <y>20</y>
+         <width>181</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <item>
+        <property name="text">
+         <string>Monaco</string>
+        </property>
+       </item>
+      </widget>
+      <widget class="QLabel" name="label_3">
+       <property name="geometry">
+        <rect>
+         <x>270</x>
+         <y>20</y>
+         <width>41</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Size:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+      <widget class="QComboBox" name="comboBox_UI_Size">
+       <property name="geometry">
+        <rect>
+         <x>310</x>
+         <y>20</y>
+         <width>51</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="autoFillBackground">
+        <bool>false</bool>
+       </property>
+       <property name="editable">
+        <bool>true</bool>
+       </property>
+       <item>
+        <property name="text">
+         <string>1</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>2</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>3</string>
+        </property>
+       </item>
+      </widget>
+      <widget class="QGroupBox" name="groupBox_Statusbar">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>110</y>
+         <width>351</width>
+         <height>191</height>
+        </rect>
+       </property>
+       <property name="title">
+        <string>Statusbar</string>
+       </property>
+       <widget class="QCheckBox" name="checkBox_EnableStatusbar">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>26</y>
+          <width>281</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Enable Statusbar</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_Background">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>61</y>
+          <width>81</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Background:</string>
+        </property>
+       </widget>
+       <widget class="QLineEdit" name="lineEdit_Background">
+        <property name="geometry">
+         <rect>
+          <x>90</x>
+          <y>61</y>
+          <width>251</width>
+          <height>20</height>
+         </rect>
+        </property>
+       </widget>
+       <widget class="QLineEdit" name="lineEdit_Foreground">
+        <property name="geometry">
+         <rect>
+          <x>90</x>
+          <y>91</y>
+          <width>251</width>
+          <height>20</height>
+         </rect>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_Foreground">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>91</y>
+          <width>81</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Foreground:</string>
+        </property>
+       </widget>
+       <widget class="QCheckBox" name="checkBox_activeDemonSession">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>121</y>
+          <width>321</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Show active demon sessions</string>
+        </property>
+       </widget>
+       <widget class="QCheckBox" name="checkBox_numTeamservers">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>140</y>
+          <width>331</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Show number of teamserver connected to</string>
+        </property>
+       </widget>
+       <widget class="QCheckBox" name="checkBox_numCreds">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>160</y>
+          <width>331</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Show number of credentials gathered</string>
+        </property>
+       </widget>
+      </widget>
+      <widget class="QCheckBox" name="checkBox_showTeamserverTitleBar">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>80</y>
+         <width>351</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Show teamserver name in titlebar</string>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QWidget" name="TabsPage">
+      <widget class="QGroupBox" name="TeamserverTabBox">
+       <property name="geometry">
+        <rect>
+         <x>9</x>
+         <y>9</y>
+         <width>351</width>
+         <height>131</height>
+        </rect>
+       </property>
+       <property name="title">
+        <string>Teamserver  Tabs</string>
+       </property>
+       <widget class="QLabel" name="label_TeamserverTab_Position">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>30</y>
+          <width>71</width>
+          <height>21</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Position:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+       </widget>
+       <widget class="QComboBox" name="comboBox_TeamserverTab_Position">
+        <property name="geometry">
+         <rect>
+          <x>90</x>
+          <y>30</y>
+          <width>251</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <item>
+         <property name="text">
+          <string>Top</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Bottom</string>
+         </property>
+        </item>
+       </widget>
+       <widget class="QCheckBox" name="checkBox_AutoHide_Teamservers">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>90</y>
+          <width>331</width>
+          <height>26</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>AutoHide Teamserver Tabs</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_TeamserverTab_Size">
+        <property name="geometry">
+         <rect>
+          <x>240</x>
+          <y>60</y>
+          <width>41</width>
+          <height>21</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Size:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_TeamserverTab_Font">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>60</y>
+          <width>71</width>
+          <height>21</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Font:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+       </widget>
+       <widget class="QComboBox" name="comboBox_TeamserverTab_Font">
+        <property name="geometry">
+         <rect>
+          <x>90</x>
+          <y>60</y>
+          <width>131</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <item>
+         <property name="text">
+          <string>Monaco</string>
+         </property>
+        </item>
+       </widget>
+       <widget class="QComboBox" name="comboBox_TeamserverTab_Size">
+        <property name="geometry">
+         <rect>
+          <x>280</x>
+          <y>60</y>
+          <width>61</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="autoFillBackground">
+         <bool>false</bool>
+        </property>
+        <property name="editable">
+         <bool>true</bool>
+        </property>
+        <item>
+         <property name="text">
+          <string>1</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>2</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>3</string>
+         </property>
+        </item>
+       </widget>
+      </widget>
+      <widget class="QGroupBox" name="BottomTabBox">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>170</y>
+         <width>351</width>
+         <height>151</height>
+        </rect>
+       </property>
+       <property name="title">
+        <string>Bottom Tabs</string>
+       </property>
+       <widget class="QLabel" name="label_BottomPosition">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>30</y>
+          <width>71</width>
+          <height>21</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Position:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+       </widget>
+       <widget class="QComboBox" name="comboBox_Bottom_Position">
+        <property name="geometry">
+         <rect>
+          <x>90</x>
+          <y>30</y>
+          <width>251</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <item>
+         <property name="text">
+          <string>Top</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Bottom</string>
+         </property>
+        </item>
+       </widget>
+       <widget class="QComboBox" name="comboBox_Bottom_Size">
+        <property name="geometry">
+         <rect>
+          <x>280</x>
+          <y>60</y>
+          <width>61</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="autoFillBackground">
+         <bool>false</bool>
+        </property>
+        <property name="editable">
+         <bool>true</bool>
+        </property>
+        <item>
+         <property name="text">
+          <string>1</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>2</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>3</string>
+         </property>
+        </item>
+       </widget>
+       <widget class="QLabel" name="label_Bottom_Font">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>60</y>
+          <width>71</width>
+          <height>21</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Font:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+       </widget>
+       <widget class="QComboBox" name="comboBox_Bottom_Font">
+        <property name="geometry">
+         <rect>
+          <x>90</x>
+          <y>60</y>
+          <width>131</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <item>
+         <property name="text">
+          <string>Monaco</string>
+         </property>
+        </item>
+       </widget>
+       <widget class="QLabel" name="label_Bottom_Size">
+        <property name="geometry">
+         <rect>
+          <x>240</x>
+          <y>60</y>
+          <width>41</width>
+          <height>21</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Size:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+       </widget>
+       <widget class="QCheckBox" name="checkBox_ShowIcons">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>90</y>
+          <width>331</width>
+          <height>26</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Show Icons</string>
+        </property>
+       </widget>
+      </widget>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

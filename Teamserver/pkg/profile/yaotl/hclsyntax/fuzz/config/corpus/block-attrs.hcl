@@ -1,0 +1,3 @@
+block {
+  foo = true
+}

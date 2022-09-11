@@ -1,0 +1,4 @@
+/* multi
+   line
+   comment
+*/
