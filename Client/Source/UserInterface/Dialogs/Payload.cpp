@@ -141,11 +141,6 @@ auto Payload::retranslateUi() -> void
 
     ComboFormat->addItem( "Windows Exe" );
     ComboFormat->addItem( "Windows Dll" );
-    ComboFormat->addItem( "Windows Service Exe" );
-    ComboFormat->addItem( "Windows Reflective Dll" );
-    ComboFormat->addItem( "Windows Shellcode" );
-    ComboFormat->addItem( "Windows Core Dll" );
-    ComboFormat->addItem( "Windows Core Reflective Dll" );
 
     ComboArch->addItem( "x64" );
     ComboArch->addItem( "x86" );
@@ -310,9 +305,6 @@ auto Payload::CtxAgentPayloadChange( const QString& AgentType ) -> void
             ComboFormat->clear();
             ComboFormat->addItem( "Windows Exe" );
             ComboFormat->addItem( "Windows Dll" );
-            ComboFormat->addItem( "Windows Service Exe" );
-            ComboFormat->addItem( "Windows Reflective Dll" );
-            ComboFormat->addItem( "Windows Shellcode" );
 
             ComboArch->clear();
             ComboArch->addItem( "x64" );
