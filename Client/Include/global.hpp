@@ -235,6 +235,7 @@ namespace HavocNamespace
             QString  Last;
             QString  Elevated;
             QString  PivotParent;
+            QString  Marked;
 
             UserInterface::Widgets::DemonInteracted* InteractedWidget;
             UserInterface::Widgets::ProcessList*     ProcessList;

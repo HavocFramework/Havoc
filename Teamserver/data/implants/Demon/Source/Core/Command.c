@@ -531,6 +531,26 @@ VOID CommandProc( PPARSER DataArgs )
 
             }
         }
+
+        case 8: PUTS( "Proc::Kill" )
+        {
+            DWORD             dwProcessID = ParserGetInt32( DataArgs );
+            HANDLE            hProcess    = NULL;
+            CLIENT_ID         ClientID    = { dwProcessID, 0 };
+            OBJECT_ATTRIBUTES ObjectAttr  = { sizeof( OBJECT_ATTRIBUTES ) };
+            NTSTATUS          NtStatus    = STATUS_SUCCESS;
+
+            NtStatus = Instance->Syscall.NtOpenProcess( &hProcess, PROCESS_TERMINATE, &ObjectAttr, &ClientID );
+            if ( NT_SUCCESS( NtStatus ) )
+            {
+                Instance->Win32.TerminateProcess( hProcess, 0 );
+                Instance->Win32.NtClose( hProcess );
+                return;
+            }
+
+            break;
+        }
+
     }
 
     // TODO: handle error
@@ -635,19 +655,7 @@ LEAVE:
 // TODO: move this to the Proc Function Module
 VOID CommandProcKill( PPARSER DataArgs )
 {
-    DWORD             dwProcessID = ParserGetInt32( DataArgs );
-    HANDLE            hProcess    = NULL;
-    CLIENT_ID         ClientID    = { dwProcessID, 0 };
-    OBJECT_ATTRIBUTES ObjectAttr  = { sizeof( OBJECT_ATTRIBUTES ) };
-    NTSTATUS          NtStatus    = STATUS_SUCCESS;
 
-    NtStatus = Instance->Syscall.NtOpenProcess( &hProcess, PROCESS_TERMINATE, &ObjectAttr, &ClientID );
-    if ( NT_SUCCESS( NtStatus ) )
-    {
-        Instance->Win32.TerminateProcess( hProcess, 0 );
-        Instance->Win32.NtClose( hProcess );
-        return;
-    }
 }
 
 VOID CommandFS( PPARSER DataArgs )

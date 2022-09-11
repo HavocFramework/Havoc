@@ -37,6 +37,7 @@ typedef struct
     QString                    Version;
     QString                    Author;
     uint64_t                   MagicValue;
+    QStringList                Arch;
     std::vector<AgentFormat>   Formats;
     QStringList                SupportedOS;
     std::vector<AgentCommands> Commands;

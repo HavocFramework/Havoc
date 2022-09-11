@@ -13,15 +13,12 @@ int main( int argc, char** argv )
 
     spdlog::info( "Havoc Framework [Version: {}] [CodeName: {}]", HavocNamespace::Version, HavocNamespace::CodeName );
 
-    // Set font
-    {
-        u32     id     = QFontDatabase::addApplicationFont( ":/icons/Monaco" );
-        QString family = QFontDatabase::applicationFontFamilies( id ).at( 0 );
+    auto FontID = QFontDatabase::addApplicationFont( ":/icons/Monaco" );
+    auto Family = QFontDatabase::applicationFontFamilies( FontID ).at( 0 );
+    auto Monaco = QFont( Family );
 
-        QFont monospace( family );
-        monospace.setPointSize( 9 );
-        QApplication::setFont( monospace );
-    }
+    Monaco.setPointSize( 9 );
+    QApplication::setFont( Monaco );
 
     QGuiApplication::setWindowIcon( QIcon( ":/Havoc.ico" ) );
 

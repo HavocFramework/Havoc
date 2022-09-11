@@ -13,6 +13,35 @@ Operators {
 	}
 }
 
+Listeners {
+    Http {
+        Name        = "Demon Listener - HTTP/s"
+        Host        = "192.168.0.148"
+        Port        = 443
+        Method      = "POST"
+        Secure      = true
+        UserAgent   = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
+        Uris        = [
+            "/funny_cat.gif",
+            "/index.php",
+            "/test.txt",
+            "/helloworld.js"
+        ]
+        Headers     = [
+            "X-Havoc: true",
+            "X-Havoc-Agent: Demon",
+        ]
+
+        Response {
+            Headers = [
+                "Content-type: text/plain",
+                "X-IsHavocFramework: true",
+            ]
+        }
+
+    }
+}
+
 Service {
     Endpoint = "service-endpoint"
     Password = "service-password"

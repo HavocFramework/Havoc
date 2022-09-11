@@ -1,0 +1,10 @@
+/usr/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/home/spider/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/222.3739.54/bin/ninja/linux/ninja -G Ninja -S /home/spider/MEGA/Projects/Havoc/Havoc/Teamserver/data/implants/Demon -B /home/spider/MEGA/Projects/Havoc/Havoc/Teamserver/data/implants/Demon/Build
+-- The C compiler identification is GNU 12.1.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/spider/MEGA/Projects/Havoc/Havoc/Teamserver/data/implants/Demon/Build

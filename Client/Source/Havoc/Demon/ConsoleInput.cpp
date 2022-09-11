@@ -625,9 +625,23 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 }
             }
 
-            else if (InputCommands[ 1 ].compare( "kill" ) == 0)
+            else if ( InputCommands[ 1 ].compare( "kill" ) == 0 )
             {
-                DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to kill a process" );
+                if ( InputCommands.size() > 2 )
+                {
+                    TaskID = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to kill a process" );
+                    CommandInputList[ TaskID ] = commandline;
+
+                    SEND( Execute.ProcModule( TaskID, 8, InputCommands[ 2 ] ) )
+                }
+                else
+                {
+                    DemonConsole->Console->append( "" );
+                    DemonConsole->Console->append( Prompt );
+                    DemonConsole->TaskError( "Argument not valid" );
+
+                    return false;
+                }
             }
             else if ( InputCommands[ 1 ].compare( "memory" ) == 0 )
             {
@@ -774,9 +788,8 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
 
                 if ( InputCommands.size() >= 2 )
                 {
-                    auto TargetArch = InputCommands[ 2 ];
-
-                    QString ShellcodeBinaryPath = ( InputCommands.begin() + 3 )->toStdString().c_str();
+                    auto TargetArch          = InputCommands[ 2 ];
+                    auto ShellcodeBinaryPath = InputCommands[ 3 ];
 
                     if ( ! ( TargetArch.compare( "x64" ) == 0 || TargetArch.compare( "x86" ) != 0 ) )
                     {

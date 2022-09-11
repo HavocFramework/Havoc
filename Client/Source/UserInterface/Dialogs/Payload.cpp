@@ -220,6 +220,8 @@ auto Payload::ReceivedImplantAndSave( QString FileName, QByteArray ImplantArray 
     auto Filename   = QUrl();
     auto Style      = FileRead( ":/stylesheets/Dialogs/FileDialog" ).toStdString();
 
+    ButtonClicked = false;
+
     Style.erase( std::remove( Style.begin(), Style.end(), '\n' ), Style.end() );
 
     FileDialog.setStyleSheet( Style.c_str() );
@@ -250,8 +252,6 @@ auto Payload::ReceivedImplantAndSave( QString FileName, QByteArray ImplantArray 
             messageBox.setStyleSheet( FileRead( ":/stylesheets/MessageBox" ) );
             messageBox.setMaximumSize( QSize(500, 500 ) );
             messageBox.exec();
-
-            ButtonClicked = false;
         }
     }
 }
@@ -287,8 +287,12 @@ auto Payload::CtxAgentPayloadChange( const QString& AgentType ) -> void
             if ( AgentType.compare( Agent.Name ) == 0 )
             {
                 ComboFormat->clear();
+                ComboArch->clear();
 
                 AddConfigFromJson( Agent.BuildingConfig );
+
+                for ( const auto& Arch : Agent.Arch )
+                    ComboArch->addItem( Arch );
 
                 for ( const auto& Format : Agent.Formats )
                     ComboFormat->addItem( Format.Name );
@@ -344,6 +348,7 @@ auto Payload::AddConfigFromJson( QJsonDocument Config ) -> void
         {
             ObjectItem = new QCheckBox;
             ObjectItem->setObjectName( "bool" );
+            ( ( QCheckBox* ) ObjectItem )->setChecked( KeyValue.toBool() );
 
             auto p = ObjectItem->palette();
             p.setColor( QPalette::Window, Qt::gray );
@@ -355,6 +360,8 @@ auto Payload::AddConfigFromJson( QJsonDocument Config ) -> void
         {
             ObjectItem = new QLineEdit;
             ObjectItem->setObjectName( "text" );
+            ( ( QLineEdit* ) ObjectItem )->setText( KeyValue.toString() );
+
             TreeConfig->setItemWidget( TreeItem, 1, ObjectItem );
         }
         else if ( KeyValue.isArray() )
@@ -386,6 +393,7 @@ auto Payload::AddConfigFromJson( QJsonDocument Config ) -> void
                 {
                     ObjectItem = new QCheckBox;
                     ObjectItem->setObjectName( "bool" );
+                    ( ( QCheckBox* ) ObjectItem )->setChecked( SubKeyValue.toBool() );
 
                     auto p = ObjectItem->palette();
                     p.setColor( QPalette::Window, Qt::gray );
@@ -397,6 +405,8 @@ auto Payload::AddConfigFromJson( QJsonDocument Config ) -> void
                 {
                     ObjectItem = new QLineEdit;
                     ObjectItem->setObjectName( "text" );
+                    ( ( QLineEdit* ) ObjectItem )->setText( SubKeyValue.toString() );
+
                     TreeConfig->setItemWidget( TreeChildItem, 1, ObjectItem );
                 }
                 else if ( SubKeyValue.isArray() )

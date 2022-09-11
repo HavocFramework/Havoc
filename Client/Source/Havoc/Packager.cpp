@@ -1,12 +1,13 @@
-#include "Include/Havoc/Havoc.hpp"
-#include "Include/Havoc/Packager.hpp"
-#include "Include/Havoc/DemonCmdDispatch.h"
+#include <Havoc/Havoc.hpp>
+#include <Havoc/Packager.hpp>
+#include <Havoc/DemonCmdDispatch.h>
 
-#include "Include/UserInterface/Widgets/TeamserverTabSession.h"
-#include "Include/UserInterface/SmallWidgets/EventViewer.hpp"
-#include "Include/UserInterface/Widgets/DemonInteracted.h"
+#include <UserInterface/Widgets/TeamserverTabSession.h>
+#include <UserInterface/SmallWidgets/EventViewer.hpp>
+#include <UserInterface/Widgets/DemonInteracted.h>
 
-#include "Include/Util/ColorText.h"
+#include <Include/Util/ColorText.h>
+#include <Havoc/Connector.hpp>
 
 #include <QScrollBar>
 #include "Include/global.hpp"
@@ -198,7 +199,6 @@ bool Packager::DispatchInitConnection( Util::Packager::PPackage Package )
 
         case 0x5:
         {
-            spdlog::info( "Received demon profile" );
             HavocX::Teamserver.DemonConfig = QJsonDocument::fromJson( Package->Body.Info[ "Demon" ].c_str() );
         }
 
@@ -443,7 +443,17 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                     .Last        = QString( Package->Body.Info[ "LastCallIn" ].c_str() ).split(" ")[ 1 ],
                     .Elevated    = Package->Body.Info[ "Elevated" ].c_str(),
                     .PivotParent = Package->Body.Info[ "PivotParent" ].c_str(),
+                    .Marked      = Package->Body.Info[ "Active" ].c_str(),
             };
+
+            if ( Agent.Marked == "true" )
+            {
+                Agent.Marked = "Alive";
+            }
+            else if ( Agent.Marked == "false" )
+            {
+                Agent.Marked = "Dead";
+            }
 
             for ( auto& session : HavocX::Teamserver.Sessions )
                 if ( session.Name.compare( Agent.Name ) == 0 )
@@ -493,6 +503,45 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
             {
                 if ( Session.Name.compare( Package->Body.Info[ "DemonID" ].c_str() ) == 0 )
                 {
+                    if ( Session.Marked.compare( "Dead" ) == 0 )
+                    {
+                        auto Package = new Util::Packager::Package;
+
+                        Package->Head = Util::Packager::Head_t {
+                                .Event= Util::Packager::Session::Type,
+                                .User = HavocX::Teamserver.User.toStdString(),
+                                .Time = QTime::currentTime().toString( "hh:mm:ss" ).toStdString(),
+                        };
+
+                        for ( int i = 0; i < HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->rowCount(); i++ )
+                        {
+                            auto Row = HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, 0 )->text();
+
+                            if ( Row.compare( Session.Name ) == 0 )
+                            {
+                                HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, 0 )->setIcon( QIcon( ":/images/SessionItem" ) );
+
+                                for ( int j = 0; j < HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->columnCount(); j++ )
+                                {
+                                    HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, j )->setBackground( QColor( Util::ColorText::Colors::Hex::Background ) );
+                                    HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, j )->setForeground( QColor( Util::ColorText::Colors::Hex::Foreground ) );
+                                }
+                            }
+                        }
+
+                        Package->Body = Util::Packager::Body_t {
+                                .SubEvent = 0x5,
+                                .Info = {
+                                    { "AgentID", Session.Name.toStdString() },
+                                    { "Marked",  "Alive" },
+                                }
+                        };
+
+                        Session.Marked = "Alive";
+
+                        HavocX::Connector->SendPackage( Package );
+                    }
+
                     Session.InteractedWidget->DemonCommands->OutputDispatch.DemonCommandInstance = Session.InteractedWidget->DemonCommands;
 
                     int CommandID = QString( Package->Body.Info[ "CommandID" ].c_str() ).toInt();
@@ -542,6 +591,7 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
             spdlog::info( "Mark As Dead" );
 
             auto AgentID = Package->Body.Info[ "AgentID" ];
+            auto Marked  = Package->Body.Info[ "Marked" ];
 
             for ( int i = 0; i < HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->rowCount(); i++ )
             {
@@ -549,13 +599,28 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
 
                 if ( Row.compare( QString( AgentID.c_str() ) ) == 0 )
                 {
-                    for ( int j = 0; j < HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->columnCount(); j++ )
+                    if ( Marked.compare( "Alive" ) == 0 )
                     {
-                        HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, j )->setBackground( QColor( Util::ColorText::Colors::Hex::CurrentLine ) );
-                        HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, j )->setForeground( QColor( Util::ColorText::Colors::Hex::Comment ) );
+                        HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, 0 )->setIcon( QIcon( ":/images/SessionItem" ) );
+
+                        for ( int j = 0; j < HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->columnCount(); j++ )
+                        {
+                            HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, j )->setBackground( QColor( Util::ColorText::Colors::Hex::Background ) );
+                            HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, j )->setForeground( QColor( Util::ColorText::Colors::Hex::Foreground ) );
+                        }
+                    }
+                    else if ( Marked.compare( "Dead" ) == 0 )
+                    {
+                        HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, 0 )->setIcon( QIcon( ":/icons/DeadWhite" ) );
+
+                        for ( int j = 0; j < HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->columnCount(); j++ )
+                        {
+                            HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, j )->setBackground( QColor( Util::ColorText::Colors::Hex::CurrentLine ) );
+                            HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, j )->setForeground( QColor( Util::ColorText::Colors::Hex::Comment ) );
+                        }
                     }
 
-                    HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, 0 )->setIcon( QIcon( ":/icons/DeadWhite" ) );
+
                 }
             }
 
@@ -573,10 +638,14 @@ bool Packager::DispatchService( Util::Packager::PPackage Package )
         {
             auto JsonObject     = QJsonDocument::fromJson( Package->Body.Info[ "Agent" ].c_str() ).object();
             auto OSArray        = QStringList();
+            auto Arch           = QStringList();
             auto Formats        = std::vector<AgentFormat>();
             auto Commands       = std::vector<AgentCommands>();
             auto MagicValue     = uint64_t( 0 );
             auto StringStream   = std::stringstream();
+
+            for ( const auto& item : JsonObject[ "Arch" ].toArray() )
+                Arch << item.toString();
 
             for ( const auto& item : JsonObject[ "Formats" ].toArray() )
             {
@@ -624,6 +693,7 @@ bool Packager::DispatchService( Util::Packager::PPackage Package )
                 .Description    = JsonObject[ "Description" ].toString(),
                 .Version        = JsonObject[ "Version" ].toString(),
                 .MagicValue     = MagicValue,
+                .Arch           = Arch,
                 .Formats        = Formats,
                 .SupportedOS    = OSArray,
                 .Commands       = Commands,

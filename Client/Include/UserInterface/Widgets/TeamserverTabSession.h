@@ -25,22 +25,6 @@ public:
     QTabWidget*  tabWidget                              = nullptr;
     QTabWidget*  tabWidgetSmall                         = nullptr;
 
-    QAction*     actionSeperator                        = nullptr;
-    QAction*     actionSeperator1                       = nullptr;
-    QAction*     actionSeperator2                       = nullptr;
-    QAction*     actionSeperator3                       = nullptr;
-
-    QMenu*       DemonContextMenu                       = nullptr;
-    QAction*     SessionTableMenu_Interact              = nullptr;
-    QMenu*       SessionTableMenu_Explore               = nullptr;
-    QAction*     SessionTableMenu_Explore_ProcessList   = nullptr;
-    QAction*     SessionTableMenu_Explore_FileExplorer  = nullptr;
-    QAction*     SessionTableMenu_MarkAsDead            = nullptr;
-    QAction*     SessionTableMenu_Export                = nullptr;
-    QAction*     SessionTableMenu_Remove                = nullptr;
-    QAction*     SessionTableMenu_Exit                  = nullptr;
-    QAction*     SessionTableMenu_Info                  = nullptr;
-
     typedef struct
     {
         UserInterface::SmallWidgets::EventViewer* EventViewer;
