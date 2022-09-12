@@ -1161,17 +1161,17 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                     }
                     TaskID = CONSOLE_INFO( "Tasked demon to enable/disable sleep-obf: " + InputCommands[ 2 ] );
                 }
-                else if ( InputCommands[ 1 ].compare( "implant.sleep-obf.start-addr" ) == 0 )
+                else if ( InputCommands[ 1 ].compare( "implant.sleep-obf.technique" ) == 0 ) // TODO: finish this
                 {
-                    /*if ( InputCommands[ 2 ].contains( "!" ) && InputCommands[ 2 ].compare( "+" ) )
-                    {
-                        CONSOLE_ERROR( "Wrong arguments" )
-                        return false;
-                    }*/
                     TaskID = CONSOLE_INFO( "Tasked demon to configure sleep-mask thread start addr: " + InputCommands[ 2 ] );
                 }
-                else if ( InputCommands[ 1 ].compare( "implant.sleep-obf.technique" ) == 0 )
+                else if ( InputCommands[ 1 ].compare( "implant.sleep-obf.start-addr" ) == 0 )
                 {
+		    if ( InputCommands.size() < 3 ) {
+			CONSOLE_ERROR( "Not enough arguments" );
+			return false;
+		    };
+
                     auto regex = QRegExp( "\\d*" );
 
                     if ( ! regex.exactMatch( InputCommands[ 2 ] ) )
@@ -1179,23 +1179,28 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                         CONSOLE_ERROR( "Wrong argument: Is not a number" )
                         return false;
                     }
+
                     TaskID = CONSOLE_INFO( "Tasked demon to configure sleep-mask thread start addr: " + InputCommands[ 2 ] );
                 }
                 else if ( InputCommands[ 1 ].compare( "memory.alloc" ) == 0 ) // TODO: finish this
                 {
-                    TaskID = CONSOLE_INFO( "Tasked demon to configure memory allocation: " + InputCommands[ 2 ] );
+                    //TaskID = CONSOLE_INFO( "Tasked demon to configure memory allocation: " + InputCommands[ 2 ] );
+		    CONSOLE_ERROR( "Not implemented" );
                 }
                 else if ( InputCommands[ 1 ].compare( "memory.execute" ) == 0 ) // TODO: finish this
                 {
-                    TaskID = CONSOLE_INFO( "Tasked demon to configure memory executing: " + InputCommands[ 2 ] );
+                    //TaskID = CONSOLE_INFO( "Tasked demon to configure memory executing: " + InputCommands[ 2 ] );
+		    CONSOLE_ERROR( "Not implemented" );
                 }
                 else if ( InputCommands[ 1 ].compare( "inject.technique" ) == 0 ) // TODO: finish this
                 {
-                    TaskID = CONSOLE_INFO( "Tasked demon to configure injection technique: " + InputCommands[ 2 ] );
+                    //TaskID = CONSOLE_INFO( "Tasked demon to configure injection technique: " + InputCommands[ 2 ] );
+		    CONSOLE_ERROR( "Not implemented" );
                 }
                 else if ( InputCommands[ 1 ].compare( "inject.spoofaddr" ) == 0 ) // TODO: finish this
                 {
-                    TaskID = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to configure spoof thread start addr of injected code: " + InputCommands[ 2 ] );
+		    //TaskID = CONSOLE_INFO( "Tasked demon to spoof thread start address." );
+		    CONSOLE_ERROR( "Not implemented" );
                 }
                 else if ( InputCommands[ 1 ].compare( "process.spawn" ) == 0 )
                 {
@@ -1203,7 +1208,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                         CONSOLE_ERROR( "Not enough arguments" );
                         return false;
                     };
-                    TaskID = DemonConsole->TaskInfo(Send, nullptr, "Tasked demon to configure default target process: " + InputCommands[ 2 ] );
+                    TaskID = CONSOLE_INFO( "Tasked demon to configure default target process: " + InputCommands[ 2 ] );
                 }
                 else
                 {
