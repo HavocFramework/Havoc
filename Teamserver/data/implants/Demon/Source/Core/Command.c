@@ -557,6 +557,7 @@ VOID CommandProc( PPARSER DataArgs )
     PackageTransmit( Package, NULL, NULL );
 }
 
+
 VOID CommandProcList( PPARSER Parser )
 {
     PSYSTEM_PROCESS_INFORMATION ProcessInformationList  = NULL;
@@ -589,6 +590,12 @@ VOID CommandProcList( PPARSER Parser )
                 PackageTransmitError( CALLBACK_ERROR_WIN32, Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
                 goto LEAVE;
             }
+        }
+        if ( NtStatus == STATUS_INFO_LENGTH_MISMATCH ){
+        	
+        	do{
+        		NtStatus = Instance->Syscall.NtQuerySystemInformation( SystemProcessInformation, ProcessInformationList, ListSize, &ListSize );
+        	}while (NtStatus == STATUS_INFO_LENGTH_MISMATCH);
         }
         else
         {
