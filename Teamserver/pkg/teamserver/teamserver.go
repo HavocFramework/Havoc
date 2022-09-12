@@ -43,8 +43,8 @@ func (t *Teamserver) SetServerFlags(flags TeamserverFlags) {
 func (t *Teamserver) Start() {
 	logger.Debug("Starting teamserver...")
 	var (
-		ServerFinished 	chan bool
-		TeamserverWs	string
+		ServerFinished chan bool
+		TeamserverWs   string
 	)
 
 	if t.Flags.Server.Host == "" {
@@ -78,7 +78,7 @@ func (t *Teamserver) Start() {
 			os.Exit(1)
 		}
 
-		t.Clients[ ClientID ] = &Client{
+		t.Clients[ClientID] = &Client{
 			Username:      "",
 			GlobalIP:      WebSocket.RemoteAddr().String(),
 			Connection:    WebSocket,
@@ -91,6 +91,7 @@ func (t *Teamserver) Start() {
 		go t.handleRequest(ClientID)
 	})
 
+	// TODO: pass this as a profile/command line flag
 	t.Server.Engine.Static("/home", "./bin/static")
 
 	go func(Server string) {
@@ -99,15 +100,15 @@ func (t *Teamserver) Start() {
 			logger.Error("Failed to start websocket: " + err.Error())
 		}
 		ServerFinished <- true
-	} (t.Flags.Server.Host + ":" + t.Flags.Server.Port)
+	}(t.Flags.Server.Host + ":" + t.Flags.Server.Port)
 
 	// -------
-	t.Service 	 	 	 = service.NewService(t.Server.Engine)
-	t.Service.Events 	 = t
+	t.Service = service.NewService(t.Server.Engine)
+	t.Service.Events = t
 	t.Service.TeamAgents = &t.Agents
-	t.Clients 	 	 	 = make(map[string]*Client)
-	t.Listeners  	 	 = []*Listener{}
-	TeamserverWs 	 	 = "ws://" + t.Flags.Server.Host + ":" + t.Flags.Server.Port
+	t.Clients = make(map[string]*Client)
+	t.Listeners = []*Listener{}
+	TeamserverWs = "ws://" + t.Flags.Server.Host + ":" + t.Flags.Server.Port
 	t.Service.Data.ServerAgents = &t.Agents
 
 	logger.Info("Starting Teamserver on " + colors.BlueUnderline(TeamserverWs))
@@ -118,7 +119,7 @@ func (t *Teamserver) Start() {
 
 		if len(t.Service.Config.Endpoint) > 0 {
 			t.Service.Start()
-			logger.Info("Starting Teamserver service handler on " + colors.BlueUnderline(TeamserverWs + "/" + t.Service.Config.Endpoint))
+			logger.Info("Starting Teamserver service handler on " + colors.BlueUnderline(TeamserverWs+"/"+t.Service.Config.Endpoint))
 		} else {
 			logger.Error("Teamserver service error: Endpoint not specified")
 		}
@@ -129,14 +130,14 @@ func (t *Teamserver) Start() {
 
 		// Start all HTTP/s listeners
 		for _, listener := range t.Profile.Config.Listener.ListenerHTTP {
-			var HandlerData = handlers.HTTPConfig {
-				Name:  		listener.Name,
-				Hosts: 		listener.Host,
-				Port:  		strconv.Itoa(listener.Port),
-				UserAgent: 	listener.UserAgent,
-				Headers:   	listener.Headers,
-				Uris:      	listener.Uris,
-				Secure:    	listener.Secure,
+			var HandlerData = handlers.HTTPConfig{
+				Name:      listener.Name,
+				Hosts:     listener.Host,
+				Port:      strconv.Itoa(listener.Port),
+				UserAgent: listener.UserAgent,
+				Headers:   listener.Headers,
+				Uris:      listener.Uris,
+				Secure:    listener.Secure,
 			}
 
 			if listener.Response != nil {
@@ -151,8 +152,8 @@ func (t *Teamserver) Start() {
 
 		// Start all SMB listeners
 		for _, listener := range t.Profile.Config.Listener.ListenerSMB {
-			var HandlerData = handlers.SMBConfig {
-				Name: listener.Name,
+			var HandlerData = handlers.SMBConfig{
+				Name:     listener.Name,
 				PipeName: listener.PipeName,
 			}
 
@@ -164,8 +165,8 @@ func (t *Teamserver) Start() {
 
 		// Start all ExternalC2 listeners
 		for _, listener := range t.Profile.Config.Listener.ListenerExternal {
-			var HandlerData = handlers.ExternalConfig {
-				Name: listener.Name,
+			var HandlerData = handlers.ExternalConfig{
+				Name:     listener.Name,
 				Endpoint: listener.Endpoint,
 			}
 
@@ -181,7 +182,8 @@ func (t *Teamserver) Start() {
 
 	// This should hold the Teamserver as long as the WebSocket Server is running
 	logger.Debug("Wait til the server shutdown")
-	<- ServerFinished
+
+	<-ServerFinished
 }
 
 func (t *Teamserver) handleRequest(id string) {
@@ -229,7 +231,7 @@ func (t *Teamserver) handleRequest(id string) {
 		}
 	}
 
-	if ! t.ClientAuthenticate(pk) {
+	if !t.ClientAuthenticate(pk) {
 		if t.Clients[id] == nil {
 			return
 		}
@@ -251,7 +253,7 @@ func (t *Teamserver) handleRequest(id string) {
 		logger.Good("User <" + colors.Blue(pk.Body.Info["User"].(string)) + "> " + colors.Green("Authenticated"))
 
 		t.Clients[id].Authenticated = true
-		t.Clients[id].ClientID 		= id
+		t.Clients[id].ClientID = id
 
 		err := t.SendEvent(id, events.Authenticated(true))
 		if err != nil {
@@ -360,7 +362,7 @@ func (t *Teamserver) EventBroadcast(ExceptClient string, pk packager.Package) {
 	for ClientID := range t.Clients {
 		if ExceptClient != ClientID {
 			err := t.SendEvent(ClientID, pk)
-			if err != nil && ! strings.Contains(err.Error(), "use of closed network connection") {
+			if err != nil && !strings.Contains(err.Error(), "use of closed network connection") {
 				logger.Error("SendEvent error: ", colors.Red(err))
 			}
 		}
@@ -378,11 +380,11 @@ func (t *Teamserver) SendEvent(id string, pk packager.Package) error {
 		return err
 	}
 
-	if t.Clients[ id ] != nil {
+	if t.Clients[id] != nil {
 
-		if t.Clients[ id ] != nil {
+		if t.Clients[id] != nil {
 
-			err = t.Clients[ id ].Connection.WriteMessage(websocket.BinaryMessage, buffer.Bytes())
+			err = t.Clients[id].Connection.WriteMessage(websocket.BinaryMessage, buffer.Bytes())
 			if err != nil {
 				return err
 			}
