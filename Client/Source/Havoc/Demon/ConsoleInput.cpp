@@ -1163,7 +1163,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 }
                 else if ( InputCommands[ 1 ].compare( "implant.sleep-obf.technique" ) == 0 ) // TODO: finish this
                 {
-                    TaskID = CONSOLE_INFO( "Tasked demon to configure sleep-mask thread start addr: " + InputCommands[ 2 ] );
+                    //TaskID = CONSOLE_INFO( "Tasked demon to configure sleep-mask thread start addr: " + InputCommands[ 2 ] );
                 }
                 else if ( InputCommands[ 1 ].compare( "implant.sleep-obf.start-addr" ) == 0 )
                 {
@@ -1184,23 +1184,19 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 }
                 else if ( InputCommands[ 1 ].compare( "memory.alloc" ) == 0 ) // TODO: finish this
                 {
-                    //TaskID = CONSOLE_INFO( "Tasked demon to configure memory allocation: " + InputCommands[ 2 ] );
-		    CONSOLE_ERROR( "Not implemented" );
+		    CONSOLE_ERROR( "Not implemented" ); return false;
                 }
                 else if ( InputCommands[ 1 ].compare( "memory.execute" ) == 0 ) // TODO: finish this
                 {
-                    //TaskID = CONSOLE_INFO( "Tasked demon to configure memory executing: " + InputCommands[ 2 ] );
-		    CONSOLE_ERROR( "Not implemented" );
+		    CONSOLE_ERROR( "Not implemented" ); return false;
                 }
                 else if ( InputCommands[ 1 ].compare( "inject.technique" ) == 0 ) // TODO: finish this
                 {
-                    //TaskID = CONSOLE_INFO( "Tasked demon to configure injection technique: " + InputCommands[ 2 ] );
-		    CONSOLE_ERROR( "Not implemented" );
+		    CONSOLE_ERROR( "Not implemented" ); return false;
                 }
                 else if ( InputCommands[ 1 ].compare( "inject.spoofaddr" ) == 0 ) // TODO: finish this
                 {
-		    //TaskID = CONSOLE_INFO( "Tasked demon to spoof thread start address." );
-		    CONSOLE_ERROR( "Not implemented" );
+		    CONSOLE_ERROR( "Not implemented" ); return false;
                 }
                 else if ( InputCommands[ 1 ].compare( "process.spawn" ) == 0 )
                 {
