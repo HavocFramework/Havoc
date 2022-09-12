@@ -323,6 +323,10 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
         }
         else if ( InputCommands[ 0 ].compare( "sleep" ) == 0 )
         {
+	    if ( InputCommands.size() < 2 ) {
+                CONSOLE_ERROR( "Not enough arguments" );
+                return false;
+            }
             TaskID = CONSOLE_INFO( "Tasked demon to sleep for " + InputCommands[ 1 ] + " seconds" );
             CommandInputList[ TaskID ] = commandline;
             SEND( Execute.Sleep( TaskID, InputCommands[ 1 ] ) )
