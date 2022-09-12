@@ -13,5 +13,4 @@ all:
 
 clean:
 		rm -rf ./bin
-		rm -rf ./data/implants/windows
-		rm -rf .havoc
+		rm -rf ./data/loot
