@@ -1124,7 +1124,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 }
                 if ( InputCommands[ 1 ].compare( "implant.coffee.threaded" ) == 0 )
                 {
-                    if ( Inputcommands.size() < 3 ) {
+                    if ( InputCommands.size() < 3 ) {
                         CONSOLE_ERROR( "Not enough arguments" );
                         return false;
                     };
