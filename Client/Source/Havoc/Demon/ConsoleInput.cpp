@@ -1098,6 +1098,10 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             {
                 if ( InputCommands[ 1 ].compare( "implant.sleep-mask" ) == 0 )
                 {
+                    if ( InputCommands.size() < 3 ) {
+                        CONSOLE_ERROR( "Not enough arguments" );
+                        return false;
+                    };
                     if ( InputCommands[ 2 ].compare( "true" ) != 0 && InputCommands[ 2 ].compare( "false" ) != 0 )
                     {
                         CONSOLE_ERROR( "Wrong arguments" )
@@ -1107,6 +1111,10 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 }
                 if ( InputCommands[ 1 ].compare( "implant.coffee.veh" ) == 0 )
                 {
+                    if ( InputCommands.size() < 3 ) {
+                        CONSOLE_ERROR( "Not enough arguments" );
+                        return false;
+                    };
                     if ( InputCommands[ 2 ].compare( "true" ) != 0 && InputCommands[ 2 ].compare( "false" ) != 0 )
                     {
                         CONSOLE_ERROR( "Wrong arguments" )
@@ -1116,6 +1124,10 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 }
                 if ( InputCommands[ 1 ].compare( "implant.coffee.threaded" ) == 0 )
                 {
+                    if ( Inputcommands.size() < 3 ) {
+                        CONSOLE_ERROR( "Not enough arguments" );
+                        return false;
+                    };
                     if ( InputCommands[ 2 ].compare( "true" ) != 0 && InputCommands[ 2 ].compare( "false" ) != 0 )
                     {
                         CONSOLE_ERROR( "Wrong arguments" )
@@ -1125,6 +1137,10 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 }
                 else if ( InputCommands[ 1 ].compare( "implant.verbose" ) == 0 )
                 {
+                    if ( InputCommands.size() < 3 ) {
+                        CONSOLE_ERROR( "Not enough arguments" );
+						return false;
+                    }; 
                     if ( InputCommands[ 2 ].compare( "true" ) != 0 && InputCommands[ 2 ].compare( "false" ) != 0 )
                     {
                         CONSOLE_ERROR( "Wrong arguments" )
@@ -1134,6 +1150,10 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 }
                 else if ( InputCommands[ 1 ].compare( "implant.sleep-obf" ) == 0 )
                 {
+                    if ( InputCommands.size() < 3 ) {
+                        CONSOLE_ERROR( "Not enough arguments" );
+                        return false;
+                    };
                     if ( InputCommands[ 2 ].compare( "true" ) != 0 && InputCommands[ 2 ].compare( "false" ) != 0 )
                     {
                         CONSOLE_ERROR( "Wrong arguments" )
@@ -1179,6 +1199,10 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 }
                 else if ( InputCommands[ 1 ].compare( "process.spawn" ) == 0 )
                 {
+                    if ( InputCommands.size() < 3 ) {
+                        CONSOLE_ERROR( "Not enough arguments" );
+                        return false;
+                    };
                     TaskID = DemonConsole->TaskInfo(Send, nullptr, "Tasked demon to configure default target process: " + InputCommands[ 2 ] );
                 }
                 else
