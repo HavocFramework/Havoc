@@ -1,3 +1,0 @@
-/home/spider/MEGA/Projects/Havoc/Havoc/Teamserver/data/implants/Demon/Build/CMakeFiles/Demon.dir
-/home/spider/MEGA/Projects/Havoc/Havoc/Teamserver/data/implants/Demon/Build/CMakeFiles/edit_cache.dir
-/home/spider/MEGA/Projects/Havoc/Havoc/Teamserver/data/implants/Demon/Build/CMakeFiles/rebuild_cache.dir

@@ -92,6 +92,6 @@ rdll64:
 
 
 clean:
-	rm Bin/*
 	rm -rf cmake-build-debug
 	rm -rf .idea
+	rm -rf Build

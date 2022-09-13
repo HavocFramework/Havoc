@@ -870,34 +870,23 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             }
             else if ( InputCommands[ 1 ].compare( "make" ) == 0 )
             {
-                // token make Domain\user password
-                auto LocalNet   = QString();
-                auto DomainUser = QString();
-                auto Password   = QString();
-
-                if ( InputCommands.size() >= 5 )
+                if ( InputCommands.size() < 5 )
                 {
-                    LocalNet   = InputCommands[ 2 ];
-                    DomainUser = InputCommands[ 3 ];
-                    Password   = InputCommands[ 4 ];
-
-                    if ( ( LocalNet.compare( "local" ) == 0 ) || ( LocalNet.compare( "network" ) == 0 ) )
-                    {
-                        TaskID = CONSOLE_INFO( "Tasked demon to make a new " + LocalNet + " user token" );
-                        CommandInputList[ TaskID ] = commandline;
-
-                        SEND( Execute.Token( TaskID, "make", LocalNet + ";" + DomainUser.toLocal8Bit().toBase64() + ";" + Password.toLocal8Bit().toBase64() ) );
-                    }
-                    else
-                    {
-                        CONSOLE_ERROR( "Not enough arguments" )
-                        return false;
-                    }
-
-                } else {
                     CONSOLE_ERROR( "Not enough arguments" )
                     return false;
                 }
+
+                // token make Domain\user password
+                auto Domain   = QString();
+                auto User     = QString();
+                auto Password = QString();
+
+                // token make domain user password
+                Domain   = InputCommands[ 2 ];
+                User     = InputCommands[ 3 ];
+                Password = InputCommands[ 4 ];
+
+                SEND( Execute.Token( TaskID, "make", Domain.toLocal8Bit().toBase64() + ";" + User.toLocal8Bit().toBase64() + ";" + Password.toLocal8Bit().toBase64() ) );
             }
             else if ( InputCommands[ 1 ].compare( "revert" ) == 0 )
             {
@@ -923,14 +912,16 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             }
             else if ( InputCommands[ 1 ].compare( "clear" ) == 0 )
             {
-                TaskID = CONSOLE_INFO( "Tasked demon to clear token vault" );
+                TaskID                     = CONSOLE_INFO( "Tasked demon to clear token vault" );
                 CommandInputList[ TaskID ] = commandline;
+
                 SEND( Execute.Token( TaskID, "clear", "" ) )
             }
             else if ( InputCommands[ 1 ].compare( "getuid" ) == 0 )
             {
-                TaskID = CONSOLE_INFO( "Tasked demon to get current user id" );
+                TaskID                     = CONSOLE_INFO( "Tasked demon to get current user id" );
                 CommandInputList[ TaskID ] = commandline;
+
                 SEND( Execute.Token( TaskID, "getuid", "" ) )
             }
             else if ( InputCommands[ 1 ].compare( "privs-add" ) == 0 )

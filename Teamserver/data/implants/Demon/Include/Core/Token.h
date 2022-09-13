@@ -4,8 +4,7 @@
 #include <windows.h>
 
 #define TOKEN_TYPE_STOLEN       0x1
-#define TOKEN_TYPE_MAKE_LOCAL   0x2
-#define TOKEN_TYPE_MAKE_NETWORK 0x3
+#define TOKEN_TYPE_MAKE_NETWORK 0x2
 
 typedef struct _TOKEN_LIST_DATA
 {
@@ -30,7 +29,7 @@ BOOL             TokenSetPrivilege( LPSTR Privilege, BOOL Enable );
 DWORD            TokenAdd( HANDLE hToken, LPSTR DomainUser, SHORT Type, DWORD dwProcessID, LPSTR User, LPSTR Domain, LPSTR Password );
 BOOL             TokenRemove( DWORD TokenID );
 HANDLE           TokenSteal( DWORD dwTargetPID );
-HANDLE           TokenMake( DWORD Type, LPSTR User, LPSTR Password, LPSTR Domain );
+HANDLE           TokenMake( LPSTR User, LPSTR Password, LPSTR Domain );
 PTOKEN_LIST_DATA TokenGet( DWORD TokenID );
 VOID             TokenClear( );
 
