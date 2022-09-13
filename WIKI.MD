@@ -22,7 +22,7 @@ Havoc is a modern and malleable post-exploitation command and control framework.
 	- [Demon](#ademon)
 		- [Generating a Demon Payload](#adgen)
 		- [Layout](#adlay)
-		- [Indirect Syscalls](#adis)
+		- [Features](#adft)
 		- [Commands](#adcmds)
 - [External C2](#extc2)
 - [Custom Agents](#ca)
@@ -284,7 +284,9 @@ From the Havoc UI, nagivate to `Attack -> Payload`.
 | `Source/Loader` | COFF Loader, Beacon API                               |
 | `Source/Main`   | PE/DLL/RDLL Entry Points                              |
 
-#### <a name="adis"></a>Indirect Syscalls
+#### <a name="adft"></a> Features
+
+##### Indirect Syscalls
 
 When compiled with `OBF_SYSCALL`, Demon performs indirect syscalls for many Nt* APIs. By masquerading the `RIP` to point to a location within `ntdll.dll`, traps placed by EDR solutions (such as process instrumentation callbacks or other forms of sycall tracing)may be evaded. 
 
@@ -298,7 +300,7 @@ Demon has a variety of commands built-in. It also supports the dynamic modificat
 
 Full documentation on commands can be accessed from the Havoc client by typing `help` in the interact window. For more information on a particular command, simply tack it on the end of help like so: `help [command]`
 
-#### `checkin`
+##### `checkin`
 
 > Results from this command are not yet fully implemented.
 
@@ -325,7 +327,7 @@ Requests a checkin request from the Demon. This will output some basic system/co
     - Build
     - Architecture
 
-#### `sleep`
+##### `sleep`
 
 Demon supports sleeping at a specified delay (seconds) with a randomized jitter amount applied in the profile configuration settings.
 
@@ -335,7 +337,7 @@ When the Demon sleeps, it first checks if Sleep Masking is enabled in the profil
 
 During sleep, x64 demons may implement [return address spoofing](https://www.unknowncheats.me/forum/anti-cheat-bypass/268039-x64-return-address-spoofing-source-explanation.html) to hide the real return address.
 
-#### `job`
+##### `job`
 
 Demon implements a multi-threaded job management system that allows the operator to manage long-running tasks. 
 
@@ -346,7 +348,7 @@ Demon implements a multi-threaded job management system that allows the operator
 - `job resume 1` - Resumes a job with the ID of 1
 - `job kill 1` - Kills a job with the ID of 1
 
-#### `proc`
+##### `proc`
 
 Process management and enumeration system.
 
@@ -355,6 +357,23 @@ Process management and enumeration system.
 - `proc list` - Display a list of running processes on the target.
 - `proc kill [pid]` - Kills a process with the specified PID
 - `proc blockdll [on|off]` - Blocks the loading of DLLs that aren't signed by Microsoft using Process Mitigation Policies
+
+##### `token`
+
+Demon implements a token management vault that allows for token theft, impersonation and privilege modification. All tokens are preserved within a token vault, allowing the operator to list and impersonate any stolen token when convenient.
+
+> Tokens are duplicated using `SecurityIdentification` and `SecurityImpersonate` privileges, allowing `OpenThreadToken` to work on impersonated UIDs with OpenAsSelf set to TRUE.
+
+- `token getuid` - Prints the current user id from the token
+- `token list` - List all stolen tokens in the token vault
+- `token steal [pid]` - Steal the token from the specified PID and save it to the token vault
+- `token impersonate [id]` - Impersonate a token from the token vault
+- `token make [local|network] [DOMAIN\username] [password]` - Creates a token from the specified credentials and adds it to the vault
+- `token privs-get` - Attempt to acquire all privileges from the current token
+- `token privs-list` - List all privileges from the current token
+- `token revert` - Reverts back to the default process token
+- `token remove [id]` - Removes a token from the vault
+- `token clear` - Removes all tokens from the vault.
 
 (INCOMPLETE)
 
@@ -454,9 +473,9 @@ Module Template: [https://github.com/HavocFramework/Modules/tree/main/Template](
 
 Official Modules:
 - Powerpick
-    - Executes unmanaged PowerShell commands by loading the CLR runtime (`4.0.30319`) into the designated fork&run process.
+    - Executes unmanaged PowerShell commands by loading the CLR runtime (`4.0.30319`) into the designated fork & run process.
 - InvokeAssembly
-    - Executes a dotnet assembly into a separate process by bootsrapping the CLR and passing the arguments.
+    - Executes a dotnet assembly into a separate process by bootsrapping the CLR into the designated fork & run process and passing the arguments.
     - The dotnet version can be specified in the arguments (`v4.0.30319` is default), as well as the AppDomain name (`DefaultAppDomain` is default).
 
 
