@@ -183,10 +183,15 @@ void UserInterface::Widgets::TeamserverTabSession::handleDemonContextMenu( const
 
     auto SessionMenu     = QMenu();
     auto SessionExplorer = QMenu( "Explorer" );
+    auto ExitMenu        = QMenu( "Exit" );
 
     SessionExplorer.addAction( "Process List" );
     SessionExplorer.addAction( "File Explorer" );
     SessionExplorer.setStyleSheet( MenuStyle );
+
+    ExitMenu.addAction( "Thread" );
+    ExitMenu.addAction( "Process" );
+    ExitMenu.setStyleSheet( MenuStyle );
 
     SessionMenu.addAction( "Interact" );
     SessionMenu.addAction( seperator );
@@ -205,8 +210,15 @@ void UserInterface::Widgets::TeamserverTabSession::handleDemonContextMenu( const
     SessionMenu.addAction( "Export" );
     SessionMenu.addAction( seperator3 );
     SessionMenu.addAction( "Remove" );
-    SessionMenu.addAction( "Exit" );
-    SessionMenu.addAction( seperator4 );
+
+    if ( Agent.MagicValue == DemonMagicValue )
+    {
+        SessionMenu.addAction( ExitMenu.menuAction() );
+    }
+    else
+    {
+        SessionMenu.addAction( "Exit" );
+    }
 
     SessionMenu.setStyleSheet( MenuStyle );
 
@@ -305,11 +317,19 @@ void UserInterface::Widgets::TeamserverTabSession::handleDemonContextMenu( const
                 }
                 else if ( action->text().compare( "Remove" ) == 0 )
                 {
+                    auto SessionID = SessionTableWidget->SessionTableWidget->item( SessionTableWidget->SessionTableWidget->currentRow(), 0 )->text();
 
+                    for ( auto & Session : HavocX::Teamserver.Sessions )
+                    {
+                        if ( SessionID.compare( Session.Name ) == 0 )
+                        {
+                            SessionTableWidget->SessionTableWidget->removeRow( SessionTableWidget->SessionTableWidget->currentRow() );
+                        }
+                    }
                 }
-                else if ( action->text().compare( "Exit" ) == 0 )
+                else if ( action->text().compare( "Thread" ) == 0 || action->text().compare( "Process" ) == 0 )
                 {
-                    Session.InteractedWidget->DemonCommands->Execute.Exit( Util::gen_random( 8 ).c_str(), "process" );
+                    Session.InteractedWidget->DemonCommands->Execute.Exit( Util::gen_random( 8 ).c_str(), action->text().toLower() );
                 }
 
                 if ( Session.MagicValue == DemonMagicValue )

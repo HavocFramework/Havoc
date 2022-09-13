@@ -12,4 +12,5 @@ clean:
 	@ rm -rf Build
 	@ rm -rf ./Bin/*
 	@ rm -rf ./Data/database.db
-
+	@ rm -rf .idea
+	@ rm -rf cmake-build-debug

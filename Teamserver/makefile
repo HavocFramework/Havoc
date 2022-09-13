@@ -14,3 +14,4 @@ all:
 clean:
 		rm -rf ./bin
 		rm -rf ./data/loot
+		rm -rf .idea
