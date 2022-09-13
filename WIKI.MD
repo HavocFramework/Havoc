@@ -2,7 +2,38 @@
 
 Havoc is a modern and malleable post-exploitation command and control framework.
 
-## Known Issues
+#### Table of Contents
+- [Known Issues](#kissues)
+- [Installation](#install)
+	- [Building the Client](#bclient)
+	- [Building the Teamserver](#bteam)
+- [Teamserver](#teamserver)
+	- [Starting the Teamserver](#stt)
+	- [Arguments](#targ)
+	- [Profiles](#profiles)
+		- [Teamserver](#pteam)
+		- [Operators](#pops)
+	- [Demon](#pdemon)
+	- [Listeners](#plisten)
+- [Client](#client)
+	- [Starting the client](#cstc)
+	- [Connecting to the Teamserver](#cctt)
+- [Agents](#agents)
+	- [Demon](#ademon)
+		- [Generating a Demon Payload](#adgen)
+		- [Layout](#adlay)
+		- [Indirect Syscalls](#adis)
+		- [Commands](#adcmds)
+- [External C2](#extc2)
+- [Custom Agents](#ca)
+- [Python API](#pyapi)
+- [Modules](#modules)
+- [FAQ](#faq)
+- [TODO](#todo)
+--------------------
+
+
+## <a name="kissues"></a>Known Issues
 
 > See the Issues tab for all open issues. 
 
@@ -14,9 +45,9 @@ _You will experience formatting issues in the Havoc client if you are not using 
 
 ---
 
-## Installation
+## <a name="install"></a>Installation
 
-### Building the Client
+### <a name="bclient"></a>Building the Client
 
 > If you are using a debian-based distro, you can use the bundled installation script at `/Havoc/Client/Install.sh`. 
 
@@ -44,7 +75,7 @@ cd ..
 
 Running `Havoc.sh` will automatically build the Client and start it. 
 
-### Building the Teamserver
+### <a name="bteam"></a>Building the Teamserver
 
 > If you are using a debian-based distro, you can use the bundled installation script at `/Havoc/Teamserver/Install.sh`
 
@@ -66,11 +97,11 @@ make
 
 ---
 
-## Teamserver
+## <a name="teamserver"></a>Teamserver
 
 The Havoc Teamserver is written in Golang. It handles the listeners, teamserver authentication and payload generation. It also supports ExternalC2 functionality through the configuration of Service endpoints.
 
-### Starting the Teamserver
+### <a name="stt"></a> Starting the Teamserver
 
 > A script is included to automatically start the Teamserver using some default options: `Havoc/Teamserver/teamserver`.
 
@@ -78,7 +109,7 @@ Running `./teamserver` will automatically build the Teamserver, set it as execut
 
 `./bin/teamserver server --profile profiles/havoc.yaotl -v`
 
-### Arguments
+### <a name="targ"></a>Arguments
 
 Usage: `teamserver [command] [flags]`
 
@@ -98,7 +129,7 @@ Here is a full list of arguments that can be passed to the teamserver:
 
 When this flag is set, the Teamserver's `builder` class adds the `-D DEBUG` flag to the `builder.compilerOptions.CFlags` array and removes the `-nostdlib` flag to enable output to be printed to the console. Demon agent payloads genereated from the Havoc client will print visible DEBUG text in the console window after execution. The stdlib will be linked into the payload for this to occur, increasing the payload size.
 
-### Profiles
+### <a name="tprofiles"></a>Profiles
 
 Havoc's Teamserver uses profiles in the `yaotl` format, which is a custom configuration syntax built on top of [HCL](https://github.com/hashicorp/hcl).
 
@@ -107,7 +138,7 @@ Profiles are located at: `Havoc/Teamserver/profiles` and can be passed to the `t
 The default example profile can be found at `Havoc/Teamserver/profiles/havoc_default.yaotl`.
 
 
-#### Teamserver
+#### <a name="pteam"></a>Teamserver
 The teamserver can be configured to listen on a specific bind address and port with the following directive:
 
 ```hcl
@@ -120,7 +151,7 @@ Teamserver {
 - `Host` - The bind address used by the teamserver to accept Client connections.
 - `Port` - The port the teamserver listens on for Client connections.
 
-#### Operators
+#### <a name="pops"></a>Operators
 
 Multiple users can be added to the Teamserver with the Operators directive:
 
@@ -136,7 +167,7 @@ Operators {
 }
 ```
 
-#### Demon
+#### <a name="pdemon"></a>Demon
 
 The primary Demon agent accepts a number of configuration options such as:
 
@@ -169,7 +200,7 @@ Demon {
 - `Injection\Spawn64` - The full path to the process to spawn into for fork & run operations (64bit).
 - `Injection\Spawn32` - The full path to the process to spawn into for fork & run operations (32bit).
 
-#### Listeners
+#### <a name="plisten"></a>Listeners
 
 > Currently, only HTTP/HTTPS listeners are supported.
 
@@ -208,11 +239,11 @@ Listeners {
 
 ---
 
-## Client
+## <a name="client"></a>Client
 
 The Havoc Client is written in C++ and Qt.
 
-### Starting the Client
+### <a name="cstc"></a>Starting the Client
 
 ```
 cd Havoc/Client
@@ -221,7 +252,7 @@ cd Havoc/Client
 
 The `Havoc.sh` script will automatically build the Client and execute it afterwards.
 
-### Connecting to the Teamserver
+### <a name="cctt"></a>Connecting to the Teamserver
 
 When the client opens, you will be presented with a profile window similar to that in other C2 frameworks like Cobalt Strike. 
 
@@ -229,19 +260,19 @@ Enter the profile name, teamserver bind address (`Host`) and `Port`, along with 
 
 ---
 
-## Agents
+## <a name="agents"></a>Agents
 
-### Demon
+### <a name="ademon"></a>Demon
 
 Demon is the primary Havoc agent, written in C/ASM. The source-code is located at `Havoc/Teamserver/data/implants/Demon`.
 
-#### Generating a Demon Payload
+#### <a name="adgen"></a>Generating a Demon Payload
 
 > Currently, only x64 EXE/DLL formats are supported.
 
 From the Havoc UI, nagivate to `Attack -> Payload`. 
 
-#### Layout
+#### <a name="adlay"></a>Layout
 
 | Directory       | Description                                           |
 | --------------- | ----------------------------------------------------- |
@@ -253,7 +284,7 @@ From the Havoc UI, nagivate to `Attack -> Payload`.
 | `Source/Loader` | COFF Loader, Beacon API                               |
 | `Source/Main`   | PE/DLL/RDLL Entry Points                              |
 
-#### Indirect Syscalls
+#### <a name="adis"></a>Indirect Syscalls
 
 When compiled with `OBF_SYSCALL`, Demon performs indirect syscalls for many Nt* APIs. By masquerading the `RIP` to point to a location within `ntdll.dll`, traps placed by EDR solutions (such as process instrumentation callbacks or other forms of sycall tracing)may be evaded. 
 
@@ -261,7 +292,7 @@ The Syscall logic is primarily contained within `/Teamserver/data/implants/Demon
 
 Syscall stubs are dynamically crafted from ntdll.dll on disk and modified so the return address points to `NtAddBootEntry (0x180024b6)` within the ntdll.dll module.
 
-#### Commands
+#### <a name="adcmds"></a>Commands
 
 Demon has a variety of commands built-in. It also supports the dynamic modification of configuration at runtime, allowing operators to customize defaults pre-set in the profiles throughout an engagement, without modifying the profile and re-generating a payload.
 
@@ -329,7 +360,7 @@ Process management and enumeration system.
 
 ---
 
-## ExternalC2
+## <a name="extc2"></a>ExternalC2
 
 Havoc supports custom agents and ExternalC2 by using Teamserver service endpoints. These are configured using `Service` directives (see the Teamserver Profiles documentation).
 
@@ -347,7 +378,7 @@ Service {
 This would create a service endpoint at `<teamserver-host>:<teamserver-port>/service-endpoint` that is authenticated with `service-password`. 
 
 
-## Custom Agents
+## <a name="ca"></a>Custom Agents
 
 Using Havoc's Service API, custom, third-party agents can be written to interact with the teamserver using the intermediate Python API.
 
@@ -402,14 +433,14 @@ class CommandShell(Command):
 
 ---
 
-## Python API
+## <a name="pyapi"></a>Python API
 
 
 [https://github.com/HavocFramework/havoc-py](https://github.com/HavocFramework/havoc-py)
 
 ---
 
-## Modules
+## <a name="modules"></a>Modules
 
 Aside from Havoc's built-in commands, Modules can be loaded into the framework to add more functionality.
 
@@ -431,14 +462,14 @@ Official Modules:
 
 ---
 
-## FAQ
+## <a name="faq"></a>FAQ
 
 ### Why does Havoc not perform sleep obfuscation when jobs are running?
 Jobs are ran in their own threads, and sleep obfuscation requires that all threads are suspended in order to encrypt the heap, otherwise the process would crash. 
 
 ---
 
-## TODO
+## <a name="todo"></a>TODO
 
 - Write up all Demon command documentation (waiting for cmd changes to finalize)
 - Show more profile config examples for other Demon config opts
