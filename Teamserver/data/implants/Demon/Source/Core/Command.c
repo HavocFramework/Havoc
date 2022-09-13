@@ -567,7 +567,7 @@ VOID CommandProcList( PPARSER Parser )
 
 		    ListSize               += Required;
 		    ProcessInformationList =  Instance->Win32.LocalAlloc( LPTR, ListSize );
-        	    NtStatus = Instance->Syscall.NtQuerySystemInformation( SystemProcessInformation, ProcessInformationList, ListSize, &Required);
+        	    NtStatus = Instance->Syscall.NtQuerySystemInformation( SystemProcessInformation, ProcessInformationList, ListSize, &Required );
         	}
         	while ( NtStatus == STATUS_INFO_LENGTH_MISMATCH );
         }
