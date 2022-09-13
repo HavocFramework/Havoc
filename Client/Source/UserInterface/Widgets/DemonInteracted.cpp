@@ -242,9 +242,9 @@ QString DemonInteracted::TaskInfo( bool Show, QString TaskID, const QString &tex
     return TaskID;
 }
 
-QString DemonInteracted::TaskError(const QString &text) const
+QString DemonInteracted::TaskError( const QString &text ) const
 {
-    auto TaskMessage = Util::ColorText::Red("[!]") + " " + text.toHtmlEscaped();
+    auto TaskMessage = Util::ColorText::Red( "[!]" ) + " " + text.toHtmlEscaped();
     this->Console->append( TaskMessage );
     return TaskMessage;
 }

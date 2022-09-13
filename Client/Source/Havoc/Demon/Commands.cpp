@@ -83,13 +83,6 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                         .Example        = "1337",
                     },
                     {
-                        .CommandString  = "getpid",
-                        .Description    = "displays current session process id",
-                        .Behavior       = BEHAVIOR_API_ONLY,
-                        .MitreTechniques= { "T1057" },
-
-                    },
-                    {
                         .CommandString  = "blockdll",
                         .Description    = "block non microsoft signed dlls",
                         .Behavior       = BEHAVIOR_API_ONLY,

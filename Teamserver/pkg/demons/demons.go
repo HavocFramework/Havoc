@@ -657,12 +657,6 @@ func TaskPrepare(TaskID string, Command int, Info any) (DemonJob, error) {
 		)
 
 		switch SubCommand {
-		case 1: // getpid
-			job.Data = []interface{}{
-				SubCommand,
-			}
-			break
-
 		case 2:
 			var pid, _ = strconv.Atoi(Arguments)
 			job.Data = []interface{}{
@@ -782,6 +776,20 @@ func TaskPrepare(TaskID string, Command int, Info any) (DemonJob, error) {
 				SubCommand,
 				ProcID,
 				QueryProtec,
+			}
+
+			break
+
+		case 7: // proc::kill
+			var pid, err = strconv.Atoi(Arguments)
+			if err != nil {
+				logger.Debug("proc::kill failed to parse pid: " + err.Error())
+				return DemonJob{}, errors.New("proc::kill failed to parse pid: " + err.Error())
+			} else {
+				job.Data = []interface{}{
+					SubCommand,
+					pid,
+				}
 			}
 
 			break
@@ -2528,6 +2536,24 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 			}
 
 			break
+
+		case 7:
+
+			if Parser.Length() >= 4 {
+				var (
+					Success   = Parser.ParseInt32()
+					ProcessID = Parser.ParseInt32()
+				)
+
+				if Success == win32.TRUE {
+					Message["Type"] = "Good"
+					Message["Message"] = fmt.Sprintf("Successful killed process: %v", ProcessID)
+				} else {
+					Message["Type"] = "Error"
+					Message["Message"] = "Failed to kill process"
+				}
+			}
+
 		}
 
 		Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, Message)

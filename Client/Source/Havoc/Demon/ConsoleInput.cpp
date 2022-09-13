@@ -24,6 +24,13 @@ auto string_format( const std::string& format, Args ... args ) -> std::string
     return std::string( buf.get(), buf.get() + size - 1 ); // We don't want the '\0' inside
 }
 
+static bool is_number( const std::string& s )
+{
+    std::string::const_iterator it = s.begin();
+    while ( it != s.end() && std::isdigit( *it ) ) ++it;
+    return !s.empty() && it == s.end();
+}
+
 auto operator * ( string a, unsigned int b ) -> string
 {
     auto output = string( "" );
@@ -509,23 +516,6 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 if ( Send ) Execute.ProcList( TaskID, false );
 
             }
-            else if ( InputCommands[ 1 ].compare( "getpid" ) == 0 )
-            {
-                if ( InputCommands.length() >= 3 )
-                {
-                    TaskID = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to kill a process" );
-                    CommandInputList[ TaskID ] = commandline;
-
-                    if ( Send )
-                        Execute.ProcModule( TaskID, 1, InputCommands[ 2 ] );
-                }
-                else
-                {
-                    DemonConsole->Console->append( "" );
-                    DemonConsole->Console->append( Prompt );
-                    DemonConsole->TaskError( "Not enough arguments" );
-                }
-            }
             else if ( InputCommands[ 1 ].compare( "modules" ) == 0 )
             {
                 if ( InputCommands.length() >= 3 )
@@ -617,39 +607,41 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                         return false;
                     }
 
-                    CommandInputList[TaskID] = commandline;
+                    CommandInputList[ TaskID ] = commandline;
 
                     SEND( Execute.ProcModule( TaskID, 5, InputCommands[ 2 ] ) )
                 }
                 else
                 {
-                    DemonConsole->Console->append( "" );
-                    DemonConsole->Console->append( Prompt );
-                    DemonConsole->TaskError( "Not enough arguments" );
+                    CONSOLE_ERROR( "Not enough arguments" )
+                    return false;
                 }
             }
 
             else if ( InputCommands[ 1 ].compare( "kill" ) == 0 )
             {
-                if ( InputCommands.size() > 2 )
+                if ( InputCommands.size() >= 3 )
                 {
                     TaskID = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to kill a process" );
                     CommandInputList[ TaskID ] = commandline;
 
-                    SEND( Execute.ProcModule( TaskID, 8, InputCommands[ 2 ] ) )
+                    if ( ! is_number( InputCommands[ 2 ].toStdString() ) )
+                    {
+                        CONSOLE_ERROR( "Specified process id to kill is not a number." )
+                        return false;
+                    }
+
+                    SEND( Execute.ProcModule( TaskID, 7, InputCommands[ 2 ] ) )
                 }
                 else
                 {
-                    DemonConsole->Console->append( "" );
-                    DemonConsole->Console->append( Prompt );
-                    DemonConsole->TaskError( "Argument not valid" );
-
+                    CONSOLE_ERROR( "Not enough arguments" )
                     return false;
                 }
             }
             else if ( InputCommands[ 1 ].compare( "memory" ) == 0 )
             {
-                if ( InputCommands.size() > 2 )
+                if ( InputCommands.size() >= 3 )
                 {
                     TaskID = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to query for" + InputCommands[ 3 ] + " memory regions from " + InputCommands[ 2 ] );
                     CommandInputList[ TaskID ] = commandline;
@@ -659,18 +651,14 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 }
                 else
                 {
-                    DemonConsole->Console->append( "" );
-                    DemonConsole->Console->append( Prompt );
-                    DemonConsole->TaskError( "Argument not valid" );
-
+                    CONSOLE_ERROR( "Not enough arguments" )
                     return false;
                 }
             }
             else
             {
-                DemonConsole->Console->append( "" );
-                DemonConsole->Console->append( Prompt );
-                DemonConsole->TaskError("Module command not found !!");
+                CONSOLE_ERROR( "Modules command not found: " + InputCommands[ 1 ] );
+                return false;
             }
         }
         else if ( InputCommands[ 0 ].compare( "dll" ) == 0 )
@@ -729,13 +717,11 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
 
                 if ( ! QFile::exists( Path ) )
                 {
-                    DemonConsole->Console->append( "" );
-                    DemonConsole->Console->append( Prompt );
-                    DemonConsole->TaskError("Specified reflective dll file not found !!");
+                    CONSOLE_ERROR( "Specified reflective dll file not found" )
                     return false;
                 }
 
-                TaskID = DemonConsole->TaskInfo(Send, nullptr, "Tasked demon to spawn a reflective dll: " + Path);
+                TaskID = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to spawn a reflective dll: " + Path );
                 CommandInputList[ TaskID ] = commandline;
 
                 SEND( Execute.DllSpawn( TaskID, Path, Args.toLocal8Bit() ) )
@@ -762,17 +748,13 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
 
                     if ( ! QFile::exists( Shellcode ) )
                     {
-                        DemonConsole->Console->append( "" );
-                        DemonConsole->Console->append( Prompt );
-                        DemonConsole->TaskError( "Specified file not found !" );
+                        CONSOLE_ERROR( "Specified file not found" )
                         return false;
                     }
 
                     if ( ! ( TargetArch.compare( "x64" ) == 0 || TargetArch.compare( "x86" ) != 0 ) )
                     {
-                        DemonConsole->Console->append( "" );
-                        DemonConsole->Console->append( Prompt );
-                        DemonConsole->TaskError( "Incorrect process arch specified: " + TargetArch );
+                        CONSOLE_ERROR( "Incorrect process arch specified: " + TargetArch )
                         return false;
                     }
 
@@ -795,7 +777,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                     auto TargetArch          = InputCommands[ 2 ];
                     auto ShellcodeBinaryPath = InputCommands[ 3 ];
 
-                    if ( ! ( TargetArch.compare( "x64" ) == 0 || TargetArch.compare( "x86" ) != 0 ) )
+                    if ( ( TargetArch.compare( "x64" ) != 0 || TargetArch.compare( "x86" ) != 0 ) )
                     {
                         CONSOLE_ERROR( "Incorrect process arch specified: " + TargetArch )
                         return false;
