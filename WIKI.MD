@@ -368,7 +368,7 @@ Demon implements a token management vault that allows for token theft, impersona
 - `token list` - List all stolen tokens in the token vault
 - `token steal [pid]` - Steal the token from the specified PID and save it to the token vault
 - `token impersonate [id]` - Impersonate a token from the token vault
-- `token make [local|network] [DOMAIN\username] [password]` - Creates a token from the specified credentials and adds it to the vault
+- `token make [domain] [username] [password]` - Creates a token from the specified credentials and adds it to the vault
 - `token privs-get` - Attempt to acquire all privileges from the current token
 - `token privs-list` - List all privileges from the current token
 - `token revert` - Reverts back to the default process token
