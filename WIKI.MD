@@ -253,6 +253,13 @@ From the Havoc UI, nagivate to `Attack -> Payload`.
 | `Source/Loader` | COFF Loader, Beacon API                               |
 | `Source/Main`   | PE/DLL/RDLL Entry Points                              |
 
+#### Indirect Syscalls
+
+When compiled with `OBF_SYSCALL`, Demon performs indirect syscalls for many Nt* APIs. By masquerading the `RIP` to point to a location within `ntdll.dll`, traps placed by EDR solutions (such as process instrumentation callbacks or other forms of sycall tracing)may be evaded. 
+
+The Syscall logic is primarily contained within `/Teamserver/data/implants/Demon/Source/Core/Syscalls.c`
+
+Syscall stubs are dynamically crafted from ntdll.dll on disk and modified so the return address points to `NtAddBootEntry (0x180024b6)` within the ntdll.dll module.
 
 #### Commands
 
