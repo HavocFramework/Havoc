@@ -391,13 +391,6 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                                         .Usage          = "[/path/to/assembly.exe] (args)",
                                         .Example        = "/tmp/Seatbelt.exe -group=all -full",
                                 },
-                                {
-                                        .CommandString  = "inject",
-                                        .Description    = "injects an assembly loader and gets output via an named pipe",
-                                        .Behavior       = BEHAVIOR_PROCESS_INJECTION,
-                                        .Usage          = "[/path/to/assembly.exe] (args)",
-                                        .Example        = "/tmp/Seatbelt.exe -group=all -full",
-                                },
                         },
         },
         {
