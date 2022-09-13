@@ -8,9 +8,9 @@ Havoc is a modern and malleable post-exploitation command and control framework.
 
 **Kali Linux**
 
-Kali Linux has issues loading the proper font (Monaco) from the embedeed Qt resources file. This appears to be a known qt5 issue and may be due to the qt5-default package on Kali not being build with `-fontconfig`. You will experience formatting issues in the Havoc client if you are not using a monospace/fixed-width font.
+Kali has issues loading the proper font (Monaco) from the embedeed Qt resources file.
 
-As a workaround you could attempt to build Qt5 from source with `-fontconfig` manually.
+_You will experience formatting issues in the Havoc client if you are not using a monospace/fixed-width font!_
 
 ---
 
@@ -18,7 +18,7 @@ As a workaround you could attempt to build Qt5 from source with `-fontconfig` ma
 
 ### Building the Client
 
-> If you are using a debian-based distro, you can attempt to use the built-in installation script at `/Havoc/Client/Install.sh`. 
+> If you are using a debian-based distro, you can use the bundled installation script at `/Havoc/Client/Install.sh`. 
 
 
 Kali/Debian/Ubuntu:
@@ -46,7 +46,7 @@ Running `Havoc.sh` will automatically build the Client and start it.
 
 ### Building the Teamserver
 
-> If you are using a debian-based distro, you can attempt to use the bundled installation script at `/Havoc/Teamserver/Install.sh`
+> If you are using a debian-based distro, you can use the bundled installation script at `/Havoc/Teamserver/Install.sh`
 
 
 Install additional Go dependencies:
@@ -62,13 +62,13 @@ Build and Run:
 cd Havoc/Teamserver
 make
 ./bin/teamserver -h
-```
+``` 
 
 ---
 
 ## Teamserver
 
-The Havoc Teamserver is written in Golang. It handles the listeners, teamserver authentication and payload generation.
+The Havoc Teamserver is written in Golang. It handles the listeners, teamserver authentication and payload generation. It also supports ExternalC2 functionality through the configuration of Service endpoints.
 
 ### Starting the Teamserver
 
@@ -80,7 +80,6 @@ Running `./teamserver` will automatically build the Teamserver, set it as execut
 
 ### Arguments
 
-View help: `./bin/teamserver -h`
 Usage: `teamserver [command] [flags]`
 
 Here is a full list of arguments that can be passed to the teamserver:
@@ -91,8 +90,15 @@ Here is a full list of arguments that can be passed to the teamserver:
 |  | `-v` / `--verbose` | Enable verbose output | |
 |  | `-d` / `--debug` | Enable debug ouput | |
 |  | `-h` / `--help` | Output server help | |
+|  | `--debug-dev` | Enables DEBUG output (see below for caveats) | |
 
-### Teamserver Profiles
+#### Enabling DEBUG Output
+
+> DEBUG output can be enabled by passing the `--debug-dev` flag to the Teamserver.
+
+When this flag is set, the Teamserver's `builder` class adds the `-D DEBUG` flag to the `builder.compilerOptions.CFlags` array and removes the `-nostdlib` flag to enable output to be printed to the console. Demon agent payloads genereated from the Havoc client will print visible DEBUG text in the console window after execution. The stdlib will be linked into the payload for this to occur, increasing the payload size.
+
+### Profiles
 
 Havoc's Teamserver uses profiles in the `yaotl` format, which is a custom configuration syntax built on top of [HCL](https://github.com/hashicorp/hcl).
 
@@ -120,12 +126,12 @@ Multiple users can be added to the Teamserver with the Operators directive:
 
 ```hcl
 Operators {
-	user "Havoc" {
-		Password = "Password1234"
+	user "5pider" {
+		Password = "password1234"
 	}
 
 	user "Neo" {
-		Password = "WhiteRabbit"
+		Password = "password1234"
 	}
 }
 ```
@@ -159,7 +165,6 @@ Demon {
     - `0` - [WaitForSingleObjectEx](https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-waitforsingleobjectex) (no obfuscation)
     - `1` - [FOLIAGE](https://github.com/SecIdiot/FOLIAGE)
     - `2` - [Ekko](https://github.com/Cracked5pider/Ekko)
-    - `3` - [Ace](https://github.com/kyleavery/AceLdr)
 
 - `Injection\Spawn64` - The full path to the process to spawn into for fork & run operations (64bit).
 - `Injection\Spawn32` - The full path to the process to spawn into for fork & run operations (32bit).
@@ -218,9 +223,9 @@ The `Havoc.sh` script will automatically build the Client and execute it afterwa
 
 ### Connecting to the Teamserver
 
-When the client opens, you will be presented with a profile window similar to that in Cobalt Strike. 
+When the client opens, you will be presented with a profile window similar to that in other C2 frameworks like Cobalt Strike. 
 
-
+Enter the profile name, teamserver bind address (`Host`) and `Port`, along with your defined username/password in the teamserver profile.
 
 ---
 
@@ -251,21 +256,69 @@ From the Havoc UI, nagivate to `Attack -> Payload`.
 
 #### Commands
 
-| Command | Type | Description |
-| ------- | ------ | ----------- |
-| `help` | Command | Shows help message of specified command |
+Demon has a variety of commands built-in. It also supports the dynamic modification of configuration at runtime, allowing operators to customize defaults pre-set in the profiles throughout an engagement, without modifying the profile and re-generating a payload.
 
+Full documentation on commands can be accessed from the Havoc client by typing `help` in the interact window. For more information on a particular command, simply tack it on the end of help like so: `help [command]`
 
-#### Enable DEBUG Output
-To build a demon payload with DEBUG output enabled, edit the following file:
+#### `checkin`
 
-`/Teamserver/pkg/common/builder/builder.go`
+> Results from this command are not yet fully implemented.
 
-Under the `builder.compilerOptions.CFlags` array, add the `-D DEBUG` flag. 
+Requests a checkin request from the Demon. This will output some basic system/configuration information to the Havoc client such as:
 
-> You must remove `-nostdlib` for the output to be printed to the console.
+- Demon Metadata
+    - Magic values
+    - First/Last call in timestamps
+    - AES Key and IV
+    - Sleep Delay
+- Host Information
+    - Hostname
+    - Username
+    - Domain Name
+    - Internal IP(s)
+- Process Information
+    - Name
+    - Architecture
+    - PID
+    - Path
+    - Elevated
+- Operating System
+    - Version
+    - Build
+    - Architecture
 
-Rebuild the Teamserver using `make` and generate a new payload.
+#### `sleep`
+
+Demon supports sleeping at a specified delay (seconds) with a randomized jitter amount applied in the profile configuration settings.
+
+`sleep [delay]`
+
+When the Demon sleeps, it first checks if Sleep Masking is enabled in the profile configuration. If so, as long as there are no active job threads running, it will begin to apply the specified sleep obfuscation method and wait until the provided delay to "wake up" and check-in to the teamserver again.
+
+During sleep, x64 demons may implement [return address spoofing](https://www.unknowncheats.me/forum/anti-cheat-bypass/268039-x64-return-address-spoofing-source-explanation.html) to hide the real return address.
+
+#### `job`
+
+Demon implements a multi-threaded job management system that allows the operator to manage long-running tasks. 
+
+> OPSEC NOTE: Long-running jobs will PREVENT sleep obfuscation from occuring at the specified sleep interval due to the other threads running. Sleep obfuscation will only occur when there are no job threads in a running state.
+
+- `job list` - Lists all running jobs.
+- `job suspend 1` - Suspends a job with the ID of 1
+- `job resume 1` - Resumes a job with the ID of 1
+- `job kill 1` - Kills a job with the ID of 1
+
+#### `proc`
+
+Process management and enumeration system.
+
+`proc [command]`
+
+- `proc list` - Display a list of running processes on the target.
+- `proc kill [pid]` - Kills a process with the specified PID
+- `proc blockdll [on|off]` - Blocks the loading of DLLs that aren't signed by Microsoft using Process Mitigation Policies
+
+(INCOMPLETE)
 
 ---
 
@@ -313,11 +366,31 @@ havoc_service = HavocService(
 havoc_service.register_agent(agent)
 ```
 
-Commands can be defined using the Python API.
+Custom commands can be defined using the Python API and extending the Command class:
 
 ```python
+class CommandShell(Command):
+    CommandId = COMMAND_SHELL
+    Name = "shell"
+    Description = "executes commands using cmd.exe"
+    Help = ""
+    NeedAdmin = False
+    Params = [
+        CommandParam(
+            name="commands",
+            is_file_path=False,
+            is_optional=False
+        )
+    ]
+    Mitr = []
 
+    def job_generate( self, arguments: dict ) -> bytes:        
+        Task = Packer()
 
+        Task.add_int( self.CommandId )
+        Task.add_data( "c:\windows\system32\cmd.exe /c " + arguments[ 'commands' ] )
+
+        return Task.buffer
 ```
 
 ---
@@ -353,11 +426,14 @@ Official Modules:
 
 ## FAQ
 
+### Why does Havoc not perform sleep obfuscation when jobs are running?
+Jobs are ran in their own threads, and sleep obfuscation requires that all threads are suspended in order to encrypt the heap, otherwise the process would crash. 
+
 ---
 
 ## TODO
 
-- Write up all Demon command documentation
+- Write up all Demon command documentation (waiting for cmd changes to finalize)
 - Show more profile config examples for other Demon config opts
 - Finish Listener opt description table
 - Finish Modules documentation (how to compile and load a module)
