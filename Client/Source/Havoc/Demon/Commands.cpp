@@ -331,8 +331,8 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                         .Description    = "make token from user credentials",
                         .Behavior       = BEHAVIOR_API_ONLY,
                         .MitreTechniques = {"T1134.003"},
-                        .Usage          = "[local/network] [DOMAIN\\user] [password] ",
-                        .Example        = "network DC\\Administrator Passw0rd1234",
+                        .Usage          = "[Domain] [Username] [Password] ",
+                        .Example        = "domain.local Administrator Passw0rd@1234",
                     },
                     {
                         .CommandString  = "privs-get",
