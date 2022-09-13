@@ -551,7 +551,15 @@ VOID CommandProcList( PPARSER Parser )
             ListSize               += Required;
             ProcessInformationList =  Instance->Win32.LocalAlloc( LPTR, ListSize );
 
-            NtStatus = Instance->Syscall.NtQuerySystemInformation( SystemProcessInformation, ProcessInformationList, ListSize, &ListSize );
+	    if ( ProcessInformationList != NULL )
+	    {
+        	NtStatus = Instance->Syscall.NtQuerySystemInformation( SystemProcessInformation, ProcessInformationList, ListSize, &Required);
+            }
+            else
+            {
+        	PackageTransmitError( CALLBACK_ERROR_WIN32, Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
+            	goto LEAVE;
+       	    }
             if ( ! NT_SUCCESS( NtStatus ) )
             {
                 PUTS( "NtQuerySystemInformation: Failed" )
@@ -567,7 +575,15 @@ VOID CommandProcList( PPARSER Parser )
 
 		    ListSize               += Required;
 		    ProcessInformationList =  Instance->Win32.LocalAlloc( LPTR, ListSize );
-        	    NtStatus = Instance->Syscall.NtQuerySystemInformation( SystemProcessInformation, ProcessInformationList, ListSize, &Required );
+		    if ( ProcessInformationList != NULL )
+		    {
+        	    	NtStatus = Instance->Syscall.NtQuerySystemInformation( SystemProcessInformation, ProcessInformationList, ListSize, &Required);
+        	    }
+        	    else
+        	    {
+        	        PackageTransmitError( CALLBACK_ERROR_WIN32, Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
+            		goto LEAVE;
+        	    }
         	}
         	while ( NtStatus == STATUS_INFO_LENGTH_MISMATCH );
         }
