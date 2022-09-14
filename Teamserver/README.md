@@ -23,7 +23,7 @@ Source code of Havoc teamserver. Written in Golang.
 - **Jenkins Docker**
 	- We can also build the Teamserver binary using a pre-configured Jenkins Docker image.
 		1. From the parent folder(`Havoc`), run the following command to build the container:
-			* `sudo docker build -t jenkins-havoc-teamserver -f JT-Dockerfile .``
+			* `sudo docker build -t jenkins-havoc-teamserver -f JT-Dockerfile .`
 		2. (Optionally) Create a persistent data volume for the container:
 			* `sudo docker volume create havoc-cicd-c2-data`
 		2. Next, we want to run the container:
@@ -42,7 +42,7 @@ Source code of Havoc teamserver. Written in Golang.
 - **Docker**
 	- We can run the teamserver completely from within a container!
 	1. Build the container: 
-		* `sudo docker build -f Client-Dockerfile .`
+		* `sudo docker build -t havoc-teamserver -f Client-Dockerfile .`
 	2. Launch the container (be sure to change the port mapping to match your environment):
-		* `sudo docker run -p40056:40056 -p 443:443 -it -d -v havoc-c2-data:/data jenkins-havoc-client`
+		* `sudo docker run -p40056:40056 -p 443:443 -it -d -v havoc-c2-data:/data havoc-teamserver`
 	3. Access the teamserver at `localhost:40056` using your Teamserver client.
