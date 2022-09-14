@@ -4,10 +4,10 @@
 # Commands for usage:
 #
 #	Build image file:
-#		'docker build -t havoc-client-1 .'
+#		'docker build -t havoc-client .'
 #
 #	Run Built Image file(`-d` for persistence):
-#		'docker run -t -d -v havoc-c2-client-data:/data havoc-client-1'
+#		'docker run -t -d -v havoc-c2-client-data:/data havoc-client'
 #
 #	Copy built havoc-client from container:
 #		'docker cp <containerID>:/go/Build/bin/havoc /host/path/target'

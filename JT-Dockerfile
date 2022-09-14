@@ -3,10 +3,10 @@
 #
 # Usage:
 #    Build the image:
-#	sudo docker build -t jenkins-havoc-client .
+#	sudo docker build -t jenkins-havoc-teamserver -f JT-Dockerfile .
 #
 #    Run the image:
-#	docker run -p8080:8080 -it -d -v havoc-c2-data:/data jenkins-havoc-client:latest
+#	docker run -p8080:8080 -it -d -v havoc-c2-data:/data jenkins-havoc-teamserver
 #
 ###################################################################
 FROM jenkins/jenkins:lts
