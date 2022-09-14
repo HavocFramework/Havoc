@@ -144,7 +144,7 @@ func (b *Builder) Build() bool {
     if b.debugMode {
         b.compilerOptions.Defines = append(b.compilerOptions.Defines, "DEBUG")
     } else {
-        b.compilerOptions.CFlags[0] += " -nostdlib"
+        b.compilerOptions.CFlags[0] += " -nostdlib -mwindows"
     }
 
     // add compiler

