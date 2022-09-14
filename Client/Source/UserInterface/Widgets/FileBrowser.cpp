@@ -232,115 +232,6 @@ void FileBrowser::AddData( QJsonDocument JsonData )
 void FileBrowser::TreeAddData( FileData Data )
 {
     spdlog::info( "Append tree" );
-    // TODO: make this one work
-/*
-    auto SptPath = Data.Path.split( "\\" );
-
-    for ( int i = 1; i < SptPath.size(); i++ )
-    {
-        auto DirItem = new FileBrowserTreeItem;
-        auto it      = QTreeWidgetItemIterator( FileBrowserTree );
-
-        DirItem->setText( 0, SptPath[ i ] );
-        DirItem->Data = { .Name = "" };
-
-        while ( *it )
-        {
-            auto spt = ( ( FileBrowserTreeItem* )( *it ) )->Data.Path.split( "\\" );
-            spdlog::info( "{} : {}", spt[ spt.size() - 1 ].toStdString(), SptPath[ i - 1 ].toStdString() );
-            if ( spt[ spt.size() - 1 ].compare( SptPath[ i - 1 ] ) == 0 )
-            {
-                ( *it )->addChild( DirItem );
-                return;
-            }
-            ++it;
-        }
-
-        FileBrowserTree->addTopLevelItem( DirItem );
-    }
-
-Leave:
-
-    if ( Data.Type.compare( "dir" ) == 0 )
-    {
-        auto PathSplit = Data.Path.split( "\\" );
-        auto DirItem   = new FileBrowserTreeItem;
-        auto it        = QTreeWidgetItemIterator( FileBrowserTree );
-
-        DirItem->setText( 0, Data.Name );
-        DirItem->Data = Data;
-
-        while ( *it )
-        {
-            auto item = ( ( FileBrowserTreeItem* ) ( *it ) );
-            auto root = false;
-            auto pant = item->parent();
-            // check if they both have the same root path
-
-            if ( pant != nullptr )
-            {
-                spdlog::info( "parent" );
-                spdlog::info( "pant: {}", ( ( FileBrowserTreeItem* ) pant )->Data.Name.toStdString() );
-            }
-
-            // *if ( root )
-            // {
-            //    ( *it )->addChild( DirItem );
-            //     return;
-            // }
-
-            ++it;
-        }
-
-        FileBrowserTree->addTopLevelItem( DirItem );
-
-        /*
-        auto PathSplit = Data.Path.split( "\\" );
-        // Add HardDrives
-        for ( auto& fileData : DirData )
-        {
-            auto PathSplit2 = fileData.Path.split( "\\" );
-            auto ItemFound  = false;
-            auto Iterator   = QTreeWidgetItemIterator( FileBrowserTree );
-
-            while ( *Iterator )
-            {
-                if ( ( *Iterator )->text( 0 ).compare( PathSplit[ 0 ] ) == 0 )
-                {
-                    ItemFound = true;
-                    break;
-                }
-                ++Iterator;
-            }
-
-            if ( ! ItemFound )
-            {
-                auto HardDriveItem = new FileBrowserTreeItem( FileBrowserTree );
-
-                HardDriveItem->setIcon( 0, QIcon( ":/icons/FileBrowserHardDisk" ) );
-                HardDriveItem->setText( 0, PathSplit[ 0 ] );
-                HardDriveItem->Data = Data;
-
-                FileBrowserTree->addTopLevelItem( HardDriveItem );
-            }
-            else continue;
-        }
-
-        for ( int i = 0; i < PathSplit.size(); i++ )
-        {
-            spdlog::info( " - {}", PathSplit[ i ].toStdString() );
-
-            auto Iterator = QTreeWidgetItemIterator( FileBrowserTree );
-            while ( *Iterator )
-            {
-                auto item = ( ( FileBrowserTreeItem* )( *Iterator ) );
-
-
-
-                ++Iterator;
-            }
-        } // end
-    }*/
 }
 
 void FileBrowser::TableAddData( FileData Data )
@@ -496,6 +387,13 @@ void FileBrowser::TreeUpdate()
     {
         auto Split = Data.Path.split( "\\" );
 
+        // check if any Dir contains an empty space. if so then remove it.
+        for ( int i = 0; i < Split.size(); i++ )
+        {
+            if ( Split[ i ].compare( "" ) == 0 )
+                Split.removeAt( i );
+        }
+
         for ( int i = 0; i < Split.size(); i++ )
         {
             if ( i == 0 )
@@ -518,12 +416,21 @@ void FileBrowser::TreeUpdate()
         {
             if ( subData.Type.compare( "dir" ) == 0 )
             {
-                auto Path = subData.Path + "\\";
+                auto Path = subData.Path;
                 auto Item = new FileBrowserTreeItem;
+
+                auto SubPath = subData.Path.replace( "\\\\", "\\" );
+                if ( ! SubPath.endsWith( '\\' ) )
+                    SubPath = subData.Path + "\\";
+
+                auto SubName = subData.Name.replace( "\\\\", "\\" );;
+                if ( ! SubName.endsWith( '\\' ) )
+                    SubName = subData.Name + "\\";
 
                 Item->setText( 0, subData.Name );
                 Item->setIcon( 0, QIcon( ":/icons/FileBrowserFolder" ) );
-                Item->ParentPath = subData.Path + "\\" + subData.Name + "\\";
+
+                Item->ParentPath = SubPath + SubName;
 
                 TreeAddChildToParent( Path, Item );
             }

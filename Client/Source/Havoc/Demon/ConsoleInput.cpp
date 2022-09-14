@@ -961,8 +961,8 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 return false;
             }
 
-            TaskID = DemonConsole->TaskInfo(Send, nullptr, "Tasked demon to execute an object file: " + Path);
-            CommandInputList[TaskID] = commandline;
+            TaskID                     = CONSOLE_INFO( "Tasked demon to execute an object file: " + Path );
+            CommandInputList[ TaskID ] = commandline;
 
             SEND( Execute.InlineExecute( TaskID, "go", Path, Args, "default" ); )
         }
@@ -970,29 +970,27 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
         {
             if ( InputCommands.size() == 1 )
             {
-                DemonConsole->Console->append( "" );
-                DemonConsole->Console->append( Prompt );
-                DemonConsole->TaskError("Not enough arguments");
+                CONSOLE_ERROR( "Not enough arguments" );
                 return false;
             }
             else if ( InputCommands[ 1 ].compare( "inline-execute" ) == 0 )
             {
-                QString File = InputCommands[2];
-                QString Args;
+                auto File = InputCommands[ 2 ];
+                auto Args = QString();
 
-                if (InputCommands.size() > 3)
+                // dotnet inline-execute assembly.exe (args)
+                if ( InputCommands.size() > 3 )
                 {
-                    InputCommands[2] = "";
-                    InputCommands[0] = "";
-                    InputCommands[1] = "";
-                    Args = InputCommands.join(" ");
+                    InputCommands[ 0 ] = "";
+                    InputCommands[ 1 ] = "";
+                    InputCommands[ 2 ] = "";
+
+                    Args = InputCommands.join( " " );
                 }
 
                 if ( ! QFile::exists( File ) )
                 {
-                    DemonConsole->Console->append( "" );
-                    DemonConsole->Console->append( Prompt );
-                    DemonConsole->TaskError("Couldn't find assembly file: " + File);
+                    CONSOLE_ERROR( "Couldn't find assembly file: " + File );
                     return false;
                 }
 
