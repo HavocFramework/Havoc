@@ -37,11 +37,27 @@ Havoc is a modern and malleable post-exploitation command and control framework.
 
 > See the Issues tab for all open issues. 
 
-**Kali Linux**
+**Kali Linux Font/Formatting Issues**
 
 Kali has issues loading the proper font (Monaco) from the embedeed Qt resources file.
 
 _You will experience formatting issues in the Havoc client if you are not using a monospace/fixed-width font!_
+
+**Build Error: `fatal error: Python.h: No such file or directory`**
+
+If you get an error that `Python.h` isn't found when building, you need to make sure Python 3.10 is installed and you have the Python 3.10 development files. If you are using Ubuntu LTS you may need to leverage a PPA such as `deadsnakes` to get a newer version of Python.
+
+```
+sudo apt install build-essential
+sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt update
+sudo apt install python3.10 python3.10-dev
+```
+
+**Build Error: `incomplete type ‘QTime’ used in nested name specifier`**
+
+You probably need a newer version of Qt. If you are using Ubuntu try adding a backports ppa and installing the latest qt6 dev packages.
+
 
 ---
 
