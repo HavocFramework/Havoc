@@ -20,6 +20,8 @@ Source code of Havoc teamserver. Written in Golang.
 			* `sudo docker volume create havoc-c2-data`
 		3. Run the container:
 			* `sudo docker run -it -d -v havoc-c2-data:/data havoc-teamserver`
+		4. If you would like to extract the compiled binary to your local system, the following command may be used:
+			* `sudo docker cp <container_id>:/path/to/binary .` to copy your designated file to your local directory.
 - **Jenkins Docker**
 	- We can also build the Teamserver binary using a pre-configured Jenkins Docker image.
 		1. From the parent folder(`Havoc`), run the following command to build the container:
