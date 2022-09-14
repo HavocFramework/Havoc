@@ -12,7 +12,17 @@
 #	Copy built havoc-client from container:
 #		'docker cp <containerID>:/go/Build/bin/havoc /host/path/target'
 #
-#   Install dependencies for running client locally 
+#	Let your (Linux)host accept the connection:
+#		`xhost +"local:docker@"`
+#	Run Havoc Teamserver client from a container:
+#		`sudo docker run -t -d --net=host -e DISPLAY=$DISPLAY  havoc-client`
+#	Enter the Container and launch the teamserver client:
+#		`sudo docker exec -it <container_name> bash`
+#	Once inside the container, issue the following command to launch the teamserver client:
+#		`cd /go/Build/Bin/ && ./Havoc`
+#	You should now see the Havoc teamserver client running in a window!
+#
+#   	Install dependencies for running client locally 
 # 		'sudo apt-get update && sudo apt-get install -y git build-essential apt-utils cmake libfontconfig1 libglu1-mesa-dev libgtest-dev libspdlog-dev libboost-all-dev mesa-common-dev qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools libqt5websockets5 libqt5websockets5-dev qtdeclarative5-dev'
 #
 # Extras
@@ -78,6 +88,10 @@ RUN apt install -y python3.10-dev libpython3.10 libpython3.10-dev python3.10 bui
 COPY . Build/
 RUN cd Build/ && make
 #
+# Add VNC Support
+RUN apt-get update && apt-get install -y x11vnc xvfb
+RUN echo "exec /Build/Bin/Havoc" > ~/.xinitrc && chmod +x ~/.xinitrc
+CMD ["x11vnc", "-create", "-forever"]
 # Cleanup
 RUN rm -rf /var/lib/apt/lists/*
 #
