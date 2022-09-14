@@ -7,7 +7,8 @@ Havoc Gui Client source code.
 	1. `Python-3.10`
 	2. `python3-dev`
 	3. `libspdlog-dev`
-	4. `qt5`-packages
+	4. `qt5`& related packages
+		* `libfontconfig1` `libglu1-mesa-dev` `libgtest-dev` `libspdlog-dev` `libboost-all-dev` `mesa-common-dev` `qtbase5-dev` `qtchooser` `qt5-qmake` `qtbase5-dev-tools` `libqt5websockets5` `libqt5websockets5-dev` `qtdeclarative5-dev`
 	5. `libboost-all-dev`
 - **Local Build**
 	- To build the Teamserver Client locally, perform the following steps:
