@@ -379,9 +379,7 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                                 {
                                         .CommandString  = "list-versions",
                                         .Description    = "lists installed/available dotnet versions",
-                                        .Behavior       = BEHAVIOR_FORK_AND_RUN,
-                                        .Usage          = "[/path/to/assembly.exe] (args)",
-                                        .Example        = "/tmp/Seatbelt.exe -group=all -full",
+                                        .Behavior       = BEHAVIOR_API_ONLY,
                                 },
                                 {
                                         .CommandString  = "inline-execute",
