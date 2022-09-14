@@ -5,8 +5,8 @@ Source code of Havoc teamserver. Written in Golang.
 
 ### Build the Teamserver
 - **Pre-requisites**
-	1. Go1.19
-	2. f
+	1. Go1.18
+	2. <fixme>
 - **Native**
 	- To build the Teamserver client locally, run the following command in this folder(`~/Havoc/Teamserver/`):
 		1. `make`
