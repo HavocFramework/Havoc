@@ -3,12 +3,12 @@ package events
 import (
     "time"
 
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/packager"
+    "Havoc/pkg/packager"
 )
 
 var ChatLog chatLog
 
-func (chatLog) NewUserConnected( User string ) packager.Package {
+func (chatLog) NewUserConnected(User string) packager.Package {
     var Package packager.Package
 
     Package.Head.Event = packager.Type.Chat.Type

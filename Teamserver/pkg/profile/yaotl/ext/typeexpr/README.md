@@ -35,7 +35,7 @@ to allow only calls and keywords the JSON syntax is able to parse the given
 string directly as an expression, rather than as a template as would be
 the case for normal expression evaluation.
 
-For more information, see [the godoc reference](http://godoc.org/github.com/Cracked5pider/Havoc/teamserver/pkg/profile/yaotl/ext/typeexpr).
+For more information, see [the godoc reference](http://godoc.org/Havoc/pkg/profile/yaotl/ext/typeexpr).
 
 ## Type Expression Syntax
 

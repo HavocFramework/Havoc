@@ -1,16 +1,16 @@
 package service
 
 import (
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/demons"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/events"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/profile"
+    "Havoc/pkg/demons"
+    "Havoc/pkg/events"
+    "Havoc/pkg/profile"
     "github.com/gin-gonic/gin"
     "github.com/gorilla/websocket"
 )
 
 type ClientService struct {
-    Conn        *websocket.Conn
-    Responses   map[string] chan []byte
+    Conn      *websocket.Conn
+    Responses map[string]chan []byte
 }
 
 type TeamAgentsInterface interface {
@@ -24,15 +24,15 @@ type ConfigService struct {
 }
 
 type Service struct {
-    engine      *gin.Engine
-    clients     []*ClientService
+    engine  *gin.Engine
+    clients []*ClientService
 
-    Config      profile.ServiceConfig
+    Config profile.ServiceConfig
 
-    Events      events.EventInterface
-    TeamAgents  TeamAgentsInterface
-    Agents      []*AgentService
-    Data        struct{
+    Events     events.EventInterface
+    TeamAgents TeamAgentsInterface
+    Agents     []*AgentService
+    Data       struct {
         ServerAgents *demons.Agents
     }
 }

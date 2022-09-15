@@ -15,7 +15,7 @@ fuzz-exec-%: fuzz%-fuzz.zip
 	go-fuzz -bin=./fuzz$*-fuzz.zip -workdir=$(FUZZ_WORK_DIR)
 
 fuzz%-fuzz.zip: %/fuzz.go
-	go-fuzz-build github.com/Cracked5pider/Havoc/teamserver/pkg/profile/yaotl/hclsyntax/fuzz/$*
+	go-fuzz-build Havoc/pkg/profile/yaotl/hclsyntax/fuzz/$*
 
 tools:
 	go get -u github.com/dvyukov/go-fuzz/go-fuzz

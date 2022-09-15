@@ -53,7 +53,7 @@ which case ``nil`` is written to indicate the absense of the argument.
 
 The sections below discuss some additional decoding use-cases. For full details
 on the `gohcl` package, see
-`the godoc reference <https://godoc.org/github.com/Cracked5pider/Havoc/teamserver/pkg/profile/yaotl/gohcl>`_.
+`the godoc reference <https://godoc.org/Havoc/pkg/profile/yaotl/gohcl>`_.
 
 .. _go-decoding-gohcl-evalcontext:
 

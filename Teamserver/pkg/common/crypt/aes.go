@@ -4,7 +4,7 @@ import (
     "crypto/aes"
     "crypto/cipher"
 
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/logger"
+    "Havoc/pkg/logger"
 )
 
 func XCryptBytesAES256(XBytes []byte, AESKey []byte, AESIv []byte) []byte {

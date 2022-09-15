@@ -1,11 +1,12 @@
 package handlers
+
 /*
 import (
     "fmt"
     "log"
     "strconv"
 
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/logger"
+    "Havoc/pkg/logger"
     "github.com/miekg/dns"
 )
 

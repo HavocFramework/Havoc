@@ -1,7 +1,7 @@
 package hclsyntax
 
 import (
-	"github.com/Cracked5pider/Havoc/teamserver/pkg/profile/yaotl"
+    "Havoc/pkg/profile/yaotl"
 )
 
 // -----------------------------------------------------------------------------
@@ -13,21 +13,21 @@ import (
 // BlocksAtPos implements the method of the same name for an *hcl.File that
 // is backed by a *Body.
 func (b *Body) BlocksAtPos(pos hcl.Pos) []*hcl.Block {
-	list, _ := b.blocksAtPos(pos, true)
-	return list
+    list, _ := b.blocksAtPos(pos, true)
+    return list
 }
 
 // InnermostBlockAtPos implements the method of the same name for an *hcl.File
 // that is backed by a *Body.
 func (b *Body) InnermostBlockAtPos(pos hcl.Pos) *hcl.Block {
-	_, innermost := b.blocksAtPos(pos, false)
-	return innermost.AsHCLBlock()
+    _, innermost := b.blocksAtPos(pos, false)
+    return innermost.AsHCLBlock()
 }
 
 // OutermostBlockAtPos implements the method of the same name for an *hcl.File
 // that is backed by a *Body.
 func (b *Body) OutermostBlockAtPos(pos hcl.Pos) *hcl.Block {
-	return b.outermostBlockAtPos(pos).AsHCLBlock()
+    return b.outermostBlockAtPos(pos).AsHCLBlock()
 }
 
 // blocksAtPos is the internal engine of both BlocksAtPos and
@@ -38,81 +38,81 @@ func (b *Body) OutermostBlockAtPos(pos hcl.Pos) *hcl.Block {
 // always set, and if the returned list is non-nil it will always match the
 // final element from that list.
 func (b *Body) blocksAtPos(pos hcl.Pos, makeList bool) (list []*hcl.Block, innermost *Block) {
-	current := b
+    current := b
 
 Blocks:
-	for current != nil {
-		for _, block := range current.Blocks {
-			wholeRange := hcl.RangeBetween(block.TypeRange, block.CloseBraceRange)
-			if wholeRange.ContainsPos(pos) {
-				innermost = block
-				if makeList {
-					list = append(list, innermost.AsHCLBlock())
-				}
-				current = block.Body
-				continue Blocks
-			}
-		}
+    for current != nil {
+        for _, block := range current.Blocks {
+            wholeRange := hcl.RangeBetween(block.TypeRange, block.CloseBraceRange)
+            if wholeRange.ContainsPos(pos) {
+                innermost = block
+                if makeList {
+                    list = append(list, innermost.AsHCLBlock())
+                }
+                current = block.Body
+                continue Blocks
+            }
+        }
 
-		// If we fall out here then none of the current body's nested blocks
-		// contain the position we are looking for, and so we're done.
-		break
-	}
+        // If we fall out here then none of the current body's nested blocks
+        // contain the position we are looking for, and so we're done.
+        break
+    }
 
-	return
+    return
 }
 
 // outermostBlockAtPos is the internal version of OutermostBlockAtPos that
 // returns a hclsyntax.Block rather than an hcl.Block, allowing for further
 // analysis if necessary.
 func (b *Body) outermostBlockAtPos(pos hcl.Pos) *Block {
-	// This is similar to blocksAtPos, but simpler because we know it only
-	// ever needs to search the first level of nested blocks.
+    // This is similar to blocksAtPos, but simpler because we know it only
+    // ever needs to search the first level of nested blocks.
 
-	for _, block := range b.Blocks {
-		wholeRange := hcl.RangeBetween(block.TypeRange, block.CloseBraceRange)
-		if wholeRange.ContainsPos(pos) {
-			return block
-		}
-	}
+    for _, block := range b.Blocks {
+        wholeRange := hcl.RangeBetween(block.TypeRange, block.CloseBraceRange)
+        if wholeRange.ContainsPos(pos) {
+            return block
+        }
+    }
 
-	return nil
+    return nil
 }
 
 // AttributeAtPos implements the method of the same name for an *hcl.File
 // that is backed by a *Body.
 func (b *Body) AttributeAtPos(pos hcl.Pos) *hcl.Attribute {
-	return b.attributeAtPos(pos).AsHCLAttribute()
+    return b.attributeAtPos(pos).AsHCLAttribute()
 }
 
 // attributeAtPos is the internal version of AttributeAtPos that returns a
 // hclsyntax.Block rather than an hcl.Block, allowing for further analysis if
 // necessary.
 func (b *Body) attributeAtPos(pos hcl.Pos) *Attribute {
-	searchBody := b
-	_, block := b.blocksAtPos(pos, false)
-	if block != nil {
-		searchBody = block.Body
-	}
+    searchBody := b
+    _, block := b.blocksAtPos(pos, false)
+    if block != nil {
+        searchBody = block.Body
+    }
 
-	for _, attr := range searchBody.Attributes {
-		if attr.SrcRange.ContainsPos(pos) {
-			return attr
-		}
-	}
+    for _, attr := range searchBody.Attributes {
+        if attr.SrcRange.ContainsPos(pos) {
+            return attr
+        }
+    }
 
-	return nil
+    return nil
 }
 
 // OutermostExprAtPos implements the method of the same name for an *hcl.File
 // that is backed by a *Body.
 func (b *Body) OutermostExprAtPos(pos hcl.Pos) hcl.Expression {
-	attr := b.attributeAtPos(pos)
-	if attr == nil {
-		return nil
-	}
-	if !attr.Expr.Range().ContainsPos(pos) {
-		return nil
-	}
-	return attr.Expr
+    attr := b.attributeAtPos(pos)
+    if attr == nil {
+        return nil
+    }
+    if !attr.Expr.Range().ContainsPos(pos) {
+        return nil
+    }
+    return attr.Expr
 }

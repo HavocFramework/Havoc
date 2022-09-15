@@ -7,8 +7,8 @@
 package customdecode
 
 import (
-	"github.com/Cracked5pider/Havoc/teamserver/pkg/profile/yaotl"
-	"github.com/zclconf/go-cty/cty"
+    "Havoc/pkg/profile/yaotl"
+    "github.com/zclconf/go-cty/cty"
 )
 
 type customDecoderImpl int
@@ -46,11 +46,11 @@ type CustomExpressionDecoderFunc func(expr hcl.Expression, ctx *hcl.EvalContext)
 // capsule type or it does not implement a custom expression decoder, this
 // function returns nil.
 func CustomExpressionDecoderForType(ty cty.Type) CustomExpressionDecoderFunc {
-	if !ty.IsCapsuleType() {
-		return nil
-	}
-	if fn, ok := ty.CapsuleExtensionData(CustomExpressionDecoder).(CustomExpressionDecoderFunc); ok {
-		return fn
-	}
-	return nil
+    if !ty.IsCapsuleType() {
+        return nil
+    }
+    if fn, ok := ty.CapsuleExtensionData(CustomExpressionDecoder).(CustomExpressionDecoderFunc); ok {
+        return fn
+    }
+    return nil
 }

@@ -5,41 +5,41 @@ import (
     "encoding/json"
     "fmt"
 
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/demons"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/logger"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/utils"
+    "Havoc/pkg/demons"
+    "Havoc/pkg/logger"
+    "Havoc/pkg/utils"
 )
 
 type CommandParam struct {
-    Name        string  `json:"Name"`
-    IsFilePath  bool    `json:"IsFilePath"`
-    IsOptional  bool    `json:"IsOptional"`
+    Name       string `json:"Name"`
+    IsFilePath bool   `json:"IsFilePath"`
+    IsOptional bool   `json:"IsOptional"`
 }
 
 type Command struct {
-    Name        string          `json:"Name"`
-    Description string          `json:"Description"`
-    Help        string          `json:"Help"`
-    NeedAdmin   bool            `json:"NeedAdmin"`
-    Mitr        []string        `json:"Mitr"`
-    Params      []CommandParam  `json:"Params"`
+    Name        string         `json:"Name"`
+    Description string         `json:"Description"`
+    Help        string         `json:"Help"`
+    NeedAdmin   bool           `json:"NeedAdmin"`
+    Mitr        []string       `json:"Mitr"`
+    Params      []CommandParam `json:"Params"`
 }
 
 type AgentService struct {
-    Name            string                  `json:"Name"`
-    MagicValue      string                  `json:"MagicValue"`
-    Author          string                  `json:"Author"`
-    Formats         []struct {
-        Name string
+    Name       string `json:"Name"`
+    MagicValue string `json:"MagicValue"`
+    Author     string `json:"Author"`
+    Formats    []struct {
+        Name      string
         Extension string
     } `json:"Formats"`
-    SupportedOS     []string                `json:"SupportedOS"`
-    Description     string                  `json:"Description"`
-    Commands        []Command               `json:"Commands"`
-    BuildingConfig  map[string]interface{}  `json:"BuildingConfig"`
+    SupportedOS    []string               `json:"SupportedOS"`
+    Description    string                 `json:"Description"`
+    Commands       []Command              `json:"Commands"`
+    BuildingConfig map[string]interface{} `json:"BuildingConfig"`
 
-    client          *ClientService          `json:"-"`
-    service         *Service                `json:"-"`
+    client  *ClientService `json:"-"`
+    service *Service       `json:"-"`
 }
 
 func NewAgentService(data []byte, client *ClientService) *AgentService {
@@ -55,7 +55,7 @@ func NewAgentService(data []byte, client *ClientService) *AgentService {
     return service
 }
 
-func (a* AgentService) Json() string {
+func (a *AgentService) Json() string {
     var JsonString, err = json.Marshal(a)
     if err != nil {
         return ""
@@ -64,17 +64,17 @@ func (a* AgentService) Json() string {
     return string(JsonString)
 }
 
-func (a* AgentService) SendTask(Command map[string]interface{}, AgentInfo any) {
+func (a *AgentService) SendTask(Command map[string]interface{}, AgentInfo any) {
 
     var AgentRequest = map[string]map[string]interface{}{
         "Head": {
             "Type": HeadAgent,
         },
         "Body": {
-            "Type"   : BodyAgentTask,
-            "Agent"  : AgentInfo,
+            "Type":    BodyAgentTask,
+            "Agent":   AgentInfo,
             "Command": Command,
-            "Task"   : "Add",
+            "Task":    "Add",
         },
     }
 
@@ -86,22 +86,22 @@ func (a* AgentService) SendTask(Command map[string]interface{}, AgentInfo any) {
 }
 
 func reverse(s []byte) []byte {
-    for i,j := 0, len(s) - 1; i<j; i,j = i+1, j-1 {
-        s[i],s[j] = s[j], s[i]
+    for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+        s[i], s[j] = s[j], s[i]
     }
 
     return s
 }
 
-func (a* AgentService) SendResponse(AgentInfo any, Header demons.AgentHeader) []byte {
+func (a *AgentService) SendResponse(AgentInfo any, Header demons.AgentHeader) []byte {
 
     var (
         randID = utils.GenerateID(6)
 
         header = map[string]any{
-            "Size":       fmt.Sprintf("%v",Header.Size),
-            "AgentID":    fmt.Sprintf("%x",Header.AgentID),
-            "MagicValue": fmt.Sprintf("%x",Header.MagicValue),
+            "Size":       fmt.Sprintf("%v", Header.Size),
+            "AgentID":    fmt.Sprintf("%x", Header.AgentID),
+            "MagicValue": fmt.Sprintf("%x", Header.MagicValue),
         }
 
         AgentResponse = map[string]map[string]interface{}{
@@ -109,11 +109,11 @@ func (a* AgentService) SendResponse(AgentInfo any, Header demons.AgentHeader) []
                 "Type": HeadAgent,
             },
             "Body": {
-                "Type"       : BodyAgentResponse,
-                "Agent"      : AgentInfo,
-                "RandID"     : randID,
+                "Type":        BodyAgentResponse,
+                "Agent":       AgentInfo,
+                "RandID":      randID,
                 "AgentHeader": header,
-                "Response"   : base64.StdEncoding.EncodeToString(Header.Data.Buffer()),
+                "Response":    base64.StdEncoding.EncodeToString(Header.Data.Buffer()),
             },
         }
     )
@@ -134,7 +134,7 @@ func (a* AgentService) SendResponse(AgentInfo any, Header demons.AgentHeader) []
 
     var data []byte
     if channel, ok := a.client.Responses[randID]; ok {
-        data = <- channel
+        data = <-channel
 
         delete(a.client.Responses, randID)
     }
@@ -142,16 +142,16 @@ func (a* AgentService) SendResponse(AgentInfo any, Header demons.AgentHeader) []
     return data
 }
 
-func (a* AgentService) SendAgentBuildRequest(ClientID string, Config map[string]any, Options map[string]any) {
+func (a *AgentService) SendAgentBuildRequest(ClientID string, Config map[string]any, Options map[string]any) {
     var AgentResponse = map[string]map[string]interface{}{
         "Head": {
             "Type": HeadAgent,
         },
         "Body": {
             "ClientID": ClientID,
-            "Type": BodyAgentBuild,
-            "Config": Config,
-            "Options": Options,
+            "Type":     BodyAgentBuild,
+            "Config":   Config,
+            "Options":  Options,
         },
     }
 

@@ -1,9 +1,9 @@
 package gohcl
 
 import (
-	"reflect"
+    "reflect"
 
-	"github.com/Cracked5pider/Havoc/teamserver/pkg/profile/yaotl"
+    "Havoc/pkg/profile/yaotl"
 )
 
 var victimExpr hcl.Expression

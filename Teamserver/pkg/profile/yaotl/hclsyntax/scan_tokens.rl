@@ -4,7 +4,7 @@ package hclsyntax
 import (
     "bytes"
 
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/profile/yaotl"
+    "Havoc/pkg/profile/yaotl"
 )
 
 // This file is generated from scan_tokens.rl. DO NOT EDIT.

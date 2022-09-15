@@ -1,7 +1,7 @@
 package transform
 
 import (
-	"github.com/Cracked5pider/Havoc/teamserver/pkg/profile/yaotl"
+    "Havoc/pkg/profile/yaotl"
 )
 
 // A Transformer takes a given body, applies some (possibly no-op)
@@ -13,7 +13,7 @@ import (
 // returns diagnostics when its methods are called. NewErrorBody is a utility
 // to help with this.
 type Transformer interface {
-	TransformBody(hcl.Body) hcl.Body
+    TransformBody(hcl.Body) hcl.Body
 }
 
 // TransformerFunc is a function type that implements Transformer.
@@ -21,7 +21,7 @@ type TransformerFunc func(hcl.Body) hcl.Body
 
 // TransformBody is an implementation of Transformer.TransformBody.
 func (f TransformerFunc) TransformBody(in hcl.Body) hcl.Body {
-	return f(in)
+    return f(in)
 }
 
 type chain []Transformer
@@ -29,12 +29,12 @@ type chain []Transformer
 // Chain takes a slice of transformers and returns a single new
 // Transformer that applies each of the given transformers in sequence.
 func Chain(c []Transformer) Transformer {
-	return chain(c)
+    return chain(c)
 }
 
 func (c chain) TransformBody(body hcl.Body) hcl.Body {
-	for _, t := range c {
-		body = t.TransformBody(body)
-	}
-	return body
+    for _, t := range c {
+        body = t.TransformBody(body)
+    }
+    return body
 }

@@ -551,29 +551,29 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                 .Description    = "pivoting module",
                 .Behavior       = BEHAVIOR_API_ONLY,
                 .Usage          = "[sub command]",
-                .Example        = R"(connect smb \\.\pipe\demon)",
+                .Example        = R"(connect SPIDERS-PC agent_6d6e)",
 
                 .SubCommands    =
-                        {
-                                {
-                                        .CommandString  = "list",
-                                        .Description    = "list connected agent pivots",
-                                        .Behavior       = BEHAVIOR_API_ONLY,
-                                },
-                                {
-                                        .CommandString  = "connect",
-                                        .Description    = "connect to a pivoting agent",
-                                        .Behavior       = BEHAVIOR_API_ONLY,
-                                        .Usage          = "[pivot address]",
-                                        .Example        = R"(\\.\pipe\demon)",
-                                },
-                                {
-                                        .CommandString  = "disconnect",
-                                        .Description    = "disconnect from a pivoting agent",
-                                        .Behavior       = BEHAVIOR_API_ONLY,
-                                        .Usage          = "[pivot address]",
-                                        .Example        = R"(\\.\pipe\demon)",
-                                },
-                        },
+                {
+                    {
+                        .CommandString  = "list",
+                        .Description    = "list connected agent pivots",
+                        .Behavior       = BEHAVIOR_API_ONLY,
+                    },
+                    {
+                        .CommandString  = "connect",
+                        .Description    = "connect to a pivoting agent",
+                        .Behavior       = BEHAVIOR_API_ONLY,
+                        .Usage          = "[Host] [Address]",
+                        .Example        = R"(HOST-DC agent_6d6e)",
+                    },
+                    {
+                        .CommandString  = "disconnect",
+                        .Description    = "disconnect from a pivoting agent",
+                        .Behavior       = BEHAVIOR_API_ONLY,
+                        .Usage          = "[Agent ID]",
+                        .Example        = R"(64656d6e)",
+                    },
+                },
         }
 };

@@ -12,12 +12,12 @@ import (
     "strconv"
     "strings"
 
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/common/packer"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/handlers"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/logger"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/profile"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/utils"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/win32"
+    "Havoc/pkg/common/packer"
+    "Havoc/pkg/handlers"
+    "Havoc/pkg/logger"
+    "Havoc/pkg/profile"
+    "Havoc/pkg/utils"
+    "Havoc/pkg/win32"
 )
 
 // TODO: move to agent package

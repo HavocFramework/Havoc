@@ -1,7 +1,7 @@
 package hclsyntax
 
 import (
-	"github.com/Cracked5pider/Havoc/teamserver/pkg/profile/yaotl"
+    "Havoc/pkg/profile/yaotl"
 )
 
 // Variables returns all of the variables referenced within a given experssion.
@@ -9,57 +9,57 @@ import (
 // This is the implementation of the "Variables" method on every native
 // expression.
 func Variables(expr Expression) []hcl.Traversal {
-	var vars []hcl.Traversal
+    var vars []hcl.Traversal
 
-	walker := &variablesWalker{
-		Callback: func(t hcl.Traversal) {
-			vars = append(vars, t)
-		},
-	}
+    walker := &variablesWalker{
+        Callback: func(t hcl.Traversal) {
+            vars = append(vars, t)
+        },
+    }
 
-	Walk(expr, walker)
+    Walk(expr, walker)
 
-	return vars
+    return vars
 }
 
 // variablesWalker is a Walker implementation that calls its callback for any
 // root scope traversal found while walking.
 type variablesWalker struct {
-	Callback    func(hcl.Traversal)
-	localScopes []map[string]struct{}
+    Callback    func(hcl.Traversal)
+    localScopes []map[string]struct{}
 }
 
 func (w *variablesWalker) Enter(n Node) hcl.Diagnostics {
-	switch tn := n.(type) {
-	case *ScopeTraversalExpr:
-		t := tn.Traversal
+    switch tn := n.(type) {
+    case *ScopeTraversalExpr:
+        t := tn.Traversal
 
-		// Check if the given root name appears in any of the active
-		// local scopes. We don't want to return local variables here, since
-		// the goal of walking variables is to tell the calling application
-		// which names it needs to populate in the _root_ scope.
-		name := t.RootName()
-		for _, names := range w.localScopes {
-			if _, localized := names[name]; localized {
-				return nil
-			}
-		}
+        // Check if the given root name appears in any of the active
+        // local scopes. We don't want to return local variables here, since
+        // the goal of walking variables is to tell the calling application
+        // which names it needs to populate in the _root_ scope.
+        name := t.RootName()
+        for _, names := range w.localScopes {
+            if _, localized := names[name]; localized {
+                return nil
+            }
+        }
 
-		w.Callback(t)
-	case ChildScope:
-		w.localScopes = append(w.localScopes, tn.LocalNames)
-	}
-	return nil
+        w.Callback(t)
+    case ChildScope:
+        w.localScopes = append(w.localScopes, tn.LocalNames)
+    }
+    return nil
 }
 
 func (w *variablesWalker) Exit(n Node) hcl.Diagnostics {
-	switch n.(type) {
-	case ChildScope:
-		// pop the latest local scope, assuming that the walker will
-		// behave symmetrically as promised.
-		w.localScopes = w.localScopes[:len(w.localScopes)-1]
-	}
-	return nil
+    switch n.(type) {
+    case ChildScope:
+        // pop the latest local scope, assuming that the walker will
+        // behave symmetrically as promised.
+        w.localScopes = w.localScopes[:len(w.localScopes)-1]
+    }
+    return nil
 }
 
 // ChildScope is a synthetic AST node that is visited during a walk to
@@ -71,16 +71,16 @@ func (w *variablesWalker) Exit(n Node) hcl.Diagnostics {
 // instead, transform either parent node that created a scope or the expression
 // that the child scope struct wraps.
 type ChildScope struct {
-	LocalNames map[string]struct{}
-	Expr       Expression
+    LocalNames map[string]struct{}
+    Expr       Expression
 }
 
 func (e ChildScope) walkChildNodes(w internalWalkFunc) {
-	w(e.Expr)
+    w(e.Expr)
 }
 
 // Range returns the range of the expression that the ChildScope is
 // encapsulating. It isn't really very useful to call Range on a ChildScope.
 func (e ChildScope) Range() hcl.Range {
-	return e.Expr.Range()
+    return e.Expr.Range()
 }

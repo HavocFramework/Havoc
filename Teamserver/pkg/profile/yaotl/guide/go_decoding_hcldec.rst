@@ -22,7 +22,7 @@ dynamically-typed data structures.
 
 The sections below are an overview of the main parts of package ``hcldec``.
 For full details, see
-`the package godoc <https://godoc.org/github.com/Cracked5pider/Havoc/teamserver/pkg/profile/yaotl/hcldec>`_.
+`the package godoc <https://godoc.org/Havoc/pkg/profile/yaotl/hcldec>`_.
 
 .. _`HashiCorp Terraform`: https://www.terraform.io/
 

@@ -4,7 +4,7 @@
 package dynblock
 
 import (
-	"github.com/Cracked5pider/Havoc/teamserver/pkg/profile/yaotl"
+    "Havoc/pkg/profile/yaotl"
 )
 
 // Expand "dynamic" blocks in the given body, returning a new body that
@@ -40,8 +40,8 @@ import (
 //       }
 //     }
 func Expand(body hcl.Body, ctx *hcl.EvalContext) hcl.Body {
-	return &expandBody{
-		original:   body,
-		forEachCtx: ctx,
-	}
+    return &expandBody{
+        original:   body,
+        forEachCtx: ctx,
+    }
 }

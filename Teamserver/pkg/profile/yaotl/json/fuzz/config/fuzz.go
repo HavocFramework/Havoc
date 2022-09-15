@@ -1,15 +1,15 @@
 package fuzzconfig
 
 import (
-	"github.com/Cracked5pider/Havoc/teamserver/pkg/profile/yaotl/json"
+    "Havoc/pkg/profile/yaotl/json"
 )
 
 func Fuzz(data []byte) int {
-	_, diags := json.Parse(data, "<fuzz-conf>")
+    _, diags := json.Parse(data, "<fuzz-conf>")
 
-	if diags.HasErrors() {
-		return 0
-	}
+    if diags.HasErrors() {
+        return 0
+    }
 
-	return 1
+    return 1
 }

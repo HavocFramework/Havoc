@@ -8,15 +8,15 @@ import (
     "strings"
     "time"
 
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/common/builder"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/common/packer"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/demons"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/events"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/handlers"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/logger"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/logr"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/packager"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/utils"
+    "Havoc/pkg/common/builder"
+    "Havoc/pkg/common/packer"
+    "Havoc/pkg/demons"
+    "Havoc/pkg/events"
+    "Havoc/pkg/handlers"
+    "Havoc/pkg/logger"
+    "Havoc/pkg/logr"
+    "Havoc/pkg/packager"
+    "Havoc/pkg/utils"
 )
 
 func (t *Teamserver) DispatchEvent(pk packager.Package) {

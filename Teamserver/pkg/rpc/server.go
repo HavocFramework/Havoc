@@ -6,13 +6,13 @@ import (
     "net"
     "strconv"
 
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/colors"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/logger"
+    "Havoc/pkg/colors"
+    "Havoc/pkg/logger"
 )
 
 func NewServer(port int) (*Server, error) {
     var (
-    	server      = new(Server)
+        server = new(Server)
     )
 
     server.IPCPort = port
@@ -21,8 +21,8 @@ func NewServer(port int) (*Server, error) {
 
 func (s *Server) StartRPC() error {
     var (
-        err         error
-        ServerAddr  = "localhost:"+strconv.Itoa(s.IPCPort)
+        err        error
+        ServerAddr = "localhost:" + strconv.Itoa(s.IPCPort)
     )
 
     s.Listener, err = net.Listen("tcp", ServerAddr)
@@ -62,7 +62,7 @@ func (s *Server) handleClientRPC(client net.Conn) {
     }(client)
 
     for {
-        var jsonStruct, _ ,_ = reader.ReadLine()
+        var jsonStruct, _, _ = reader.ReadLine()
         if len(jsonStruct) > 0 {
             s.ReceiveData(jsonStruct)
         }

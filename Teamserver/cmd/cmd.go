@@ -1,49 +1,49 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
+    "fmt"
+    "os"
 
-	"github.com/Cracked5pider/Havoc/teamserver/pkg/colors"
-	"github.com/Cracked5pider/Havoc/teamserver/pkg/teamserver"
+    "Havoc/pkg/colors"
+    "Havoc/pkg/teamserver"
 
-	"github.com/spf13/cobra"
+    "github.com/spf13/cobra"
 )
 
 var (
-	TeamserverCli = &cobra.Command{
-		Use:          "teamserver",
-		Short:        "Havoc Teamserver",
-		SilenceUsage: true,
-		RunE:         teamserverFunc,
-	}
+    TeamserverCli = &cobra.Command{
+        Use:          "teamserver",
+        Short:        "Havoc Teamserver",
+        SilenceUsage: true,
+        RunE:         teamserverFunc,
+    }
 
-	teamserverFlags teamserver.TeamserverFlags
+    teamserverFlags teamserver.TeamserverFlags
 )
 
 func init() {
-	TeamserverCli.CompletionOptions.DisableDefaultCmd = true
-	TeamserverCli.AddCommand(ServerCli)
+    TeamserverCli.CompletionOptions.DisableDefaultCmd = true
+    TeamserverCli.AddCommand(ServerCli)
 }
 
 func teamserverFunc(cmd *cobra.Command, args []string) error {
-	startMenu()
+    startMenu()
 
-	if len(os.Args) <= 2 {
-		err := cmd.Help()
-		if err != nil {
-			return err
-		}
-		os.Exit(0)
-	}
+    if len(os.Args) <= 2 {
+        err := cmd.Help()
+        if err != nil {
+            return err
+        }
+        os.Exit(0)
+    }
 
-	return nil
+    return nil
 }
 
 func startMenu() {
-	fmt.Print(colors.Red("              _______           _______  _______ \n    │\\     /│(  ___  )│\\     /│(  ___  )(  ____ \\\n    │ )   ( ││ (   ) ││ )   ( ││ (   ) ││ (    \\/\n    │ (___) ││ (___) ││ │   │ ││ │   │ ││ │      \n    │  ___  ││  ___  │( (   ) )│ │   │ ││ │      \n    │ (   ) ││ (   ) │ \\ \\_/ / │ │   │ ││ │      \n    │ )   ( ││ )   ( │  \\   /  │ (___) ││ (____/\\\n    │/     \\││/     \\│   \\_/   (_______)(_______/"))
-	fmt.Println(colors.Blue(" 0.10"), "Alpha")
-	fmt.Println()
-	fmt.Println("  	", colors.Red("pwn"), "and", colors.Blue("elevate"), "until it is done")
-	fmt.Println()
+    fmt.Print(colors.Red("              _______           _______  _______ \n    │\\     /│(  ___  )│\\     /│(  ___  )(  ____ \\\n    │ )   ( ││ (   ) ││ )   ( ││ (   ) ││ (    \\/\n    │ (___) ││ (___) ││ │   │ ││ │   │ ││ │      \n    │  ___  ││  ___  │( (   ) )│ │   │ ││ │      \n    │ (   ) ││ (   ) │ \\ \\_/ / │ │   │ ││ │      \n    │ )   ( ││ )   ( │  \\   /  │ (___) ││ (____/\\\n    │/     \\││/     \\│   \\_/   (_______)(_______/"))
+    fmt.Println(colors.Blue(" 0.10"), "Alpha")
+    fmt.Println()
+    fmt.Println("  	", colors.Red("pwn"), "and", colors.Blue("elevate"), "until it is done")
+    fmt.Println()
 }

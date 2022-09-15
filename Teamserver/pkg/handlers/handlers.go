@@ -1,97 +1,97 @@
 package handlers
 
 import (
-	"github.com/Cracked5pider/Havoc/teamserver/pkg/demons"
+    "Havoc/pkg/demons"
 )
 import "github.com/gin-gonic/gin"
 
 type Listener interface {
-	Start()
-	SetConfig(Config any)
-	Stop()
+    Start()
+    SetConfig(Config any)
+    Stop()
 }
 
 type (
-	HTTPConfig struct {
-		Name      string
-		Hosts     string
-		Port      string
-		UserAgent string
-		Headers   []string
-		Uris      []string
-		Secure    bool
+    HTTPConfig struct {
+        Name      string
+        Hosts     string
+        Port      string
+        UserAgent string
+        Headers   []string
+        Uris      []string
+        Secure    bool
 
-		Proxy 	  struct {
-			Enabled	 bool
-			Type 	 string
-			Host 	 string
-			Port 	 string
-			Username string
-			Password string
-		}
+        Proxy struct {
+            Enabled  bool
+            Type     string
+            Host     string
+            Port     string
+            Username string
+            Password string
+        }
 
-		Response struct {
-			Headers []string
-		}
-	}
+        Response struct {
+            Headers []string
+        }
+    }
 
-	ExternalConfig struct {
-		Name 		  string
-		Endpoint 	  string
-	}
+    ExternalConfig struct {
+        Name     string
+        Endpoint string
+    }
 
-	SMBConfig struct {
-		Name 	 string
-		PipeName string
-	}
+    SMBConfig struct {
+        Name     string
+        PipeName string
+    }
 )
 
 type (
-	HTTP struct {
-		Config 	HTTPConfig
+    HTTP struct {
+        Config HTTPConfig
 
-		GinEngine *gin.Engine
+        GinEngine *gin.Engine
 
-		TLS struct {
-			Cert []byte
-			Key  []byte
+        TLS struct {
+            Cert []byte
+            Key  []byte
 
-			CertPath string
-			KeyPath  string
-		}
+            CertPath string
+            KeyPath  string
+        }
 
-		RoutineFunc demons.RoutineFunc
+        RoutineFunc demons.RoutineFunc
 
-		Active bool
-		Demons int
-	}
+        Active bool
+        Demons int
+    }
 
-	SMB struct {
-		Config SMBConfig
+    SMB struct {
+        Config SMBConfig
 
-		RoutineFunc demons.RoutineFunc
-		ParentChild []struct {
-			Parent 	any
-			Child 	any
-		}
-	}
+        RoutineFunc demons.RoutineFunc
+        ParentChild []struct {
+            Parent any
+            Child  any
+        }
+    }
 
-	External struct {
-		Config 		ExternalConfig
+    External struct {
+        Config ExternalConfig
 
-		// teamserver websocket engine
-		engine 		*gin.Engine
-		RoutineFunc demons.RoutineFunc
-	}
+        // teamserver websocket engine
+        engine      *gin.Engine
+        RoutineFunc demons.RoutineFunc
+    }
 )
 
 const (
-	LISTENER_HTTP      	= 1
-	LISTENER_PIVOT_SMB 	= 2
-	LISTENER_EXTERNAL  	= 3
+    LISTENER_HTTP      = 1
+    LISTENER_PIVOT_SMB = 2
+    LISTENER_EXTERNAL  = 3
 
-	DEMON_HTTPS      	= "Https"
-	DEMON_HTTP      	= "Http"
-	DEMON_EXTERNAL  	= "External"
-	DEMON_PIVOT_SMB		= "Smb"
+    DEMON_HTTPS     = "Https"
+    DEMON_HTTP      = "Http"
+    DEMON_EXTERNAL  = "External"
+    DEMON_PIVOT_SMB = "Smb"
 )

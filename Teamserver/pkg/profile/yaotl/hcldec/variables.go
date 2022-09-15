@@ -1,7 +1,7 @@
 package hcldec
 
 import (
-	"github.com/Cracked5pider/Havoc/teamserver/pkg/profile/yaotl"
+    "Havoc/pkg/profile/yaotl"
 )
 
 // Variables processes the given body with the given spec and returns a
@@ -15,22 +15,22 @@ import (
 // be incomplete, but that's assumed to be okay because the eventual call
 // to Decode will produce error diagnostics anyway.
 func Variables(body hcl.Body, spec Spec) []hcl.Traversal {
-	var vars []hcl.Traversal
-	schema := ImpliedSchema(spec)
-	content, _, _ := body.PartialContent(schema)
+    var vars []hcl.Traversal
+    schema := ImpliedSchema(spec)
+    content, _, _ := body.PartialContent(schema)
 
-	if vs, ok := spec.(specNeedingVariables); ok {
-		vars = append(vars, vs.variablesNeeded(content)...)
-	}
+    if vs, ok := spec.(specNeedingVariables); ok {
+        vars = append(vars, vs.variablesNeeded(content)...)
+    }
 
-	var visitFn visitFunc
-	visitFn = func(s Spec) {
-		if vs, ok := s.(specNeedingVariables); ok {
-			vars = append(vars, vs.variablesNeeded(content)...)
-		}
-		s.visitSameBodyChildren(visitFn)
-	}
-	spec.visitSameBodyChildren(visitFn)
+    var visitFn visitFunc
+    visitFn = func(s Spec) {
+        if vs, ok := s.(specNeedingVariables); ok {
+            vars = append(vars, vs.variablesNeeded(content)...)
+        }
+        s.visitSameBodyChildren(visitFn)
+    }
+    spec.visitSameBodyChildren(visitFn)
 
-	return vars
+    return vars
 }

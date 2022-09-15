@@ -9,77 +9,77 @@
 package main
 
 import (
-	"fmt"
-	"go/ast"
-	"go/parser"
-	"go/token"
-	"os"
-	"sort"
+    "fmt"
+    "go/ast"
+    "go/parser"
+    "go/token"
+    "os"
+    "sort"
 )
 
 func main() {
-	fs := token.NewFileSet()
-	pkgs, err := parser.ParseDir(fs, ".", nil, 0)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error while parsing: %s\n", err)
-		os.Exit(1)
-	}
-	pkg := pkgs["hclsyntax"]
+    fs := token.NewFileSet()
+    pkgs, err := parser.ParseDir(fs, ".", nil, 0)
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "error while parsing: %s\n", err)
+        os.Exit(1)
+    }
+    pkg := pkgs["hclsyntax"]
 
-	// Walk all the files and collect the receivers of any "Value" methods
-	// that look like they are trying to implement Expression.
-	var recvs []string
-	for _, f := range pkg.Files {
-		for _, decl := range f.Decls {
-			fd, ok := decl.(*ast.FuncDecl)
-			if !ok {
-				continue
-			}
-			if fd.Name.Name != "Value" {
-				continue
-			}
-			results := fd.Type.Results.List
-			if len(results) != 2 {
-				continue
-			}
-			valResult := fd.Type.Results.List[0].Type.(*ast.SelectorExpr).X.(*ast.Ident)
-			diagsResult := fd.Type.Results.List[1].Type.(*ast.SelectorExpr).X.(*ast.Ident)
+    // Walk all the files and collect the receivers of any "Value" methods
+    // that look like they are trying to implement Expression.
+    var recvs []string
+    for _, f := range pkg.Files {
+        for _, decl := range f.Decls {
+            fd, ok := decl.(*ast.FuncDecl)
+            if !ok {
+                continue
+            }
+            if fd.Name.Name != "Value" {
+                continue
+            }
+            results := fd.Type.Results.List
+            if len(results) != 2 {
+                continue
+            }
+            valResult := fd.Type.Results.List[0].Type.(*ast.SelectorExpr).X.(*ast.Ident)
+            diagsResult := fd.Type.Results.List[1].Type.(*ast.SelectorExpr).X.(*ast.Ident)
 
-			if valResult.Name != "cty" && diagsResult.Name != "hcl" {
-				continue
-			}
+            if valResult.Name != "cty" && diagsResult.Name != "hcl" {
+                continue
+            }
 
-			// If we have a method called Value and it returns something in
-			// "cty" followed by something in "hcl" then that's specific enough
-			// for now, even though this is not 100% exact as a correct
-			// implementation of Value.
+            // If we have a method called Value and it returns something in
+            // "cty" followed by something in "hcl" then that's specific enough
+            // for now, even though this is not 100% exact as a correct
+            // implementation of Value.
 
-			recvTy := fd.Recv.List[0].Type
+            recvTy := fd.Recv.List[0].Type
 
-			switch rtt := recvTy.(type) {
-			case *ast.StarExpr:
-				name := rtt.X.(*ast.Ident).Name
-				recvs = append(recvs, fmt.Sprintf("*%s", name))
-			default:
-				fmt.Fprintf(os.Stderr, "don't know what to do with a %T receiver\n", recvTy)
-			}
+            switch rtt := recvTy.(type) {
+            case *ast.StarExpr:
+                name := rtt.X.(*ast.Ident).Name
+                recvs = append(recvs, fmt.Sprintf("*%s", name))
+            default:
+                fmt.Fprintf(os.Stderr, "don't know what to do with a %T receiver\n", recvTy)
+            }
 
-		}
-	}
+        }
+    }
 
-	sort.Strings(recvs)
+    sort.Strings(recvs)
 
-	of, err := os.OpenFile("expression_vars.go", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.ModePerm)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to open output file: %s\n", err)
-		os.Exit(1)
-	}
+    of, err := os.OpenFile("expression_vars.go", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.ModePerm)
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "failed to open output file: %s\n", err)
+        os.Exit(1)
+    }
 
-	fmt.Fprint(of, outputPreamble)
-	for _, recv := range recvs {
-		fmt.Fprintf(of, outputMethodFmt, recv)
-	}
-	fmt.Fprint(of, "\n")
+    fmt.Fprint(of, outputPreamble)
+    for _, recv := range recvs {
+        fmt.Fprintf(of, outputMethodFmt, recv)
+    }
+    fmt.Fprint(of, "\n")
 
 }
 
@@ -89,7 +89,7 @@ const outputPreamble = `package hclsyntax
 // Run 'go generate' on this package to update the set of functions here.
 
 import (
-	"github.com/Cracked5pider/Havoc/teamserver/pkg/profile/yaotl"
+	"Havoc/pkg/profile/yaotl"
 )`
 
 const outputMethodFmt = `

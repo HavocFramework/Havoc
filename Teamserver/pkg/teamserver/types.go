@@ -1,10 +1,10 @@
 package teamserver
 
 import (
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/demons"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/packager"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/profile"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/service"
+    "Havoc/pkg/demons"
+    "Havoc/pkg/packager"
+    "Havoc/pkg/profile"
+    "Havoc/pkg/service"
     "github.com/gin-gonic/gin"
     "github.com/gorilla/websocket"
 )

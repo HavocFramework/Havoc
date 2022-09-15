@@ -1,8 +1,8 @@
 package userfunc
 
 import (
-	"github.com/Cracked5pider/Havoc/teamserver/pkg/profile/yaotl"
-	"github.com/zclconf/go-cty/cty/function"
+    "Havoc/pkg/profile/yaotl"
+    "github.com/zclconf/go-cty/cty/function"
 )
 
 // A ContextFunc is a callback used to produce the base EvalContext for
@@ -38,5 +38,5 @@ type ContextFunc func() *hcl.EvalContext
 // If the returned diagnostics set has errors then the function map and
 // remain body may be nil or incomplete.
 func DecodeUserFunctions(body hcl.Body, blockType string, context ContextFunc) (funcs map[string]function.Function, remain hcl.Body, diags hcl.Diagnostics) {
-	return decodeUserFunctions(body, blockType, context)
+    return decodeUserFunctions(body, blockType, context)
 }

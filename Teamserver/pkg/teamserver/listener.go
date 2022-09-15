@@ -1,178 +1,178 @@
 package teamserver
 
 import (
-	"encoding/json"
-	"fmt"
-	"strconv"
+    "encoding/json"
+    "fmt"
+    "strconv"
 
-	"github.com/Cracked5pider/Havoc/teamserver/pkg/demons"
-	"github.com/Cracked5pider/Havoc/teamserver/pkg/events"
-	"github.com/Cracked5pider/Havoc/teamserver/pkg/handlers"
-	"github.com/Cracked5pider/Havoc/teamserver/pkg/logger"
-	"github.com/Cracked5pider/Havoc/teamserver/pkg/packager"
-	"github.com/fatih/structs"
+    "Havoc/pkg/demons"
+    "Havoc/pkg/events"
+    "Havoc/pkg/handlers"
+    "Havoc/pkg/logger"
+    "Havoc/pkg/packager"
+    "github.com/fatih/structs"
 )
 
 // TODO: refactor this
 func (t *Teamserver) StartListener(ListenerType int, info any) error {
 
-	var (
-		CtxFunctions 	= demons.RoutineFunc{}
-		ListenerConfig 	any
-		ListenerName 	string
-	)
+    var (
+        CtxFunctions   = demons.RoutineFunc{}
+        ListenerConfig any
+        ListenerName   string
+    )
 
-	CtxFunctions.EventAppend = t.EventAppend
-	CtxFunctions.EventBroadcast = t.EventBroadcast
-	CtxFunctions.EventNewDemon = events.Demons.NewDemon
-	CtxFunctions.AppendDemon = t.Agents.AppendAgent
-	CtxFunctions.AppendListener = events.Listener.AddListener
+    CtxFunctions.EventAppend = t.EventAppend
+    CtxFunctions.EventBroadcast = t.EventBroadcast
+    CtxFunctions.EventNewDemon = events.Demons.NewDemon
+    CtxFunctions.AppendDemon = t.Agents.AppendAgent
+    CtxFunctions.AppendListener = events.Listener.AddListener
 
-	CtxFunctions.ServiceAgentGet = func(MagicValue int) demons.ServiceAgentInterface {
-		for _, agentService := range t.Service.Agents {
-			if agentService.MagicValue == fmt.Sprintf("0x%x",MagicValue) {
-				return agentService
-			}
-		}
+    CtxFunctions.ServiceAgentGet = func(MagicValue int) demons.ServiceAgentInterface {
+        for _, agentService := range t.Service.Agents {
+            if agentService.MagicValue == fmt.Sprintf("0x%x", MagicValue) {
+                return agentService
+            }
+        }
 
-		logger.Debug("Service agent not found")
-		return nil
-	}
+        logger.Debug("Service agent not found")
+        return nil
+    }
 
-	CtxFunctions.ServiceAgentExits = func(MagicValue int) bool {
-		for _, agentService := range t.Service.Agents {
-			if agentService.MagicValue == fmt.Sprintf("0x%x",MagicValue) {
-				return true
-			}
-		}
+    CtxFunctions.ServiceAgentExits = func(MagicValue int) bool {
+        for _, agentService := range t.Service.Agents {
+            if agentService.MagicValue == fmt.Sprintf("0x%x", MagicValue) {
+                return true
+            }
+        }
 
-		logger.Debug("Service agent not found")
-		return false
-	}
+        logger.Debug("Service agent not found")
+        return false
+    }
 
-	CtxFunctions.CallbackSize = func(DemonInstance *demons.Agent, i int) {
-		var (
-			Message = make(map[string]string)
-			pk      packager.Package
-		)
+    CtxFunctions.CallbackSize = func(DemonInstance *demons.Agent, i int) {
+        var (
+            Message = make(map[string]string)
+            pk      packager.Package
+        )
 
-		Message["Type"] = "Good"
-		Message["Message"] = fmt.Sprintf("Send Task to Agent [%v bytes]", i)
+        Message["Type"] = "Good"
+        Message["Message"] = fmt.Sprintf("Send Task to Agent [%v bytes]", i)
 
-		OutputJson, _ := json.Marshal(Message)
+        OutputJson, _ := json.Marshal(Message)
 
-		pk = events.Demons.DemonOutput(DemonInstance.NameID, demons.HAVOC_CONSOLE_MESSAGE, string(OutputJson))
+        pk = events.Demons.DemonOutput(DemonInstance.NameID, demons.HAVOC_CONSOLE_MESSAGE, string(OutputJson))
 
-		t.EventAppend(pk)
-		t.EventBroadcast("", pk)
-	}
+        t.EventAppend(pk)
+        t.EventBroadcast("", pk)
+    }
 
-	CtxFunctions.AgentExists = func(DemonID int) bool {
-		for _, demon := range t.Agents.Agents {
-			var NameID, err = strconv.ParseInt(demon.NameID, 16, 64)
-			if err != nil {
-				logger.Debug("Failed to convert demon.NameID to int: " + err.Error())
-				return false
-			}
+    CtxFunctions.AgentExists = func(DemonID int) bool {
+        for _, demon := range t.Agents.Agents {
+            var NameID, err = strconv.ParseInt(demon.NameID, 16, 64)
+            if err != nil {
+                logger.Debug("Failed to convert demon.NameID to int: " + err.Error())
+                return false
+            }
 
-			if DemonID == int(NameID) {
-				return true
-			}
-		}
-		return false
-	}
+            if DemonID == int(NameID) {
+                return true
+            }
+        }
+        return false
+    }
 
-	CtxFunctions.DemonOutput = func(DemonID string, CommandID int, Output map[string]string) {
-		var (
-			out, _ 	= json.Marshal(Output)
-			pk 		= events.Demons.DemonOutput(DemonID, CommandID, string(out))
-		)
+    CtxFunctions.DemonOutput = func(DemonID string, CommandID int, Output map[string]string) {
+        var (
+            out, _ = json.Marshal(Output)
+            pk     = events.Demons.DemonOutput(DemonID, CommandID, string(out))
+        )
 
-		t.EventAppend(pk)
-		t.EventBroadcast("", pk)
-	}
+        t.EventAppend(pk)
+        t.EventBroadcast("", pk)
+    }
 
-	CtxFunctions.AgentGetInstance = func(DemonID int) *demons.Agent {
-		for _, demon := range t.Agents.Agents {
-			var NameID, _ = strconv.ParseInt(demon.NameID, 16, 64)
+    CtxFunctions.AgentGetInstance = func(DemonID int) *demons.Agent {
+        for _, demon := range t.Agents.Agents {
+            var NameID, _ = strconv.ParseInt(demon.NameID, 16, 64)
 
-			if DemonID == int(NameID) {
-				return demon
-			}
-		}
-		return nil
-	}
+            if DemonID == int(NameID) {
+                return demon
+            }
+        }
+        return nil
+    }
 
-	switch ListenerType {
+    switch ListenerType {
 
-	case handlers.LISTENER_HTTP:
-		var HTTPConfig = handlers.NewConfigHttp()
-		var config = info.(handlers.HTTPConfig)
+    case handlers.LISTENER_HTTP:
+        var HTTPConfig = handlers.NewConfigHttp()
+        var config = info.(handlers.HTTPConfig)
 
-		HTTPConfig.Config = config
+        HTTPConfig.Config = config
 
-		HTTPConfig.Config.Secure = config.Secure
-		HTTPConfig.RoutineFunc = CtxFunctions
+        HTTPConfig.Config.Secure = config.Secure
+        HTTPConfig.RoutineFunc = CtxFunctions
 
-		HTTPConfig.Start()
+        HTTPConfig.Start()
 
-		ListenerConfig = HTTPConfig
-		ListenerName = config.Name
+        ListenerConfig = HTTPConfig
+        ListenerName = config.Name
 
-		break
+        break
 
-	case handlers.LISTENER_PIVOT_SMB:
-		var SmbConfig = handlers.NewPivotSmb()
+    case handlers.LISTENER_PIVOT_SMB:
+        var SmbConfig = handlers.NewPivotSmb()
 
-		SmbConfig.Config = info.(handlers.SMBConfig)
-		SmbConfig.RoutineFunc = CtxFunctions
+        SmbConfig.Config = info.(handlers.SMBConfig)
+        SmbConfig.RoutineFunc = CtxFunctions
 
-		// this only prints a message and lets the client now that it is ready to use
-		SmbConfig.Start()
+        // this only prints a message and lets the client now that it is ready to use
+        SmbConfig.Start()
 
-		ListenerConfig = SmbConfig
-		ListenerName = SmbConfig.Config.Name
+        ListenerConfig = SmbConfig
+        ListenerName = SmbConfig.Config.Name
 
-		break
+        break
 
-	case handlers.LISTENER_EXTERNAL:
-		var ExtConfig = handlers.NewExternal(t.Server.Engine, info.(handlers.ExternalConfig))
+    case handlers.LISTENER_EXTERNAL:
+        var ExtConfig = handlers.NewExternal(t.Server.Engine, info.(handlers.ExternalConfig))
 
-		ExtConfig.RoutineFunc = CtxFunctions
+        ExtConfig.RoutineFunc = CtxFunctions
 
-		ExtConfig.Start()
+        ExtConfig.Start()
 
-		ListenerConfig = ExtConfig
-		ListenerName = info.(handlers.ExternalConfig).Name
+        ListenerConfig = ExtConfig
+        ListenerName = info.(handlers.ExternalConfig).Name
 
-		break
-	}
+        break
+    }
 
-	t.Listeners = append(t.Listeners, &Listener{
-		Name: ListenerName,
-		Type: ListenerType,
-		Config: ListenerConfig,
-	})
+    t.Listeners = append(t.Listeners, &Listener{
+        Name:   ListenerName,
+        Type:   ListenerType,
+        Config: ListenerConfig,
+    })
 
-	return nil
+    return nil
 }
 
 func (t *Teamserver) ListenerGetInfo(Name string) map[string]any {
 
-	for _, listener := range t.Listeners {
-		if listener.Name == Name {
-			switch listener.Type {
-			case handlers.LISTENER_HTTP:
-				return structs.Map(listener.Config.(*handlers.HTTP).Config)
+    for _, listener := range t.Listeners {
+        if listener.Name == Name {
+            switch listener.Type {
+            case handlers.LISTENER_HTTP:
+                return structs.Map(listener.Config.(*handlers.HTTP).Config)
 
-			case handlers.LISTENER_EXTERNAL:
-				break
+            case handlers.LISTENER_EXTERNAL:
+                break
 
-			case handlers.LISTENER_PIVOT_SMB:
-				break
-			}
-		}
-	}
+            case handlers.LISTENER_PIVOT_SMB:
+                break
+            }
+        }
+    }
 
-	return nil
+    return nil
 }

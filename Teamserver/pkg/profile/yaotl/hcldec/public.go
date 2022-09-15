@@ -1,8 +1,8 @@
 package hcldec
 
 import (
-	"github.com/Cracked5pider/Havoc/teamserver/pkg/profile/yaotl"
-	"github.com/zclconf/go-cty/cty"
+    "Havoc/pkg/profile/yaotl"
+    "github.com/zclconf/go-cty/cty"
 )
 
 // Decode interprets the given body using the given specification and returns
@@ -12,8 +12,8 @@ import (
 // The ctx argument may be nil, in which case any references to variables or
 // functions will produce error diagnostics.
 func Decode(body hcl.Body, spec Spec, ctx *hcl.EvalContext) (cty.Value, hcl.Diagnostics) {
-	val, _, diags := decode(body, nil, ctx, spec, false)
-	return val, diags
+    val, _, diags := decode(body, nil, ctx, spec, false)
+    return val, diags
 }
 
 // PartialDecode is like Decode except that it permits "leftover" items in
@@ -23,13 +23,13 @@ func Decode(body hcl.Body, spec Spec, ctx *hcl.EvalContext) (cty.Value, hcl.Diag
 // Any descendent block bodies are _not_ decoded partially and thus must
 // be fully described by the given specification.
 func PartialDecode(body hcl.Body, spec Spec, ctx *hcl.EvalContext) (cty.Value, hcl.Body, hcl.Diagnostics) {
-	return decode(body, nil, ctx, spec, true)
+    return decode(body, nil, ctx, spec, true)
 }
 
 // ImpliedType returns the value type that should result from decoding the
 // given spec.
 func ImpliedType(spec Spec) cty.Type {
-	return impliedType(spec)
+    return impliedType(spec)
 }
 
 // SourceRange interprets the given body using the given specification and
@@ -49,33 +49,33 @@ func ImpliedType(spec Spec) cty.Type {
 // will already have used Decode or PartialDecode earlier and thus had an
 // opportunity to detect and report spec violations.
 func SourceRange(body hcl.Body, spec Spec) hcl.Range {
-	return sourceRange(body, nil, spec)
+    return sourceRange(body, nil, spec)
 }
 
 // ChildBlockTypes returns a map of all of the child block types declared
 // by the given spec, with block type names as keys and the associated
 // nested body specs as values.
 func ChildBlockTypes(spec Spec) map[string]Spec {
-	ret := map[string]Spec{}
+    ret := map[string]Spec{}
 
-	// visitSameBodyChildren walks through the spec structure, calling
-	// the given callback for each descendent spec encountered. We are
-	// interested in the specs that reference attributes and blocks.
-	var visit visitFunc
-	visit = func(s Spec) {
-		if bs, ok := s.(blockSpec); ok {
-			for _, blockS := range bs.blockHeaderSchemata() {
-				nested := bs.nestedSpec()
-				if nested != nil { // nil can be returned to dynamically opt out of this interface
-					ret[blockS.Type] = nested
-				}
-			}
-		}
+    // visitSameBodyChildren walks through the spec structure, calling
+    // the given callback for each descendent spec encountered. We are
+    // interested in the specs that reference attributes and blocks.
+    var visit visitFunc
+    visit = func(s Spec) {
+        if bs, ok := s.(blockSpec); ok {
+            for _, blockS := range bs.blockHeaderSchemata() {
+                nested := bs.nestedSpec()
+                if nested != nil { // nil can be returned to dynamically opt out of this interface
+                    ret[blockS.Type] = nested
+                }
+            }
+        }
 
-		s.visitSameBodyChildren(visit)
-	}
+        s.visitSameBodyChildren(visit)
+    }
 
-	visit(spec)
+    visit(spec)
 
-	return ret
+    return ret
 }

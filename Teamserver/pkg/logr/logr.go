@@ -3,7 +3,7 @@ package logr
 import (
     "os"
 
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/logger"
+    "Havoc/pkg/logger"
 )
 
 type Logr struct {
@@ -17,13 +17,13 @@ var LogrInstance *Logr
 
 func NewLogr(Path string) *Logr {
     var (
-    	logr    = new(Logr)
-        err     error
+        logr = new(Logr)
+        err  error
     )
 
-    logr.Path         = Path
+    logr.Path = Path
     logr.ListenerPath = Path + "/listener"
-    logr.AgentPath    = Path + "/agents"
+    logr.AgentPath = Path + "/agents"
 
     if _, err = os.Stat(Path); os.IsNotExist(err) {
         if err = os.Mkdir(Path, os.ModePerm); err != nil {

@@ -17,7 +17,7 @@ also exercise that implementation's own programmatic API.
 To run the suite, first build the harness using Go:
 
 ```
-go install github.com/Cracked5pider/Havoc/teamserver/pkg/profile/yaotl/cmd/hclspecsuite
+go install Havoc/pkg/profile/yaotl/cmd/hclspecsuite
 ```
 
 Then run it, passing it the directory containing the test definitions (the

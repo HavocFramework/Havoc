@@ -1288,9 +1288,13 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 {
                     // TODO: For now only Smb
                     Command = "10";
-                    if ( InputCommands.size() > 2 )
+
+                    if ( InputCommands.size() >= 4 )
                     {
-                        Param = InputCommands[ 2 ];
+                        auto Host = InputCommands[ 2 ];
+                        auto Addr = InputCommands[ 3 ];
+
+                        Param = "\\\\" + Host + "\\pipe\\" + Addr;
                         TaskID = CONSOLE_INFO( "Tasked demon to connect to a smb pivot: " + Param );
                     }
                     else
@@ -1301,7 +1305,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 }
                 else if ( InputCommands[ 1 ].compare( "disconnect" ) == 0 )
                 {
-
+                    CONSOLE_ERROR( "Not implemented" ); return false;
                 }
                 else
                 {

@@ -38,7 +38,11 @@ Listeners {
                 "X-IsHavocFramework: true",
             ]
         }
+    }
 
+    Smb {
+        Name     = "Pivot - Smb"
+        PipeName = "demon"
     }
 }
 

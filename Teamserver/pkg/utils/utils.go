@@ -11,7 +11,7 @@ import (
     "time"
     "unsafe"
 
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/logger"
+    "Havoc/pkg/logger"
 )
 
 const letterBytes = "abcdef0123456789"
@@ -81,8 +81,8 @@ func ByteCountSI(b int64) string {
 
 func GetTeamserverPath() string {
     var (
-    	Path    string
-        err     error
+        Path string
+        err  error
     )
 
     if Path, err = os.Getwd(); err != nil {

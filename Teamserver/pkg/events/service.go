@@ -3,7 +3,7 @@ package events
 import (
     "time"
 
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/packager"
+    "Havoc/pkg/packager"
 )
 
 var Service service

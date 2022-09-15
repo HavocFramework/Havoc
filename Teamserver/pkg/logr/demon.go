@@ -5,14 +5,14 @@ import (
     "log"
     "os"
 
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/common"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/logger"
+    "Havoc/pkg/common"
+    "Havoc/pkg/logger"
 )
 
 func (l Logr) AddAgentInput(AgentType, AgentID, User, TaskID, Input string, time string) {
     var (
-    	DemonPath    = l.AgentPath + "/" + AgentID
-        DemonLogFile = DemonPath + "/Console_" + AgentID +  ".log"
+        DemonPath    = l.AgentPath + "/" + AgentID
+        DemonLogFile = DemonPath + "/Console_" + AgentID + ".log"
         InputString  string
     )
 
@@ -40,7 +40,7 @@ func (l Logr) AddAgentInput(AgentType, AgentID, User, TaskID, Input string, time
 func (l Logr) AddAgentRaw(AgentID, Raw string) {
     var (
         DemonPath    = l.AgentPath + "/" + AgentID
-        DemonLogFile = DemonPath + "/Console_" + AgentID +  ".log"
+        DemonLogFile = DemonPath + "/Console_" + AgentID + ".log"
     )
 
     if _, err := os.Stat(DemonPath); os.IsNotExist(err) {
@@ -65,7 +65,7 @@ func (l Logr) AddAgentRaw(AgentID, Raw string) {
 func (l Logr) DemonAddOutput(DemonID string, Output map[string]string, time string) {
     var (
         DemonPath    = l.AgentPath + "/" + DemonID
-        DemonLogFile = DemonPath + "/Console_" + DemonID +  ".log"
+        DemonLogFile = DemonPath + "/Console_" + DemonID + ".log"
     )
 
     if _, err := os.Stat(DemonPath); os.IsNotExist(err) {
@@ -109,9 +109,9 @@ func (l Logr) DemonAddOutput(DemonID string, Output map[string]string, time stri
 
 func (l Logr) DemonAddDownloadedFile(DemonID, FileName string, FileBytes []byte) {
     var (
-        DemonPath           = l.AgentPath + "/" + DemonID
-        DemonDownloadDir  = DemonPath + "/Download"
-        DemonDownload     = DemonDownloadDir + "/" + FileName
+        DemonPath        = l.AgentPath + "/" + DemonID
+        DemonDownloadDir = DemonPath + "/Download"
+        DemonDownload    = DemonDownloadDir + "/" + FileName
     )
 
     if _, err := os.Stat(DemonPath); os.IsNotExist(err) {
@@ -136,18 +136,18 @@ func (l Logr) DemonAddDownloadedFile(DemonID, FileName string, FileBytes []byte)
 
     defer f.Close()
 
-    _ , err = f.Write(FileBytes)
+    _, err = f.Write(FileBytes)
     if err != nil {
         logger.Error("Failed to write png file: " + err.Error())
         return
     }
 }
 
-func (l Logr) DemonSaveScreenshot(DemonID, Name string, BmpBytes []byte)  {
+func (l Logr) DemonSaveScreenshot(DemonID, Name string, BmpBytes []byte) {
     var (
-        DemonPath           = l.AgentPath + "/" + DemonID
-        DemonScreenshotDir  = DemonPath + "/Screenshots"
-        DemonScreenshot     = DemonScreenshotDir + "/" + Name
+        DemonPath          = l.AgentPath + "/" + DemonID
+        DemonScreenshotDir = DemonPath + "/Screenshots"
+        DemonScreenshot    = DemonScreenshotDir + "/" + Name
     )
 
     if _, err := os.Stat(DemonPath); os.IsNotExist(err) {
@@ -171,7 +171,7 @@ func (l Logr) DemonSaveScreenshot(DemonID, Name string, BmpBytes []byte)  {
     }
     defer f.Close()
 
-    _ , err = f.Write(common.Bmp2Png(BmpBytes))
+    _, err = f.Write(common.Bmp2Png(BmpBytes))
     if err != nil {
         logger.Error("Failed to write png file: " + err.Error())
         return

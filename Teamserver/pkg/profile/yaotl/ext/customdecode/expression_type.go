@@ -1,11 +1,11 @@
 package customdecode
 
 import (
-	"fmt"
-	"reflect"
+    "fmt"
+    "reflect"
 
-	"github.com/Cracked5pider/Havoc/teamserver/pkg/profile/yaotl"
-	"github.com/zclconf/go-cty/cty"
+    "Havoc/pkg/profile/yaotl"
+    "github.com/zclconf/go-cty/cty"
 )
 
 // ExpressionType is a cty capsule type that carries hcl.Expression values.
@@ -25,17 +25,17 @@ var ExpressionType cty.Type
 // ExpressionVal returns a new cty value of type ExpressionType, wrapping the
 // given expression.
 func ExpressionVal(expr hcl.Expression) cty.Value {
-	return cty.CapsuleVal(ExpressionType, &expr)
+    return cty.CapsuleVal(ExpressionType, &expr)
 }
 
 // ExpressionFromVal returns the expression encapsulated in the given value, or
 // panics if the value is not a known value of ExpressionType.
 func ExpressionFromVal(v cty.Value) hcl.Expression {
-	if !v.Type().Equals(ExpressionType) {
-		panic("value is not of ExpressionType")
-	}
-	ptr := v.EncapsulatedValue().(*hcl.Expression)
-	return *ptr
+    if !v.Type().Equals(ExpressionType) {
+        panic("value is not of ExpressionType")
+    }
+    ptr := v.EncapsulatedValue().(*hcl.Expression)
+    return *ptr
 }
 
 // ExpressionClosureType is a cty capsule type that carries hcl.Expression
@@ -49,20 +49,20 @@ var ExpressionClosureType cty.Type
 
 // ExpressionClosure is the type encapsulated in ExpressionClosureType
 type ExpressionClosure struct {
-	Expression  hcl.Expression
-	EvalContext *hcl.EvalContext
+    Expression  hcl.Expression
+    EvalContext *hcl.EvalContext
 }
 
 // ExpressionClosureVal returns a new cty value of type ExpressionClosureType,
 // wrapping the given expression closure.
 func ExpressionClosureVal(closure *ExpressionClosure) cty.Value {
-	return cty.CapsuleVal(ExpressionClosureType, closure)
+    return cty.CapsuleVal(ExpressionClosureType, closure)
 }
 
 // Value evaluates the closure's expression using the closure's EvalContext,
 // returning the result.
 func (c *ExpressionClosure) Value() (cty.Value, hcl.Diagnostics) {
-	return c.Expression.Value(c.EvalContext)
+    return c.Expression.Value(c.EvalContext)
 }
 
 // ExpressionClosureFromVal returns the expression closure encapsulated in the
@@ -73,74 +73,74 @@ func (c *ExpressionClosure) Value() (cty.Value, hcl.Diagnostics) {
 // it. To derive a new EvalContext, either create a child context or make
 // a copy.
 func ExpressionClosureFromVal(v cty.Value) *ExpressionClosure {
-	if !v.Type().Equals(ExpressionClosureType) {
-		panic("value is not of ExpressionClosureType")
-	}
-	return v.EncapsulatedValue().(*ExpressionClosure)
+    if !v.Type().Equals(ExpressionClosureType) {
+        panic("value is not of ExpressionClosureType")
+    }
+    return v.EncapsulatedValue().(*ExpressionClosure)
 }
 
 func init() {
-	// Getting hold of a reflect.Type for hcl.Expression is a bit tricky because
-	// it's an interface type, but we can do it with some indirection.
-	goExpressionType := reflect.TypeOf((*hcl.Expression)(nil)).Elem()
+    // Getting hold of a reflect.Type for hcl.Expression is a bit tricky because
+    // it's an interface type, but we can do it with some indirection.
+    goExpressionType := reflect.TypeOf((*hcl.Expression)(nil)).Elem()
 
-	ExpressionType = cty.CapsuleWithOps("expression", goExpressionType, &cty.CapsuleOps{
-		ExtensionData: func(key interface{}) interface{} {
-			switch key {
-			case CustomExpressionDecoder:
-				return CustomExpressionDecoderFunc(
-					func(expr hcl.Expression, ctx *hcl.EvalContext) (cty.Value, hcl.Diagnostics) {
-						return ExpressionVal(expr), nil
-					},
-				)
-			default:
-				return nil
-			}
-		},
-		TypeGoString: func(_ reflect.Type) string {
-			return "customdecode.ExpressionType"
-		},
-		GoString: func(raw interface{}) string {
-			exprPtr := raw.(*hcl.Expression)
-			return fmt.Sprintf("customdecode.ExpressionVal(%#v)", *exprPtr)
-		},
-		RawEquals: func(a, b interface{}) bool {
-			aPtr := a.(*hcl.Expression)
-			bPtr := b.(*hcl.Expression)
-			return reflect.DeepEqual(*aPtr, *bPtr)
-		},
-	})
-	ExpressionClosureType = cty.CapsuleWithOps("expression closure", reflect.TypeOf(ExpressionClosure{}), &cty.CapsuleOps{
-		ExtensionData: func(key interface{}) interface{} {
-			switch key {
-			case CustomExpressionDecoder:
-				return CustomExpressionDecoderFunc(
-					func(expr hcl.Expression, ctx *hcl.EvalContext) (cty.Value, hcl.Diagnostics) {
-						return ExpressionClosureVal(&ExpressionClosure{
-							Expression:  expr,
-							EvalContext: ctx,
-						}), nil
-					},
-				)
-			default:
-				return nil
-			}
-		},
-		TypeGoString: func(_ reflect.Type) string {
-			return "customdecode.ExpressionClosureType"
-		},
-		GoString: func(raw interface{}) string {
-			closure := raw.(*ExpressionClosure)
-			return fmt.Sprintf("customdecode.ExpressionClosureVal(%#v)", closure)
-		},
-		RawEquals: func(a, b interface{}) bool {
-			closureA := a.(*ExpressionClosure)
-			closureB := b.(*ExpressionClosure)
-			// The expression itself compares by deep equality, but EvalContexts
-			// conventionally compare by pointer identity, so we'll comply
-			// with both conventions here by testing them separately.
-			return closureA.EvalContext == closureB.EvalContext &&
-				reflect.DeepEqual(closureA.Expression, closureB.Expression)
-		},
-	})
+    ExpressionType = cty.CapsuleWithOps("expression", goExpressionType, &cty.CapsuleOps{
+        ExtensionData: func(key interface{}) interface{} {
+            switch key {
+            case CustomExpressionDecoder:
+                return CustomExpressionDecoderFunc(
+                    func(expr hcl.Expression, ctx *hcl.EvalContext) (cty.Value, hcl.Diagnostics) {
+                        return ExpressionVal(expr), nil
+                    },
+                )
+            default:
+                return nil
+            }
+        },
+        TypeGoString: func(_ reflect.Type) string {
+            return "customdecode.ExpressionType"
+        },
+        GoString: func(raw interface{}) string {
+            exprPtr := raw.(*hcl.Expression)
+            return fmt.Sprintf("customdecode.ExpressionVal(%#v)", *exprPtr)
+        },
+        RawEquals: func(a, b interface{}) bool {
+            aPtr := a.(*hcl.Expression)
+            bPtr := b.(*hcl.Expression)
+            return reflect.DeepEqual(*aPtr, *bPtr)
+        },
+    })
+    ExpressionClosureType = cty.CapsuleWithOps("expression closure", reflect.TypeOf(ExpressionClosure{}), &cty.CapsuleOps{
+        ExtensionData: func(key interface{}) interface{} {
+            switch key {
+            case CustomExpressionDecoder:
+                return CustomExpressionDecoderFunc(
+                    func(expr hcl.Expression, ctx *hcl.EvalContext) (cty.Value, hcl.Diagnostics) {
+                        return ExpressionClosureVal(&ExpressionClosure{
+                            Expression:  expr,
+                            EvalContext: ctx,
+                        }), nil
+                    },
+                )
+            default:
+                return nil
+            }
+        },
+        TypeGoString: func(_ reflect.Type) string {
+            return "customdecode.ExpressionClosureType"
+        },
+        GoString: func(raw interface{}) string {
+            closure := raw.(*ExpressionClosure)
+            return fmt.Sprintf("customdecode.ExpressionClosureVal(%#v)", closure)
+        },
+        RawEquals: func(a, b interface{}) bool {
+            closureA := a.(*ExpressionClosure)
+            closureB := b.(*ExpressionClosure)
+            // The expression itself compares by deep equality, but EvalContexts
+            // conventionally compare by pointer identity, so we'll comply
+            // with both conventions here by testing them separately.
+            return closureA.EvalContext == closureB.EvalContext &&
+                reflect.DeepEqual(closureA.Expression, closureB.Expression)
+        },
+    })
 }

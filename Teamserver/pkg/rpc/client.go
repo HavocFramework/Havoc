@@ -5,12 +5,12 @@ import (
     "net"
     "strconv"
 
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/logger"
+    "Havoc/pkg/logger"
 )
 
 func NewClient(port int) (*Client, error) {
     var (
-    	client      = new(Client)
+        client = new(Client)
     )
     client.IPCPort = port
     return client, nil
@@ -18,8 +18,8 @@ func NewClient(port int) (*Client, error) {
 
 func (c *Client) Connect() error {
     var (
-    	servAddr    = "localhost:"+strconv.Itoa(c.IPCPort)
-        err         error
+        servAddr = "localhost:" + strconv.Itoa(c.IPCPort)
+        err      error
     )
     tcpAddr, err := net.ResolveTCPAddr("tcp", servAddr)
     if err != nil {

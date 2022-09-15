@@ -9,15 +9,15 @@ import (
     "unicode/utf16"
     "unicode/utf8"
 
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/logger"
+    "Havoc/pkg/logger"
     "golang.org/x/image/bmp"
     "golang.org/x/text/encoding/unicode"
 )
 
 func Bmp2Png(BmpBytes []byte) []byte {
     var (
-    	f       io.Writer
-        Bytes   bytes.Buffer
+        f     io.Writer
+        Bytes bytes.Buffer
     )
 
     f = bufio.NewWriter(&Bytes)

@@ -61,4 +61,4 @@ Package ``hclparse``
 
 The above list just highlights the main functions in this package.
 For full documentation, see
-`the hclparse godoc <https://godoc.org/github.com/Cracked5pider/Havoc/teamserver/pkg/profile/yaotl/hclparse>`_.
+`the hclparse godoc <https://godoc.org/Havoc/pkg/profile/yaotl/hclparse>`_.

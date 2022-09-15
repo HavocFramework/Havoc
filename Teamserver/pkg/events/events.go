@@ -4,16 +4,16 @@ import (
     "encoding/json"
     "time"
 
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/packager"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/profile"
+    "Havoc/pkg/packager"
+    "Havoc/pkg/profile"
 )
 
 type (
-    chatLog     int
-    listeners   int
-    demons      int
-    gate        int
-    service     int
+    chatLog   int
+    listeners int
+    demons    int
+    gate      int
+    service   int
 )
 
 type EventInterface interface {
@@ -68,7 +68,7 @@ func UserDoNotExists() packager.Package {
 
 func SendDemonProfile(profile *profile.Demon) packager.Package {
     var (
-    	Package packager.Package
+        Package   packager.Package
         JsonBytes []byte
     )
 

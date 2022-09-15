@@ -1,8 +1,8 @@
 package dynblock
 
 import (
-	"github.com/Cracked5pider/Havoc/teamserver/pkg/profile/yaotl"
-	"github.com/Cracked5pider/Havoc/teamserver/pkg/profile/yaotl/hcldec"
+    "Havoc/pkg/profile/yaotl"
+    "Havoc/pkg/profile/yaotl/hcldec"
 )
 
 // VariablesHCLDec is a wrapper around WalkVariables that uses the given hcldec
@@ -14,8 +14,8 @@ import (
 // exposing both the variables referenced in the "for_each" and "labels"
 // arguments and variables used in the nested "content" block.
 func VariablesHCLDec(body hcl.Body, spec hcldec.Spec) []hcl.Traversal {
-	rootNode := WalkVariables(body)
-	return walkVariablesWithHCLDec(rootNode, spec)
+    rootNode := WalkVariables(body)
+    return walkVariablesWithHCLDec(rootNode, spec)
 }
 
 // ExpandVariablesHCLDec is like VariablesHCLDec but it includes only the
@@ -23,21 +23,21 @@ func VariablesHCLDec(body hcl.Body, spec hcldec.Spec) []hcl.Traversal {
 // are referenced only inside normal block contents. See WalkExpandVariables
 // for more information.
 func ExpandVariablesHCLDec(body hcl.Body, spec hcldec.Spec) []hcl.Traversal {
-	rootNode := WalkExpandVariables(body)
-	return walkVariablesWithHCLDec(rootNode, spec)
+    rootNode := WalkExpandVariables(body)
+    return walkVariablesWithHCLDec(rootNode, spec)
 }
 
 func walkVariablesWithHCLDec(node WalkVariablesNode, spec hcldec.Spec) []hcl.Traversal {
-	vars, children := node.Visit(hcldec.ImpliedSchema(spec))
+    vars, children := node.Visit(hcldec.ImpliedSchema(spec))
 
-	if len(children) > 0 {
-		childSpecs := hcldec.ChildBlockTypes(spec)
-		for _, child := range children {
-			if childSpec, exists := childSpecs[child.BlockTypeName]; exists {
-				vars = append(vars, walkVariablesWithHCLDec(child.Node, childSpec)...)
-			}
-		}
-	}
+    if len(children) > 0 {
+        childSpecs := hcldec.ChildBlockTypes(spec)
+        for _, child := range children {
+            if childSpec, exists := childSpecs[child.BlockTypeName]; exists {
+                vars = append(vars, walkVariablesWithHCLDec(child.Node, childSpec)...)
+            }
+        }
+    }
 
-	return vars
+    return vars
 }

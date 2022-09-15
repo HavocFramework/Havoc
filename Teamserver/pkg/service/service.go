@@ -8,20 +8,20 @@ import (
     "strconv"
     "strings"
 
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/common"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/demons"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/events"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/logger"
-    "github.com/Cracked5pider/Havoc/teamserver/pkg/logr"
+    "Havoc/pkg/common"
+    "Havoc/pkg/demons"
+    "Havoc/pkg/events"
+    "Havoc/pkg/logger"
+    "Havoc/pkg/logr"
     "github.com/gin-gonic/gin"
     "github.com/gorilla/websocket"
     "golang.org/x/crypto/sha3"
 )
 
 /*
-    Service API Module
-    Interact with external services (Custom Agents, ExternalC2s etc.)
- */
+   Service API Module
+   Interact with external services (Custom Agents, ExternalC2s etc.)
+*/
 
 func NewService(engine *gin.Engine) *Service {
     var service = new(Service)
@@ -33,7 +33,7 @@ func NewService(engine *gin.Engine) *Service {
 
 func (s *Service) Start() {
 
-    s.engine.GET("/" + s.Config.Endpoint, func(context *gin.Context) {
+    s.engine.GET("/"+s.Config.Endpoint, func(context *gin.Context) {
         upgrade := websocket.Upgrader{}
         WebSocket, err := upgrade.Upgrade(context.Writer, context.Request, nil)
         if err != nil {
@@ -50,8 +50,7 @@ func (s *Service) handleConnection(socket *websocket.Conn) {
     var client = new(ClientService)
     client.Conn = socket
 
-
-    if ! s.authenticate(client) {
+    if !s.authenticate(client) {
         logger.Error("Failed to authenticate service client")
 
         err := client.Conn.Close()
@@ -67,18 +66,17 @@ func (s *Service) handleConnection(socket *websocket.Conn) {
     s.routine(client)
 }
 
-
 func (s *Service) authenticate(client *ClientService) bool {
     var (
         Hasher      = sha3.New256()
         UserPass    string
         ServicePass string
-    	AuthRequest struct {
+        AuthRequest struct {
             Head struct {
                 Type string `json:"Type"`
             } `json:"Head"`
 
-            Body struct{
+            Body struct {
                 Pass string `json:"Password"`
             } `json:"Body"`
         }
@@ -90,7 +88,7 @@ func (s *Service) authenticate(client *ClientService) bool {
                 "Success": false,
             },
         }
-        Response    []byte
+        Response []byte
     )
 
     err := client.Conn.ReadJSON(&AuthRequest)
@@ -186,7 +184,7 @@ func (s *Service) dispatch(response map[string]map[string]any, client *ClientSer
 
         case BodyAgentTask:
             var (
-            	Agent = response["Body"]["Agent"].(map[string]any)
+                Agent = response["Body"]["Agent"].(map[string]any)
                 Task  string
             )
 
@@ -211,7 +209,7 @@ func (s *Service) dispatch(response map[string]map[string]any, client *ClientSer
                             logger.Error("Failed to decode command response: " + err.Error())
                         }
 
-                        var TaskJob = demons.DemonJob {
+                        var TaskJob = demons.DemonJob{
                             Payload: Command,
                         }
 
@@ -221,12 +219,12 @@ func (s *Service) dispatch(response map[string]map[string]any, client *ClientSer
             } else if Task == "Get" {
                 logger.Debug("Get tasks queue")
 
-                if _, ok := response["Body"]["TasksQueue"]; ! ok {
+                if _, ok := response["Body"]["TasksQueue"]; !ok {
                     for index := range s.Data.ServerAgents.Agents {
                         logger.Debug(fmt.Sprintf("AgentID:[%v] NameID:[%v]", Agent["NameID"], s.Data.ServerAgents.Agents[index].NameID))
 
                         if Agent["NameID"] == s.Data.ServerAgents.Agents[index].NameID {
-                            logger.Debug( "Found agent" )
+                            logger.Debug("Found agent")
                             var (
                                 TasksQueue    = s.Data.ServerAgents.Agents[index].GetQueuedJobs()
                                 PayloadBuffer []byte
@@ -253,13 +251,13 @@ func (s *Service) dispatch(response map[string]map[string]any, client *ClientSer
 
         case BodyAgentRegister:
             var (
-                Size            int
-                MagicValue      string
-                AgentID         string
-                Header          = demons.AgentHeader{}
-                RegisterInfo    = response["Body"]["RegisterInfo"].(map[string]any)
-                AgentInstance   *demons.Agent
-                err             error
+                Size          int
+                MagicValue    string
+                AgentID       string
+                Header        = demons.AgentHeader{}
+                RegisterInfo  = response["Body"]["RegisterInfo"].(map[string]any)
+                AgentInstance *demons.Agent
+                err           error
             )
 
             logger.Debug(RegisterInfo)
@@ -289,7 +287,7 @@ func (s *Service) dispatch(response map[string]map[string]any, client *ClientSer
                 logger.Error("MagicValue64: " + err.Error())
             }
 
-            Header.AgentID    = int(AgentID64)
+            Header.AgentID = int(AgentID64)
             Header.MagicValue = int(MagicValue64)
 
             logger.Debug(Header)
@@ -297,7 +295,7 @@ func (s *Service) dispatch(response map[string]map[string]any, client *ClientSer
             AgentInstance = demons.AgentRegisterInfoToInstance(Header, RegisterInfo)
 
             AgentInstance.Info.MagicValue = Header.MagicValue
-           // AgentInstance.Info.Listener   = h
+            // AgentInstance.Info.Listener   = h
 
             s.TeamAgents.AppendAgent(AgentInstance)
             pk := events.Demons.NewDemon(AgentInstance)
@@ -328,7 +326,7 @@ func (s *Service) dispatch(response map[string]map[string]any, client *ClientSer
 
                     if val, ok := response["Body"]["Response"]; ok {
                         var (
-                        	resp []byte
+                            resp []byte
                             err  error
                         )
 
@@ -347,15 +345,15 @@ func (s *Service) dispatch(response map[string]map[string]any, client *ClientSer
 
         case BodyAgentOutput:
             var (
-                AgentID   = response["Body"]["AgentID"].(string)
-                Callback  = response["Body"]["Callback"].(map[string]any)
+                AgentID  = response["Body"]["AgentID"].(string)
+                Callback = response["Body"]["Callback"].(map[string]any)
             )
 
             if Callback["MiscType"] == "download" {
 
                 var (
-                    FileName    = Callback["FileName"].(string)
-                    ContentB64  = Callback["Content"].(string)
+                    FileName   = Callback["FileName"].(string)
+                    ContentB64 = Callback["Content"].(string)
                 )
 
                 if FileContent, err := base64.StdEncoding.DecodeString(ContentB64); err == nil {
@@ -366,8 +364,8 @@ func (s *Service) dispatch(response map[string]map[string]any, client *ClientSer
                     logr.LogrInstance.DemonAddDownloadedFile(AgentID, FileName, FileContent)
                     Callback = make(map[string]any)
 
-                    Callback["MiscType"]  = "download"
-                    Callback["MiscData"]  = ContentB64
+                    Callback["MiscType"] = "download"
+                    Callback["MiscData"] = ContentB64
                     Callback["MiscData2"] = base64.StdEncoding.EncodeToString([]byte(FileName)) + ";" + common.ByteCountSI(int64(len(FileContent)))
 
                 } else {
@@ -381,8 +379,8 @@ func (s *Service) dispatch(response map[string]map[string]any, client *ClientSer
             }
 
             var (
-                out, _ 	= json.Marshal(Callback)
-                pk      = events.Demons.DemonOutput(AgentID, demons.HAVOC_CONSOLE_MESSAGE, string(out))
+                out, _ = json.Marshal(Callback)
+                pk     = events.Demons.DemonOutput(AgentID, demons.HAVOC_CONSOLE_MESSAGE, string(out))
             )
 
             s.Events.EventAppend(pk)
@@ -399,15 +397,15 @@ func (s *Service) dispatch(response map[string]map[string]any, client *ClientSer
 
                 if _, ok := Message["FileName"]; ok {
                     var (
-                        FileName    = Message["FileName"].(string)
-                        PayloadMsg  = Message["Payload"].(string)
-                        Payload     []byte
-                        err         error
+                        FileName   = Message["FileName"].(string)
+                        PayloadMsg = Message["Payload"].(string)
+                        Payload    []byte
+                        err        error
                     )
 
                     Payload, err = base64.StdEncoding.DecodeString(PayloadMsg)
                     if err != nil {
-                        err = s.Events.SendEvent(ClientID, events.Gate.SendConsoleMessage("Error", "Failed to decode base64 payload: " + err.Error()))
+                        err = s.Events.SendEvent(ClientID, events.Gate.SendConsoleMessage("Error", "Failed to decode base64 payload: "+err.Error()))
                         if err != nil {
                             logger.Error("Couldn't send Event: " + err.Error())
                             return

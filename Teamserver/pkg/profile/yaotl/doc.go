@@ -10,7 +10,7 @@
 //
 //     import (
 //     	"log"
-//     	"github.com/Cracked5pider/Havoc/teamserver/pkg/profile/yaotl/hclsimple"
+//     	"Havoc/pkg/profile/yaotl/hclsimple"
 //     )
 //
 //     type Config struct {

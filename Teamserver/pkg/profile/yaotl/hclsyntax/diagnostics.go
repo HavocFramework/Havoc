@@ -1,7 +1,7 @@
 package hclsyntax
 
 import (
-	"github.com/Cracked5pider/Havoc/teamserver/pkg/profile/yaotl"
+    "Havoc/pkg/profile/yaotl"
 )
 
 // setDiagEvalContext is an internal helper that will impose a particular
@@ -14,10 +14,10 @@ import (
 // set of diagnostics produced by a "deeper" component as the stack unwinds
 // during expression evaluation.
 func setDiagEvalContext(diags hcl.Diagnostics, expr hcl.Expression, ctx *hcl.EvalContext) {
-	for _, diag := range diags {
-		if diag.Expression == nil {
-			diag.Expression = expr
-			diag.EvalContext = ctx
-		}
-	}
+    for _, diag := range diags {
+        if diag.Expression == nil {
+            diag.Expression = expr
+            diag.EvalContext = ctx
+        }
+    }
 }

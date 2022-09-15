@@ -25,4 +25,4 @@ inclusion in a `hcl.EvalContext`. It also returns a new `cty.Body` that
 contains the remainder of the content from the given body, allowing for
 further processing of remaining content.
 
-For more information, see [the godoc reference](https://pkg.go.dev/github.com/Cracked5pider/Havoc/teamserver/pkg/profile/yaotl/ext/userfunc?tab=doc).
+For more information, see [the godoc reference](https://pkg.go.dev/Havoc/pkg/profile/yaotl/ext/userfunc?tab=doc).

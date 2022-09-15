@@ -1,14 +1,14 @@
 package typeexpr
 
 import (
-	"fmt"
-	"reflect"
+    "fmt"
+    "reflect"
 
-	"github.com/Cracked5pider/Havoc/teamserver/pkg/profile/yaotl"
-	"github.com/Cracked5pider/Havoc/teamserver/pkg/profile/yaotl/ext/customdecode"
-	"github.com/zclconf/go-cty/cty"
-	"github.com/zclconf/go-cty/cty/convert"
-	"github.com/zclconf/go-cty/cty/function"
+    "Havoc/pkg/profile/yaotl"
+    "Havoc/pkg/profile/yaotl/ext/customdecode"
+    "github.com/zclconf/go-cty/cty"
+    "github.com/zclconf/go-cty/cty/convert"
+    "github.com/zclconf/go-cty/cty/function"
 )
 
 // TypeConstraintType is a cty capsule type that allows cty type constraints to
@@ -24,7 +24,7 @@ var TypeConstraintType cty.Type
 // TypeConstraintVal constructs a cty.Value whose type is
 // TypeConstraintType.
 func TypeConstraintVal(ty cty.Type) cty.Value {
-	return cty.CapsuleVal(TypeConstraintType, &ty)
+    return cty.CapsuleVal(TypeConstraintType, &ty)
 }
 
 // TypeConstraintFromVal extracts the type from a cty.Value of
@@ -33,11 +33,11 @@ func TypeConstraintVal(ty cty.Type) cty.Value {
 // If the given value isn't a known, non-null value of TypeConstraintType
 // then this function will panic.
 func TypeConstraintFromVal(v cty.Value) cty.Type {
-	if !v.Type().Equals(TypeConstraintType) {
-		panic("value is not of TypeConstraintType")
-	}
-	ptr := v.EncapsulatedValue().(*cty.Type)
-	return *ptr
+    if !v.Type().Equals(TypeConstraintType) {
+        panic("value is not of TypeConstraintType")
+    }
+    ptr := v.EncapsulatedValue().(*cty.Type)
+    return *ptr
 }
 
 // ConvertFunc is a cty function that implements type conversions.
@@ -55,64 +55,64 @@ func TypeConstraintFromVal(v cty.Value) cty.Type {
 var ConvertFunc function.Function
 
 func init() {
-	TypeConstraintType = cty.CapsuleWithOps("type constraint", reflect.TypeOf(cty.Type{}), &cty.CapsuleOps{
-		ExtensionData: func(key interface{}) interface{} {
-			switch key {
-			case customdecode.CustomExpressionDecoder:
-				return customdecode.CustomExpressionDecoderFunc(
-					func(expr hcl.Expression, ctx *hcl.EvalContext) (cty.Value, hcl.Diagnostics) {
-						ty, diags := TypeConstraint(expr)
-						if diags.HasErrors() {
-							return cty.NilVal, diags
-						}
-						return TypeConstraintVal(ty), nil
-					},
-				)
-			default:
-				return nil
-			}
-		},
-		TypeGoString: func(_ reflect.Type) string {
-			return "typeexpr.TypeConstraintType"
-		},
-		GoString: func(raw interface{}) string {
-			tyPtr := raw.(*cty.Type)
-			return fmt.Sprintf("typeexpr.TypeConstraintVal(%#v)", *tyPtr)
-		},
-		RawEquals: func(a, b interface{}) bool {
-			aPtr := a.(*cty.Type)
-			bPtr := b.(*cty.Type)
-			return (*aPtr).Equals(*bPtr)
-		},
-	})
+    TypeConstraintType = cty.CapsuleWithOps("type constraint", reflect.TypeOf(cty.Type{}), &cty.CapsuleOps{
+        ExtensionData: func(key interface{}) interface{} {
+            switch key {
+            case customdecode.CustomExpressionDecoder:
+                return customdecode.CustomExpressionDecoderFunc(
+                    func(expr hcl.Expression, ctx *hcl.EvalContext) (cty.Value, hcl.Diagnostics) {
+                        ty, diags := TypeConstraint(expr)
+                        if diags.HasErrors() {
+                            return cty.NilVal, diags
+                        }
+                        return TypeConstraintVal(ty), nil
+                    },
+                )
+            default:
+                return nil
+            }
+        },
+        TypeGoString: func(_ reflect.Type) string {
+            return "typeexpr.TypeConstraintType"
+        },
+        GoString: func(raw interface{}) string {
+            tyPtr := raw.(*cty.Type)
+            return fmt.Sprintf("typeexpr.TypeConstraintVal(%#v)", *tyPtr)
+        },
+        RawEquals: func(a, b interface{}) bool {
+            aPtr := a.(*cty.Type)
+            bPtr := b.(*cty.Type)
+            return (*aPtr).Equals(*bPtr)
+        },
+    })
 
-	ConvertFunc = function.New(&function.Spec{
-		Params: []function.Parameter{
-			{
-				Name:             "value",
-				Type:             cty.DynamicPseudoType,
-				AllowNull:        true,
-				AllowDynamicType: true,
-			},
-			{
-				Name: "type",
-				Type: TypeConstraintType,
-			},
-		},
-		Type: func(args []cty.Value) (cty.Type, error) {
-			wantTypePtr := args[1].EncapsulatedValue().(*cty.Type)
-			got, err := convert.Convert(args[0], *wantTypePtr)
-			if err != nil {
-				return cty.NilType, function.NewArgError(0, err)
-			}
-			return got.Type(), nil
-		},
-		Impl: func(args []cty.Value, retType cty.Type) (cty.Value, error) {
-			v, err := convert.Convert(args[0], retType)
-			if err != nil {
-				return cty.NilVal, function.NewArgError(0, err)
-			}
-			return v, nil
-		},
-	})
+    ConvertFunc = function.New(&function.Spec{
+        Params: []function.Parameter{
+            {
+                Name:             "value",
+                Type:             cty.DynamicPseudoType,
+                AllowNull:        true,
+                AllowDynamicType: true,
+            },
+            {
+                Name: "type",
+                Type: TypeConstraintType,
+            },
+        },
+        Type: func(args []cty.Value) (cty.Type, error) {
+            wantTypePtr := args[1].EncapsulatedValue().(*cty.Type)
+            got, err := convert.Convert(args[0], *wantTypePtr)
+            if err != nil {
+                return cty.NilType, function.NewArgError(0, err)
+            }
+            return got.Type(), nil
+        },
+        Impl: func(args []cty.Value, retType cty.Type) (cty.Value, error) {
+            v, err := convert.Convert(args[0], retType)
+            if err != nil {
+                return cty.NilVal, function.NewArgError(0, err)
+            }
+            return v, nil
+        },
+    })
 }

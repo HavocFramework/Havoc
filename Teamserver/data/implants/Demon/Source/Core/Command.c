@@ -60,9 +60,6 @@ VOID CommandDispatcher( VOID )
         if ( ! Instance->Session.Connected )
             return;
 
-        // Check if we have something in our Pivots connection and sends back the output from the pipes
-        PivotCollectOutput();
-
         DxSleep( Instance->Config.Sleeping * 1000 );
 
         AlreadyDec  = FALSE;
