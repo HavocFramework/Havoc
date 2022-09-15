@@ -546,16 +546,6 @@ map<string, string> HavocNamespace::UserInterface::Dialogs::NewListener::Start()
     else if ( Payload.compare( HavocSpace::Listener::PayloadExternal ) == 0 )
     {
         ListenerInfo.insert( { "Endpoint", InputEndpoint->text().toStdString() } );
-
-        if ( InputOptPassword->text().length() > 0 )
-            ListenerInfo.insert( { "Password", InputOptPassword->text().toStdString() } );
-        else
-            ListenerInfo.insert( { "Password", "" } );
-
-        if ( CheckOptBindLocalHost->isChecked() )
-            ListenerInfo.insert( { "BindLocalHost", "true" } );
-        else
-            ListenerInfo.insert( { "BindLocalHost", "false" } );
     }
     else
     {

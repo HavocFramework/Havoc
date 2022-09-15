@@ -44,6 +44,11 @@ Listeners {
         Name     = "Pivot - Smb"
         PipeName = "demon"
     }
+
+		External {
+        Name     = "External C2 test - ExtC2"
+        Endpoint = "ExtEndpoint"
+    }
 }
 
 Service {

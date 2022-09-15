@@ -1594,8 +1594,8 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 
             Session.NameID = fmt.Sprintf("%x", DemonID)
             Session.Info.MagicValue = MagicValue
-            Session.Info.FirstCallIn = time.Now().Format("02-01-2006 15:04:05")
-            Session.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05.999")
+            Session.Info.FirstCallIn = demon.Info.FirstCallIn
+            Session.Info.LastCallIn = demon.Info.LastCallIn
             Session.Info.Hostname = Hostname
             Session.Info.DomainName = DomainName
             Session.Info.Username = Username

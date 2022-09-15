@@ -111,6 +111,7 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
                             Packer.AddInt32(int32(DemonID32))
                             Packer.AddBytes(Payload)
 
+                            // TODO: rewrite this and use AgentHeader instead.
                             var PivotJob = demons.DemonJob{
                                 Command: demons.COMMAND_PIVOT,
                                 Data: []interface{}{

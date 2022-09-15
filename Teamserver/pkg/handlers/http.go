@@ -14,6 +14,7 @@ import (
     "Havoc/pkg/demons"
     "Havoc/pkg/logger"
     "Havoc/pkg/logr"
+
     "github.com/gin-gonic/gin"
 )
 
@@ -70,7 +71,7 @@ func (h *HTTP) generateCertFiles() bool {
     return true
 }
 
-func (h *HTTP) handleAgentRequest(ctx *gin.Context) {
+func (h *HTTP) request(ctx *gin.Context) {
     var AgentInstance *demons.Agent
 
     Body, err := ioutil.ReadAll(ctx.Request.Body)
@@ -81,11 +82,6 @@ func (h *HTTP) handleAgentRequest(ctx *gin.Context) {
     for _, Header := range h.Config.Response.Headers {
         var hdr = strings.Split(Header, ":")
         ctx.Header(hdr[0], hdr[1])
-    }
-
-    if err != nil {
-        logger.Error("Failed to read body: " + err.Error())
-        return
     }
 
     AgentHeader, err := demons.AgentParseHeader(Body)
@@ -109,7 +105,6 @@ func (h *HTTP) handleAgentRequest(ctx *gin.Context) {
                 logger.Debug(fmt.Sprintf("Command: %d (%x)", Command, Command))
 
                 if Command == demons.COMMAND_GET_JOB {
-                    logger.Debug("Agent send a COMMAND_GET_JOB request")
 
                     AgentInstance.UpdateLastCallback()
 
@@ -119,50 +114,34 @@ func (h *HTTP) handleAgentRequest(ctx *gin.Context) {
                     h.RoutineFunc.DemonOutput(AgentInstance.NameID, demons.COMMAND_NOJOB, AgentCallback)
 
                     if len(AgentInstance.JobQueue) > 0 {
-                        var job = AgentInstance.GetQueuedJobs()
+                        var (
+                            job     = AgentInstance.GetQueuedJobs()
+                            payload = demons.BuildPayloadMessage(job, AgentInstance.Encryption.AESKey, AgentInstance.Encryption.AESIv)
+                        )
 
-                        if AgentInstance.Info.MagicValue == demons.DEMON_MAGIC_VALUE {
-                            for i := range job {
-                                logger.Debug(fmt.Sprintf("Task => CommandID:[%d] TaskID:[%x]\n", job[i].Command, job[i].TaskID))
-                            }
-
-                            var payload = demons.BuildPayloadMessage(job, AgentInstance.Encryption.AESKey, AgentInstance.Encryption.AESIv)
-                            BytesWritten, err := ctx.Writer.Write(payload)
-                            if err != nil {
-                                logger.Error("Couldn't write to HTTP connection: " + err.Error())
-                            } else {
-                                var ShowBytes = true
-
-                                for j := range job {
-                                    if job[j].Command == demons.COMMAND_PIVOT {
-                                        if len(job[j].Data) > 1 {
-                                            if job[j].Data[0] == demons.DEMON_PIVOT_SMB_COMMAND {
-                                                ShowBytes = false
-                                            }
-                                        }
-                                    } else {
-                                        ShowBytes = true
-                                    }
-                                }
-
-                                if ShowBytes {
-                                    h.RoutineFunc.CallbackSize(AgentInstance, BytesWritten)
-                                }
-                            }
+                        BytesWritten, err := ctx.Writer.Write(payload)
+                        if err != nil {
+                            logger.Error("Couldn't write to HTTP connection: " + err.Error())
                         } else {
-                            var payload []byte
+                            var ShowBytes = true
 
-                            for _, j := range job {
-                                payload = append(payload, j.Payload...)
+                            for j := range job {
+                                if job[j].Command == demons.COMMAND_PIVOT {
+                                    if len(job[j].Data) > 1 {
+                                        if job[j].Data[0] == demons.DEMON_PIVOT_SMB_COMMAND {
+                                            ShowBytes = false
+                                        }
+                                    }
+                                } else {
+                                    ShowBytes = true
+                                }
                             }
 
-                            BytesWritten, err := ctx.Writer.Write(payload)
-                            if err != nil {
-                                logger.Error("Couldn't write to HTTP connection: " + err.Error())
+                            if ShowBytes {
+                                h.RoutineFunc.CallbackSize(AgentInstance, BytesWritten)
                             }
-
-                            h.RoutineFunc.CallbackSize(AgentInstance, BytesWritten)
                         }
+
                     } else {
                         var NoJob = []demons.DemonJob{{
                             Command: demons.COMMAND_NOJOB,
@@ -231,6 +210,7 @@ func (h *HTTP) handleAgentRequest(ctx *gin.Context) {
                 }
             }
         } else {
+
             // TODO: handle 3rd party agent.
             logger.Debug("Is 3rd party agent. I hope...")
 
@@ -255,6 +235,7 @@ func (h *HTTP) handleAgentRequest(ctx *gin.Context) {
                 ctx.AbortWithStatus(404)
                 return
             }
+
         }
 
         ctx.AbortWithStatus(200)
@@ -292,7 +273,7 @@ func (h *HTTP) Start() {
         return
     }
 
-    h.GinEngine.POST("/:endpoint", h.handleAgentRequest)
+    h.GinEngine.POST("/:endpoint", h.request)
 
     if h.Config.Secure {
         if h.generateCertFiles() {
