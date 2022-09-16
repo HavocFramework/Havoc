@@ -1,3 +1,20 @@
-**/.idea/*
-**/cmake-build-debug/*
+# ignore .idea
+*/.idea/
 
+# ignore cmake generated stuff
+Client/Build
+**/cmake-build-debug/
+
+# ignore binaries
+**/bin/
+**/Bin/
+
+# dont commit your loot
+TeamServer/data/loot/
+
+# dont commit your secrets
+Teamserver/profiles/
+Client/Data/database.db
+
+# ignore go stuff
+Teamserver/go.sum
