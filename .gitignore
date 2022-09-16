@@ -10,7 +10,7 @@ Client/Build
 **/Bin/
 
 # dont commit your loot
-TeamServer/data/loot/
+Teamserver/data/loot/
 
 # dont commit your secrets
 Teamserver/profiles/
