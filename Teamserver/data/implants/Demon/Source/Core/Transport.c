@@ -413,7 +413,6 @@ LEAVE:
     }
     else
     {
-        PUTS( "Trying to write & read from pipe" )
         BOOL Success = FALSE;
 
         Success = Instance->Win32.WriteFile( Instance->Config.Transport.Handle, Data, Size, &Size, NULL );

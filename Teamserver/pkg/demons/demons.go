@@ -592,6 +592,28 @@ func TaskPrepare(TaskID string, Command int, Info any) (DemonJob, error) {
                 SubCommand,
             }
             break
+
+        case "cat":
+            SubCommand = 10
+
+            var (
+                FileName string
+                ArgArray []string
+            )
+
+            ArgArray = strings.Split(Arguments, ";")
+
+            if val, err := base64.StdEncoding.DecodeString(ArgArray[0]); err == nil {
+                FileName = string(val)
+            } else {
+                return DemonJob{}, err
+            }
+
+            job.Data = []interface{}{
+                SubCommand,
+                FileName,
+            }
+            break
         }
 
     case COMMAND_PROC:
@@ -2135,6 +2157,21 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
             Output["Message"] = fmt.Sprintf("Current directory: %v", string(Path))
 
             break
+
+        case 10:
+            if Parser.Length() >= 8 {
+                var (
+                    FileName    = Parser.ParseBytes()
+                    FileContent = Parser.ParseBytes()
+                )
+                Output["Type"] = "Info"
+                Output["Message"] = fmt.Sprintf("File content of %v (%v):", string(FileName), len(FileContent))
+                Output["Output"] = string(FileContent)
+
+            } else {
+                Output["Type"] = "Error"
+                Output["Message"] = "Failed to parse fs::cat response"
+            }
         }
 
         Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, Output)

@@ -1029,6 +1029,23 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 return false;
             }
         }
+        else if ( InputCommands[ 0 ].compare( "cat" ) == 0 )
+        {
+            if ( InputCommands.size() >= 2 )
+            {
+                auto FilePath = JoinAtIndex( InputCommands, 1 );
+
+                TaskID                     = CONSOLE_INFO( "Tasked demon to display content of " + FilePath );
+                CommandInputList[ TaskID ] = commandline;
+
+                SEND( Execute.FS( TaskID, "cat", FilePath.toLocal8Bit().toBase64() ) )
+            }
+            else
+            {
+                CONSOLE_ERROR( "Not enough arguments" )
+                return false;
+            }
+        }
         else if ( InputCommands[ 0 ].compare( "upload" ) == 0 )
         {
             if ( InputCommands.size() >= 3 )

