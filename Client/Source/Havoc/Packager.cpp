@@ -588,8 +588,6 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
 
         case 0x5:
         {
-            spdlog::info( "Mark As Dead" );
-
             auto AgentID = Package->Body.Info[ "AgentID" ];
             auto Marked  = Package->Body.Info[ "Marked" ];
 
