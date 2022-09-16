@@ -6,6 +6,7 @@ import (
     "Havoc/pkg/logger"
     "Havoc/pkg/logr"
     "Havoc/pkg/teamserver"
+
     "github.com/spf13/cobra"
 )
 
@@ -45,10 +46,6 @@ func serverFunc(cmd *cobra.Command, args []string) error {
     logr.LogrInstance = logr.NewLogr(DirPath + "/data/loot")
     logr.LogrInstance.ServerStdOutInit()
 
-    if !teamserver.HavocTeamserver.FindSystemPackages() {
-        logger.Error("Install needed packages")
-    }
-
     if teamserverFlags.Server.Debug {
         logger.SetDebug(true)
         logger.Debug("Debug mode enabled")
@@ -61,7 +58,14 @@ func serverFunc(cmd *cobra.Command, args []string) error {
     }
 
     if teamserverFlags.Server.Profile != "" {
+
         teamserver.HavocTeamserver.SetProfile(teamserverFlags.Server.Profile)
+
+        if !teamserver.HavocTeamserver.FindSystemPackages() {
+            logger.Error("Install needed packages")
+            os.Exit(1)
+        }
+
     } else {
         logger.Error("No profile specified")
         os.Exit(1)

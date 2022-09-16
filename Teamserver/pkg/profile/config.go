@@ -8,15 +8,21 @@ type HavocConfig struct {
 	Service   *ServiceConfig  `yaotl:"Service,block"`
 }
 
+type BuildConfig struct {
+	Compiler64 string `yaotl:"Compiler64,optional"`
+	Compiler86 string `yaotl:"Compiler86,optional"`
+	Nasm       string `yaotl:"Nasm,optional"`
+}
+
 type ServiceConfig struct {
 	Endpoint string `yaotl:"Endpoint"`
 	Password string `yaotl:"Password"`
 }
 
 type ServerProfile struct {
-	Host     string `yaotl:"Host"`
-	Port     int    `yaotl:"Port"`
-
+	Host  string       `yaotl:"Host"`
+	Port  int          `yaotl:"Port"`
+	Build *BuildConfig `yaotl:"Build,block"`
 	// TODO: add WebSocket server config
 	// Path for Havoc connection
 	// TLS or not
@@ -34,28 +40,28 @@ type UsersBlock struct {
 
 // Listeners
 type Listeners struct {
-	ListenerHTTP 	 []*ListenerHTTP 	 `yaotl:"Http,block"`
-	ListenerSMB  	 []*ListenerSMB  	 `yaotl:"Smb,block"`
+	ListenerHTTP     []*ListenerHTTP     `yaotl:"Http,block"`
+	ListenerSMB      []*ListenerSMB      `yaotl:"Smb,block"`
 	ListenerExternal []*ListenerExternal `yaotl:"External,block"`
 }
 
 type ListenerHTTP struct {
-	Name     string 				`yaotl:"Name"`
-	KillDate string 				`yaotl:"KillDate,optional"`
+	Name     string `yaotl:"Name"`
+	KillDate string `yaotl:"KillDate,optional"`
 
-	Host string 					`yaotl:"Host"`
-	Port int    					`yaotl:"Port"`
+	Host string `yaotl:"Host"`
+	Port int    `yaotl:"Port"`
 
-	Methode string 					`yaotl:"Method,optional"`
+	Methode string `yaotl:"Method,optional"`
 
 	// Custom config
-	UserAgent string   				`yaotl:"UserAgent,optional"`
-	Headers   []string 				`yaotl:"Headers,optional"`
-	Uris      []string 				`yaotl:"Uris,optional"`
-	Secure    bool     				`yaotl:"Secure,optional"`
+	UserAgent string   `yaotl:"UserAgent,optional"`
+	Headers   []string `yaotl:"Headers,optional"`
+	Uris      []string `yaotl:"Uris,optional"`
+	Secure    bool     `yaotl:"Secure,optional"`
 
-	Response  *ListenerHttpResponse `yaotl:"Response,block"`
-	Proxy  	  *ListenerHttpProxy 	`yaotl:"Proxy,block"`
+	Response *ListenerHttpResponse `yaotl:"Response,block"`
+	Proxy    *ListenerHttpProxy    `yaotl:"Proxy,block"`
 }
 
 type ListenerSMB struct {
@@ -69,14 +75,14 @@ type ListenerExternal struct {
 }
 
 type ListenerHttpResponse struct {
-	Headers	[]string `yaotl:"Headers,optional"`
+	Headers []string `yaotl:"Headers,optional"`
 }
 
 type ListenerHttpProxy struct {
 	Host string `yaotl:"Host"`
-	Port int 	`yaotl:"Port"`
-	User string	`yaotl:"Username"`
-	Pass string	`yaotl:"Password"`
+	Port int    `yaotl:"Port"`
+	User string `yaotl:"Username"`
+	Pass string `yaotl:"Password"`
 }
 
 // --- Demon ---
@@ -95,13 +101,13 @@ type Binary struct {
 }
 
 type ProcessInjectionBlock struct {
-	Spawn64		 string 		 `yaotl:"Spawn64,optional"`
-	Spawn32		 string 		 `yaotl:"Spawn32,optional"`
+	Spawn64 string `yaotl:"Spawn64,optional"`
+	Spawn32 string `yaotl:"Spawn32,optional"`
 }
 
 type Demon struct {
-	Sleep 			 int					`yaotl:"Sleep,optional"`
-	Jitter 			 int					`yaotl:"Jitter,optional"`
+	Sleep            int                    `yaotl:"Sleep,optional"`
+	Jitter           int                    `yaotl:"Jitter,optional"`
 	Binary           *Binary                `yaotl:"Binary,block"`
 	ProcessInjection *ProcessInjectionBlock `yaotl:"Injection,block"`
 }

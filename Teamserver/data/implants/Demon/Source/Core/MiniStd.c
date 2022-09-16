@@ -3,11 +3,10 @@
 #include <Core/MiniStd.h>
 
 /*
- * Most of the functions from here are from VX-Underground https://github.com/vxunderground/WinAPI-Tricks
+ * Most of the functions from here are from VX-Underground https://github.com/vxunderground/VX-API
  */
 
-// source: https://github.com/vxunderground/WinAPI-Tricks/blob/main/Stdio/StringCompare/StringCompareA.c
-INT StringCompareA(LPCSTR String1, LPCSTR String2)
+INT StringCompareA( LPCSTR String1, LPCSTR String2 )
 {
     for (; *String1 == *String2; String1++, String2++)
     {
@@ -19,7 +18,6 @@ INT StringCompareA(LPCSTR String1, LPCSTR String2)
 
 }
 
-// source: https://github.com/vxunderground/WinAPI-Tricks/blob/main/String%20Hashing/HashStringDjb2/HashStringDjb2A.c
 DWORD HashStringA( PCHAR String )
 {
     ULONG Hash = HASH_KEY;
@@ -118,13 +116,13 @@ SIZE_T WCharStringToCharString(PCHAR Destination, PWCHAR Source, SIZE_T MaximumA
     return MaximumAllowed - Length;
 }
 
-SIZE_T CharStringToWCharString(PWCHAR Destination, PCHAR Source, SIZE_T MaximumAllowed)
+SIZE_T CharStringToWCharString( PWCHAR Destination, PCHAR Source, SIZE_T MaximumAllowed )
 {
-    INT Length = MaximumAllowed;
+    INT Length = (INT)MaximumAllowed;
 
     while (--Length >= 0)
     {
-        if (!(*Destination++ = *Source++))
+        if ( ! ( *Destination++ = *Source++ ) )
             return MaximumAllowed - Length - 1;
     }
 

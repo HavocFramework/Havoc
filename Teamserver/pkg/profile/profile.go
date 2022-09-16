@@ -1,50 +1,50 @@
 package profile
 
 import (
-    "Havoc/pkg/colors"
-    "Havoc/pkg/logger"
-    yaotl "Havoc/pkg/profile/yaotl/hclsimple"
+	"Havoc/pkg/colors"
+	"Havoc/pkg/logger"
+	yaotl "Havoc/pkg/profile/yaotl/hclsimple"
 )
 
 type Profile struct {
-    Config HavocConfig
+	Config HavocConfig
 }
 
 func NewProfile() *Profile {
-    return new(Profile)
+	return new(Profile)
 }
 
 func (p *Profile) SetProfile(path string) error {
-    err := yaotl.DecodeFile(path, nil, &p.Config)
-    if err != nil {
-        return err
-    }
+	err := yaotl.DecodeFile(path, nil, &p.Config)
+	if err != nil {
+		return err
+	}
 
-    logger.Info("Havoc profile:", colors.Blue(path))
+	logger.Info("Havoc profile:", colors.Blue(path))
 
-    return nil
+	return nil
 }
 
 func (p *Profile) ServerHost() string {
-    if p.Config.Server != nil {
-        return p.Config.Server.Host
-    }
-    return ""
+	if p.Config.Server != nil {
+		return p.Config.Server.Host
+	}
+	return ""
 }
 
 func (p *Profile) ServerPort() int {
-    if p.Config.Server != nil {
-        return p.Config.Server.Port
-    }
-    return 0
+	if p.Config.Server != nil {
+		return p.Config.Server.Port
+	}
+	return 0
 }
 
 func (p *Profile) ListOfUsernames() []string {
-    var Usernames []string
+	var Usernames []string
 
-    for _, user := range p.Config.Operators.Users {
-        Usernames = append(Usernames, user.Name)
-    }
+	for _, user := range p.Config.Operators.Users {
+		Usernames = append(Usernames, user.Name)
+	}
 
-    return Usernames
+	return Usernames
 }

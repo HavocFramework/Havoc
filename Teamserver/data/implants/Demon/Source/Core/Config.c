@@ -54,9 +54,9 @@ VOID ConfigInit()
     Instance->Config.Transport.Method = L"POST";
 
     Buffer = ParserGetBytes( &Parser, &Length );
-    Instance->Config.Transport.Host = Instance->Win32.LocalAlloc( LPTR, Length * 2 );
-    CharStringToWCharString( Instance->Config.Transport.Host, Buffer, Length );
-    PRINTF( "[CONFIG] Host: %ls\n", Instance->Config.Transport.Host );
+    Instance->Config.Transport.Host = Instance->Win32.LocalAlloc( LPTR, ( Length * 2 ) + 2 );
+    Length = CharStringToWCharString( Instance->Config.Transport.Host, Buffer, Length );
+    PRINTF( "[CONFIG] Host: %ls [%d]\n", Instance->Config.Transport.Host, Length );
 
     // Listener Port
     Instance->Config.Transport.Port = ParserGetInt32( &Parser );

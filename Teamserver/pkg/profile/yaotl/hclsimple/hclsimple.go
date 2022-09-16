@@ -6,13 +6,13 @@
 package hclsimple
 
 import (
-    "fmt"
-    "io/ioutil"
-    "os"
+	"fmt"
+	"io/ioutil"
+	"os"
 
-    "Havoc/pkg/profile/yaotl"
-    "Havoc/pkg/profile/yaotl/gohcl"
-    "Havoc/pkg/profile/yaotl/hclsyntax"
+	"Havoc/pkg/profile/yaotl"
+	"Havoc/pkg/profile/yaotl/gohcl"
+	"Havoc/pkg/profile/yaotl/hclsyntax"
 )
 
 // Decode parses, decodes, and evaluates expressions in the given HCL source
@@ -51,43 +51,46 @@ import (
 // just wrapping functionality elsewhere, if it doesn't meet your needs then
 // please consider copying it into your program and adapting it as needed.
 func Decode(filename string, src []byte, ctx *hcl.EvalContext, target interface{}) error {
-    var file *hcl.File
-    var diags hcl.Diagnostics
+	var file *hcl.File
+	var diags hcl.Diagnostics
 
-    file, diags = hclsyntax.ParseConfig(src, filename, hcl.Pos{Line: 1, Column: 1})
-    if diags.HasErrors() {
-        return diags
-    }
+	file, diags = hclsyntax.ParseConfig(src, filename, hcl.Pos{Line: 1, Column: 1})
+	if diags.HasErrors() {
+		return diags
+	}
 
-    diags = gohcl.DecodeBody(file.Body, ctx, target)
-    if diags.HasErrors() {
-        return diags
-    }
-    return nil
+	diags = gohcl.DecodeBody(file.Body, ctx, target)
+	if diags.HasErrors() {
+		return diags
+	}
+
+	return nil
 }
 
 // DecodeFile is a wrapper around Decode that first reads the given filename
 // from disk. See the Decode documentation for more information.
 func DecodeFile(filename string, ctx *hcl.EvalContext, target interface{}) error {
-    src, err := ioutil.ReadFile(filename)
-    if err != nil {
-        if os.IsNotExist(err) {
-            return hcl.Diagnostics{
-                {
-                    Severity: hcl.DiagError,
-                    Summary:  "Configuration file not found",
-                    Detail:   fmt.Sprintf("The configuration file %s does not exist.", filename),
-                },
-            }
-        }
-        return hcl.Diagnostics{
-            {
-                Severity: hcl.DiagError,
-                Summary:  "Failed to read configuration",
-                Detail:   fmt.Sprintf("Can't read %s: %s.", filename, err),
-            },
-        }
-    }
+	src, err := ioutil.ReadFile(filename)
 
-    return Decode(filename, src, ctx, target)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return hcl.Diagnostics{
+				{
+					Severity: hcl.DiagError,
+					Summary:  "Configuration file not found",
+					Detail:   fmt.Sprintf("The configuration file %s does not exist.", filename),
+				},
+			}
+		}
+
+		return hcl.Diagnostics{
+			{
+				Severity: hcl.DiagError,
+				Summary:  "Failed to read configuration",
+				Detail:   fmt.Sprintf("Can't read %s: %s.", filename, err),
+			},
+		}
+	}
+
+	return Decode(filename, src, ctx, target)
 }
