@@ -476,20 +476,23 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
             {
                 if ( Session.Name.compare( Package->Body.Info[ "DemonID" ].c_str() ) == 0 )
                 {
-                    auto AgentType  = QString( Package->Body.Info[ "AgentType" ].c_str() );
-                    auto message    = QString (
-                            Util::ColorText::Comment( QString( Package->Head.Time.c_str() ) + " [" + QString( Package->Head.User.c_str() ) + "]" ) +
-                            " " + Util::ColorText::UnderlinePink( AgentType ) +
-                            Util::ColorText::Cyan(" » ") + QString( Package->Body.Info[ "CommandLine" ].c_str() )
-                    );
+                    auto AgentType = QString( Package->Body.Info[ "AgentType" ].c_str() );
 
                     if ( ! Package->Body.Info[ "CommandLine" ].empty() )
                     {
-                        Session.InteractedWidget->AppendRaw();
-                        Session.InteractedWidget->AppendRaw( message );
-                    }
+                        Session.InteractedWidget->DemonCommands->Prompt = QString (
+                                Util::ColorText::Comment( QString( Package->Head.Time.c_str() ) + " [" + QString( Package->Head.User.c_str() ) + "]" ) +
+                                " " + Util::ColorText::UnderlinePink( AgentType ) +
+                                Util::ColorText::Cyan(" » ") + QString( Package->Body.Info[ "CommandLine" ].c_str() )
+                        );
 
-                    Session.InteractedWidget->DemonCommands->DispatchCommand( false, Package->Body.Info[ "TaskID" ].c_str(), Package->Body.Info[ "CommandLine" ].c_str() );
+
+                        spdlog::info( "SendCommand Prompt: {}", Session.InteractedWidget->DemonCommands->Prompt.toStdString() );
+
+                        Session.InteractedWidget->AppendRaw();
+                        Session.InteractedWidget->AppendRaw( Session.InteractedWidget->DemonCommands->Prompt );
+                        Session.InteractedWidget->DemonCommands->DispatchCommand( false, Package->Body.Info[ "TaskID" ].c_str(), Package->Body.Info[ "CommandLine" ].c_str() );
+                    }
                 }
             }
             break;

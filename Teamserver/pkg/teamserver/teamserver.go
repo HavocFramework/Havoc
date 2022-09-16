@@ -15,6 +15,7 @@ import (
     "time"
 
     "Havoc/pkg/service"
+
     "github.com/gin-gonic/gin"
     "github.com/gorilla/websocket"
     "golang.org/x/crypto/sha3"
@@ -295,7 +296,7 @@ func (t *Teamserver) handleRequest(id string) {
         }
 
         pk := t.Clients[id].Packager.CreatePackage(string(EventPackage))
-        pk.Head.Time = time.Now().Format("02-01-2006 15:04:05")
+        pk.Head.Time = time.Now().Format("02/01/2006 15:04:05")
 
         t.EventAppend(pk)
         t.DispatchEvent(pk)

@@ -26,7 +26,7 @@ func Authenticated(authed bool) packager.Package {
     var Package packager.Package
 
     Package.Head.Event = packager.Type.InitConnection.Type
-    Package.Head.Time = time.Now().Format("02-01-2006 15:04:05")
+    Package.Head.Time = time.Now().Format("02/01/2006 15:04:05")
 
     Package.Body.Info = make(map[string]interface{})
     if authed {
@@ -44,7 +44,7 @@ func UserAlreadyExits() packager.Package {
     var Package packager.Package
 
     Package.Head.Event = packager.Type.InitConnection.Type
-    Package.Head.Time = time.Now().Format("02-01-2006 15:04:05")
+    Package.Head.Time = time.Now().Format("02/01/2006 15:04:05")
 
     Package.Body.Info = make(map[string]interface{})
     Package.Body.SubEvent = packager.Type.InitConnection.Error
@@ -57,7 +57,7 @@ func UserDoNotExists() packager.Package {
     var Package packager.Package
 
     Package.Head.Event = packager.Type.InitConnection.Type
-    Package.Head.Time = time.Now().Format("02-01-2006 15:04:05")
+    Package.Head.Time = time.Now().Format("02/01/2006 15:04:05")
 
     Package.Body.Info = make(map[string]interface{})
     Package.Body.SubEvent = packager.Type.InitConnection.Error
@@ -78,7 +78,7 @@ func SendDemonProfile(profile *profile.Demon) packager.Package {
     }
 
     Package.Head.Event = packager.Type.InitConnection.Type
-    Package.Head.Time = time.Now().Format("02-01-2006 15:04:05")
+    Package.Head.Time = time.Now().Format("02/01/2006 15:04:05")
 
     Package.Body.SubEvent = packager.Type.InitConnection.Profile
     Package.Body.Info = map[string]interface{}{

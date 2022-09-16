@@ -166,7 +166,7 @@ func AgentRegisterInfoToInstance(Header AgentHeader, RegisterInfo map[string]any
     agent.Info.OSBuild = RegisterInfo["OS Build"].(string)
     agent.Info.OSArch = RegisterInfo["OS Arch"].(string)
 
-    agent.Info.FirstCallIn = time.Now().Format("02-01-2006 15:04:05")
+    agent.Info.FirstCallIn = time.Now().Format("02/01/2006 15:04:05")
     agent.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05.999")
 
     return agent
@@ -314,7 +314,7 @@ func AgentParseResponse(AgentID int, Parser *parser.Parser) *Agent {
 
     Session.NameID = fmt.Sprintf("%x", DemonID)
     Session.Info.MagicValue = MagicValue
-    Session.Info.FirstCallIn = time.Now().Format("02-01-2006 15:04:05")
+    Session.Info.FirstCallIn = time.Now().Format("02/01/2006 15:04:05")
     Session.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05.999")
     Session.Info.Hostname = Hostname
     Session.Info.DomainName = DomainName

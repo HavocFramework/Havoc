@@ -84,7 +84,6 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
     auto InputCommands = commandline.split(" ");
     auto IsDemonAgent  = false;
     auto AgentData     = ServiceAgent();
-    auto Prompt        = QString();
 
     // check if it's a generic demon or 3rd party agent
 
@@ -1391,6 +1390,12 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
         else if ( InputCommands[ 0 ].compare( "" ) == 0 )
         {
             // do nothing
+        }
+        else
+        {
+            spdlog::info( "Prompt => {}", Prompt.toStdString() );
+            CONSOLE_ERROR( "Command/Module not found: " + commandline )
+            return false;
         }
 
         // check for registered commands

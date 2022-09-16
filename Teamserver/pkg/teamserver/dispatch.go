@@ -65,7 +65,7 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 
             if val, ok := pk.Body.Info["CommandID"]; ok {
                 if pk.Body.Info["CommandID"] == "Python Plugin" {
-                    logr.LogrInstance.AddAgentInput("Demon", pk.Body.Info["DemonID"].(string), pk.Head.User, pk.Body.Info["TaskID"].(string), pk.Body.Info["CommandLine"].(string), time.Now().UTC().Format("02-01-2006 15:04:05"))
+                    logr.LogrInstance.AddAgentInput("Demon", pk.Body.Info["DemonID"].(string), pk.Head.User, pk.Body.Info["TaskID"].(string), pk.Body.Info["CommandLine"].(string), time.Now().UTC().Format("02/01/2006 15:04:05"))
                     return
                 } else {
                     command, err = strconv.Atoi(val.(string))
@@ -122,10 +122,10 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
                             }
 
                             t.Agents.Agents[i].Pivots.Parent.AddJobToQueue(PivotJob)
-                            logr.LogrInstance.AddAgentInput("Demon", t.Agents.Agents[i].NameID, pk.Head.User, pk.Body.Info["TaskID"].(string), pk.Body.Info["CommandLine"].(string), time.Now().UTC().Format("02-01-2006 15:04:05"))
+                            logr.LogrInstance.AddAgentInput("Demon", t.Agents.Agents[i].NameID, pk.Head.User, pk.Body.Info["TaskID"].(string), pk.Body.Info["CommandLine"].(string), time.Now().UTC().Format("02/01/2006 15:04:05"))
                         } else {
                             t.Agents.Agents[i].AddJobToQueue(job)
-                            logr.LogrInstance.AddAgentInput("Demon", pk.Body.Info["DemonID"].(string), pk.Head.User, pk.Body.Info["TaskID"].(string), pk.Body.Info["CommandLine"].(string), time.Now().UTC().Format("02-01-2006 15:04:05"))
+                            logr.LogrInstance.AddAgentInput("Demon", pk.Body.Info["DemonID"].(string), pk.Head.User, pk.Body.Info["TaskID"].(string), pk.Body.Info["CommandLine"].(string), time.Now().UTC().Format("02/01/2006 15:04:05"))
                         }
 
                     } else {
@@ -141,7 +141,7 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
                                 agent.SendTask(pk.Body.Info, t.Agents.Agents[i].ToMap())
 
                                 // log agent input
-                                logr.LogrInstance.AddAgentInput(agent.Name, pk.Body.Info["DemonID"].(string), pk.Head.User, pk.Body.Info["TaskID"].(string), pk.Body.Info["CommandLine"].(string), time.Now().UTC().Format("02-01-2006 15:04:05"))
+                                logr.LogrInstance.AddAgentInput(agent.Name, pk.Body.Info["DemonID"].(string), pk.Head.User, pk.Body.Info["TaskID"].(string), pk.Body.Info["CommandLine"].(string), time.Now().UTC().Format("02/01/2006 15:04:05"))
                             }
                         }
                     }

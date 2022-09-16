@@ -12,9 +12,7 @@ using namespace HavocNamespace;
 #define SEND( f ) \
     if ( Send ) f; return true;
 
-#define CONSOLE_ERROR( x )                   \
-    DemonConsole->Console->append( "" );     \
-    DemonConsole->Console->append( Prompt ); \
+#define CONSOLE_ERROR( x )  \
     DemonConsole->TaskError( x );
 
 #define CONSOLE_INFO( x ) \
@@ -98,6 +96,7 @@ public:
     QString AgentTypeName;
     DispatchOutput OutputDispatch;
     CommandExecute Execute;
+    QString Prompt;
 
     typedef struct SubCommand
     {

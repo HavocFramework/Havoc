@@ -197,7 +197,7 @@ void DemonInteracted::AppendText( const QString& text )
     }
 
     ConsolePrompt = QString(
-            ColorText::Comment( QTime::currentTime().toString( "hh:mm:ss" ) +
+            ColorText::Comment( QDate::currentDate().toString( "dd/MM/yyyy" ) + " "+ QTime::currentTime().toString( "hh:mm:ss" ) +
             " [" + HavocX::Teamserver.User + "] " ) +
             ColorText::UnderlinePink( AgentTypeName ) + ColorText::Cyan(" » ") + text
     );
@@ -207,20 +207,17 @@ void DemonInteracted::AppendText( const QString& text )
         lineEdit->CommandHistory << text;
         lineEdit->CommandHistoryIndex = lineEdit->CommandHistory.size();
 
-        if ( text.toLower().toStdString().substr( 0, 4 ) == "help" )
+        /*for ( auto& Command: HavocX::Teamserver.RegisteredCommands )
         {
-            AppendRaw();
-            AppendRaw( ConsolePrompt );
-        }
-
-        for ( auto& Command: HavocX::Teamserver.RegisteredCommands )
-        {
-            if ( text.split(" ")[0].compare( Command.Command.c_str() ) == 0  )
+            if ( text.split(" ")[ 0 ].compare( Command.Command.c_str() ) == 0  )
             {
                 AppendRaw();
                 AppendRaw( ConsolePrompt );
             }
-        }
+        }*/
+
+        AppendRaw();
+        AppendRaw( ConsolePrompt );
 
         DemonCommands->DispatchCommand( true, "", text );
     }

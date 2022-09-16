@@ -15,7 +15,7 @@ func (listeners) AddListener(FromUser string, Type int, Config any) packager.Pac
     var Package packager.Package
 
     Package.Head.Event = packager.Type.Listener.Type
-    Package.Head.Time = time.Now().Format("02-01-2006 15:04:05")
+    Package.Head.Time = time.Now().Format("02/01/2006 15:04:05")
     Package.Head.User = FromUser
     Package.Body.SubEvent = packager.Type.Listener.Add
 
@@ -77,7 +77,7 @@ func (listeners) ListenerError(FromUser string, ListenerName string, err error) 
         listenerErr = strings.Split(err.Error(), ":")
     )
     Package.Head.Event = packager.Type.Listener.Type
-    Package.Head.Time = time.Now().Format("02-01-2006 15:04:05")
+    Package.Head.Time = time.Now().Format("02/01/2006 15:04:05")
     Package.Head.User = FromUser
 
     Package.Body.SubEvent = packager.Type.Listener.Add
