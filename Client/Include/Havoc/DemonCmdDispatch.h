@@ -12,7 +12,9 @@ using namespace HavocNamespace;
 #define SEND( f ) \
     if ( Send ) f; return true;
 
-#define CONSOLE_ERROR( x )  \
+#define CONSOLE_ERROR( x )                          \
+    DemonConsole->Console->append( "" );            \
+    DemonConsole->Console->append( this->Prompt );  \
     DemonConsole->TaskError( x );
 
 #define CONSOLE_INFO( x ) \

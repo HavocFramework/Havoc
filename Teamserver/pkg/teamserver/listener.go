@@ -10,6 +10,7 @@ import (
     "Havoc/pkg/handlers"
     "Havoc/pkg/logger"
     "Havoc/pkg/packager"
+
     "github.com/fatih/structs"
 )
 
@@ -25,6 +26,13 @@ func (t *Teamserver) StartListener(ListenerType int, info any) error {
     CtxFunctions.EventAppend = t.EventAppend
     CtxFunctions.EventBroadcast = t.EventBroadcast
     CtxFunctions.EventNewDemon = events.Demons.NewDemon
+    CtxFunctions.EventAgentMark = func(AgentID, Mark string) {
+        var pk = events.Demons.MarkAs(AgentID, Mark)
+
+        t.EventAppend(pk)
+        t.EventBroadcast("", pk)
+    }
+
     CtxFunctions.AppendDemon = t.Agents.AppendAgent
     CtxFunctions.AppendListener = events.Listener.AddListener
 

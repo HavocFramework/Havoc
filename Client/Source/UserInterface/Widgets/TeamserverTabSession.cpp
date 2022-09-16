@@ -329,7 +329,7 @@ void UserInterface::Widgets::TeamserverTabSession::handleDemonContextMenu( const
                 }
                 else if ( action->text().compare( "Thread" ) == 0 || action->text().compare( "Process" ) == 0 )
                 {
-                    Session.InteractedWidget->DemonCommands->Execute.Exit( Util::gen_random( 8 ).c_str(), action->text().toLower() );
+                    Session.InteractedWidget->AppendText( "exit " + action->text().toLower() );
                 }
 
                 if ( Session.MagicValue == DemonMagicValue )

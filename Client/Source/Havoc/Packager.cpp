@@ -486,9 +486,6 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                                 Util::ColorText::Cyan(" » ") + QString( Package->Body.Info[ "CommandLine" ].c_str() )
                         );
 
-
-                        spdlog::info( "SendCommand Prompt: {}", Session.InteractedWidget->DemonCommands->Prompt.toStdString() );
-
                         Session.InteractedWidget->AppendRaw();
                         Session.InteractedWidget->AppendRaw( Session.InteractedWidget->DemonCommands->Prompt );
                         Session.InteractedWidget->DemonCommands->DispatchCommand( false, Package->Body.Info[ "TaskID" ].c_str(), Package->Body.Info[ "CommandLine" ].c_str() );

@@ -1527,6 +1527,9 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
                 Message["Message"] = "Agent has been tasked to cleanup and exit process. cya..."
             }
 
+            demon.Active = false
+            Funcs.EventAgentMark(demon.NameID, "Dead")
+
             Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, Message)
         }
 

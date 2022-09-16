@@ -39,6 +39,7 @@ type RoutineFunc struct {
     EventAppend    func(event packager.Package) []packager.Package
     EventBroadcast func(ExceptClient string, pk packager.Package)
     EventNewDemon  func(DemonAgent *Agent) packager.Package
+    EventAgentMark func(AgentID, Mark string)
 
     AppendListener func(FromUser string, Type int, Config any) packager.Package
 

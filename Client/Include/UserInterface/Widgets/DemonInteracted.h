@@ -22,7 +22,6 @@ namespace HavocNamespace::UserInterface::Widgets
         QCompleter*                 CommandCompleter;
         QStringList                 CompleterCommands;
         QString                     AgentTypeName = "Demon";
-        QString                     ConsolePrompt = "";
 
         class DemonInput : public QLineEdit
         {
