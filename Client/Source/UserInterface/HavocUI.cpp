@@ -285,6 +285,7 @@ void HavocNamespace::UserInterface::HavocUI::InitializeButtons() const
     // Help
     QMainWindow::connect( actionAbout, &QAction::triggered, this, &HavocUI::onButton_Help_About );
     QMainWindow::connect( actionGithub_Repository, &QAction::triggered, this, &HavocUI::onButton_Help_Github );
+    QMainWindow::connect( actionOpen_Help_Documentation, &QAction::triggered, this, &HavocUI::onButton_Help_Documentation );
 
     QMainWindow::connect( TeamserverTabWidget, &QTabWidget::currentChanged, this, &HavocUI::tabSelected );
     QMainWindow::connect( TeamserverTabWidget, &QTabWidget::tabCloseRequested, this, &HavocUI::removeTab );
@@ -370,8 +371,12 @@ void HavocNamespace::UserInterface::HavocUI::onButton_Havoc_Disconnect()
 
 void HavocNamespace::UserInterface::HavocUI::onButton_Help_Github()
 {
-    // TODO: change URL
-    QDesktopServices::openUrl( QUrl( "https://github.com/Cracked5pider/Havoc" ) );
+    QDesktopServices::openUrl( QUrl( "https://github.com/HavocFramework/Havoc" ) );
+}
+
+void HavocNamespace::UserInterface::HavocUI::onButton_Help_Documentation()
+{
+    QDesktopServices::openUrl( QUrl( "https://github.com/HavocFramework/Havoc/blob/main/WIKI.MD" ) );
 }
 
 void HavocNamespace::UserInterface::HavocUI::onButton_Scripts_Interpreter()
