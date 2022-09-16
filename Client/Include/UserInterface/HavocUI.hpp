@@ -120,6 +120,7 @@ public slots:
     // Menubar --> Help
     void onButton_Help_About();
     void onButton_Help_Github();
+    void onButton_Help_Documentation();
 
     // ShortCuts
     void ApplicationScreenshot();
