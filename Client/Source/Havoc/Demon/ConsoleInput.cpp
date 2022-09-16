@@ -1393,7 +1393,6 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
         }
         else
         {
-            spdlog::info( "Prompt => {}", Prompt.toStdString() );
             CONSOLE_ERROR( "Command/Module not found: " + commandline )
             return false;
         }
