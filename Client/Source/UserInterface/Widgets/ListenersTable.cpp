@@ -114,7 +114,7 @@ void HavocNamespace::UserInterface::Widgets::ListenersTable::ButtonsInit()
     QObject::connect( pushButton, &QPushButton::clicked, this, &Widgets::ListenersTable::onButtonAdd );
 }
 
-void HavocNamespace::UserInterface::Widgets::ListenersTable::NewListenerItem( Util::ListenerItem item ) const
+void HavocNamespace::UserInterface::Widgets::ListenersTable::ListenerAdd( Util::ListenerItem item ) const
 {
     for ( auto& listener : HavocX::Teamserver.Listeners )
     {
@@ -161,9 +161,13 @@ void HavocNamespace::UserInterface::Widgets::ListenersTable::NewListenerItem( Ut
     item_Status->setFlags( item_Status->flags() ^ Qt::ItemIsEditable );
     item_Status->setTextAlignment( Qt::AlignLeft );
 
-    if ( item.Status.compare( "online" ) == 0 )
+    if ( item.Status.compare( "Online" ) == 0 )
     {
         item_Status->setForeground( QColor( Util::ColorText::Colors::Hex::Green ) );
+    }
+    else if ( item.Status.compare( "Offline" ) == 0 )
+    {
+        item_Status->setForeground( QColor( Util::ColorText::Colors::Hex::Red ) );
     }
 
     tableWidget->setItem( tableWidget->rowCount() - 1, 0, item_Name );
@@ -177,7 +181,7 @@ void HavocNamespace::UserInterface::Widgets::ListenersTable::NewListenerItem( Ut
     std::string Protocol = item.Protocol;
     std::transform( Protocol.begin(), Protocol.end(), Protocol.begin(), ::tolower );
 
-    auto Time   = QTime::currentTime().toString( "hh:mm:ss" );
+    auto Time = QTime::currentTime().toString( "hh:mm:ss" );
 
     HavocX::Teamserver.Listeners.push_back( item );
 }
@@ -194,7 +198,7 @@ void HavocNamespace::UserInterface::Widgets::ListenersTable::onButtonAdd() const
 
     if ( ListenerDialog->DialogSaved )
     {
-        auto Package = this->CreateNewPackage( Util::Packager::Listener::Add, ListenerInfo );
+        auto Package = CreateNewPackage( Util::Packager::Listener::Add, ListenerInfo );
         HavocX::Connector->SendPackage( &Package );
     }
 }
@@ -239,23 +243,50 @@ Util::Packager::Package UserInterface::Widgets::ListenersTable::CreateNewPackage
             return ListenerPackage;
         }
 
-        case 0x2:
-        {
+        case 0x2:{}
 
-        }
+        case 0x3: {}
 
-        case 0x3: {
+        case 0x4: {}
 
-        }
-
-        case 0x4: {
-
-        }
-
-        case 0x5: {
-
-        }
+        case 0x5: {}
 
     };
     return Util::Packager::Package();
+}
+
+void UserInterface::Widgets::ListenersTable::ListenerEdit( Util::ListenerItem item ) const
+{
+
+}
+
+void UserInterface::Widgets::ListenersTable::ListenerMark( QString ListenerName, QString Mark ) const
+{
+
+}
+
+void UserInterface::Widgets::ListenersTable::ListenerRemove( QString ListenerName ) const
+{
+
+}
+
+void UserInterface::Widgets::ListenersTable::ListenerError( QString ListenerName, QString Error ) const
+{
+    for ( int i = 0; i < tableWidget->rowCount(); i++ )
+    {
+        auto Row = tableWidget->item( i, 0 )->text();
+
+        if ( Row.compare( ListenerName ) == 0 )
+        {
+            for ( int j = 0; j < tableWidget->columnCount(); j++ )
+            {
+                tableWidget->item( i, j )->setBackground( QColor( Util::ColorText::Colors::Hex::Background ) );
+                tableWidget->item( i, j )->setForeground( QColor( Util::ColorText::Colors::Hex::Red ) );
+                tableWidget->item( i, j )->setToolTip( Error );
+            }
+
+            tableWidget->item( i, 4 )->setText( "Offline [" + Error + " ]" );
+        }
+    }
+
 }

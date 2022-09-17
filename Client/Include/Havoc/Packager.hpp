@@ -46,9 +46,8 @@ namespace HavocNamespace::Util::Packager
         extern const int Add;
         extern const int Remove;
         extern const int Edit;
-
-        extern const int SetOffline;
-        extern const int SetOnline;
+        extern const int Mark;
+        extern const int Error;
     }
 
     namespace Credentials {

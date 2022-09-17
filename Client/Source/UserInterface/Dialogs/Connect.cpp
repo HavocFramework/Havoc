@@ -124,6 +124,26 @@ void HavocNamespace::UserInterface::Dialogs::Connect::setupUi( QDialog* Form )
     connect( listWidget, &QListWidget::itemPressed, this, &Connect::itemSelected );
     connect( listWidget, &QListWidget::customContextMenuRequested, this, &Connect::handleContextMenu );
 
+    connect( lineEdit_Name, &QLineEdit::returnPressed, this, [&](){
+        onButton_Connect();
+    } );
+
+    connect( lineEdit_User, &QLineEdit::returnPressed, this, [&](){
+        onButton_Connect();
+    } );
+
+    connect( lineEdit_Host, &QLineEdit::returnPressed, this, [&](){
+        onButton_Connect();
+    } );
+
+    connect( lineEdit_Port, &QLineEdit::returnPressed, this, [&](){
+        onButton_Connect();
+    } );
+
+    connect( lineEdit_Password, &QLineEdit::returnPressed, this, [&](){
+        onButton_Connect();
+    } );
+
     QMetaObject::connectSlotsByName( Form );
 }
 

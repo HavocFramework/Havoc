@@ -25,3 +25,14 @@ auto FileRead( const QString& FilePath ) -> QByteArray
 
     return Content;
 }
+
+auto MessageBox( QString Title, QString Text, QMessageBox::Icon Icon ) -> void
+{
+    auto box = QMessageBox();
+
+    box.setWindowTitle( Title );
+    box.setText( Text );
+    box.setIcon( Icon );
+    box.setStyleSheet( FileRead( ":/stylesheets/MessageBox" ) );
+    box.exec();
+}

@@ -145,7 +145,7 @@ func (t *Teamserver) Start() {
 				HandlerData.Response.Headers = listener.Response.Headers
 			}
 
-			if err := t.StartListener(handlers.LISTENER_HTTP, HandlerData); err != nil {
+			if err := t.ListenerStart(handlers.LISTENER_HTTP, HandlerData); err != nil {
 				logger.Error("Failed to start listener: " + err.Error())
 				return
 			}
@@ -158,7 +158,7 @@ func (t *Teamserver) Start() {
 				PipeName: listener.PipeName,
 			}
 
-			if err := t.StartListener(handlers.LISTENER_PIVOT_SMB, HandlerData); err != nil {
+			if err := t.ListenerStart(handlers.LISTENER_PIVOT_SMB, HandlerData); err != nil {
 				logger.Error("Failed to start listener: " + err.Error())
 				return
 			}
@@ -171,7 +171,7 @@ func (t *Teamserver) Start() {
 				Endpoint: listener.Endpoint,
 			}
 
-			if err := t.StartListener(handlers.LISTENER_EXTERNAL, HandlerData); err != nil {
+			if err := t.ListenerStart(handlers.LISTENER_EXTERNAL, HandlerData); err != nil {
 				logger.Error("Failed to start listener: " + err.Error())
 				return
 			}
@@ -419,13 +419,21 @@ func (t *Teamserver) RemoveClient(ClientID string) {
 }
 
 func (t *Teamserver) EventAppend(event packager.Package) []packager.Package {
+
 	if event.Head.OneTime != "true" {
 		t.EventsList = append(t.EventsList, event)
 		return append(t.EventsList, event)
 	} else {
 		logger.Debug("Onetime package. not gonna save: ", event)
 	}
+
 	return nil
+}
+
+func (t *Teamserver) EventRemove(EventID int) []packager.Package {
+	t.EventsList = append(t.EventsList[:EventID], t.EventsList[EventID+1:]...)
+
+	return append(t.EventsList[:EventID], t.EventsList[EventID+1:]...)
 }
 
 func (t *Teamserver) SendAllPackagesToNewClient(ClientID string) {

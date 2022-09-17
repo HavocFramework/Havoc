@@ -1,12 +1,15 @@
 package handlers
 
 import (
+    "context"
     "fmt"
     "io/ioutil"
     "log"
+    "net/http"
     "os"
     "regexp"
     "strings"
+    "time"
 
     "Havoc/pkg/colors"
     "Havoc/pkg/common/certs"
@@ -274,6 +277,7 @@ func (h *HTTP) Start() {
     }
 
     h.GinEngine.POST("/:endpoint", h.request)
+    h.Active = true
 
     if h.Config.Secure {
         if h.generateCertFiles() {
@@ -284,9 +288,16 @@ func (h *HTTP) Start() {
             h.RoutineFunc.EventBroadcast("", pk)
 
             go func() {
-                err := h.GinEngine.RunTLS(h.Config.Hosts+":"+h.Config.Port, h.TLS.CertPath, h.TLS.KeyPath)
+                h.Server = &http.Server{
+                    Addr:    h.Config.Hosts + ":" + h.Config.Port,
+                    Handler: h.GinEngine,
+                }
+
+                err := h.Server.ListenAndServeTLS(h.TLS.CertPath, h.TLS.KeyPath)
                 if err != nil {
-                    logger.Error("Couldn't start HTTP/s handler: " + err.Error())
+                    logger.Error("Couldn't start HTTPs handler: " + err.Error())
+                    h.Active = false
+                    h.RoutineFunc.EventListenerError(h.Config.Name, err)
                 }
             }()
         } else {
@@ -300,10 +311,32 @@ func (h *HTTP) Start() {
         h.RoutineFunc.EventBroadcast("", pk)
 
         go func() {
-            err := h.GinEngine.Run(h.Config.Hosts + ":" + h.Config.Port)
+            h.Server = &http.Server{
+                Addr:    h.Config.Hosts + ":" + h.Config.Port,
+                Handler: h.GinEngine,
+            }
+
+            err := h.Server.ListenAndServe()
             if err != nil {
-                logger.Error("Couldn't start HTTP/s handler: " + err.Error())
+                logger.Error("Couldn't start HTTP handler: " + err.Error())
+                h.Active = false
+                h.RoutineFunc.EventListenerError(h.Config.Name, err)
             }
         }()
     }
+}
+
+func (h *HTTP) Stop() error {
+    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+    defer cancel()
+    if err := h.Server.Shutdown(ctx); err != nil {
+        return err
+    }
+    // catching ctx.Done(). timeout of 5 seconds.
+    select {
+    case <-ctx.Done():
+        log.Println("timeout of 5 seconds.")
+    }
+
+    return nil
 }

@@ -32,7 +32,7 @@ func parseQuery(m *dns.Msg) {
 }
 
 // TODO: finish this
-func StartListenerDNS(Host string, Port string, Domains []string) *DNS {
+func ListenerStartDNS(Host string, Port string, Domains []string) *DNS {
 
     // attach request handler func
     dns.HandleFunc("service.", HandleRequest)

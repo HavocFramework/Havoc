@@ -1,17 +1,17 @@
 package events
 
 import (
-    "strconv"
-    "strings"
-    "time"
+	"strconv"
+	"strings"
+	"time"
 
-    "Havoc/pkg/handlers"
-    "Havoc/pkg/packager"
+	"Havoc/pkg/handlers"
+	"Havoc/pkg/packager"
 )
 
 var Listener listeners
 
-func (listeners) AddListener(FromUser string, Type int, Config any) packager.Package {
+func (listeners) ListenerAdd(FromUser string, Type int, Config any) packager.Package {
     var Package packager.Package
 
     Package.Head.Event = packager.Type.Listener.Type
@@ -80,11 +80,26 @@ func (listeners) ListenerError(FromUser string, ListenerName string, err error) 
     Package.Head.Time = time.Now().Format("02/01/2006 15:04:05")
     Package.Head.User = FromUser
 
-    Package.Body.SubEvent = packager.Type.Listener.Add
+    Package.Body.SubEvent = packager.Type.Listener.Error
 
     Package.Body.Info = make(map[string]interface{})
     Package.Body.Info["Error"] = listenerErr[len(listenerErr)-1]
     Package.Body.Info["Name"] = ListenerName
+
+    return Package
+}
+
+func (listeners) ListenerMark(ListenerName string, Mark string) packager.Package {
+    var Package packager.Package
+
+    Package.Head.Event = packager.Type.Listener.Type
+    Package.Head.Time = time.Now().Format("02/01/2006 15:04:05")
+
+    Package.Body.SubEvent = packager.Type.Listener.Mark
+
+    Package.Body.Info = make(map[string]interface{})
+    Package.Body.Info["Name"] = ListenerName
+    Package.Body.Info["Mark"] = Mark
 
     return Package
 }

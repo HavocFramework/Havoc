@@ -99,7 +99,7 @@ void Util::SessionItem::Export()
             messageBox.setText( "Path: " + Filename.toString() );
             messageBox.setIcon( QMessageBox::Information );
             messageBox.setStyleSheet( FileRead( ":/stylesheets/MessageBox" ) );
-            messageBox.setMaximumSize( QSize( 500, 500 ) );
+            // messageBox.setMaximumSize( QSize( 500, 500 ) );
             messageBox.exec();
         }
     }
