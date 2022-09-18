@@ -70,6 +70,7 @@ set(
         Include/UserInterface/Widgets/ScriptManager.h
         Include/UserInterface/Widgets/LootWidget.h
         Include/UserInterface/Widgets/FileBrowser.hpp
+        Include/UserInterface/Widgets/Teamserver.hpp
 
         Include/UserInterface/HavocUI.hpp
 )
@@ -100,6 +101,7 @@ set(
         Source/UserInterface/Widgets/ScriptManager.cpp
         Source/UserInterface/Widgets/LootWidget.cpp
         Source/UserInterface/Widgets/FileBrowser.cpp
+        Source/UserInterface/Widgets/Teamserver.cpp
 
         # SmallWidgets
         Source/UserInterface/SmallWidgets/EventViewer.cpp

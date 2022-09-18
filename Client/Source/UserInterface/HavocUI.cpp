@@ -49,6 +49,9 @@ void HavocNamespace::UserInterface::HavocUI::setupUi(QMainWindow *Havoc)
     actionExit = new QAction( this->HavocWindow );
     actionExit->setObjectName( QString::fromUtf8( "actionExit" ) );
 
+    actionTeamserver = new QAction( this->HavocWindow );
+    actionTeamserver->setObjectName( QString::fromUtf8( "actionTeamserver" ) );
+
     // actionHostFile = new QAction( this->HavocWindow );
     // actionHostFile->setObjectName( QString::fromUtf8( "actionHostFile" ) );
     // actionHostFile->setIcon( QIcon( ":/icons/hostfile" ) );
@@ -170,7 +173,7 @@ void HavocNamespace::UserInterface::HavocUI::setupUi(QMainWindow *Havoc)
     menuView->addAction( actionLoot );
     menuView->addSeparator();
     menuView->addAction( actionLogs );
-    // menuView->addAction( actionOperator );
+    menuView->addAction( actionTeamserver );
 
     menuAttack->addAction( actionGeneratePayload );
     // menuAttack->addAction( actionHostFile );
@@ -219,7 +222,7 @@ void HavocNamespace::UserInterface::HavocUI::retranslateUi( QMainWindow* Havoc )
     // actionPreferences->setText( QCoreApplication::translate( "Havoc", "Preferences", nullptr ) );
     actionDisconnect->setText( QCoreApplication::translate( "Havoc", "Disconnect", nullptr ) );
     actionExit->setText( QCoreApplication::translate( "Havoc", "Exit", nullptr ) );
-    // actionHostFile->setText( QCoreApplication::translate( "Havoc", "Host File", nullptr ) );
+    actionTeamserver->setText( QCoreApplication::translate( "Havoc", "Teamserver", nullptr ) );
     actionGeneratePayload->setText( QCoreApplication::translate( "Havoc", "Payload", nullptr ) );
     actionLoad_Script->setText(QCoreApplication::translate("Havoc", "Scripts Manager", nullptr));
     actionPythonConsole->setText(QCoreApplication::translate("Havoc", "Script Console", nullptr));
@@ -270,6 +273,8 @@ void HavocNamespace::UserInterface::HavocUI::InitializeButtons() const
     // View
     QMainWindow::connect( actionSessionsTable, &QAction::triggered, this, &HavocUI::onButton_View_SessionsTable );
     QMainWindow::connect( actionListeners, &QAction::triggered, this, &HavocUI::onButton_View_Listeners );
+    QMainWindow::connect( actionTeamserver, &QAction::triggered, this, &HavocUI::onButton_View_Teamserver );
+
     // QMainWindow::connect(actionCredentials, &QAction::triggered, this, &HavocUI::onButton_View_Credentials);
     QMainWindow::connect( actionSessionsGraph, &QAction::triggered, this, &HavocUI::onButton_View_SessionsGraph );
     QMainWindow::connect( actionLogs, &QAction::triggered, this, &HavocUI::onButton_View_Logs );
@@ -422,7 +427,7 @@ void HavocNamespace::UserInterface::HavocUI::onButton_View_SessionsGraph()
     HavocX::Teamserver.TabSession->MainViewWidget->setCurrentIndex( 1 );
 }
 
-void HavocNamespace::UserInterface::HavocUI::onButton_View_Credentials()
+/*void HavocNamespace::UserInterface::HavocUI::onButton_View_Credentials()
 {
     auto Teamserver = HavocX::Teamserver.TabSession;
     if ( Teamserver->CredentialsTableWidget == nullptr )
@@ -431,7 +436,7 @@ void HavocNamespace::UserInterface::HavocUI::onButton_View_Credentials()
         Teamserver->CredentialsTableWidget->setupUi( new QWidget );
     }
     NewBottomTab( Teamserver->CredentialsTableWidget->CredentialsTable, "Credentials", ":/icons/lock" );
-}
+}*/
 
 void HavocNamespace::UserInterface::HavocUI::onButton_View_Listeners()
 {
@@ -537,7 +542,8 @@ void UserInterface::HavocUI::NewSmallTab( QWidget *TabWidget, const string &Titl
     Teamserver->NewWidgetTab( TabWidget, TitleName );
 }
 
-void UserInterface::HavocUI::ApplicationScreenshot() {
+void UserInterface::HavocUI::ApplicationScreenshot()
+{
     /*
     cout << "Pressed !!!!!!!!!" << endl;
     QMessageBox::information(nullptr, "test", "test");
@@ -557,4 +563,15 @@ void UserInterface::HavocUI::onButtonViewLoot()
         Teamserver->LootWidget = new LootWidget;
 
     NewBottomTab( Teamserver->LootWidget, "Loot Collection" );
+}
+
+void UserInterface::HavocUI::onButton_View_Teamserver()
+{
+    if ( HavocX::Teamserver.TabSession->Teamserver == nullptr )
+    {
+        HavocX::Teamserver.TabSession->Teamserver = new Teamserver;
+        HavocX::Teamserver.TabSession->Teamserver->setupUi( new QDialog );
+    }
+
+    NewBottomTab( HavocX::Teamserver.TabSession->Teamserver->TeamserverWidget, "Teamserver" );
 }

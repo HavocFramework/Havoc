@@ -24,7 +24,7 @@
 
 using namespace UserInterface::Widgets;
 
-void HavocNamespace::UserInterface::Widgets::TeamserverTabSession::setupUi(QWidget *Page, QString TeamserverName)
+void HavocNamespace::UserInterface::Widgets::TeamserverTabSession::setupUi( QWidget* Page, QString TeamserverName )
 {
     this->TeamserverName = TeamserverName;
     this->PageWidget = Page;
@@ -380,126 +380,6 @@ void UserInterface::Widgets::TeamserverTabSession::handleDemonContextMenu( const
     // this->DemonContextMenu->popup( SessionTableWidget->SessionTableWidget->horizontalHeader()->viewport()->mapToGlobal( pos ) );
 }
 
-void UserInterface::Widgets::TeamserverTabSession::Action_Menu_Interact() const
-{
-    auto SessionID = SessionTableWidget->SessionTableWidget->item(SessionTableWidget->SessionTableWidget->currentRow(), 0)->text();
-    auto User = SessionTableWidget->SessionTableWidget->item(SessionTableWidget->SessionTableWidget->currentRow(), 2)->text();
-    auto ComputerName = SessionTableWidget->SessionTableWidget->item(SessionTableWidget->SessionTableWidget->currentRow(), 3)->text();
-
-    QString tabName =  "["+SessionID+"] " + User + "/" + ComputerName;
-
-    for (auto & Session : HavocX::Teamserver.Sessions)
-    {
-        // TODO: make that on Session receive
-        if ( Session.InteractedWidget == nullptr )
-        {
-            Session.InteractedWidget                 = new UserInterface::Widgets::DemonInteracted;
-            Session.InteractedWidget->SessionInfo    = Session;
-            Session.InteractedWidget->TeamserverName = this->TeamserverName;
-            Session.InteractedWidget->setupUi( new QWidget );
-        }
-
-        if ( tabName.split( " " )[ 0 ] == "[" + Session.Name + "]"  )
-        {
-            for ( int i = 0 ; i < this->tabWidget->count(); i++ )
-            {
-                if ( this->tabWidget->tabText( i ) == tabName )
-                {
-                    this->tabWidget->setCurrentIndex( i );
-                    return;
-                }
-            }
-
-            NewBottomTab( Session.InteractedWidget->DemonInteractedWidget, tabName.toStdString(), ":/icons/demon-shell" );
-            Session.InteractedWidget->lineEdit->setFocus();
-
-        }
-    }
-}
-
-void UserInterface::Widgets::TeamserverTabSession::Action_Menu_Explore_ProcessList() const
-{
-    auto SessionID = SessionTableWidget->SessionTableWidget->item( SessionTableWidget->SessionTableWidget->currentRow(), 0 )->text();
-    auto TabName = QString( "[" + SessionID + "] Process List" );
-
-    for ( auto & Session : HavocX::Teamserver.Sessions )
-    {
-        if ( TabName.split(" ")[ 0 ] == "[" + Session.Name + "]" )
-        {
-            if ( Session.InteractedWidget == nullptr )
-            {
-                Session.InteractedWidget = new UserInterface::Widgets::DemonInteracted;
-                Session.InteractedWidget->setupUi( new QWidget );
-                Session.InteractedWidget->SessionInfo = Session;
-            }
-
-            if ( Session.ProcessList == nullptr )
-            {
-                Session.ProcessList = new UserInterface::Widgets::ProcessList;
-                Session.ProcessList->setupUi( new QWidget );
-                Session.ProcessList->Session = Session;
-                Session.ProcessList->Teamserver = this->TeamserverName;
-                NewBottomTab( Session.ProcessList->ProcessListWidget, TabName.toStdString(), "" );
-            }
-
-            Session.InteractedWidget->DemonCommands->Execute.ProcList( Util::gen_random( 8 ).c_str(), true );
-        }
-    }
-}
-
-void UserInterface::Widgets::TeamserverTabSession::ActionMenuRemove() const
-{
-    auto SessionID = SessionTableWidget->SessionTableWidget->item( SessionTableWidget->SessionTableWidget->currentRow(), 0 )->text();
-
-    for ( auto & Session : HavocX::Teamserver.Sessions )
-    {
-        if ( SessionID.compare( Session.Name ) == 0 )
-        {
-            auto indexes = SessionTableWidget->SessionTableWidget->selectionModel()->selectedRows();
-
-            for ( int i = indexes.count(); i > 0; i-- )
-            {
-                SessionTableWidget->SessionTableWidget->removeRow( indexes.at( i - 1 ).row() );
-            }
-        }
-    }
-}
-
-void UserInterface::Widgets::TeamserverTabSession::ActionMenuMarkAsDead() const
-{
-    auto selection = SessionTableWidget->SessionTableWidget->selectionModel()->selectedRows();
-
-    spdlog::info( "selection count: {}", selection.count() );
-
-    for ( int i = 0; i< selection.count(); i++ )
-    {
-        auto Package = new Util::Packager::Package;
-        auto AgentID = SessionTableWidget->SessionTableWidget->item( selection.at( i ).row(), 0 )->text().toStdString();
-
-        SessionTableWidget->SessionTableWidget->item( selection.at( i ).row(), 0 )->setIcon( QIcon( ":/icons/DeadWhite" ) );
-
-        for ( int j = 0; j < SessionTableWidget->SessionTableWidget->columnCount(); j++ )
-        {
-            SessionTableWidget->SessionTableWidget->item( selection.at( i ).row(), j )->setBackground( QColor( Util::ColorText::Colors::Hex::CurrentLine ) );
-            SessionTableWidget->SessionTableWidget->item( selection.at( i ).row(), j )->setForeground( QColor( Util::ColorText::Colors::Hex::Comment ) );
-        }
-
-        Package->Head = Util::Packager::Head_t {
-                .Event= Util::Packager::Session::Type,
-                .User = HavocX::Teamserver.User.toStdString(),
-                .Time = QTime::currentTime().toString( "hh:mm:ss" ).toStdString(),
-        };
-
-        Package->Body = Util::Packager::Body_t {
-                .SubEvent = 0x5,
-                .Info = {
-                        { "AgentID", AgentID },
-                }
-        };
-
-        HavocX::Connector->SendPackage( Package );
-    }
-}
 
 void UserInterface::Widgets::TeamserverTabSession::NewBottomTab( QWidget* TabWidget, const string& TitleName, const QString IconPath ) const
 {
@@ -560,34 +440,4 @@ void UserInterface::Widgets::TeamserverTabSession::removeTabSmall( int index ) c
 bool TeamserverTabSession::event( QEvent* e )
 {
 
-}
-
-void TeamserverTabSession::ActionMenuExploreFileBrowser() const
-{
-    auto SessionID = SessionTableWidget->SessionTableWidget->item( SessionTableWidget->SessionTableWidget->currentRow(), 0 )->text();
-    auto TabName = QString( "[" + SessionID + "] File Explorer" );
-
-    for ( auto & Session : HavocX::Teamserver.Sessions )
-    {
-        if ( TabName.split( " " )[ 0 ] == "[" + Session.Name + "]" )
-        {
-            if ( Session.InteractedWidget == nullptr )
-            {
-                Session.InteractedWidget = new UserInterface::Widgets::DemonInteracted;
-                Session.InteractedWidget->setupUi( new QWidget );
-                Session.InteractedWidget->SessionInfo = Session;
-            }
-
-            if ( Session.FileBrowser == nullptr )
-            {
-                Session.FileBrowser = new FileBrowser;
-                Session.FileBrowser->setupUi( new QWidget );
-                Session.FileBrowser->SessionID = Session.Name;
-
-                NewBottomTab( Session.FileBrowser->FileBrowserWidget, TabName.toStdString(), "" );
-            }
-
-            Session.InteractedWidget->DemonCommands->Execute.FS( Util::gen_random( 8 ).c_str(), "dir;ui", "." );
-        }
-    }
 }

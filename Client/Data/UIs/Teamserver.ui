@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Teamserver</class>
+ <widget class="QWidget" name="Teamserver">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1212</width>
+    <height>643</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0">
+    <widget class="QSplitter" name="splitter">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <widget class="QListWidget" name="TeamserverList">
+      <item>
+       <property name="text">
+        <string>Logger</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Profile</string>
+       </property>
+      </item>
+     </widget>
+     <widget class="QStackedWidget" name="StackedWidget">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="PageLogger">
+       <layout class="QFormLayout" name="formLayout">
+        <item row="0" column="0" colspan="2">
+         <widget class="QTextEdit" name="TeamserverLogger"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="PageProfile">
+       <layout class="QGridLayout" name="gridLayout_3">
+        <item row="0" column="0">
+         <widget class="QTreeWidget" name="TeamserverTreeProfile">
+          <column>
+           <property name="text">
+            <string>Key</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Value</string>
+           </property>
+          </column>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

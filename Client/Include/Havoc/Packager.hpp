@@ -103,6 +103,13 @@ namespace HavocNamespace::Util::Packager
         extern const int Type;
         extern const int AgentRegister;
     }
+
+    namespace Teamserver
+    {
+        extern const int Type;
+        extern const int Logger;
+        extern const int Profile;
+    }
 }
 
 auto NewPackageCommand( const QString& Teamserver, Util::Packager::Body_t Body ) -> void;
@@ -127,6 +134,7 @@ public:
     bool DispatchSession( Util::Packager::PPackage Package );
     bool DispatchGate( Util::Packager::PPackage Package );
     bool DispatchService( Util::Packager::PPackage Package );
+    bool DispatchTeamserver( Util::Packager::PPackage Package );
 };
 
 #endif //HAVOC_PACKAGER_H

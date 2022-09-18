@@ -7,7 +7,9 @@
 
 #include <UserInterface/Widgets/LootWidget.h>
 #include <UserInterface/Widgets/SessionGraph.hpp>
-#include "Include/UserInterface/Dialogs/Payload.hpp"
+#include <UserInterface/Widgets/Teamserver.hpp>
+
+#include <UserInterface/Dialogs/Payload.hpp>
 
 using namespace HavocNamespace;
 
@@ -32,6 +34,7 @@ public:
 
 public:
     Widgets::Chat*                      TeamserverChat          = nullptr;
+    Teamserver*                         Teamserver              = nullptr;
     Widgets::SessionTable*              SessionTableWidget      = nullptr;
     GraphWidget*                        SessionGraphWidget      = nullptr;
     Widgets::ListenersTable*            ListenerTableWidget     = nullptr;
@@ -63,13 +66,6 @@ protected slots:
     void handleDemonContextMenu(const QPoint& pos);
     void removeTab(int) const;
     void removeTabSmall(int) const;
-
-    void Action_Menu_Interact() const;
-    void Action_Menu_Explore_ProcessList() const;
-    void ActionMenuExploreFileBrowser() const;
-
-    void ActionMenuRemove() const;
-    void ActionMenuMarkAsDead() const;
 };
 
 #endif

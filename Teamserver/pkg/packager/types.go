@@ -106,6 +106,12 @@ type (
 			Type       int
 			MessageBox int
 		}
+
+		Teamserver struct {
+			Type    int
+			Log     int
+			Profile int
+		}
 	}
 )
 
@@ -238,4 +244,10 @@ var Type = Types{
 		Type:          0x9,
 		RegisterAgent: 0x1,
 	},
+
+	Teamserver: struct {
+		Type    int
+		Log     int
+		Profile int
+	}{Type: 0x10, Log: 0x1, Profile: 0x2},
 }

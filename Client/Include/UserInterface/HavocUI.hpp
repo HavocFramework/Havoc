@@ -34,7 +34,7 @@ public:
     QAction* actionPreferences;
     QAction* actionDisconnect;
     QAction* actionExit;
-    QAction* actionHostFile;
+    QAction* actionTeamserver;
     QAction* actionGeneratePayload;
     QAction* actionLoad_Script;
     QAction* actionPythonConsole;
@@ -45,9 +45,7 @@ public:
     QAction* actionListeners;
     QAction* actionSessionsTable;
     QAction* actionSessionsGraph;
-    QAction* actionCredentials;
     QAction* actionLogs;
-    QAction* actionOperator;
     QAction* actionLoot;
 
     QWidget* centralwidget;
@@ -105,7 +103,7 @@ public slots:
     // Menubar --> View
     void onButton_View_SessionsTable();
     void onButton_View_SessionsGraph();
-    void onButton_View_Credentials();
+    void onButton_View_Teamserver();
     void onButton_View_Listeners();
     void onButton_View_Logs();
     void onButtonViewLoot();

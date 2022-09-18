@@ -60,6 +60,10 @@ const int Util::Packager::Session::ReceiveCommand   = 0x4;
 const int Util::Packager::Service::Type             = 0x9;
 const int Util::Packager::Service::AgentRegister    = 0x1;
 
+const int Util::Packager::Teamserver::Type          = 0x10;
+const int Util::Packager::Teamserver::Logger        = 0x1;
+const int Util::Packager::Teamserver::Profile       = 0x2;
+
 Util::Packager::PPackage Packager::DecodePackage( const QString& Package )
 {
     auto FullPackage    = new Util::Packager::Package;
@@ -158,6 +162,9 @@ auto Packager::DispatchPackage( Util::Packager::PPackage Package ) -> bool
 
         case Util::Packager::Service::Type:
             return DispatchService( Package );
+
+        case Util::Packager::Teamserver::Type:
+            return DispatchTeamserver( Package );
 
         default:
             spdlog::info( "[PACKAGE] Event Id not found" );
@@ -740,6 +747,32 @@ bool Packager::DispatchService( Util::Packager::PPackage Package )
     return false;
 }
 
-void Packager::setTeamserver(QString Name) {
+bool Packager::DispatchTeamserver( Util::Packager::PPackage Package )
+{
+    switch ( Package->Body.SubEvent )
+    {
+        case Util::Packager::Teamserver::Logger:
+        {
+            auto Text = QString( Package->Body.Info[ "Text" ].c_str() );
+
+            if ( HavocX::Teamserver.TabSession->Teamserver == nullptr )
+            {
+                HavocX::Teamserver.TabSession->Teamserver = new Teamserver;
+                HavocX::Teamserver.TabSession->Teamserver->setupUi( new QDialog );
+            }
+
+            HavocX::Teamserver.TabSession->Teamserver->AddLoggerText( Text );
+        }
+
+        case Util::Packager::Teamserver::Profile:
+        {
+
+        }
+    }
+}
+
+
+void Packager::setTeamserver( QString Name )
+{
     this->TeamserverName = Name;
 }

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"Havoc/pkg/events"
 	"os"
 
 	"Havoc/pkg/logger"
@@ -31,9 +32,7 @@ func init() {
 }
 
 func serverFunc(cmd *cobra.Command, args []string) error {
-	startMenu()
-
-	teamserver.HavocTeamserver = teamserver.NewTeamserver()
+	var DirPath, _ = os.Getwd()
 
 	if len(os.Args) <= 2 {
 		err := cmd.Help()
@@ -43,18 +42,30 @@ func serverFunc(cmd *cobra.Command, args []string) error {
 		os.Exit(0)
 	}
 
-	var DirPath, _ = os.Getwd()
+	teamserver.HavocTeamserver = teamserver.NewTeamserver()
+	teamserver.HavocTeamserver.SetServerFlags(teamserverFlags)
+
 	logr.LogrInstance = logr.NewLogr(DirPath + "/data/loot")
+	logr.LogrInstance.LogrSendText = func(text string) {
+		var pk = events.Teamserver.Logger(text)
+
+		teamserver.HavocTeamserver.EventAppend(pk)
+		teamserver.HavocTeamserver.EventBroadcast("", pk)
+	}
+
 	logr.LogrInstance.ServerStdOutInit()
+
+	startMenu()
 
 	if teamserverFlags.Server.Debug {
 		logger.SetDebug(true)
 		logger.Debug("Debug mode enabled")
 	}
+
 	logger.ShowTime(teamserverFlags.Server.Verbose)
 
 	if teamserverFlags.Server.Default {
-		teamserver.HavocTeamserver.SetProfile(DirPath + "/profiles/havoc.yaotl")
+		teamserver.HavocTeamserver.SetProfile(DirPath + "/data/havoc.yaotl")
 	} else if teamserverFlags.Server.Profile != "" {
 		teamserver.HavocTeamserver.SetProfile(teamserverFlags.Server.Profile)
 	} else {
@@ -62,11 +73,11 @@ func serverFunc(cmd *cobra.Command, args []string) error {
 		os.Exit(1)
 	}
 
-	if !(teamserver.HavocTeamserver.FindSystemPackages()) {
+	if !teamserver.HavocTeamserver.FindSystemPackages() {
 		logger.Error("Please install needed packages. Refer to the Wiki for more help.")
 		os.Exit(1)
 	}
-	teamserver.HavocTeamserver.SetServerFlags(teamserverFlags)
+
 	teamserver.HavocTeamserver.Start()
 
 	return nil
