@@ -430,6 +430,7 @@ HavocNamespace::UserInterface::Dialogs::NewListener::NewListener( QDialog* Dialo
     StackWidgetConfigPages->addWidget( PageSMB );
     StackWidgetConfigPages->addWidget( PageExternal );
 
+    ListenerDialog->setWindowTitle( "Create Listener" );
     ConfigBox->setTitle( QCoreApplication::translate( "ListenerWidget", "Config Options", nullptr ) );
     LabelPort->setText( QCoreApplication::translate( "ListenerWidget", "Port:", nullptr ) );
     LabelHosts->setText( QCoreApplication::translate( "ListenerWidget", "Host:", nullptr ) );
@@ -508,8 +509,6 @@ map<string, string> HavocNamespace::UserInterface::Dialogs::NewListener::Start()
             else
                 Headers += ListHeaders->item( i )->text().toStdString() + ", ";
         }
-
-        spdlog::info( "Headers: {}", Headers );
 
         for ( u32 i = 0; i < ListUris->count(); ++i )
         {
@@ -807,8 +806,8 @@ void HavocNamespace::UserInterface::Dialogs::NewListener::ctx_itemUrisAdd()
 {
     auto InputUri = new InputDialog( new QDialog );
 
-    InputUri->Description->setText( "Add one or multiple Headers" );
-    InputUri->InputDialogWidget->setWindowTitle( "Headers" );
+    InputUri->Description->setText( "Add one or multiple Uris" );
+    InputUri->InputDialogWidget->setWindowTitle( "Uris" );
 
     InputUri->InputDialogWidget->exec();
 

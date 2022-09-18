@@ -1,16 +1,18 @@
+#include <global.hpp>
+
 #include <Havoc/Havoc.hpp>
 #include <Havoc/Packager.hpp>
 #include <Havoc/DemonCmdDispatch.h>
+#include <Havoc/Connector.hpp>
 
 #include <UserInterface/Widgets/TeamserverTabSession.h>
 #include <UserInterface/SmallWidgets/EventViewer.hpp>
 #include <UserInterface/Widgets/DemonInteracted.h>
 
-#include <Include/Util/ColorText.h>
-#include <Havoc/Connector.hpp>
+#include <Util/ColorText.h>
+#include <Util/Base.hpp>
 
 #include <QScrollBar>
-#include "Include/global.hpp"
 #include <QByteArray>
 #include <sstream>
 #include <QJsonArray>
@@ -24,8 +26,8 @@ const int Util::Packager::Listener::Type            = 0x2;
 const int Util::Packager::Listener::Add             = 0x1;
 const int Util::Packager::Listener::Edit            = 0x2;
 const int Util::Packager::Listener::Remove          = 0x3;
-const int Util::Packager::Listener::SetOffline      = 0x4;
-const int Util::Packager::Listener::SetOnline       = 0x5;
+const int Util::Packager::Listener::Mark            = 0x4;
+const int Util::Packager::Listener::Error           = 0x5;
 
 const int Util::Packager::Credentials::Type         = 0x3;
 const int Util::Packager::Credentials::Add          = 0x1;
@@ -219,29 +221,13 @@ bool Packager::DispatchListener( Util::Packager::PPackage Package )
             if ( ! Package->Head.User.empty() )
                 return false;
 
-            if ( ! Package->Body.Info[ "Error" ].empty() )
-            {
-                spdlog::warn( "Listener \"{}\" error: {}", Package->Body.Info[ "Name" ], Package->Body.Info[ "Error" ] );
-
-                auto ErrorMessage = QMessageBox();
-
-                ErrorMessage.setWindowTitle( "Listener Error" );
-                ErrorMessage.setIcon( QMessageBox::Critical );
-                ErrorMessage.setStyleSheet( FileRead( ":/stylesheets/MessageBox" ) );
-
-                ErrorMessage.setText( "Failed to create " + QString( Package->Body.Info[ "Name" ].c_str() ) + ":" + QString( Package->Body.Info[ "Error" ].c_str() ) );
-                ErrorMessage.exec();
-
-                break;
-            }
-
             auto ListenerInfo = Util::ListenerItem {
                 .Name       = Package->Body.Info[ "Name" ],
                 .Protocol   = Package->Body.Info[ "Protocol" ],
                 .Host       = Package->Body.Info[ "Host" ],
                 .Port       = Package->Body.Info[ "Port" ],
                 .Connected  = Package->Body.Info[ "Connected" ],
-                .Status     = "online",
+                .Status     = Package->Body.Info[ "Status" ],
             };
 
             if ( Package->Body.Info[ "Secure" ] == "true" )
@@ -256,14 +242,27 @@ bool Packager::DispatchListener( Util::Packager::PPackage Package )
                 TeamserverTab->ListenerTableWidget->TeamserverName = this->TeamserverName;
             }
 
-            TeamserverTab->ListenerTableWidget->NewListenerItem( ListenerInfo );
+            TeamserverTab->ListenerTableWidget->ListenerAdd( ListenerInfo );
 
-            auto MsgStr = "[" + Util::ColorText::Cyan( "*" ) + "]" + " Started " + Util::ColorText::Green( "\"" + QString( ListenerInfo.Name.c_str() ) + "\"" ) + " listener";
-            auto Time   = QString( Package->Head.Time.c_str() );
+            if ( ListenerInfo.Status.compare( "Online" ) == 0 )
+            {
+                auto MsgStr = "[" + Util::ColorText::Cyan( "*" ) + "]" + " Started " + Util::ColorText::Green( "\"" + QString( ListenerInfo.Name.c_str() ) + "\"" ) + " listener";
+                auto Time   = QString( Package->Head.Time.c_str() );
 
-            HavocX::Teamserver.TabSession->SmallAppWidgets->EventViewer->AppendText( Time, MsgStr );
+                HavocX::Teamserver.TabSession->SmallAppWidgets->EventViewer->AppendText( Time, MsgStr );
 
-            spdlog::info( "Started \"{}\" listener", ListenerInfo.Name );
+                spdlog::info( "Started \"{}\" listener", ListenerInfo.Name );
+            }
+            else if ( ListenerInfo.Status.compare( "Offline" ) == 0 )
+            {
+                if ( ! Package->Body.Info[ "Error" ].empty() )
+                {
+                    auto Error = QString( Package->Body.Info[ "Error" ].c_str() );
+                    auto Name  = QString( ListenerInfo.Name.c_str() );
+
+                    TeamserverTab->ListenerTableWidget->ListenerError( Name, Error );
+                }
+            }
 
             break;
         }
@@ -278,13 +277,48 @@ bool Packager::DispatchListener( Util::Packager::PPackage Package )
             break;
         }
 
-        case Util::Packager::Listener::SetOffline:
+        case Util::Packager::Listener::Mark:
         {
             break;
         }
 
-        case Util::Packager::Listener::SetOnline:
+        case Util::Packager::Listener::Error:
         {
+            auto Error = Package->Body.Info[ "Error" ];
+            auto Name  = Package->Body.Info[ "Name" ];
+
+            if ( Package->Head.User.compare( HavocX::Teamserver.User.toStdString() ) == 0 )
+            {
+                if ( ! Name.empty() )
+                {
+                    if ( ! Error.empty() )
+                    {
+                        MessageBox( "Listener Error", QString( Error.c_str() ), QMessageBox::Critical );
+                        HavocX::Teamserver.TabSession->ListenerTableWidget->ListenerError( QString( Name.c_str() ), QString( Error.c_str() ) );
+
+                        auto MsgStr = "[" + Util::ColorText::Red( "-" ) + "]" + " Failed to start " + Util::ColorText::Green( "\"" + QString( Name.c_str() ) + "\"" ) + " listener: " + Util::ColorText::Red( Error.c_str() );
+                        auto Time   = QString( Package->Head.Time.c_str() );
+
+                        HavocX::Teamserver.TabSession->SmallAppWidgets->EventViewer->AppendText( Time, MsgStr );
+                    }
+                }
+            }
+            else if ( Package->Head.User.empty() )
+            {
+                if ( ! Name.empty() )
+                {
+                    if ( ! Error.empty() )
+                    {
+                        HavocX::Teamserver.TabSession->ListenerTableWidget->ListenerError( QString( Name.c_str() ), QString( Error.c_str() ) );
+
+                        auto MsgStr = "[" + Util::ColorText::Red( "-" ) + "]" + " Failed to start " + Util::ColorText::Green( "\"" + QString( Name.c_str() ) + "\"" ) + " listener: " + Util::ColorText::Red( Error.c_str() );
+                        auto Time   = QString( Package->Head.Time.c_str() );
+
+                        HavocX::Teamserver.TabSession->SmallAppWidgets->EventViewer->AppendText( Time, MsgStr );
+                    }
+                }
+            }
+
             break;
         }
     }

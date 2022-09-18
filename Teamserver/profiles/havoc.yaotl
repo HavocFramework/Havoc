@@ -5,7 +5,7 @@ Teamserver {
 	Build {
 	    Compiler64 = "/usr/bin/x86_64-w64-mingw32-gcc"
 	    Compiler86 = "/usr/bin/i686-w64-mingw32-gcc"
-	    Nasm = "/usr/bin/Nasm"
+	    Nasm = "/usr/bin/nasm"
 	}
 }
 
@@ -21,7 +21,7 @@ Operators {
 
 Listeners {
     Http {
-        Name        = "Demon Listener - HTTP/s"
+        Name        = "Agent - HTTPs"
         Host        = "192.168.0.148"
         Port        = 443
         Method      = "POST"

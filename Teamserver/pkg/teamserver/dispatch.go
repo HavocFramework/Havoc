@@ -311,7 +311,7 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 					Config.Secure = true
 				}
 
-				if err := t.StartListener(handlers.LISTENER_HTTP, Config); err != nil {
+				if err := t.ListenerStart(handlers.LISTENER_HTTP, Config); err != nil {
 					for id, client := range t.Clients {
 						if client.Username == pk.Head.User {
 							err := t.SendEvent(id, events.Listener.ListenerError(pk.Head.User, pk.Body.Info["Name"].(string), err))
@@ -340,7 +340,7 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 					SmdConfig.Name = ""
 				}
 
-				if err := t.StartListener(handlers.LISTENER_PIVOT_SMB, SmdConfig); err != nil {
+				if err := t.ListenerStart(handlers.LISTENER_PIVOT_SMB, SmdConfig); err != nil {
 					for id, client := range t.Clients {
 						if client.Username == pk.Head.User {
 							err := t.SendEvent(id, events.Listener.ListenerError(pk.Head.User, pk.Body.Info["Name"].(string), err))
@@ -370,7 +370,7 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 					return
 				}
 
-				if err := t.StartListener(handlers.LISTENER_EXTERNAL, ExtConfig); err != nil {
+				if err := t.ListenerStart(handlers.LISTENER_EXTERNAL, ExtConfig); err != nil {
 					for id, client := range t.Clients {
 						if client.Username == pk.Head.User {
 							err := t.SendEvent(id, events.Listener.ListenerError(pk.Head.User, pk.Body.Info["Name"].(string), err))
@@ -396,14 +396,6 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 
 		case packager.Type.Listener.Edit:
 			logger.Info("edit listener...")
-			break
-
-		case packager.Type.Listener.Offline:
-			logger.Info("offline listener...")
-			break
-
-		case packager.Type.Listener.Online:
-			logger.Info("online listener...")
 			break
 		}
 

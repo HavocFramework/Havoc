@@ -4,7 +4,8 @@
 #include <Havoc/DBManager/DBManager.hpp>
 #include "Include/Havoc/Packager.hpp"
 
-class HavocNamespace::UserInterface::Widgets::ListenersTable : public QWidget {
+class HavocNamespace::UserInterface::Widgets::ListenersTable : public QWidget
+{
 private:
     QGridLayout *gridLayout;
     QPushButton *pushButton;
@@ -24,8 +25,13 @@ public:
     void setupUi( QWidget* widget );
     void ButtonsInit();
     void setDBManager( HavocSpace::DBManager* dbManager );
-    void NewListenerItem( Util::ListenerItem item ) const;
     Util::Packager::Package CreateNewPackage( int EventID, map<string,string> ) const;
+
+    void ListenerAdd( Util::ListenerItem item ) const;
+    void ListenerEdit( Util::ListenerItem item ) const;
+    void ListenerMark( QString ListenerName, QString Mark ) const;
+    void ListenerRemove( QString ListenerName ) const;
+    void ListenerError( QString ListenerName, QString Error ) const;
 
 private slots:
     void onButtonAdd() const;

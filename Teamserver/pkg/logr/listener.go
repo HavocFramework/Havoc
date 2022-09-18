@@ -1,5 +1,5 @@
 package logr
 
-func (l Logr) AddListenerKeyCert(Name, Key, Cert string) {
+func (l Logr) ListenerAddKeyCert(Name, Key, Cert string) {
 
 }

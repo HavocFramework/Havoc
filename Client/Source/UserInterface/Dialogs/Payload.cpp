@@ -132,8 +132,18 @@ auto Payload::retranslateUi() -> void
     PayloadDialog->setWindowTitle( QCoreApplication::translate( "PayloadDialog", "Payload", nullptr ) );
     OptionsBox->setTitle( QCoreApplication::translate( "PayloadDialog", "Options", nullptr ) );
 
-    for ( auto& Listener : HavocX::Teamserver.Listeners )
-        ComboListener->addItem( Listener.Name.c_str() );
+    if ( HavocX::Teamserver.Listeners.size() > 0 )
+    {
+        ComboListener->setDisabled( false );
+        for ( auto& Listener : HavocX::Teamserver.Listeners )
+            ComboListener->addItem( Listener.Name.c_str() );
+    }
+    else
+    {
+        ComboListener->addItem( "[ Empty ]" );
+        ComboListener->setDisabled( true );
+    }
+
 
     LabelListener->setText( QCoreApplication::translate( "PayloadDialog", "Listener:   ", nullptr ) );
 
@@ -141,9 +151,9 @@ auto Payload::retranslateUi() -> void
 
     ComboFormat->addItem( "Windows Exe" );
     ComboFormat->addItem( "Windows Dll" );
+    ComboFormat->addItem( "Windows Shellcode" );
 
     ComboArch->addItem( "x64" );
-    ComboArch->addItem( "x86" );
 
     ComboAgentType->addItem( "Demon" );
 
@@ -171,16 +181,17 @@ void Payload::buttonGenerate()
     if ( ButtonClicked )
         return;
 
-    if ( this->ComboListener->currentText().isEmpty() )
+    if ( HavocX::Teamserver.Listeners.size() == 0 )
     {
         auto messageBox = QMessageBox(  );
 
         messageBox.setWindowTitle( "Payload Generator Error" );
-        messageBox.setText( "No Listener specified" );
+        messageBox.setText( "No Listener specified/available" );
         messageBox.setIcon( QMessageBox::Critical );
         messageBox.setStyleSheet( FileRead( ":/stylesheets/MessageBox" ) );
         messageBox.setMaximumSize( QSize(500, 500 ) );
         messageBox.exec();
+
         return;
     }
 
@@ -309,6 +320,7 @@ auto Payload::CtxAgentPayloadChange( const QString& AgentType ) -> void
             ComboFormat->clear();
             ComboFormat->addItem( "Windows Exe" );
             ComboFormat->addItem( "Windows Dll" );
+            ComboFormat->addItem( "Windows Shellcode" );
 
             ComboArch->clear();
             ComboArch->addItem( "x64" );
