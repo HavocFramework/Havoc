@@ -3,11 +3,18 @@
 # Commands for usage:
 #
 #	Build image file:
-#		'docker build -t havoc-teamserver .'
+#		'docker build -t havoc-teamserver -f Teamserver-Dockerfile .'
+#	(Optional) Create Data volume for persistence:
+#		`docker volume create <volume_name>`
 #	Run Built Image file(`-d` for persistence):
-#		'docker run -t -d -v havoc-teamserver-data:/data havoc-teamserver'
+#		'docker run -ti -d -v havoc-teamserver-data:/data havoc-teamserver'
 #	Copy built Teamserver from container:
 #		'docker cp <containerID>:/go/Build/bin/teamserver /host/path/target'
+#
+#	Run Built Teamserver client from Docker container:
+#		`docker run -p40056:40056 -p 443:443 -it -d -v havoc-c2-data:/data havoc-teamserver`
+#		`docker exec -t <container_id> "/go/Build/bin/teamserver"`
+#
 # Extras
 # 	Create Data storage for persistence
 #       'docker volume create havoc-teamserver-data'

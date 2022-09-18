@@ -18,7 +18,7 @@ Source code of Havoc teamserver. Written in Golang.
 		2. (Optional) Create a persistent data volume for the container:
 			* `sudo docker volume create havoc-c2-data`
 		3. Run the container:
-			* `sudo docker run -p8080:8080 -it -d -v havoc-c2-data:/data havoc-teamserver`
+			* `sudo docker run -it -d -v havoc-c2-data:/data havoc-teamserver`
 - **Jenkins Docker**
 	- We can also build the Teamserver binary using a pre-configured Jenkins Docker image.
 		1. From the parent folder(`Havoc`), run the following command to build the container:
@@ -38,6 +38,7 @@ Source code of Havoc teamserver. Written in Golang.
 - **Manual:**
 	- The teamserver can also be used directly:
 		* `./bin/teamserver -h`
+		* `./bin/teamserver server --profile profiles/havoc.yaotl -v`
 - **Docker**
 	- We can run the teamserver completely from within a container!
 	1. Build the container: 
