@@ -4,11 +4,22 @@ Havoc Gui Client source code.
 
 ### Build the Teamserver Client
 - **Pre-requisites**
-	1. `Python-3.10`
-	2. `python3-dev`
-	3. `libspdlog-dev`
-	4. `qt5`-packages
-	5. `libboost-all-dev`
+	- Package list:
+		1. `Python-3.10`
+		2. `python3-dev`
+		3. `libspdlog-dev`
+		4. `qt5`-packages
+		5. `libboost-all-dev`
+	- **If you are running Ubuntu 20.04/22.04** as your base OS, you must first enable Python3.10 in your APT repos before you will be able to run the client successfully:
+		1. `sudo apt install build-essential`
+		2. `sudo add-apt-repository ppa:deadsnakes/ppa`
+		3. `sudo apt update`
+		4. `sudo apt install python3.10 python3.10-dev`
+	- **If you are running Debian 10/11** as your base OS, you must also first setup the `bookworm` repo for getting Python3.10:
+		1. `sudo apt install build-essential`
+		2. `sudo apt update`
+		2. `echo 'deb http://ftp.de.debian.org/debian bookworm main' >> /etc/apt/sources.list`
+		4. `sudo apt install python3-dv python3.10-dev libpython3.10 libpython3.10-dev python3.10`
 - **Local Build**
 	- To build the Teamserver Client locally, perform the following steps:
 		1. `mkdir Build`
