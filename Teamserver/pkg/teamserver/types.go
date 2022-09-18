@@ -41,6 +41,7 @@ type serverFlags struct {
     Verbose  bool
     Debug    bool
     DebugDev bool
+    Default  bool
 }
 
 type utilFlags struct {
