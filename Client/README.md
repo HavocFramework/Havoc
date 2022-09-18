@@ -30,7 +30,7 @@ Havoc Gui Client source code.
 - **Jenkins Docker Build**
 	- To Create a Jenkins instance to perform repeated or modified builds of the Teamserver client, perform the following steps:
                 1. Build the Dockerfile with Jenkins(located in the `Havoc`-root folder):
-                        * `sudo docker build -f JC-Dockerfile .``
+                        * `sudo docker build -f JC-Dockerfile .`
                 2. Next, we want to run the container:
                         * `sudo docker run -p8080:8080 -it -d -v havoc-c2-data:/data havoc-client`
                 3. We can now visit Jenkins at `localhost:8080` and create a Pipeline to build the Havoc Teamserver!

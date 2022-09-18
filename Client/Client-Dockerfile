@@ -4,7 +4,7 @@
 # Commands for usage:
 #
 #	Build image file:
-#		'docker build -t havoc-client .'
+#		'docker build -t havoc-client -f Client-Dockerfile .'
 #
 #	Run Built Image file(`-d` for persistence):
 #		'docker run -t -d -v havoc-c2-client-data:/data havoc-client'
@@ -90,8 +90,8 @@ RUN cd Build/ && make
 #
 # Add VNC Support
 RUN apt-get update && apt-get install -y x11vnc xvfb
-RUN echo "exec /Build/Bin/Havoc" > ~/.xinitrc && chmod +x ~/.xinitrc
-CMD ["x11vnc", "-create", "-forever"]
+#RUN echo "exec /Build/Bin/Havoc" > ~/.xinitrc && chmod +x ~/.xinitrc
+#CMD ["x11vnc", "-create", "-forever"]
 # Cleanup
 RUN rm -rf /var/lib/apt/lists/*
 #
