@@ -1,3 +1,5 @@
 #! /bin/bash
-clear
-make && clear; chmod +x ./bin/teamserver; ./bin/teamserver server --profile profiles/havoc.yaotl -v 
+clear;
+make && clear; 
+chmod +x ./bin/teamserver; 
+./bin/teamserver server --default --verbose 
