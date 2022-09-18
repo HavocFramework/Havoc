@@ -151,9 +151,9 @@ auto Payload::retranslateUi() -> void
 
     ComboFormat->addItem( "Windows Exe" );
     ComboFormat->addItem( "Windows Dll" );
+    ComboFormat->addItem( "Windows Shellcode" );
 
     ComboArch->addItem( "x64" );
-    ComboArch->addItem( "x86" );
 
     ComboAgentType->addItem( "Demon" );
 
@@ -320,6 +320,7 @@ auto Payload::CtxAgentPayloadChange( const QString& AgentType ) -> void
             ComboFormat->clear();
             ComboFormat->addItem( "Windows Exe" );
             ComboFormat->addItem( "Windows Dll" );
+            ComboFormat->addItem( "Windows Shellcode" );
 
             ComboArch->clear();
             ComboArch->addItem( "x64" );

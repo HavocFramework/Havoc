@@ -13,7 +13,6 @@ Client/Build
 Teamserver/data/loot/
 
 # dont commit your secrets
-Teamserver/profiles/
 Client/Data/database.db
 
 # ignore go stuff
