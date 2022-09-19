@@ -366,11 +366,11 @@ void HavocNamespace::UserInterface::HavocUI::onButton_Havoc_Disconnect()
     if ( HavocX::Connector != nullptr )
     {
         HavocX::Connector->Disconnect();
-        QMessageBox::information( nullptr, "Disconnected", "Disconnected from " + HavocX::Teamserver.Name );
+        MessageBox( "Disconnected", "Disconnected from " + HavocX::Teamserver.Name, QMessageBox::Information );
     }
     else
     {
-        QMessageBox::critical( nullptr, "Error", "Couldn't disconnect from " + HavocX::Teamserver.Name );
+        MessageBox( "Error", "Couldn't disconnect from " + HavocX::Teamserver.Name, QMessageBox::Critical );
     }
 }
 
@@ -498,11 +498,11 @@ void HavocNamespace::UserInterface::HavocUI::removeTab(int index) const
     if ( HavocX::Connector != nullptr )
     {
         HavocX::Connector->Disconnect();
-        QMessageBox::information( nullptr, "Disconnected", "Disconnected from " + HavocX::Teamserver.Name );
+        MessageBox( "Disconnected", "Disconnected from " + HavocX::Teamserver.Name, QMessageBox::Information );
     }
     else
     {
-        QMessageBox::critical( nullptr, "Error", "Couldn't disconnect from " + HavocX::Teamserver.Name );
+        MessageBox( "Error", "Couldn't disconnect from " + HavocX::Teamserver.Name, QMessageBox::Critical );
     }
 
     TeamserverTabWidget->removeTab( index );

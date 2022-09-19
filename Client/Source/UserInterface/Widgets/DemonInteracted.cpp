@@ -152,7 +152,7 @@ void DemonInteracted::setupUi( QWidget *Form )
     }
     else
     {
-        spdlog::info( "3rd party agent... handle this: {} : {}", SessionInfo.MagicValue, DemonMagicValue );
+        // 3rd party agent...
     }
 
     CommandCompleter = new QCompleter( CompleterCommands, this );
@@ -214,6 +214,12 @@ void DemonInteracted::AppendText( const QString& text )
                 AppendRaw();
                 AppendRaw( DemonCommands->Prompt );
             }
+        }
+
+        if ( text.split( " " )[ 0 ].compare( "help" ) == 0 )
+        {
+            AppendRaw();
+            AppendRaw( DemonCommands->Prompt );
         }
 
         DemonCommands->DispatchCommand( true, "", text );

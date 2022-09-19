@@ -192,7 +192,6 @@ func (e *External) request(ctx *gin.Context) {
                     }
                 }
             } else {
-
                 // TODO: handle 3rd party agent.
                 logger.Debug("Is 3rd party agent. I hope...")
 

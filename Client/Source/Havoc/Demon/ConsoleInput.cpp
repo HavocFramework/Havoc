@@ -769,17 +769,22 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             }
             else if ( InputCommands[ 1 ].compare( "spawn" ) == 0 )
             {
-                TaskID = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to fork and inject shellcode" );
-
                 if ( InputCommands.size() >= 2 )
                 {
                     auto TargetArch          = InputCommands[ 2 ];
                     auto ShellcodeBinaryPath = InputCommands[ 3 ];
 
-                    if ( ( TargetArch.compare( "x64" ) != 0 || TargetArch.compare( "x86" ) != 0 ) )
+                    if ( TargetArch.compare( "x64" ) == 0 )
+                    {
+                        TaskID = CONSOLE_INFO( "Tasked demon to fork and inject a x64 shellcode" );
+                    }
+                    else if ( TargetArch.compare( "x86" ) == 0 )
+                    {
+                        TaskID = CONSOLE_INFO( "Tasked demon to fork and inject a x86 shellcode" );
+                    }
+                    else
                     {
                         CONSOLE_ERROR( "Incorrect process arch specified: " + TargetArch )
-                        return false;
                     }
 
                     if ( ! QFile::exists( ShellcodeBinaryPath ) )

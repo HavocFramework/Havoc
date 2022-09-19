@@ -199,9 +199,9 @@ bool Packager::DispatchInitConnection( Util::Packager::PPackage Package )
         case Util::Packager::InitConnection::Error:
         {
             if ( Package->Body.Info[ "Message" ] == "" )
-                QMessageBox::critical( nullptr, "Teamserver Error", string( "Couldn't connect to Teamserver: " + Package->Body.Info[ "Message" ] ).c_str() );
+                MessageBox( "Teamserver Error", QString( "Couldn't connect to Teamserver:" + QString( Package->Body.Info[ "Message" ].c_str() ) ), QMessageBox::Critical );
             else
-                QMessageBox::critical( nullptr, "Teamserver Error", "Couldn't connect to Teamserver" );
+                MessageBox( "Teamserver Error", "Couldn't connect to Teamserver", QMessageBox::Critical );
 
             return true;
         }

@@ -1152,6 +1152,8 @@ VOID CommandInjectShellcode( PPARSER DataArgs )
         &InjectionCtx
     );
 
+    PRINTF( "Injection Result => %d", Result )
+
     PackageAddInt32( Package, Result );
     PackageTransmit( Package, NULL, NULL );
 }
