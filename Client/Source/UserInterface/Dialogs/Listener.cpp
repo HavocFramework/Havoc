@@ -10,6 +10,8 @@
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSpacerItem>
 
+using namespace HavocNamespace::HavocSpace;
+
 class InputDialog : public QWidget
 {
     QSpacerItem*    spacer2             = nullptr;
@@ -478,10 +480,73 @@ bool is_number(const std::string& s)
     return !s.empty() && it == s.end();
 }
 
-map<string, string> HavocNamespace::UserInterface::Dialogs::NewListener::Start() const
+map<string, string> HavocNamespace::UserInterface::Dialogs::NewListener::Start( Util::ListenerItem Item, bool Edit ) const
 {
     auto ListenerInfo = map<string,string>{};
     auto Payload      = QString();
+
+    if ( Edit )
+    {
+        InputListenerName->setText( Item.Name.c_str() );
+        InputListenerName->setReadOnly( true );
+
+        if ( ( Item.Protocol == Listener::PayloadHTTP.toStdString() ) || ( Item.Protocol == Listener::PayloadHTTPS.toStdString() ) )
+        {
+            if ( Item.Protocol == Listener::PayloadHTTP.toStdString() )
+                ComboPayload->setCurrentIndex( 0 );
+            else
+                ComboPayload->setCurrentIndex( 1 );
+            ComboPayload->setDisabled( true );
+
+            auto Info = any_cast<Listener::HTTP>( Item.Info );
+
+            InputHost->setText( Info.Host );
+            InputHost->setReadOnly( true );
+
+            InputPort->setText( Info.Port );
+            InputPort->setReadOnly( true );
+
+            InputUserAgent->setText( Info.UserAgent );
+            ListHeaders->addItems( Info.Headers );
+            ListUris->addItems( Info.Uris );
+            InputHostHeader->setText( Info.HostHeader );
+
+            if ( Info.ProxyEnabled.compare( "true" ) == 0 )
+                CheckEnableProxy->setCheckState( Qt::CheckState::Checked );
+            else
+                CheckEnableProxy->setCheckState( Qt::CheckState::Unchecked );
+
+            if ( Info.ProxyType.compare( "http" ) == 0 )
+                ComboProxyType->setCurrentIndex( 0 );
+            else
+                ComboProxyType->setCurrentIndex( 1 );
+
+            InputProxyHost->setText( Info.ProxyHost );
+            InputProxyPort->setText( Info.ProxyPort );
+            InputUserName->setText( Info.ProxyUsername );
+            InputPassword->setText( Info.ProxyPassword );
+        }
+        else if ( Item.Protocol == Listener::PayloadSMB.toStdString() )
+        {
+            ComboPayload->setCurrentIndex( 2 );
+            auto Info = any_cast<Listener::SMB>( Item.Info );
+
+            InputPipeName->setText( Info.PipeName );
+            InputPipeName->setReadOnly( true );
+        }
+        else if ( Item.Protocol == Listener::PayloadExternal.toStdString() )
+        {
+            ComboPayload->setCurrentIndex( 3 );
+
+            auto Info = any_cast<Listener::External>( Item.Info );
+
+            InputEndpoint->setText( Info.Endpoint );
+            InputEndpoint->setReadOnly( true );
+        }
+
+        ListenerDialog->setWindowTitle( "Edit Listener" );
+        ComboPayload->setDisabled( true );
+    }
 
     ListenerDialog->exec();
 
@@ -489,7 +554,6 @@ map<string, string> HavocNamespace::UserInterface::Dialogs::NewListener::Start()
 
     ListenerInfo.insert( { "Name", InputListenerName->text().toStdString() } );
     ListenerInfo.insert( { "Protocol", ComboPayload->currentText().toStdString() } );
-    ListenerInfo.insert( { "Connected", "0" } );
     ListenerInfo.insert( { "Status", "online" } );
 
     if ( ( Payload.compare( HavocSpace::Listener::PayloadHTTPS ) == 0 ) || ( Payload.compare( HavocSpace::Listener::PayloadHTTP ) == 0 ) )

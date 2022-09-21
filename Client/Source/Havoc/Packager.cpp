@@ -229,17 +229,47 @@ bool Packager::DispatchListener( Util::Packager::PPackage Package )
                 return false;
 
             auto ListenerInfo = Util::ListenerItem {
-                .Name       = Package->Body.Info[ "Name" ],
-                .Protocol   = Package->Body.Info[ "Protocol" ],
-                .Host       = Package->Body.Info[ "Host" ],
-                .Port       = Package->Body.Info[ "Port" ],
-                .Connected  = Package->Body.Info[ "Connected" ],
-                .Status     = Package->Body.Info[ "Status" ],
+                .Name     = Package->Body.Info[ "Name" ],
+                .Protocol = Package->Body.Info[ "Protocol" ],
+                .Status   = Package->Body.Info[ "Status" ],
             };
 
-            if ( Package->Body.Info[ "Secure" ] == "true" )
+            if ( ListenerInfo.Protocol == Listener::PayloadHTTP.toStdString() )
             {
-                ListenerInfo.Protocol = "Https";
+                auto Headers = QStringList();
+                for ( auto& header : QString( Package->Body.Info[ "Headers" ].c_str() ).split( ", " ) )
+                    Headers << header;
+
+                auto Uris = QStringList();
+                for ( auto& uri : QString( Package->Body.Info[ "Uris" ].c_str() ).split( ", " ) )
+                    Uris << uri;
+
+                ListenerInfo.Info = Listener::HTTP {
+                    .Host       = Package->Body.Info[ "Hosts" ].c_str(),
+                    .Port       = Package->Body.Info[ "Port" ].c_str(),
+                    .UserAgent  = Package->Body.Info[ "UserAgent" ].c_str(),
+                    .Headers    = Headers,
+                    .Uris       = Uris,
+                    .Secure     = Package->Body.Info[ "Secure" ].c_str(),
+                };
+
+                if ( Package->Body.Info[ "Secure" ] == "true" )
+                {
+                    ListenerInfo.Protocol = Listener::PayloadHTTPS.toStdString();
+                }
+
+            }
+            else if ( ListenerInfo.Protocol == Listener::PayloadSMB.toStdString() )
+            {
+                ListenerInfo.Info = Listener::SMB {
+                    .PipeName = Package->Body.Info[ "PipeName" ].c_str(),
+                };
+            }
+            else if ( ListenerInfo.Protocol == Listener::PayloadExternal.toStdString() )
+            {
+                ListenerInfo.Info = Listener::External {
+                        .Endpoint = Package->Body.Info[ "Endpoint" ].c_str(),
+                };
             }
 
             if ( TeamserverTab->ListenerTableWidget == nullptr )
@@ -276,11 +306,60 @@ bool Packager::DispatchListener( Util::Packager::PPackage Package )
 
         case Util::Packager::Listener::Remove:
         {
+
+            HavocX::Teamserver.TabSession->ListenerTableWidget->ListenerRemove( Package->Body.Info[ "Name" ].c_str() );
+
             break;
         }
 
         case Util::Packager::Listener::Edit:
         {
+            auto ListenerInfo = Util::ListenerItem {
+                    .Name     = Package->Body.Info[ "Name" ],
+                    .Protocol = Package->Body.Info[ "Protocol" ],
+                    .Status   = Package->Body.Info[ "Status" ],
+            };
+
+            if ( ListenerInfo.Protocol == Listener::PayloadHTTP.toStdString() )
+            {
+                auto Headers = QStringList();
+                for ( auto& header : QString( Package->Body.Info[ "Headers" ].c_str() ).split( ", " ) )
+                    Headers << header;
+
+                auto Uris = QStringList();
+                for ( auto& uri : QString( Package->Body.Info[ "Uris" ].c_str() ).split( ", " ) )
+                    Uris << uri;
+
+                ListenerInfo.Info = Listener::HTTP {
+                        .Host       = Package->Body.Info[ "Hosts" ].c_str(),
+                        .Port       = Package->Body.Info[ "Port" ].c_str(),
+                        .UserAgent  = Package->Body.Info[ "UserAgent" ].c_str(),
+                        .Headers    = Headers,
+                        .Uris       = Uris,
+                        .Secure     = Package->Body.Info[ "Secure" ].c_str(),
+                };
+
+                if ( Package->Body.Info[ "Secure" ] == "true" )
+                {
+                    ListenerInfo.Protocol = Listener::PayloadHTTPS.toStdString();
+                }
+
+            }
+            else if ( ListenerInfo.Protocol == Listener::PayloadSMB.toStdString() )
+            {
+                ListenerInfo.Info = Listener::SMB {
+                        .PipeName = Package->Body.Info[ "PipeName" ].c_str(),
+                };
+            }
+            else if ( ListenerInfo.Protocol == Listener::PayloadExternal.toStdString() )
+            {
+                ListenerInfo.Info = Listener::External {
+                        .Endpoint = Package->Body.Info[ "Endpoint" ].c_str(),
+                };
+            }
+
+            HavocX::Teamserver.TabSession->ListenerTableWidget->ListenerEdit( ListenerInfo );
+
             break;
         }
 

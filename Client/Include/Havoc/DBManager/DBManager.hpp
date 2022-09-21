@@ -37,12 +37,6 @@ public:
     bool changeSessionID( const QString& TeamserverID, Util::SessionItem* Session );
     vector<Util::SessionItem> listSessions();
 
-    // Listener
-    bool addListener( Util::ListenerItem Listener );
-    bool editListener( Util::ListenerItem* Listener );
-    bool removeListener( QString TeamserverID, QString ListenerName );
-    vector<Util::ListenerItem> listListeners();
-
     // Credentials
     bool addCredentials( Util::CredentialsItem );
     void editCredentials( Util::CredentialsItem* );

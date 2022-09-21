@@ -28,10 +28,7 @@ Listeners {
         Secure      = true
         UserAgent   = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
         Uris        = [
-            "/funny_cat.gif",
-            "/index.php",
-            "/test.txt",
-            "/helloworld.js"
+            "/text.gif",
         ]
         Headers     = [
             "X-Havoc: true",

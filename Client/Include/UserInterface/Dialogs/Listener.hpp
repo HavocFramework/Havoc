@@ -113,7 +113,7 @@ public:
     bool DialogSaved = false;
 
     NewListener( QDialog *Dialog );
-    map<string, string> Start() const;
+    map<string, string> Start( Util::ListenerItem Item, bool Edit ) const;
 
 protected slots:
     void onButton_Close();

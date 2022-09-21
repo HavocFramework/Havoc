@@ -65,7 +65,6 @@ type (
 		RoutineFunc demons.RoutineFunc
 
 		Active bool
-		Demons int
 	}
 
 	SMB struct {

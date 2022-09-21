@@ -29,6 +29,7 @@
 #include <string>
 #include <map>
 #include <iostream>
+#include <any>
 
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/bin_to_hex.h>
@@ -104,39 +105,12 @@ namespace HavocNamespace
 
         typedef struct ListenerItem
         {
-            typedef struct ListenerProtocols
-            {
-                static std::string HTTPS;
-                static std::string HTTP;
-                static std::string SMB;
-                static std::string External;
-            } ListenerProtocols;
-
-            typedef struct PayloadOptions
-            {
-                typedef struct DemonHTTP
-                {
-                    std::vector<std::string>    Hosts;
-                    std::string                 HostStager;
-                    std::string                 Port;
-                    std::string                 HostHeader;
-                    std::string                 HostRotation;
-                } DemonHTTP;
-
-                typedef struct DemonHTTPS {} DemonHTTPS;
-                typedef struct DemonDNS {} DemonDNS;
-
-            } PayloadOptions;
-
-            std::string TeamserverID;
             std::string Name;
             std::string Protocol;
-            std::string Host;
-            std::string Port;
-            std::string Connected;
             std::string Status;
-            std::map<std::string, std::string> Options;
-        } ListenerItem ;
+
+            std::any Info;
+        } ListenerItem;
     };
 
     namespace UserInterface
@@ -173,9 +147,9 @@ namespace HavocNamespace
             class ScriptManager;
         }
 
-        namespace SmallWidgets {
+        namespace SmallWidgets
+        {
             class EventViewer;
-            class Dashboard;
         }
 
     };
@@ -187,6 +161,33 @@ namespace HavocNamespace
             static QString PayloadHTTP;
             static QString PayloadSMB;
             static QString PayloadExternal;
+
+            typedef struct
+            {
+                QString     Host;
+                QString     Port;
+                QString     UserAgent;
+                QStringList Headers;
+                QStringList Uris;
+                QString     HostHeader;
+                QString     Secure;
+                QString     ProxyEnabled;
+                QString     ProxyType;
+                QString     ProxyHost;
+                QString     ProxyPort;
+                QString     ProxyUsername;
+                QString     ProxyPassword;
+            } HTTP;
+
+            typedef struct
+            {
+                QString PipeName;
+            } SMB;
+
+            typedef struct
+            {
+                QString Endpoint;
+            } External;
         };
 
         class Packager;

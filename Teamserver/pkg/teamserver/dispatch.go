@@ -391,11 +391,145 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 			break
 
 		case packager.Type.Listener.Remove: // TODO:
-			logger.Info("remove listener...")
+
+			if val, ok := pk.Body.Info["Name"]; ok {
+				t.ListenerRemove(val.(string))
+
+				var p = events.Listener.ListenerRemove(val.(string))
+
+				t.EventAppend(p)
+				t.EventBroadcast("", p)
+			}
+
 			break
 
 		case packager.Type.Listener.Edit:
-			logger.Info("edit listener...")
+
+			var Protocol = pk.Body.Info["Protocol"].(string)
+			switch Protocol {
+
+			case handlers.DEMON_HTTP, handlers.DEMON_HTTPS:
+				var (
+					Host    string
+					Headers []string
+					Uris    []string
+				)
+
+				logger.Debug(pk.Body.Info)
+
+				Host = pk.Body.Info["Hosts"].(string)
+
+				for _, s := range strings.Split(pk.Body.Info["Headers"].(string), ", ") {
+					if len(s) > 0 {
+						Headers = append(Headers, s)
+					}
+				}
+
+				for _, s := range strings.Split(pk.Body.Info["Uris"].(string), ", ") {
+					if len(s) > 0 {
+						Uris = append(Uris, s)
+					}
+				}
+
+				var Config = handlers.HTTPConfig{
+					Name:    pk.Body.Info["Name"].(string),
+					Hosts:   Host,
+					Port:    pk.Body.Info["Port"].(string),
+					Headers: Headers,
+					Uris:    Uris,
+				}
+
+				if val, ok := pk.Body.Info["Proxy Enabled"].(string); ok {
+					Config.Proxy.Enabled = false
+
+					if val == "true" {
+						Config.Proxy.Enabled = true
+
+						if val, ok = pk.Body.Info["Proxy Type"].(string); ok {
+							Config.Proxy.Type = val
+						} else {
+							for id, client := range t.Clients {
+								if client.Username == pk.Head.User {
+									err := t.SendEvent(id, events.Listener.ListenerError(pk.Head.User, pk.Body.Info["Name"].(string), errors.New("proxy type not specified")))
+									if err != nil {
+										logger.Error("Failed to send Event: " + err.Error())
+									}
+								}
+							}
+						}
+
+						if val, ok = pk.Body.Info["Proxy Host"].(string); ok {
+							Config.Proxy.Host = val
+						} else {
+							for id, client := range t.Clients {
+								if client.Username == pk.Head.User {
+									err := t.SendEvent(id, events.Listener.ListenerError(pk.Head.User, pk.Body.Info["Name"].(string), errors.New("proxy host not specified")))
+									if err != nil {
+										logger.Error("Failed to send Event: " + err.Error())
+									}
+								}
+							}
+						}
+
+						if val, ok = pk.Body.Info["Proxy Port"].(string); ok {
+							Config.Proxy.Port = val
+						} else {
+							for id, client := range t.Clients {
+								if client.Username == pk.Head.User {
+									err := t.SendEvent(id, events.Listener.ListenerError(pk.Head.User, pk.Body.Info["Name"].(string), errors.New("proxy port not specified")))
+									if err != nil {
+										logger.Error("Failed to send Event: " + err.Error())
+									}
+								}
+							}
+							return
+						}
+
+						if val, ok = pk.Body.Info["Proxy Username"].(string); ok {
+							Config.Proxy.Username = val
+						} else {
+							for id, client := range t.Clients {
+								if client.Username == pk.Head.User {
+									err := t.SendEvent(id, events.Listener.ListenerError(pk.Head.User, pk.Body.Info["Name"].(string), errors.New("proxy username not specified")))
+									if err != nil {
+										logger.Error("Failed to send Event: " + err.Error())
+									}
+								}
+							}
+							return
+						}
+
+						if val, ok = pk.Body.Info["Proxy Password"].(string); ok {
+							Config.Proxy.Password = val
+						} else {
+							for id, client := range t.Clients {
+								if client.Username == pk.Head.User {
+									err := t.SendEvent(id, events.Listener.ListenerError(pk.Head.User, pk.Body.Info["Name"].(string), errors.New("proxy password not specified")))
+									if err != nil {
+										logger.Error("Failed to send Event: " + err.Error())
+									}
+								}
+							}
+							return
+						}
+					}
+				}
+
+				if pk.Body.Info["Secure"].(string) == "true" {
+					Config.Secure = true
+				}
+
+				t.ListenerEdit(handlers.LISTENER_HTTP, Config)
+
+				var p = events.Listener.ListenerEdit(handlers.LISTENER_HTTP, &Config)
+
+				t.EventAppend(p)
+				t.EventBroadcast("", p)
+
+				break
+
+			}
+
 			break
 		}
 
