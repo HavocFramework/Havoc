@@ -679,7 +679,7 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                             auto LastTimeJson = QJsonDocument::fromJson( LastTime.toLocal8Bit() );
 
                             HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue(
-                                    Package->Body.Info["DemonID"].c_str(), 8, LastTimeJson["Output"].toString().split(" ")[1]
+                                    Package->Body.Info["DemonID"].c_str(), 8, LastTimeJson["Output"].toString()
                             );
 
                             scrollmouse = false;

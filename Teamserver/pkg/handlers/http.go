@@ -109,12 +109,7 @@ func (h *HTTP) request(ctx *gin.Context) {
 
                 if Command == demons.COMMAND_GET_JOB {
 
-                    AgentInstance.UpdateLastCallback()
-
-                    // telling the havoc client to update the last call time
-                    AgentCallback := make(map[string]string)
-                    AgentCallback["Output"] = AgentInstance.Info.LastCallIn
-                    h.RoutineFunc.DemonOutput(AgentInstance.NameID, demons.COMMAND_NOJOB, AgentCallback)
+                    AgentInstance.UpdateLastCallback(h.RoutineFunc)
 
                     if len(AgentInstance.JobQueue) > 0 {
                         var (
@@ -181,6 +176,8 @@ func (h *HTTP) request(ctx *gin.Context) {
                         ctx.AbortWithStatus(404)
                         return
                     }
+
+                    go AgentInstance.BackgroundUpdateLastCallbackUI(h.RoutineFunc)
 
                     AgentInstance.Info.ExternalIP = strings.Split(ctx.Request.RemoteAddr, ":")[0]
                     AgentInstance.Info.MagicValue = AgentHeader.MagicValue
