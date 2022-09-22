@@ -3,9 +3,8 @@
   <br />
   <h1>Havoc</h1>
   <br />
+
   <p><i>Havoc is a modern and malleable post-exploitation command and control framework, created by <a href="https://twitter.com/C5pider">@C5pider</a>.</i></p>
-  <br />
-  <p><a href="https://github.com/HavocFramework/Havoc/wiki">Wiki</a> | <a href="https://discord.gg">Discord</a></p>
   <br />
 
   <img src="Assets/Screenshots/SessionGraphSmbEkko.png" width="90%" /><br /><br />
@@ -14,6 +13,8 @@
 </div>
 
 ### Quick Start
+
+> Please see the [Wiki](https://github.com/HavocFramework/Havoc/wiki) for complete documentation.
 
 Havoc works well on Debian 10/11, Ubuntu 20.04/22.04 and Kali Linux. It's recommended to use the latest versions possible to avoid issues. You'll need a modern version of Qt and Python 3.10.x to avoid build issues.
 
@@ -28,10 +29,6 @@ See the [Installation](https://github.com/HavocFramework/Havoc/wiki#installation
 > Cross-platform UI written in C++ and Qt
 
 - Modern, dark theme based on [Dracula](https://draculatheme.com/)
-
-<div align="center">
-  <img src="Assets/Screenshots/Default.png" width="90%" /><br />
-</div>
 
 
 #### Teamserver
@@ -80,4 +77,3 @@ You can join the official [Havoc Discord](#) to chat with the community!
 ### Contributing
 
 To contribute to the Havoc Framework, please review the guidelines in [Contributing.md](https://github.com/HavocFramework/Havoc/blob/main/CONTRIBUTING.MD) and then open a pull-request! 
-
