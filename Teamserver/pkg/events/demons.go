@@ -7,7 +7,7 @@ import (
     "strconv"
     "time"
 
-    d "Havoc/pkg/demons"
+    d "Havoc/pkg/agent"
     "Havoc/pkg/handlers"
     "Havoc/pkg/logr"
     "Havoc/pkg/packager"

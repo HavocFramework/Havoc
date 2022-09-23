@@ -1225,7 +1225,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
         }
         else if ( InputCommands[ 0 ].compare( "net" ) == 0 )
         {
-            if ( InputCommands.size() > 1 )
+            if ( InputCommands.size() >= 2 )
             {
                 auto Command = QString();
                 auto Param   = QString();
@@ -1242,41 +1242,65 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 {
                     Command = "2";
                     TaskID  = CONSOLE_INFO( "Tasked demon to lists users logged onto a host" );
+
+                    if ( InputCommands.size() > 2 )
+                        Param = InputCommands[ 2 ];
                 }
                 else if ( InputCommands[ 1 ].compare( "sessions" ) == 0 )
                 {
                     Command = "3";
                     TaskID  = CONSOLE_INFO( "Tasked demon to lists sessions on a host" );
+
+                    if ( InputCommands.size() > 2 )
+                        Param = InputCommands[ 2 ];
                 }
                 else if ( InputCommands[ 1 ].compare( "computers" ) == 0 )
                 {
                     Command = "4";
                     TaskID  = CONSOLE_INFO( "Tasked demon to lists computer in a domain (groups)" );
+
+                    if ( InputCommands.size() > 2 )
+                        Param = InputCommands[ 2 ];
                 }
                 else if ( InputCommands[ 1 ].compare( "dclist" ) == 0 )
                 {
                     Command = "5";
                     TaskID  = CONSOLE_INFO( "Tasked demon to lists domain controllers" );
+
+                    if ( InputCommands.size() > 2 )
+                        Param = InputCommands[ 2 ];
                 }
                 else if ( InputCommands[ 1 ].compare( "share" ) == 0 )
                 {
                     Command = "6";
                     TaskID  = CONSOLE_INFO( "Tasked demon to lists shares on a host" );
+
+                    if ( InputCommands.size() > 2 )
+                        Param = InputCommands[ 2 ];
                 }
                 else if ( InputCommands[ 1 ].compare( "localgroup" ) == 0 )
                 {
                     Command = "7";
                     TaskID  = CONSOLE_INFO( "Tasked demon to lists local groups and users in local groups" );
+
+                    if ( InputCommands.size() > 2 )
+                        Param = InputCommands[ 2 ];
                 }
                 else if ( InputCommands[ 1 ].compare( "group" ) == 0 )
                 {
                     Command = "8";
                     TaskID  = CONSOLE_INFO( "Tasked demon to lists groups and users in groups" );
+
+                    if ( InputCommands.size() > 2 )
+                        Param = InputCommands[ 2 ];
                 }
                 else if ( InputCommands[ 1 ].compare( "users" ) == 0 )
                 {
                     Command = "9";
                     TaskID  = CONSOLE_INFO( "Tasked demon to lists users and user information" );
+
+                    if ( InputCommands.size() > 2 )
+                        Param = InputCommands[ 2 ];
                 }
                 else
                 {

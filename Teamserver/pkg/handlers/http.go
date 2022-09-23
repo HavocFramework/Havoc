@@ -11,10 +11,10 @@ import (
     "strings"
     "time"
 
+    "Havoc/pkg/agent"
     "Havoc/pkg/colors"
     "Havoc/pkg/common/certs"
     "Havoc/pkg/common/packer"
-    "Havoc/pkg/demons"
     "Havoc/pkg/logger"
     "Havoc/pkg/logr"
 
@@ -75,7 +75,7 @@ func (h *HTTP) generateCertFiles() bool {
 }
 
 func (h *HTTP) request(ctx *gin.Context) {
-    var AgentInstance *demons.Agent
+    var AgentInstance *agent.Agent
 
     Body, err := ioutil.ReadAll(ctx.Request.Body)
     if err != nil {
@@ -87,7 +87,7 @@ func (h *HTTP) request(ctx *gin.Context) {
         ctx.Header(hdr[0], hdr[1])
     }
 
-    AgentHeader, err := demons.AgentParseHeader(Body)
+    AgentHeader, err := agent.AgentParseHeader(Body)
     if err != nil {
         logger.Debug("[Error] AgentHeader: " + err.Error())
         ctx.AbortWithStatus(404)
@@ -95,7 +95,7 @@ func (h *HTTP) request(ctx *gin.Context) {
 
     if AgentHeader.Data.Length() > 4 {
 
-        if AgentHeader.MagicValue == demons.DEMON_MAGIC_VALUE {
+        if AgentHeader.MagicValue == agent.DEMON_MAGIC_VALUE {
 
             if h.RoutineFunc.AgentExists(AgentHeader.AgentID) {
                 logger.Debug("Agent does exists. continue...")
@@ -107,14 +107,14 @@ func (h *HTTP) request(ctx *gin.Context) {
 
                 logger.Debug(fmt.Sprintf("Command: %d (%x)", Command, Command))
 
-                if Command == demons.COMMAND_GET_JOB {
+                if Command == agent.COMMAND_GET_JOB {
 
                     AgentInstance.UpdateLastCallback(h.RoutineFunc)
 
                     if len(AgentInstance.JobQueue) > 0 {
                         var (
                             job     = AgentInstance.GetQueuedJobs()
-                            payload = demons.BuildPayloadMessage(job, AgentInstance.Encryption.AESKey, AgentInstance.Encryption.AESIv)
+                            payload = agent.BuildPayloadMessage(job, AgentInstance.Encryption.AESKey, AgentInstance.Encryption.AESIv)
                         )
 
                         BytesWritten, err := ctx.Writer.Write(payload)
@@ -124,9 +124,9 @@ func (h *HTTP) request(ctx *gin.Context) {
                             var ShowBytes = true
 
                             for j := range job {
-                                if job[j].Command == demons.COMMAND_PIVOT {
+                                if job[j].Command == agent.COMMAND_PIVOT {
                                     if len(job[j].Data) > 1 {
-                                        if job[j].Data[0] == demons.DEMON_PIVOT_SMB_COMMAND {
+                                        if job[j].Data[0] == agent.DEMON_PIVOT_SMB_COMMAND {
                                             ShowBytes = false
                                         }
                                     }
@@ -141,12 +141,12 @@ func (h *HTTP) request(ctx *gin.Context) {
                         }
 
                     } else {
-                        var NoJob = []demons.DemonJob{{
-                            Command: demons.COMMAND_NOJOB,
+                        var NoJob = []agent.DemonJob{{
+                            Command: agent.COMMAND_NOJOB,
                             Data:    []interface{}{},
                         }}
 
-                        var Payload = demons.BuildPayloadMessage(NoJob, AgentInstance.Encryption.AESKey, AgentInstance.Encryption.AESIv)
+                        var Payload = agent.BuildPayloadMessage(NoJob, AgentInstance.Encryption.AESKey, AgentInstance.Encryption.AESIv)
 
                         _, err := ctx.Writer.Write(Payload)
                         if err != nil {
@@ -167,11 +167,11 @@ func (h *HTTP) request(ctx *gin.Context) {
                     Response []byte
                 )
 
-                if Command == demons.DEMON_INIT {
+                if Command == agent.DEMON_INIT {
 
                     logger.Debug("Is register request. continue...")
 
-                    AgentInstance = demons.AgentParseResponse(AgentHeader.AgentID, AgentHeader.Data)
+                    AgentInstance = agent.AgentParseResponse(AgentHeader.AgentID, AgentHeader.Data)
                     if AgentInstance == nil {
                         ctx.AbortWithStatus(404)
                         return

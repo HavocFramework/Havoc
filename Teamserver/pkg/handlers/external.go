@@ -1,10 +1,10 @@
 package handlers
 
 import (
+    "Havoc/pkg/agent"
     "Havoc/pkg/colors"
     "Havoc/pkg/common/packer"
     "Havoc/pkg/common/parser"
-    "Havoc/pkg/demons"
     "Havoc/pkg/logger"
     "encoding/base64"
     "encoding/hex"
@@ -39,7 +39,7 @@ func (e *External) request(ctx *gin.Context) {
     logger.Debug("ExternalC2 [" + e.Config.Name + "] client connected")
 
     var (
-        AgentInstance  *demons.Agent
+        AgentInstance  *agent.Agent
         RequestPasrser *parser.Parser
     )
 
@@ -53,7 +53,7 @@ func (e *External) request(ctx *gin.Context) {
     RequestPasrser = parser.NewParser(Body)
 
     for RequestPasrser.Length() != 0 {
-        var AgentHeader = demons.AgentHeader{}
+        var AgentHeader = agent.AgentHeader{}
 
         AgentHeader.Data = parser.NewParser(RequestPasrser.ParseBytes())
 
@@ -69,7 +69,7 @@ func (e *External) request(ctx *gin.Context) {
 
         if AgentHeader.Data.Length() > 4 {
 
-            if AgentHeader.MagicValue == demons.DEMON_MAGIC_VALUE {
+            if AgentHeader.MagicValue == agent.DEMON_MAGIC_VALUE {
 
                 if e.RoutineFunc.AgentExists(AgentHeader.AgentID) {
                     logger.Debug("Agent does exists. continue...")
@@ -81,14 +81,14 @@ func (e *External) request(ctx *gin.Context) {
 
                     logger.Debug(fmt.Sprintf("Command: %d (%x)", Command, Command))
 
-                    if Command == demons.COMMAND_GET_JOB {
+                    if Command == agent.COMMAND_GET_JOB {
 
                         AgentInstance.UpdateLastCallback(e.RoutineFunc)
 
                         if len(AgentInstance.JobQueue) > 0 {
                             var (
                                 JobQueue = AgentInstance.GetQueuedJobs()
-                                Payload  = demons.BuildPayloadMessage(JobQueue, AgentInstance.Encryption.AESKey, AgentInstance.Encryption.AESIv)
+                                Payload  = agent.BuildPayloadMessage(JobQueue, AgentInstance.Encryption.AESKey, AgentInstance.Encryption.AESIv)
                                 Packer   = packer.NewPacker(nil, nil)
                             )
 
@@ -103,9 +103,9 @@ func (e *External) request(ctx *gin.Context) {
                                 var ShowBytes = true
 
                                 for j := range JobQueue {
-                                    if JobQueue[j].Command == demons.COMMAND_PIVOT {
+                                    if JobQueue[j].Command == agent.COMMAND_PIVOT {
                                         if len(JobQueue[j].Data) > 1 {
-                                            if JobQueue[j].Data[0] == demons.DEMON_PIVOT_SMB_COMMAND {
+                                            if JobQueue[j].Data[0] == agent.DEMON_PIVOT_SMB_COMMAND {
                                                 ShowBytes = false
                                             }
                                         }
@@ -121,12 +121,12 @@ func (e *External) request(ctx *gin.Context) {
                         } else {
                             var (
                                 Packer = packer.NewPacker(nil, nil)
-                                NoJob  = []demons.DemonJob{{
-                                    Command: demons.COMMAND_NOJOB,
+                                NoJob  = []agent.DemonJob{{
+                                    Command: agent.COMMAND_NOJOB,
                                     Data:    []interface{}{},
                                 }}
 
-                                Payload = demons.BuildPayloadMessage(NoJob, AgentInstance.Encryption.AESKey, AgentInstance.Encryption.AESIv)
+                                Payload = agent.BuildPayloadMessage(NoJob, AgentInstance.Encryption.AESKey, AgentInstance.Encryption.AESIv)
                             )
 
                             Packer.AddInt32(int32(AgentHeader.AgentID))
@@ -147,11 +147,11 @@ func (e *External) request(ctx *gin.Context) {
                     logger.Debug("Agent does not exists. hope this is a register request")
                     var Command = AgentHeader.Data.ParseInt32()
 
-                    if Command == demons.DEMON_INIT {
+                    if Command == agent.DEMON_INIT {
 
                         logger.Debug("Is register request. continue...")
 
-                        AgentInstance = demons.AgentParseResponse(AgentHeader.AgentID, AgentHeader.Data)
+                        AgentInstance = agent.AgentParseResponse(AgentHeader.AgentID, AgentHeader.Data)
                         if AgentInstance == nil {
                             logger.Debug("Exit")
                             ctx.AbortWithStatus(404)

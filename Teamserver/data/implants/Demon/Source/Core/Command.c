@@ -2047,20 +2047,18 @@ VOID CommandNet( PPARSER Parser )
             DWORD               dwTotalEntries  = 0;
             DWORD               dwResumeHandle  = 0;
             DWORD               NetStatus       = NULL;
-            WCHAR               Server[ 260 ]   = { 0 };
             CHAR                UserName[ 260 ] = { 0 };
             DWORD               UserNameSize    = 0;
-            PCHAR               ServerName      = NULL;
+            LPWSTR              ServerName      = NULL;
 
             ServerName = ParserGetBytes( Parser, &UserNameSize );
 
             PackageAddBytes( Package, ServerName, UserNameSize );
-            CharStringToWCharString( Server, ServerName, UserNameSize );
 
             UserNameSize = 0;
             do
             {
-                NetStatus = Instance->Win32.NetWkstaUserEnum( Server, dwLevel, &UserInfo, MAX_PREFERRED_LENGTH, &dwEntriesRead, &dwTotalEntries, &dwResumeHandle );
+                NetStatus = Instance->Win32.NetWkstaUserEnum( ServerName, dwLevel, &UserInfo, MAX_PREFERRED_LENGTH, &dwEntriesRead, &dwTotalEntries, &dwResumeHandle );
                 if ( ( NetStatus == NERR_Success ) || ( NetStatus == ERROR_MORE_DATA ) )
                 {
                     for ( INT i = 0; ( i < dwEntriesRead ); i++ )
@@ -2078,6 +2076,8 @@ VOID CommandNet( PPARSER Parser )
                 }
                 else
                 {
+                    NtSetLastError( Instance->Win32.RtlNtStatusToDosError( NetStatus ) );
+
                     PRINTF( "NetWkstaUserEnum: Failed [%d]\n", NtGetLastError() );
                     PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                     goto CLEANUP;
@@ -2112,9 +2112,8 @@ VOID CommandNet( PPARSER Parser )
             DWORD             EntriesRead       = 0;
             DWORD             TotalEntries      = 0;
             DWORD             ResumeHandle      = 0;
-            LPSTR             ServerName        = NULL;
+            LPWSTR            ServerName        = NULL;
             DWORD             NetStatus         = 0;
-            WCHAR             Server[ 260 ]     = { 0 };
             CHAR              ClientName[ 260 ] = { 0 };
             DWORD             ClientNameSize    = 0;
             CHAR              UserName[ 260 ]   = { 0 };
@@ -2123,12 +2122,11 @@ VOID CommandNet( PPARSER Parser )
             ServerName = ParserGetBytes( Parser, &UserNameSize );
 
             PackageAddBytes( Package, ServerName, UserNameSize );
-            CharStringToWCharString( Server, ServerName, UserNameSize );
 
             UserNameSize = 0;
             do
             {
-                NetStatus = Instance->Win32.NetSessionEnum( Server, NULL, NULL, 10, &SessionInfo, MAX_PREFERRED_LENGTH, &EntriesRead, &TotalEntries, &ResumeHandle );
+                NetStatus = Instance->Win32.NetSessionEnum( ServerName, NULL, NULL, 10, &SessionInfo, MAX_PREFERRED_LENGTH, &EntriesRead, &TotalEntries, &ResumeHandle );
 
                 if ( ( NetStatus == NERR_Success ) || ( NetStatus == ERROR_MORE_DATA ) )
                 {
@@ -2177,59 +2175,6 @@ VOID CommandNet( PPARSER Parser )
         case DEMON_NET_COMMAND_COMPUTER:
         {
             PUTS( "DEMON_NET_COMMAND_COMPUTER" )
-
-            /*
-            NET_API_STATUS nStatus       = NULL;
-            LPGROUP_USERS_INFO_0 pBuf    = NULL,
-                    pTmpBuf                  = NULL;
-            DWORD i                      = 0,
-                    entriesread              = 0,
-                    totalentries			 = 0;
-
-            nStatus = NetGetDCName( NULL, NULL, &pBuf );
-            PWCHAR DomainController = pBuf;
-            pBuf = NULL;
-            nStatus = 0;
-            PRINTF( "DomainController => %ls\n", DomainController );
-            do
-            {
-                nStatus = NetGroupGetUsers( DomainController, L"Domain Computers", 0, &pBuf, MAX_PREFERRED_LENGTH, &entriesread, &totalentries, NULL );
-                if ( ( nStatus == NERR_Success ) || ( nStatus == ERROR_MORE_DATA ) )
-                {
-                    PUTS( "1" )
-                    if ( ( pTmpBuf = pBuf ) != NULL )
-                    {
-                        for ( i = 0; i < entriesread; i++ )
-                        {
-                            PRINTF( "i => %d" , i );
-                            if ( pTmpBuf == NULL )
-                                break;
-
-                            PRINTF( "Member => %ls", pTmpBuf->grui0_name );
-
-                            pTmpBuf++;
-                        }
-                    }
-                    else
-                    {
-                        PUTS( "ELSE" );
-                    }
-                    if ( pBuf != NULL )
-                    {
-
-                        NetApiBufferFree( pBuf );
-                        pBuf = NULL;
-                    }
-                }
-                else
-                {
-                    PRINTF( "NetGroupGetUsers: Failed [%d : %d]\n", NtGetLastError(), nStatus );
-                    PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
-
-                    return;
-                }
-            } while ( nStatus == ERROR_MORE_DATA );
-            */
 
             break;
         }
@@ -2300,13 +2245,6 @@ VOID CommandNet( PPARSER Parser )
             LPWSTR              ServerName    = NULL;
             DWORD               ServerSize    = 0;
 
-            // TODO: why does this crash? fix this and pass the param to NetLocalGroupEnum
-            // ServerName = ParserGetBytes( Parser, &ServerSize );
-            // PRINTF( "Server => %s [%d]\n", ServerName, ServerSize );
-            // PackageAddBytes( Package, ServerName, ServerSize );
-            // ServerSize = CharStringToWCharString( Server, ServerName, ServerSize );
-            // PRINTF( "Server => %ls [%d]\n", Server, ServerSize );
-
             ServerName = ParserGetBytes( Parser, &ServerSize );
             PackageAddBytes( Package, ServerName, ServerSize );
 
@@ -2354,18 +2292,13 @@ VOID CommandNet( PPARSER Parser )
             WCHAR               Desc[260 * 2] = { 0 };
             WCHAR               DescSize      = { 0 };
 
-            LPSTR               ServerName    = NULL;
+            LPWSTR              ServerName    = NULL;
             WCHAR               Server[ 260 ] = { 0 };
             DWORD               ServerSize    = 0;
 
-            // TODO: why does this crash? fix this and pass the param to NetLocalGroupEnum
-            // ServerName = ParserGetBytes( Parser, &ServerSize );
-            // PRINTF( "Server => %s [%d]\n", ServerName, ServerSize );
-            // PackageAddBytes( Package, ServerName, ServerSize );
-            // ServerSize = CharStringToWCharString( Server, ServerName, ServerSize );
-            // PRINTF( "Server => %ls [%d]\n", Server, ServerSize );
+            ServerName = ParserGetBytes( Parser, &ServerSize );
 
-            NetStatus = Instance->Win32.NetGroupEnum( NULL, 1, &GroupInfo, -1, &EntriesRead, &TotalEntries, &Resume );
+            NetStatus = Instance->Win32.NetGroupEnum( ServerName, 1, &GroupInfo, -1, &EntriesRead, &TotalEntries, &Resume );
             if ( ( NetStatus == NERR_Success ) || ( NetStatus == ERROR_MORE_DATA ) )
             {
                 if ( GroupInfo )
@@ -2411,10 +2344,14 @@ VOID CommandNet( PPARSER Parser )
             DWORD          TotalEntries = 0;
             DWORD          Resume       = 0;
 
+            LPWSTR         ServerName   = NULL;
+            DWORD          ServerSize   = 0;
             CHAR           User[ 260 ]  = { 0 };
             DWORD          UserSize     = 0;
 
-            // TODO: add custom server
+            ServerName = ParserGetBytes( Parser, &ServerSize );
+            PackageAddBytes( Package, ServerName, ServerSize );
+
             NetStatus = Instance->Win32.NetUserEnum( NULL, 0, 0, &UserInfo, MAX_PREFERRED_LENGTH, &EntriesRead, &TotalEntries, &Resume );
             PRINTF( "NetStatus => %d\n", NetStatus );
             if ( ( NetStatus == NERR_Success ) || ( NetStatus == ERROR_MORE_DATA ) )

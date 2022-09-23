@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"Havoc/pkg/demons"
+	"Havoc/pkg/agent"
 	"Havoc/pkg/events"
 	"Havoc/pkg/handlers"
 	"Havoc/pkg/logger"
@@ -17,7 +17,7 @@ import (
 
 func (t *Teamserver) ListenerStart(ListenerType int, info any) error {
 	var (
-		Functions      demons.RoutineFunc
+		Functions      agent.RoutineFunc
 		ListenerConfig any
 		ListenerName   string
 	)
@@ -77,7 +77,7 @@ func (t *Teamserver) ListenerStart(ListenerType int, info any) error {
 	Functions.AppendDemon = t.Agents.AppendAgent
 	Functions.AppendListener = events.Listener.ListenerAdd
 
-	Functions.ServiceAgentGet = func(MagicValue int) demons.ServiceAgentInterface {
+	Functions.ServiceAgentGet = func(MagicValue int) agent.ServiceAgentInterface {
 		for _, agentService := range t.Service.Agents {
 			if agentService.MagicValue == fmt.Sprintf("0x%x", MagicValue) {
 				return agentService
@@ -99,7 +99,7 @@ func (t *Teamserver) ListenerStart(ListenerType int, info any) error {
 		return false
 	}
 
-	Functions.CallbackSize = func(DemonInstance *demons.Agent, i int) {
+	Functions.CallbackSize = func(DemonInstance *agent.Agent, i int) {
 		var (
 			Message = make(map[string]string)
 			pk      packager.Package
@@ -110,7 +110,7 @@ func (t *Teamserver) ListenerStart(ListenerType int, info any) error {
 
 		OutputJson, _ := json.Marshal(Message)
 
-		pk = events.Demons.DemonOutput(DemonInstance.NameID, demons.HAVOC_CONSOLE_MESSAGE, string(OutputJson))
+		pk = events.Demons.DemonOutput(DemonInstance.NameID, agent.HAVOC_CONSOLE_MESSAGE, string(OutputJson))
 
 		t.EventAppend(pk)
 		t.EventBroadcast("", pk)
@@ -141,7 +141,20 @@ func (t *Teamserver) ListenerStart(ListenerType int, info any) error {
 		t.EventBroadcast("", pk)
 	}
 
-	Functions.AgentGetInstance = func(DemonID int) *demons.Agent {
+	Functions.AgentCallback = func(DemonID string, Time string) {
+		var (
+			Output = map[string]string{
+				"Output": Time,
+			}
+
+			out, _ = json.Marshal(Output)
+			pk     = events.Demons.DemonOutput(DemonID, agent.COMMAND_NOJOB, string(out))
+		)
+
+		t.EventBroadcast("", pk)
+	}
+
+	Functions.AgentGetInstance = func(DemonID int) *agent.Agent {
 		for _, demon := range t.Agents.Agents {
 			var NameID, _ = strconv.ParseInt(demon.NameID, 16, 64)
 
