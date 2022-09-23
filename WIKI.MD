@@ -123,7 +123,7 @@ The Havoc Teamserver is written in Golang. It handles the listeners, teamserver 
 
 Running `./teamserver` will automatically build the Teamserver, set it as executable and start it with the following options:
 
-`./bin/teamserver server --profile profiles/havoc.yaotl -v`
+`./bin/teamserver server --default --verbose`
 
 ### <a name="targ"></a>Arguments
 
