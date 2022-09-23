@@ -6,7 +6,11 @@ import (
     "os"
 )
 
-var LoggerInstance = &Logger{}
+var LoggerInstance *Logger
+
+func init() {
+    LoggerInstance = NewLogger(os.Stdout)
+}
 
 func NewLogger(StdOut io.Writer) *Logger {
     var logger = new(Logger)
