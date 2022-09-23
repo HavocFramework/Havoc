@@ -72,7 +72,7 @@ Consider supporting C5pider on [Patreon](https://www.patreon.com/5pider). Additi
 
 ### Community
 
-You can join the official [Havoc Discord](#) to chat with the community! 
+You can join the official [Havoc Discord](https://discord.gg/z3PF3NRDE5) to chat with the community! 
 
 ### Contributing
 
