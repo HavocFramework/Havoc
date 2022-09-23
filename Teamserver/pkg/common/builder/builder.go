@@ -158,6 +158,24 @@ func (b *Builder) Build() bool {
         return false
     }
 
+    b.SendConsoleMessage("Info", fmt.Sprintf("Config size [%v]", len(Config)))
+
+    logger.Debug("len(Config) = ", len(Config))
+    array := "{"
+    for i := range Config {
+        if i == (len(Config) - 1) {
+            array += fmt.Sprintf("0x%02x", Config[i])
+        } else {
+            array += fmt.Sprintf("0x%02x\\,", Config[i])
+        }
+    }
+    array += "}"
+
+    logger.Debug("array = " + array)
+
+    b.compilerOptions.Defines = append(b.compilerOptions.Defines, "CONFIG_BYTES="+array)
+    b.compilerOptions.Defines = append(b.compilerOptions.Defines, fmt.Sprintf("CONFIG_SIZE=%v", len(Config)))
+
     // enable debug mode
     if b.debugMode {
         b.compilerOptions.Defines = append(b.compilerOptions.Defines, "DEBUG")
@@ -492,10 +510,8 @@ func (b *Builder) GetPayloadBytes() []byte {
     }
 
     var (
-        FileBuffer  []byte
-        ConfigBytes = make([]byte, 1024)
-        Padding     = make([]byte, 1024)
-        err         error
+        FileBuffer []byte
+        err        error
     )
 
     if b.outputPath == "" {
@@ -514,23 +530,17 @@ func (b *Builder) GetPayloadBytes() []byte {
         }
         return nil
     }
+    /*  copy(ConfigBytes, Config)
+        for i := range Padding {
+            Padding[i] = 0x05
+        }
 
-    Config := b.PatchConfig()
-    if Config == nil {
-        return nil
-    }
+        if !b.silent {
+            b.SendConsoleMessage("Info", "Patching implant config")
+        }
 
-    copy(ConfigBytes, Config)
-    for i := range Padding {
-        Padding[i] = 0x05
-    }
-
-    if !b.silent {
-        b.SendConsoleMessage("Info", "Patching implant config")
-    }
-
-    FileBuffer = bytes.Replace(FileBuffer, Padding, ConfigBytes, 1)
-
+        FileBuffer = bytes.Replace(FileBuffer, Padding, ConfigBytes, 1)
+    */
     if b.PatchBinary {
         FileBuffer = b.Patch(FileBuffer)
     }
