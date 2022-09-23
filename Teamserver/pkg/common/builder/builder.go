@@ -350,7 +350,6 @@ func (b *Builder) PatchConfig() []byte {
         ConfigJitter       int
         ConfigSpawn64      string
         ConfigSpawn32      string
-        ConfigObfEnable    int
         ConfigObfTechnique int
         err                error
     )
@@ -394,47 +393,27 @@ func (b *Builder) PatchConfig() []byte {
         return nil
     }
 
-    if SleepObfuscation := b.config.Config["Sleep Obfuscation"].(map[string]any); len(SleepObfuscation) > 0 {
-        if val, ok := SleepObfuscation["Enable"].(bool); ok {
-            ConfigObfEnable = win32.FALSE
-            if val {
-                ConfigObfEnable = win32.TRUE
-            }
+    if val, ok := b.config.Config["Sleep Technique"].(string); ok && len(val) > 0 {
+        switch val {
+        case "WaitForSingleObjectEx":
+            ConfigObfTechnique = 0
+            break
 
-        } else {
-            if !b.silent {
-                b.SendConsoleMessage("Error", "Sleep Obfuscation enable is undefined")
-            }
-            return nil
-        }
+        case "Foliage":
+            ConfigObfTechnique = 1
+            break
 
-        if val, ok := SleepObfuscation["Technique"].(string); ok && len(val) > 0 {
-            switch val {
-            case "WaitForSingleObjectEx":
-                ConfigObfTechnique = 0
-                break
+        case "Ekko":
+            ConfigObfTechnique = 2
+            break
 
-            case "Foliage":
-                ConfigObfTechnique = 1
-                break
-
-            case "Ekko":
-                ConfigObfTechnique = 2
-                break
-
-            default:
-                ConfigObfTechnique = 0
-                break
-            }
-        } else {
-            if !b.silent {
-                b.SendConsoleMessage("Error", "Sleep Obfuscation technique is undefined")
-            }
-            return nil
+        default:
+            ConfigObfTechnique = 0
+            break
         }
     } else {
         if !b.silent {
-            b.SendConsoleMessage("Error", "Sleep Obfuscation is undefined")
+            b.SendConsoleMessage("Error", "Sleep Obfuscation technique is undefined")
         }
         return nil
     }
@@ -442,7 +421,6 @@ func (b *Builder) PatchConfig() []byte {
     DemonConfig.AddString(ConfigSpawn64)
     DemonConfig.AddString(ConfigSpawn32)
 
-    DemonConfig.AddInt(ConfigObfEnable)
     DemonConfig.AddInt(ConfigObfTechnique)
 
     // Listener Config

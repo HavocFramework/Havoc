@@ -224,11 +224,13 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 				}
 
 				var Config = handlers.HTTPConfig{
-					Name:    pk.Body.Info["Name"].(string),
-					Hosts:   Host,
-					Port:    pk.Body.Info["Port"].(string),
-					Headers: Headers,
-					Uris:    Uris,
+					Name:       pk.Body.Info["Name"].(string),
+					Hosts:      Host,
+					Port:       pk.Body.Info["Port"].(string),
+					Headers:    Headers,
+					Uris:       Uris,
+					HostHeader: pk.Body.Info["HostHeader"].(string),
+					UserAgent:  pk.Body.Info["UserAgent"].(string),
 				}
 
 				if val, ok := pk.Body.Info["Proxy Enabled"].(string); ok {
@@ -432,11 +434,13 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 				}
 
 				var Config = handlers.HTTPConfig{
-					Name:    pk.Body.Info["Name"].(string),
-					Hosts:   Host,
-					Port:    pk.Body.Info["Port"].(string),
-					Headers: Headers,
-					Uris:    Uris,
+					Name:       pk.Body.Info["Name"].(string),
+					Hosts:      Host,
+					Port:       pk.Body.Info["Port"].(string),
+					Headers:    Headers,
+					Uris:       Uris,
+					UserAgent:  pk.Body.Info["UserAgent"].(string),
+					HostHeader: pk.Body.Info["HostHeader"].(string),
 				}
 
 				if val, ok := pk.Body.Info["Proxy Enabled"].(string); ok {

@@ -50,14 +50,6 @@ namespace HavocNamespace::Util::Packager
         extern const int Error;
     }
 
-    namespace Credentials {
-        extern const int Type;
-
-        extern const int Add;
-        extern const int Edit;
-        extern const int Remove;
-    }
-
     namespace Chat
     {
         extern const int Type;
@@ -76,16 +68,6 @@ namespace HavocNamespace::Util::Packager
         extern const int Staged;
         extern const int Stageless;
         extern const int MSOffice;
-    }
-
-    namespace HostFile
-    {
-        extern const int Type;
-
-        extern const int Add;
-        extern const int Remove;
-        extern const int SetOffline;
-        extern const int SetOnline;
     }
 
     namespace Session
@@ -129,8 +111,6 @@ public:
     bool DispatchInitConnection( Util::Packager::PPackage Package );
     bool DispatchListener( Util::Packager::PPackage Package );
     bool DispatchChat( Util::Packager::PPackage Package );
-    bool DispatchCredentials( Util::Packager::PPackage Package );
-    bool DispatchHostFile( Util::Packager::PPackage Package );
     bool DispatchSession( Util::Packager::PPackage Package );
     bool DispatchGate( Util::Packager::PPackage Package );
     bool DispatchService( Util::Packager::PPackage Package );

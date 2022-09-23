@@ -1814,14 +1814,6 @@ VOID CommandConfig( PPARSER Parser )
     {
         case DEMON_CONFIG_SHOW_ALL:
         {
-
-            break;
-        }
-
-        case DEMON_CONFIG_IMPLANT_SLEEPMASK:
-        {
-            Instance->Config.Implant.SleepMask = ParserGetInt32( Parser );
-            PackageAddInt32( Package, Instance->Config.Implant.SleepMask );
             break;
         }
 

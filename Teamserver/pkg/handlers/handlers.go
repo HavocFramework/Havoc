@@ -14,13 +14,14 @@ type Listener interface {
 
 type (
 	HTTPConfig struct {
-		Name      string
-		Hosts     string
-		Port      string
-		UserAgent string
-		Headers   []string
-		Uris      []string
-		Secure    bool
+		Name       string
+		Hosts      string
+		Port       string
+		UserAgent  string
+		Headers    []string
+		Uris       []string
+		HostHeader string
+		Secure     bool
 
 		Proxy struct {
 			Enabled  bool

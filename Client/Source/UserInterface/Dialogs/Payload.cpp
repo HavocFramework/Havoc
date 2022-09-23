@@ -448,11 +448,9 @@ auto Payload::DefaultConfig() -> void
     auto DemonConfig             = HavocX::Teamserver.DemonConfig;
     auto ConfigSleep             = new QTreeWidgetItem( TreeConfig );
     auto ConfigJitter            = new QTreeWidgetItem( TreeConfig );
-    auto ConfigSleepObf          = new QTreeWidgetItem( TreeConfig );
+    auto ConfigSleepObfTechnique = new QTreeWidgetItem( TreeConfig );
     auto ConfigInjection         = new QTreeWidgetItem( TreeConfig );
 
-    auto ConfigSleepObfEnabled   = new QTreeWidgetItem( ConfigSleepObf );
-    auto ConfigSleepObfTechnique = new QTreeWidgetItem( ConfigSleepObf );
     auto ConfigInjectionSpawn64  = new QTreeWidgetItem( ConfigInjection );
     auto ConfigInjectionSpawn32  = new QTreeWidgetItem( ConfigInjection );
 
@@ -467,18 +465,14 @@ auto Payload::DefaultConfig() -> void
     ConfigSleep->setFlags( Qt::NoItemFlags );
     ConfigJitter->setFlags( Qt::NoItemFlags );
     ConfigInjection->setFlags( Qt::NoItemFlags );
-    ConfigSleepObf->setFlags( Qt::NoItemFlags );
-    ConfigSleepObfEnabled->setFlags( Qt::NoItemFlags );
     ConfigSleepObfTechnique->setFlags( Qt::NoItemFlags );
     ConfigInjectionSpawn64->setFlags( Qt::NoItemFlags );
     ConfigInjectionSpawn32->setFlags( Qt::NoItemFlags );
-    SleepObfEnableCheck->setCheckState( Qt::CheckState::Checked );
 
     ConfigSleepLineEdit->setObjectName( "ConfigItem" );
     ConfigJitterLineEdit->setObjectName( "ConfigItem" );
     ConfigSpawn64LineEdit->setObjectName( "ConfigItem" );
     ConfigSpawn32LineEdit->setObjectName( "ConfigItem" );
-    SleepObfEnableCheck->setObjectName( "ConfigItem" );
     SleepObfTechnique->setObjectName( "ConfigItem" );
     SleepObfSpoofAddress->setObjectName( "ConfigItem" );
 
@@ -486,21 +480,14 @@ auto Payload::DefaultConfig() -> void
 
     TreeConfig->setItemWidget( ConfigSleep,  1, ConfigSleepLineEdit );
     TreeConfig->setItemWidget( ConfigJitter, 1, ConfigJitterLineEdit );
+    TreeConfig->setItemWidget( ConfigSleepObfTechnique,1, SleepObfTechnique );
     TreeConfig->setItemWidget( ConfigInjectionSpawn64, 1, ConfigSpawn64LineEdit );
     TreeConfig->setItemWidget( ConfigInjectionSpawn32, 1, ConfigSpawn32LineEdit );
-    TreeConfig->setItemWidget( ConfigSleepObfEnabled, 1, SleepObfEnableCheck );
-    TreeConfig->setItemWidget( ConfigSleepObfTechnique, 1, SleepObfTechnique );
 
     ConfigSleep->setText( 0, "Sleep" );
     ConfigJitter->setText( 0, "Jitter" );
 
-    ConfigSleepObf->setText( 0, "Sleep Obfuscation" );
-    ConfigSleepObf->setExpanded( true );
-    ConfigSleepObf->addChild( ConfigSleepObfEnabled );
-    ConfigSleepObf->addChild( ConfigSleepObfTechnique );
-
-    ConfigSleepObfEnabled->setText( 0, "Enable" );
-    ConfigSleepObfTechnique->setText( 0, "Technique" );
+    ConfigSleepObfTechnique->setText( 0, "Sleep Technique" );
 
     ConfigInjection->setText( 0, "Injection" );
     ConfigInjection->setExpanded( true );

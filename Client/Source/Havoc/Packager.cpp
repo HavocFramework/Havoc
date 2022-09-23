@@ -29,11 +29,6 @@ const int Util::Packager::Listener::Remove          = 0x3;
 const int Util::Packager::Listener::Mark            = 0x4;
 const int Util::Packager::Listener::Error           = 0x5;
 
-const int Util::Packager::Credentials::Type         = 0x3;
-const int Util::Packager::Credentials::Add          = 0x1;
-const int Util::Packager::Credentials::Edit         = 0x2;
-const int Util::Packager::Credentials::Remove       = 0x3;
-
 const int Util::Packager::Chat::Type                = 0x4;
 const int Util::Packager::Chat::NewMessage          = 0x1;
 const int Util::Packager::Chat::NewListener         = 0x2;
@@ -44,12 +39,6 @@ const int Util::Packager::Chat::UserDisconnect      = 0x5;
 const int Util::Packager::Gate::Type                = 0x5;
 const int Util::Packager::Gate::Staged              = 0x1;
 const int Util::Packager::Gate::Stageless           = 0x2;
-
-const int Util::Packager::HostFile::Type            = 0x6;
-const int Util::Packager::HostFile::Add             = 0x1;
-const int Util::Packager::HostFile::Remove          = 0x2;
-const int Util::Packager::HostFile::SetOffline      = 0x3;
-const int Util::Packager::HostFile::SetOnline       = 0x4;
 
 const int Util::Packager::Session::Type             = 0x7;
 const int Util::Packager::Session::NewSession       = 0x1;
@@ -145,17 +134,12 @@ auto Packager::DispatchPackage( Util::Packager::PPackage Package ) -> bool
         case Util::Packager::Listener::Type:
             return DispatchListener( Package );
 
-        case Util::Packager::Credentials::Type:
-            return DispatchCredentials( Package );
-
         case Util::Packager::Chat::Type:
             return DispatchChat( Package );
 
         case Util::Packager::Gate::Type:
             return DispatchGate( Package );
 
-        case Util::Packager::HostFile::Type:
-            return DispatchHostFile( Package );
 
         case Util::Packager::Session::Type:
             return DispatchSession( Package );
@@ -250,14 +234,21 @@ bool Packager::DispatchListener( Util::Packager::PPackage Package )
                     .UserAgent  = Package->Body.Info[ "UserAgent" ].c_str(),
                     .Headers    = Headers,
                     .Uris       = Uris,
+                    .HostHeader = Package->Body.Info[ "HostHeader" ].c_str(),
                     .Secure     = Package->Body.Info[ "Secure" ].c_str(),
+
+                    .ProxyEnabled  = Package->Body.Info[ "Proxy Enabled" ].c_str(),
+                    .ProxyType     = Package->Body.Info[ "Proxy Type" ].c_str(),
+                    .ProxyHost     = Package->Body.Info[ "Proxy Host" ].c_str(),
+                    .ProxyPort     = Package->Body.Info[ "Proxy Port" ].c_str(),
+                    .ProxyUsername = Package->Body.Info[ "Proxy Username" ].c_str(),
+                    .ProxyPassword = Package->Body.Info[ "Proxy Password" ].c_str(),
                 };
 
                 if ( Package->Body.Info[ "Secure" ] == "true" )
                 {
                     ListenerInfo.Protocol = Listener::PayloadHTTPS.toStdString();
                 }
-
             }
             else if ( ListenerInfo.Protocol == Listener::PayloadSMB.toStdString() )
             {
@@ -336,7 +327,15 @@ bool Packager::DispatchListener( Util::Packager::PPackage Package )
                         .UserAgent  = Package->Body.Info[ "UserAgent" ].c_str(),
                         .Headers    = Headers,
                         .Uris       = Uris,
+                        .HostHeader = Package->Body.Info[ "HostHeader" ].c_str(),
                         .Secure     = Package->Body.Info[ "Secure" ].c_str(),
+
+                        .ProxyEnabled  = Package->Body.Info[ "Proxy Enabled" ].c_str(),
+                        .ProxyType     = Package->Body.Info[ "Proxy Type" ].c_str(),
+                        .ProxyHost     = Package->Body.Info[ "Proxy Host" ].c_str(),
+                        .ProxyPort     = Package->Body.Info[ "Proxy Port" ].c_str(),
+                        .ProxyUsername = Package->Body.Info[ "Proxy Username" ].c_str(),
+                        .ProxyPassword = Package->Body.Info[ "Proxy Password" ].c_str(),
                 };
 
                 if ( Package->Body.Info[ "Secure" ] == "true" )
@@ -405,22 +404,6 @@ bool Packager::DispatchListener( Util::Packager::PPackage Package )
                 }
             }
 
-            break;
-        }
-    }
-    return true;
-}
-
-bool Packager::DispatchCredentials(Util::Packager::PPackage Package)
-{
-    switch (Package->Body.SubEvent) {
-        case Util::Packager::Credentials::Add: {
-            break;
-        }
-        case Util::Packager::Credentials::Remove: {
-            break;
-        }
-        case Util::Packager::Credentials::Edit: {
             break;
         }
     }
@@ -503,28 +486,6 @@ bool Packager::DispatchGate( Util::Packager::PPackage Package )
                 HavocX::Teamserver.TabSession->PayloadDialog->addConsoleLog( MessageType, Message );
             }
 
-            break;
-        }
-    }
-    return true;
-}
-
-bool Packager::DispatchHostFile( Util::Packager::PPackage Package)
-{
-    switch (Package->Body.SubEvent) {
-        case Util::Packager::HostFile::Add: {
-            break;
-        }
-
-        case Util::Packager::HostFile::Remove: {
-            break;
-        }
-
-        case Util::Packager::HostFile::SetOnline: {
-            break;
-        }
-
-        case Util::Packager::HostFile::SetOffline: {
             break;
         }
     }

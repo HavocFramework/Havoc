@@ -582,14 +582,12 @@ map<string, string> HavocNamespace::UserInterface::Dialogs::NewListener::Start( 
                 Uris += ListUris->item( i )->text().toStdString() + ", ";
         }
 
-        if ( ! InputHostHeader->text().isEmpty() )
-            Headers += ", Host: " + InputHostHeader->text().toStdString();
-
         ListenerInfo.insert( { "Hosts", InputHost->text().toStdString() } );
         ListenerInfo.insert( { "Port", InputPort->text().toStdString() } );
         ListenerInfo.insert( { "Headers", Headers } );
         ListenerInfo.insert( { "Uris", Uris } );
         ListenerInfo.insert( { "UserAgent", InputUserAgent->text().toStdString() } );
+        ListenerInfo.insert( { "HostHeader", InputHostHeader->text().toStdString() } );
 
         ListenerInfo.insert( { "Proxy Enabled", CheckEnableProxy->isChecked() ? "true" : "false" } );
 
@@ -907,7 +905,6 @@ void HavocNamespace::UserInterface::Dialogs::NewListener::onProxyEnabled()
 {
     if ( CheckEnableProxy->isChecked() )
     {
-        spdlog::info( "Proxy connection enabled" );
         ProxyConfigBox->setEnabled( true );
 
         auto style = QString( "color: #f8f8f2;" );

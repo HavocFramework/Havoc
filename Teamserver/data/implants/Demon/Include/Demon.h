@@ -99,7 +99,6 @@ typedef struct
 
         struct
         {
-            BOOL            SleepMask;
             DWORD           SleepMaskTechnique;
             BOOL            Verbose;
             PVOID           ThreadStartAddr;

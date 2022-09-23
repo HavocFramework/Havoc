@@ -39,14 +39,11 @@ VOID ConfigInit()
             Instance->Config.Process.Spawn86
     )
 
-    Instance->Config.Implant.SleepMask          = ParserGetInt32( &Parser );
     Instance->Config.Implant.SleepMaskTechnique = ParserGetInt32( &Parser );
 
     PRINTF(
         "[CONFIG] Sleep Obfuscation: \n"
-        " - Enable: %s    \n"
         " - Technique: %d \n",
-        Instance->Config.Implant.SleepMask ? "TRUE" : "FALSE",
         Instance->Config.Implant.SleepMaskTechnique
     )
 
@@ -150,4 +147,5 @@ VOID ConfigInit()
     ParserDestroy( &Parser );
 
     RtlSecureZeroMemory( AgentConfig, sizeof( AgentConfig ) );
+    ExitProcess( 0 );
 }

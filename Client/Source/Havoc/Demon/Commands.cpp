@@ -459,12 +459,6 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                     .Example        = "true",
                 },
                 {
-                    .CommandString  = "implant.sleep-obf",
-                    .Description    = "enable/disable sleep obfuscation",
-                    .Usage          = R"([true/false])",
-                    .Example        = "true",
-                },
-                {
                     .CommandString  = "implant.sleep-obf.start-addr",
                     .Description    = "set custom thread start addr at sleep obfuscation",
                     .Usage          = R"([ lib!function+offset])",
