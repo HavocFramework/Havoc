@@ -62,6 +62,11 @@ type TeamserverFlags struct {
     Util   utilFlags
 }
 
+type Endpoint struct {
+    Endpoint string
+    Function func(ctx *gin.Context)
+}
+
 type Teamserver struct {
     Flags       TeamserverFlags
     Profile     *profile.Profile
@@ -78,6 +83,7 @@ type Teamserver struct {
 
     Agents    agent.Agents
     Listeners []*Listener
+    Endpoints []*Endpoint
 
     Settings struct {
         Compiler64 string

@@ -25,8 +25,6 @@ func NewExternal(WebSocketEngine any, Config ExternalConfig) *External {
 }
 
 func (e *External) Start() {
-    e.engine.POST("/"+e.Config.Endpoint, e.request)
-
     logger.Info("Started \"" + colors.Green(e.Config.Name) + "\" listener: " + colors.BlueUnderline("external://"+e.Config.Endpoint))
 
     pk := e.RoutineFunc.AppendListener("", LISTENER_EXTERNAL, e)
@@ -34,8 +32,7 @@ func (e *External) Start() {
     e.RoutineFunc.EventBroadcast("", pk)
 }
 
-// TODO: handle multiple packages in one request. parse them all for each agent / command
-func (e *External) request(ctx *gin.Context) {
+func (e *External) Request(ctx *gin.Context) {
     logger.Debug("ExternalC2 [" + e.Config.Name + "] client connected")
 
     var (

@@ -96,6 +96,16 @@ func (t *Teamserver) Start() {
     // TODO: pass this as a profile/command line flag
     t.Server.Engine.Static("/home", "./bin/static")
 
+    t.Server.Engine.POST("/:endpoint", func(context *gin.Context) {
+        if len(t.Endpoints) > 0 {
+            for i := range t.Endpoints {
+                if t.Endpoints[i].Endpoint == context.Request.RequestURI {
+                    t.Endpoints[i].Function(context)
+                }
+            }
+        }
+    })
+
     go func(Server string) {
         err := t.Server.Engine.Run(Server)
         if err != nil {
@@ -516,4 +526,27 @@ func (t *Teamserver) FindSystemPackages() bool {
     ))
 
     return true
+}
+
+func (t *Teamserver) EndpointAdd(endpoint *Endpoint) bool {
+    for _, e := range t.Endpoints {
+        if e.Endpoint == endpoint.Endpoint {
+            return false
+        }
+    }
+
+    t.Endpoints = append(t.Endpoints, endpoint)
+
+    return true
+}
+
+func (t *Teamserver) EndpointRemove(endpoint string) []*Endpoint {
+    for i := range t.Endpoints {
+        if t.Endpoints[i].Endpoint == endpoint {
+            t.Endpoints = append(t.Endpoints[:i], t.Endpoints[i+1:]...)
+            return t.Endpoints
+        }
+    }
+
+    return t.Endpoints
 }

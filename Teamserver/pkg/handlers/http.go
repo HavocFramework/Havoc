@@ -332,7 +332,7 @@ func (h *HTTP) Stop() error {
     // catching ctx.Done(). timeout of 5 seconds.
     select {
     case <-ctx.Done():
-        log.Println("timeout of 5 seconds.")
+        logger.Debug("timeout of 5 seconds.")
     }
 
     return nil

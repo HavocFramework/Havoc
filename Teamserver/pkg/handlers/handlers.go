@@ -6,12 +6,6 @@ import (
 )
 import "github.com/gin-gonic/gin"
 
-type Listener interface {
-    Start()
-    SetConfig(Config any)
-    Stop()
-}
-
 type (
     HTTPConfig struct {
         Name       string
