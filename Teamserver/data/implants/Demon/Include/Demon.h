@@ -182,6 +182,7 @@ typedef struct
         WIN_FUNC( SetCurrentDirectoryA )
         WIN_FUNC( Wow64DisableWow64FsRedirection )
         WIN_FUNC( Wow64RevertWow64FsRedirection )
+        WIN_FUNC( CopyFileA )
 
         // Ntdll
         NTSTATUS ( NTAPI *LdrLoadDll ) (

@@ -172,7 +172,7 @@ VOID PivotCollectOutput()
                         return;
                     }
 
-                    SEND_WIN32_BACK
+                    CALLBACK_GETLASTERROR
                     PackageDestroy( Package );
                     break;
                 }

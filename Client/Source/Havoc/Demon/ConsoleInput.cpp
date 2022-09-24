@@ -447,7 +447,23 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             CommandInputList[ TaskID ] = commandline;
             SEND( Execute.FS( TaskID, "cd", Path ) );
         }
-        else if (InputCommands[0].compare( "remove" ) == 0)
+        else if ( InputCommands[ 0 ].compare( "cp" ) == 0)
+        {
+            if ( InputCommands.size() < 2 )
+            {
+                CONSOLE_ERROR( "Not enough arguments" );
+                return false;
+            }
+
+            auto PathFrom = InputCommands[ 1 ];
+            auto PathTo   = JoinAtIndex( InputCommands, 2 );
+
+            TaskID = CONSOLE_INFO( "Tasked demon to copy file " + PathFrom + " to " + PathTo );
+
+            CommandInputList[ TaskID ] = commandline;
+            SEND( Execute.FS( TaskID, "cp", PathFrom.toLocal8Bit().toBase64() + ";" + PathTo.toLocal8Bit().toBase64() ) );
+        }
+        else if ( InputCommands[ 0 ].compare( "remove" ) == 0 )
         {
             if ( InputCommands.size() < 1 )
             {

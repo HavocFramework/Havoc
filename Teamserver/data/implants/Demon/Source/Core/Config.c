@@ -14,9 +14,7 @@ VOID ConfigInit()
     PVOID  Buffer = NULL;
     DWORD  Length = 0;
     DWORD  J      = 0;
-
-    PRINT_HEX( AgentConfig, sizeof( AgentConfig ) );
-
+    
     PRINTF( "Config Size: %d\n", sizeof( AgentConfig ) )
 
     ParserNew( &Parser, AgentConfig, sizeof( AgentConfig ) );

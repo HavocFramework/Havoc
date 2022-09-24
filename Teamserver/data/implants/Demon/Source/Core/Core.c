@@ -101,6 +101,7 @@ VOID DxInitialization( VOID )
         Instance->Win32.RemoveDirectoryA                    = LdrFunctionAddr( Instance->Modules.Kernel32, 0x41927229 );
         Instance->Win32.DeleteFileA                         = LdrFunctionAddr( Instance->Modules.Kernel32, 0x1cd88719 );
         Instance->Win32.CreateDirectoryA                    = LdrFunctionAddr( Instance->Modules.Kernel32, 0x41fabfef );
+        Instance->Win32.CopyFileA                           = LdrFunctionAddr( Instance->Modules.Kernel32, 0xac2253c1 );
         Instance->Win32.InitializeProcThreadAttributeList   = LdrFunctionAddr( Instance->Modules.Kernel32, 0x5ca2ca33 );
         Instance->Win32.UpdateProcThreadAttribute           = LdrFunctionAddr( Instance->Modules.Kernel32, 0x9c91a68  );
         Instance->Win32.SetCurrentDirectoryA                = LdrFunctionAddr( Instance->Modules.Kernel32, 0xbec3a06a );

