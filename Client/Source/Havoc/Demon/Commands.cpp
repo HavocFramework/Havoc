@@ -553,10 +553,16 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                     .Example        = "ntdll!LdrLoadLibrary+0x46",
                 },
                 {
-                    .CommandString  = "process.spawn",
-                    .Description    = "default process to spawn for fork & run operations",
+                    .CommandString  = "inject.spawn64",
+                    .Description    = "default x64 process to spawn for fork & run operations",
                     .Usage          = R"([C:\path\to\executable.exe])",
                     .Example        = R"(C:\Windows\System32\rundll32.exe)",
+                },
+                {
+                    .CommandString  = "inject.spawn32",
+                    .Description    = "default x86 process to spawn for fork & run operations",
+                    .Usage          = R"([C:\path\to\executable.exe])",
+                    .Example        = R"(C:\Windows\SysWow64\rundll32.exe)",
                 },
             },
         },

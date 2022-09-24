@@ -158,7 +158,9 @@ func (b *Builder) Build() bool {
         return false
     }
 
-    b.SendConsoleMessage("Info", fmt.Sprintf("Config size [%v bytes]", len(Config)))
+    if !b.silent {
+        b.SendConsoleMessage("Info", fmt.Sprintf("Config size [%v bytes]", len(Config)))
+    }
 
     logger.Debug("len(Config) = ", len(Config))
     array := "{"

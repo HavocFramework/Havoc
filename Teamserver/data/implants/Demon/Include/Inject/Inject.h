@@ -30,6 +30,7 @@ typedef enum _DX_MEMORY
 
 typedef enum _DX_CREATE_THREAD
 {
+    DX_THREAD_DEFAULT           = 0,
     DX_THREAD_WIN32             = 1,
     DX_THREAD_SYSCALL           = 2,
     DX_THREAD_APC               = 3,

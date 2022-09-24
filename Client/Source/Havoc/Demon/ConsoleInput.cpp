@@ -1169,20 +1169,18 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                     }
                     TaskID = CONSOLE_INFO( "Tasked demon to enable/disable sleep-obf: " + InputCommands[ 2 ] );
                 }
-                else if ( InputCommands[ 1 ].compare( "implant.sleep-obf.technique" ) == 0 ) // TODO: finish this
+                else if ( InputCommands[ 1 ].compare( "implant.sleep-obf.technique" ) == 0 )
                 {
                     CONSOLE_ERROR( "Not implemented" ); return false;
                 }
                 else if ( InputCommands[ 1 ].compare( "implant.sleep-obf.start-addr" ) == 0 )
                 {
-		    if ( InputCommands.size() < 3 ) {
-			CONSOLE_ERROR( "Not enough arguments" );
-			return false;
-		    };
+                    if ( InputCommands.size() < 3 ) {
+                        CONSOLE_ERROR( "Not enough arguments" );
+                        return false;
+                    };
 
-                    auto regex = QRegExp( "\\d*" );
-
-                    if ( ! regex.exactMatch( InputCommands[ 2 ] ) )
+                    if ( ! is_number( InputCommands[ 2 ].toStdString() ) )
                     {
                         CONSOLE_ERROR( "Wrong argument: Is not a number" )
                         return false;
@@ -1190,29 +1188,70 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
 
                     TaskID = CONSOLE_INFO( "Tasked demon to configure sleep-mask thread start addr: " + InputCommands[ 2 ] );
                 }
-                else if ( InputCommands[ 1 ].compare( "memory.alloc" ) == 0 ) // TODO: finish this
-                {
-		    CONSOLE_ERROR( "Not implemented" ); return false;
-                }
-                else if ( InputCommands[ 1 ].compare( "memory.execute" ) == 0 ) // TODO: finish this
-                {
-		    CONSOLE_ERROR( "Not implemented" ); return false;
-                }
-                else if ( InputCommands[ 1 ].compare( "inject.technique" ) == 0 ) // TODO: finish this
-                {
-		    CONSOLE_ERROR( "Not implemented" ); return false;
-                }
-                else if ( InputCommands[ 1 ].compare( "inject.spoofaddr" ) == 0 ) // TODO: finish this
-                {
-		    CONSOLE_ERROR( "Not implemented" ); return false;
-                }
-                else if ( InputCommands[ 1 ].compare( "process.spawn" ) == 0 )
+                else if ( InputCommands[ 1 ].compare( "memory.alloc" ) == 0 )
                 {
                     if ( InputCommands.size() < 3 ) {
                         CONSOLE_ERROR( "Not enough arguments" );
                         return false;
                     };
-                    TaskID = CONSOLE_INFO( "Tasked demon to configure default target process: " + InputCommands[ 2 ] );
+
+                    if ( ! is_number( InputCommands[ 2 ].toStdString() ) )
+                    {
+                        CONSOLE_ERROR( "Wrong argument: Is not a number" )
+                        return false;
+                    }
+
+                    TaskID = CONSOLE_INFO( "Tasked demon to configure memory allocation: " + InputCommands[ 2 ] );
+                }
+                else if ( InputCommands[ 1 ].compare( "memory.execute" ) == 0 )
+                {
+                    if ( InputCommands.size() < 3 ) {
+                        CONSOLE_ERROR( "Not enough arguments" );
+                        return false;
+                    };
+
+                    if ( ! is_number( InputCommands[ 2 ].toStdString() ) )
+                    {
+                        CONSOLE_ERROR( "Wrong argument: Is not a number" )
+                        return false;
+                    }
+
+                    TaskID = CONSOLE_INFO( "Tasked demon to configure memory execution: " + InputCommands[ 2 ] );
+                }
+                /* else if ( InputCommands[ 1 ].compare( "inject.technique" ) == 0 ) // TODO: figure out how to implement this right.
+                {
+                    if ( InputCommands.size() < 3 ) {
+                        CONSOLE_ERROR( "Not enough arguments" );
+                        return false;
+                    };
+
+                    if ( ! is_number( InputCommands[ 2 ].toStdString() ) )
+                    {
+                        CONSOLE_ERROR( "Wrong argument: Is not a number" )
+                        return false;
+                    }
+
+                    TaskID = CONSOLE_INFO( "Tasked demon to configure injection technique: " + InputCommands[ 2 ] );
+                } */
+                else if ( InputCommands[ 1 ].compare( "inject.spoofaddr" ) == 0 ) // TODO: finish this
+                {
+		            CONSOLE_ERROR( "Not implemented" ); return false;
+                }
+                else if ( InputCommands[ 1 ].compare( "inject.spawn64" ) == 0 )
+                {
+                    if ( InputCommands.size() < 3 ) {
+                        CONSOLE_ERROR( "Not enough arguments" );
+                        return false;
+                    };
+                    TaskID = CONSOLE_INFO( "Tasked demon to configure default x64 target process: " + InputCommands[ 2 ] );
+                }
+                else if ( InputCommands[ 1 ].compare( "inject.spawn32" ) == 0 )
+                {
+                    if ( InputCommands.size() < 3 ) {
+                        CONSOLE_ERROR( "Not enough arguments" );
+                        return false;
+                    };
+                    TaskID = CONSOLE_INFO( "Tasked demon to configure default x86 target process: " + InputCommands[ 2 ] );
                 }
                 else
                 {

@@ -10,7 +10,6 @@
 #include <Core/SleepObf.h>
 
 #include <Loader/CoffeeLdr.h>
-#include <Loader/ObjectApi.h>
 #include <Inject/Inject.h>
 
 BOOL AmsiPatched = FALSE;
@@ -1980,15 +1979,48 @@ VOID CommandConfig( PPARSER Parser )
             break;
         }
 
-        case DEMON_CONFIG_PROCESS_SPAWN:
+        case DEMON_CONFIG_INJECTION_SPAWN64:
         {
-            DWORD Size = 0;
+            DWORD Size   = 0;
+            PVOID Buffer = NULL;
 
-            Instance->Config.Process.Spawn64 = ParserGetBytes( Parser, &Size );
+            if ( Instance->Config.Process.Spawn64 )
+            {
+                MemSet( Instance->Config.Process.Spawn64, 0, StringLengthA( Instance->Config.Process.Spawn64 ) );
+                Instance->Win32.LocalFree( Instance->Config.Process.Spawn64 );
+                Instance->Config.Process.Spawn64 = NULL;
+            }
+
+            Buffer = ParserGetBytes( Parser, &Size );
+            Instance->Config.Process.Spawn64 = Instance->Win32.LocalAlloc( LPTR, Size );
+            MemCopy( Instance->Config.Process.Spawn64, Buffer, Size );
             Instance->Config.Process.Spawn64[ Size ] = 0;
 
             PRINTF( "Instance->Config.Process.Spawn64 => %s\n", Instance->Config.Process.Spawn64 );
             PackageAddBytes( Package, Instance->Config.Process.Spawn64, Size );
+
+            break;
+        }
+
+        case DEMON_CONFIG_INJECTION_SPAWN32:
+        {
+            DWORD Size   = 0;
+            PVOID Buffer = NULL;
+
+            if ( Instance->Config.Process.Spawn86 )
+            {
+                MemSet( Instance->Config.Process.Spawn86, 0, StringLengthA( Instance->Config.Process.Spawn86 ) );
+                Instance->Win32.LocalFree( Instance->Config.Process.Spawn86 );
+                Instance->Config.Process.Spawn86 = NULL;
+            }
+
+            Buffer = ParserGetBytes( Parser, &Size );
+            Instance->Config.Process.Spawn86 = Instance->Win32.LocalAlloc( LPTR, Size );
+            MemCopy( Instance->Config.Process.Spawn86, Buffer, Size );
+            Instance->Config.Process.Spawn86[ Size ] = 0;
+
+            PRINTF( "Instance->Config.Process.Spawn86 => %s\n", Instance->Config.Process.Spawn86 );
+            PackageAddBytes( Package, Instance->Config.Process.Spawn86, Size );
 
             break;
         }

