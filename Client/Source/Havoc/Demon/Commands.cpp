@@ -517,10 +517,8 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                     .Usage          = R"([1/2/3])",
                     .Example        = "1",
                     .Options        = {
-                            "1  => Win32 API",
-                            "2  => Native API",
-                            "3  => Direct Syscall",
-                            "4  => Indirect/Obfuscated Syscall",
+                            "1  => Win32 API (VirtualAllocEX)",
+                            "2  => Native API (NtAllocateVirtualMemory)",
                     },
                 },
                 {
@@ -529,13 +527,11 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                     .Usage          = R"([ 1 / 2 / 3 / 4 ])",
                     .Example        = "1",
                     .Options        = {
-                            "1  => Win32 API",
-                            "2  => Native API",
-                            "3  => Direct Syscall",
-                            "4  => Indirect/Obfuscated Syscall",
+                            "1  => Win32 API (CreateRemoteThread)",
+                            "2  => Native API (NtCreateThreadEx)",
                     },
                 },
-                {
+                /*{
                     .CommandString  = "inject.technique",
                     .Description    = "inject code using a specific technique",
                     .Usage          = R"([ 1 / 2 / 3 ])",
@@ -545,7 +541,7 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                             "2  => Native / Syscall",
                             "3  => Apc / Earlybird",
                     },
-                },
+                },*/
                 {
                     .CommandString  = "inject.spoofaddr",
                     .Description    = "inject code with spoofed thread start addr",
