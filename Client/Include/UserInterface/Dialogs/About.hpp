@@ -4,19 +4,20 @@
 #include <global.hpp>
 #include <QTextBrowser>
 
-class HavocNamespace::UserInterface::Dialogs::About : public QDialog{
+class About : public QDialog
+{
 private:
-    QGridLayout *gridLayout;
-    QLabel *label;
-    QPushButton *pushButton;
-    QSpacerItem *horizontalSpacer;
-    QTextBrowser *textBrowser;
+    QGridLayout*    gridLayout;
+    QLabel*         label;
+    QPushButton*    pushButton;
+    QSpacerItem*    horizontalSpacer;
+    QTextBrowser*   textBrowser;
 
 public:
     QDialog *AboutDialog;
 
     void setupUi();
-    About(QDialog*);
+    About( QDialog* );
 
 public slots:
     void onButtonClose();

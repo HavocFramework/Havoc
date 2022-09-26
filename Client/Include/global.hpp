@@ -129,7 +129,6 @@ namespace HavocNamespace
                 class Staged;
             }
 
-            class About;
             class Connect;
             class NewListener;
             class Preferences;

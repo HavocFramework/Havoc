@@ -21,18 +21,14 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
-func TaskPrepare(TaskID string, Command int, Info any) (DemonJob, error) {
-	var taskID, err = strconv.ParseInt(TaskID, 16, 32)
-	if err != nil {
-		logger.Debug("[Error] Failed to convert TaskID string to int32: " + err.Error())
-		taskID = 0
-	}
-
-	var job = DemonJob{
-		TaskID:  uint32(taskID),
-		Command: uint32(Command),
-		Data:    []interface{}{},
-	}
+func TaskPrepare(Command int, Info any) (Job, error) {
+	var (
+		job = Job{
+			Command: uint32(Command),
+			Data:    []interface{}{},
+		}
+		err error
+	)
 
 	Optional := Info.(map[string]interface{})
 
@@ -53,7 +49,7 @@ func TaskPrepare(TaskID string, Command int, Info any) (DemonJob, error) {
 				Exit,
 			}
 		} else {
-			return DemonJob{}, errors.New("ExitMethod not found")
+			return Job{}, errors.New("ExitMethod not found")
 		}
 
 		break
@@ -106,7 +102,7 @@ func TaskPrepare(TaskID string, Command int, Info any) (DemonJob, error) {
 			if val, err := base64.StdEncoding.DecodeString(ArgArray[0]); err == nil {
 				FileName = string(val)
 			} else {
-				return DemonJob{}, err
+				return Job{}, err
 			}
 
 			job.Data = []interface{}{
@@ -127,13 +123,13 @@ func TaskPrepare(TaskID string, Command int, Info any) (DemonJob, error) {
 			if val, err := base64.StdEncoding.DecodeString(ArgArray[0]); err == nil {
 				FileName = string(val)
 			} else {
-				return DemonJob{}, err
+				return Job{}, err
 			}
 
 			if val, err := base64.StdEncoding.DecodeString(ArgArray[1]); err == nil {
 				Content = val
 			} else {
-				return DemonJob{}, err
+				return Job{}, err
 			}
 
 			SubCommand = 3
@@ -181,13 +177,13 @@ func TaskPrepare(TaskID string, Command int, Info any) (DemonJob, error) {
 				if val, err := base64.StdEncoding.DecodeString(Paths[0]); err == nil {
 					PathFrom = string(val)
 				} else {
-					return DemonJob{}, err
+					return Job{}, err
 				}
 
 				if val, err := base64.StdEncoding.DecodeString(Paths[1]); err == nil {
 					PathTo = string(val)
 				} else {
-					return DemonJob{}, err
+					return Job{}, err
 				}
 
 				job.Data = []interface{}{
@@ -219,7 +215,7 @@ func TaskPrepare(TaskID string, Command int, Info any) (DemonJob, error) {
 			if val, err := base64.StdEncoding.DecodeString(ArgArray[0]); err == nil {
 				FileName = string(val)
 			} else {
-				return DemonJob{}, err
+				return Job{}, err
 			}
 
 			job.Data = []interface{}{
@@ -363,7 +359,7 @@ func TaskPrepare(TaskID string, Command int, Info any) (DemonJob, error) {
 			var pid, err = strconv.Atoi(Arguments)
 			if err != nil {
 				logger.Debug("proc::kill failed to parse pid: " + err.Error())
-				return DemonJob{}, errors.New("proc::kill failed to parse pid: " + err.Error())
+				return Job{}, errors.New("proc::kill failed to parse pid: " + err.Error())
 			} else {
 				job.Data = []interface{}{
 					SubCommand,
@@ -416,21 +412,21 @@ func TaskPrepare(TaskID string, Command int, Info any) (DemonJob, error) {
 
 		if Arguments, ok := Optional["Arguments"].(string); ok {
 			if Parameters, err = base64.StdEncoding.DecodeString(Arguments); !ok {
-				return DemonJob{}, errors.New("FunctionName not defined")
+				return Job{}, errors.New("FunctionName not defined")
 			}
 		} else {
-			return DemonJob{}, errors.New("CoffeeLdr: Arguments not defined")
+			return Job{}, errors.New("CoffeeLdr: Arguments not defined")
 		}
 
 		if Binary, ok := Optional["Binary"].(string); ok {
 			if ObjectFile, err = base64.StdEncoding.DecodeString(Binary); err != nil {
 				logger.Debug("Failed to turn base64 encoded object file into bytes: " + err.Error())
-				return DemonJob{}, err
+				return Job{}, err
 			}
 		}
 
 		if FunctionName, ok = Optional["FunctionName"].(string); !ok {
-			return DemonJob{}, errors.New("CoffeeLdr: FunctionName not defined")
+			return Job{}, errors.New("CoffeeLdr: FunctionName not defined")
 		}
 
 		if ObjectFlags, ok := Optional["Flags"].(string); ok {
@@ -453,7 +449,7 @@ func TaskPrepare(TaskID string, Command int, Info any) (DemonJob, error) {
 			}
 
 		} else {
-			return DemonJob{}, errors.New("CoffeeLdr: Flags not defined")
+			return Job{}, errors.New("CoffeeLdr: Flags not defined")
 		}
 
 		job.Data = []interface{}{
@@ -983,16 +979,16 @@ func TaskPrepare(TaskID string, Command int, Info any) (DemonJob, error) {
 			NetCommand, err = strconv.Atoi(val.(string))
 			if err != nil {
 				logger.Debug("Failed to parse net command: " + err.Error())
-				return DemonJob{}, err
+				return Job{}, err
 			}
 		} else {
-			return DemonJob{}, errors.New("command::net NetCommand not defined")
+			return Job{}, errors.New("command::net NetCommand not defined")
 		}
 
 		if val, ok := Optional["Param"]; ok {
 			Param = val.(string)
 		} else {
-			return DemonJob{}, errors.New("command::net param not defined")
+			return Job{}, errors.New("command::net param not defined")
 		}
 
 		switch NetCommand {
@@ -1086,7 +1082,7 @@ func TaskPrepare(TaskID string, Command int, Info any) (DemonJob, error) {
 
 			if val, err := strconv.Atoi(val.(string)); err != nil {
 				logger.Debug("failed to convert pivot command to int: " + err.Error())
-				return DemonJob{}, errors.New("failed to convert pivot command to int: " + err.Error())
+				return Job{}, errors.New("failed to convert pivot command to int: " + err.Error())
 			} else {
 				PivotCommand = val
 			}

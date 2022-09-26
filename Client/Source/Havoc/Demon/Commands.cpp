@@ -517,8 +517,8 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                     .Usage          = R"([1/2/3])",
                     .Example        = "1",
                     .Options        = {
-                            "1  => Win32 API (VirtualAllocEX)",
-                            "2  => Native API (NtAllocateVirtualMemory)",
+                        "1  => Win32 API (VirtualAllocEX)",
+                        "2  => Native API (NtAllocateVirtualMemory)",
                     },
                 },
                 {
@@ -527,8 +527,8 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                     .Usage          = R"([ 1 / 2 / 3 / 4 ])",
                     .Example        = "1",
                     .Options        = {
-                            "1  => Win32 API (CreateRemoteThread)",
-                            "2  => Native API (NtCreateThreadEx)",
+                        "1  => Win32 API (CreateRemoteThread)",
+                        "2  => Native API (NtCreateThreadEx)",
                     },
                 },
                 /*{

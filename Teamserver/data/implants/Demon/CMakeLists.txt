@@ -60,8 +60,12 @@ set( CRYPT_SOURCE
 
 # preprocessor flags
 add_compile_definitions( DEBUG )
+
 add_compile_definitions( CONFIG_BYTES={} )
 add_compile_definitions( CONFIG_SIZE=1024 )
+add_compile_definitions( CONFIG_KEY_BYTES={} )
+add_compile_definitions( CONFIG_KEY_SIZE=1024 )
+
 add_compile_definitions( TRANSPORT_HTTP )
 add_compile_definitions( AES256 )
 add_compile_definitions( PORT=4545 )          # 4545

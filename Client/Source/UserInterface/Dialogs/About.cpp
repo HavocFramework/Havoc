@@ -1,12 +1,12 @@
 #include <global.hpp>
 #include <UserInterface/Dialogs/About.hpp>
 
-HavocNamespace::UserInterface::Dialogs::About::About(QDialog *dialog)
+About::About( QDialog* dialog )
 {
     AboutDialog = dialog;
 
-    if (AboutDialog->objectName().isEmpty())
-        AboutDialog->setObjectName(QString::fromUtf8("Dialogs"));
+    if ( AboutDialog->objectName().isEmpty() )
+        AboutDialog->setObjectName( QString::fromUtf8( "Dialogs" ) );
 
     AboutDialog->setWindowTitle("About");
     AboutDialog->resize(400, 323);
@@ -14,7 +14,7 @@ HavocNamespace::UserInterface::Dialogs::About::About(QDialog *dialog)
     gridLayout = new QGridLayout(AboutDialog);
     gridLayout->setObjectName(QString::fromUtf8("gridLayout"));
 
-    label = new QLabel(AboutDialog);
+    label = new QLabel( AboutDialog );
     label->setObjectName(QString::fromUtf8("label_Name"));
     label->setMinimumSize(QSize(196, 0));
 
@@ -41,16 +41,16 @@ HavocNamespace::UserInterface::Dialogs::About::About(QDialog *dialog)
                                                                "<p align=\"center\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:x-large; font-weight:600;\">About Havoc</span> </p>\n"
                                                                "<p align=\"center\" style=\" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">Welcome to Havoc. Havoc is a Software for Adversary Simulations and Red Team Operations by <a href=\"https://www.twitter.com/C5pider\"><span style=\" text-decoration: underline; color:#e100ff;\">5pider</span></a>. </p></body></html>", nullptr));
 
-    QObject::connect(pushButton, &QPushButton::clicked, this, &About::onButtonClose);
-    QMetaObject::connectSlotsByName(AboutDialog);
+    QObject::connect( pushButton, &QPushButton::clicked, this, &About::onButtonClose );
+    QMetaObject::connectSlotsByName( AboutDialog );
 }
 
-void HavocNamespace::UserInterface::Dialogs::About::setupUi()
+void About::setupUi()
 {
 
 }
 
-void HavocNamespace::UserInterface::Dialogs::About::onButtonClose()
+void About::onButtonClose()
 {
     AboutDialog->close();
 }

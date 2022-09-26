@@ -350,7 +350,7 @@ void HavocNamespace::UserInterface::HavocUI::onButton_Help_About()
 {
     if ( AboutDialog == nullptr )
     {
-        AboutDialog = new Dialogs::About( new QDialog );
+        AboutDialog = new About( new QDialog );
         AboutDialog->setupUi();
     }
     this->AboutDialog->AboutDialog->exec();

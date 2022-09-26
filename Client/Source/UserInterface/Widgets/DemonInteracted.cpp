@@ -235,7 +235,7 @@ QString DemonInteracted::TaskInfo( bool Show, QString TaskID, const QString &tex
 
     if ( ! Show )
     {
-        auto TaskMessage = Util::ColorText::Cyan( "[*]" ) + " " + Util::ColorText::Comment("["+TaskID+"]") + " " + Util::ColorText::Cyan( text.toHtmlEscaped() );
+        auto TaskMessage = Util::ColorText::Cyan( "[*]" ) + " " + " " + Util::ColorText::Cyan( text.toHtmlEscaped() );
         this->Console->append( TaskMessage );
     }
 

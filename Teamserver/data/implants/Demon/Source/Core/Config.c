@@ -5,7 +5,7 @@
 #include <Core/Parser.h>
 #include <Core/MiniStd.h>
 
-BYTE AgentConfig[ CONFIG_SIZE ] = CONFIG_BYTES;
+BYTE AgentConfig[ CONFIG_SIZE ]  = CONFIG_BYTES;
 
 // TODO: Clear memory at exit
 VOID ConfigInit()
@@ -18,6 +18,7 @@ VOID ConfigInit()
     PRINTF( "Config Size: %d\n", sizeof( AgentConfig ) )
 
     ParserNew( &Parser, AgentConfig, sizeof( AgentConfig ) );
+    RtlSecureZeroMemory( AgentConfig, sizeof( AgentConfig ) );
 
     Instance->Config.Sleeping = ParserGetInt32( &Parser );
     Instance->Config.Jitter   = ParserGetInt32( &Parser );
@@ -145,6 +146,4 @@ VOID ConfigInit()
 
 #endif
     ParserDestroy( &Parser );
-
-    RtlSecureZeroMemory( AgentConfig, sizeof( AgentConfig ) );
 }

@@ -1,6 +1,12 @@
 package builder
 
 import (
+    "Havoc/pkg/common/packer"
+    "Havoc/pkg/handlers"
+    "Havoc/pkg/logger"
+    "Havoc/pkg/profile"
+    "Havoc/pkg/utils"
+    "Havoc/pkg/win32"
     "bytes"
     "encoding/hex"
     "encoding/json"
@@ -11,13 +17,6 @@ import (
     "path"
     "strconv"
     "strings"
-
-    "Havoc/pkg/common/packer"
-    "Havoc/pkg/handlers"
-    "Havoc/pkg/logger"
-    "Havoc/pkg/profile"
-    "Havoc/pkg/utils"
-    "Havoc/pkg/win32"
 )
 
 // TODO: move to agent package

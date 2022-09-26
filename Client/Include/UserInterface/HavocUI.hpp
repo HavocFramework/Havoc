@@ -27,7 +27,8 @@
 #include <QFile>
 #include <QStackedWidget>
 
-class HavocNamespace::UserInterface::HavocUI : public QMainWindow {
+class HavocNamespace::UserInterface::HavocUI : public QMainWindow
+{
 public:
     QAction* actionNew_Client;
     QAction* actionChat;
@@ -65,7 +66,7 @@ public:
     QStatusBar *statusbar;
 
     Dialogs::Connect*     ConnectDialog = nullptr;
-    Dialogs::About*       AboutDialog = nullptr;
+    About*                AboutDialog = nullptr;
     Dialogs::Preferences* PreferencesDialogs = nullptr;
 
     QMainWindow* HavocWindow;

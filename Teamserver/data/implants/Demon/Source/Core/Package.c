@@ -134,6 +134,7 @@ PPACKAGE PackageNew(  )
 
     PackageAddInt32( Package, 0 );
     PackageAddInt32( Package, DEMON_MAGIC_VALUE );
+    PackageAddInt32( Package, Instance->Session.DemonID );
 
     return Package;
 }

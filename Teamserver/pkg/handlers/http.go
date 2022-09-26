@@ -1,10 +1,12 @@
 package handlers
 
 import (
+    "Havoc/pkg/common/parser"
     "context"
     "fmt"
     "io/ioutil"
     "log"
+    "math/bits"
     "net/http"
     "os"
     "regexp"
@@ -117,31 +119,90 @@ func (h *HTTP) request(ctx *gin.Context) {
                             payload = agent.BuildPayloadMessage(job, AgentInstance.Encryption.AESKey, AgentInstance.Encryption.AESIv)
                         )
 
-                        BytesWritten, err := ctx.Writer.Write(payload)
+                        _, err := ctx.Writer.Write(payload)
                         if err != nil {
                             logger.Error("Couldn't write to HTTP connection: " + err.Error())
                         } else {
-                            var ShowBytes = true
-
+                            // show bytes for pivot
+                            var CallbackSizes = make(map[int64][]byte)
                             for j := range job {
-                                if job[j].Command == agent.COMMAND_PIVOT {
-                                    if len(job[j].Data) > 1 {
-                                        if job[j].Data[0] == agent.DEMON_PIVOT_SMB_COMMAND {
-                                            ShowBytes = false
+
+                                if len(job[j].Data) > 1 {
+
+                                    if job[j].Command == agent.COMMAND_PIVOT && job[j].Data[0] == agent.DEMON_PIVOT_SMB_COMMAND {
+
+                                        var (
+                                            TaskBuffer   = job[j].Data[2].([]byte)
+                                            PivotAgentID = int(job[j].Data[1].(int64))
+                                        )
+
+                                        for {
+
+                                            var Parser = parser.NewParser(TaskBuffer)
+
+                                            Parser.SetBigEndian(false)
+
+                                            var (
+                                                _            = Parser.ParseInt32()
+                                                _            = Parser.ParseInt32()
+                                                CommandID    = Parser.ParseInt32()
+                                                SubCommandID = 0
+                                            )
+
+                                            if CommandID == agent.COMMAND_PIVOT {
+                                                var PivotInstance = h.RoutineFunc.AgentGetInstance(PivotAgentID)
+
+                                                if PivotInstance != nil {
+                                                    TaskBuffer = Parser.ParseBytes()
+
+                                                    Parser = parser.NewParser(TaskBuffer)
+                                                    Parser.DecryptBuffer(PivotInstance.Encryption.AESKey, PivotInstance.Encryption.AESIv)
+
+                                                    if Parser.Length() >= 4 {
+
+                                                        SubCommandID = Parser.ParseInt32()
+                                                        SubCommandID = int(bits.ReverseBytes32(uint32(SubCommandID)))
+
+                                                        if SubCommandID == agent.DEMON_PIVOT_SMB_COMMAND {
+                                                            PivotAgentID = Parser.ParseInt32()
+                                                            PivotAgentID = int(bits.ReverseBytes32(uint32(PivotAgentID)))
+
+                                                            TaskBuffer = Parser.ParseBytes()
+                                                            continue
+                                                        } else {
+                                                            CallbackSizes[int64(PivotAgentID)] = append(CallbackSizes[job[j].Data[1].(int64)], TaskBuffer...)
+                                                            break
+                                                        }
+                                                    }
+                                                } else {
+                                                    break
+                                                }
+                                            } else {
+                                                CallbackSizes[int64(PivotAgentID)] = append(CallbackSizes[job[j].Data[1].(int64)], TaskBuffer...)
+                                                break
+                                            }
                                         }
+
+                                    } else {
+                                        payload = agent.BuildPayloadMessage([]agent.Job{job[j]}, AgentInstance.Encryption.AESKey, AgentInstance.Encryption.AESIv)
+                                        CallbackSizes[int64(AgentHeader.AgentID)] = append(CallbackSizes[int64(AgentHeader.AgentID)], payload...)
                                     }
-                                } else {
-                                    ShowBytes = true
+                                }
+
+                            }
+
+                            for agentID, bytes := range CallbackSizes {
+                                agentInstance := h.RoutineFunc.AgentGetInstance(int(agentID))
+                                if agentInstance != nil {
+                                    h.RoutineFunc.CallbackSize(agentInstance, len(bytes))
                                 }
                             }
 
-                            if ShowBytes {
-                                h.RoutineFunc.CallbackSize(AgentInstance, BytesWritten)
-                            }
+                            CallbackSizes = nil
                         }
 
                     } else {
-                        var NoJob = []agent.DemonJob{{
+                        var NoJob = []agent.Job{{
                             Command: agent.COMMAND_NOJOB,
                             Data:    []interface{}{},
                         }}

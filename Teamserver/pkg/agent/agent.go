@@ -3,6 +3,7 @@ package agent
 import (
 	"Havoc/pkg/colors"
 	"Havoc/pkg/common/crypt"
+	"Havoc/pkg/common/packer"
 	"Havoc/pkg/common/parser"
 	"Havoc/pkg/logger"
 	"bytes"
@@ -18,15 +19,12 @@ import (
 	"github.com/fatih/structs"
 )
 
-func BuildPayloadMessage(Jobs []DemonJob, AesKey []byte, AesIv []byte) []byte {
+func BuildPayloadMessage(Jobs []Job, AesKey []byte, AesIv []byte) []byte {
 	var (
-		PayloadPackage     = []byte{}
+		DataPayload        []byte
+		PayloadPackage     []byte
 		PayloadPackageSize = make([]byte, 4)
-
-		DataCommandID = make([]byte, 4)
-		DataTaskID    = make([]byte, 4)
-
-		DataPayload []byte
+		DataCommandID      = make([]byte, 4)
 	)
 
 	for _, job := range Jobs {
@@ -36,29 +34,32 @@ func BuildPayloadMessage(Jobs []DemonJob, AesKey []byte, AesIv []byte) []byte {
 				var xUint32 = make([]byte, 4)
 				binary.LittleEndian.PutUint32(xUint32, uint32(job.Data[i].(int64)))
 				DataPayload = append(DataPayload, xUint32...)
+				break
 
 			case int32:
 				var xUint32 = make([]byte, 4)
 				binary.LittleEndian.PutUint32(xUint32, uint32(job.Data[i].(int32)))
 				DataPayload = append(DataPayload, xUint32...)
+				break
 
 			case int:
 				var xUint32 = make([]byte, 4)
 				binary.LittleEndian.PutUint32(xUint32, uint32(job.Data[i].(int)))
 				DataPayload = append(DataPayload, xUint32...)
+				break
 
 			case uint32:
 				var xUint32 = make([]byte, 4)
 				binary.LittleEndian.PutUint32(xUint32, job.Data[i].(uint32))
 				DataPayload = append(DataPayload, xUint32...)
+				break
 
 			case string:
-				// Getting size of input and set size of DataPayload
 				var size = make([]byte, 4)
 				binary.LittleEndian.PutUint32(size, uint32(len(job.Data[i].(string))))
 				DataPayload = append(DataPayload, size...)
-				// append input DataPayload to buffer
 				DataPayload = append(DataPayload, []byte(job.Data[i].(string))...)
+				break
 
 			case []byte:
 				// Getting size of input and set size of DataPayload
@@ -67,16 +68,14 @@ func BuildPayloadMessage(Jobs []DemonJob, AesKey []byte, AesIv []byte) []byte {
 				DataPayload = append(DataPayload, size...)
 				// append input DataPayload to buffer
 				DataPayload = append(DataPayload, job.Data[i].([]byte)...)
-
+				break
 			}
 		}
 
 		binary.LittleEndian.PutUint32(DataCommandID, job.Command)
-		binary.LittleEndian.PutUint32(DataTaskID, job.TaskID)
 		binary.LittleEndian.PutUint32(PayloadPackageSize, uint32(len(DataPayload)))
 
 		PayloadPackage = append(PayloadPackage, DataCommandID...)
-		PayloadPackage = append(PayloadPackage, DataTaskID...)
 		PayloadPackage = append(PayloadPackage, PayloadPackageSize...)
 
 		if len(DataPayload) > 0 {
@@ -447,12 +446,12 @@ func AgentParseResponse(AgentID int, Parser *parser.Parser) *Agent {
 	return Session
 }
 
-func (a *Agent) AddJobToQueue(job DemonJob) []DemonJob {
+func (a *Agent) AddJobToQueue(job Job) []Job {
 	a.JobQueue = append(a.JobQueue, job)
 	return a.JobQueue
 }
 
-func (a *Agent) GetQueuedJobs() []DemonJob {
+func (a *Agent) GetQueuedJobs() []Job {
 	var Jobs = a.JobQueue
 
 	a.JobQueue = nil
@@ -492,6 +491,71 @@ func (a *Agent) BackgroundUpdateLastCallbackUI(routineFunc RoutineFunc) {
 
 		time.Sleep(time.Second * 1)
 	}
+}
+
+func (a *Agent) PivotAddJob(job Job) {
+	var (
+		Payload  = BuildPayloadMessage([]Job{job}, a.Encryption.AESKey, a.Encryption.AESIv)
+		Packer   = packer.NewPacker(nil, nil)
+		pivots   *Pivots
+		PivotJob Job
+		AgentID  int64
+		err      error
+	)
+
+	// core package that the end pivot receive
+	AgentID, err = strconv.ParseInt(a.NameID, 16, 32)
+	if err != nil {
+		logger.Debug("Failed to convert NameID string to AgentID: " + err.Error())
+		return
+	}
+
+	Packer.AddInt32(int32(AgentID))
+	Packer.AddBytes(Payload)
+
+	PivotJob = Job{
+		Command: COMMAND_PIVOT,
+		Data: []interface{}{
+			DEMON_PIVOT_SMB_COMMAND,
+			AgentID,
+			Packer.Buffer(),
+		},
+	}
+
+	pivots = &a.Pivots
+
+	// pack it up for all the parent pivots.
+	for {
+		if pivots.Parent.Pivots.Parent == nil {
+			break
+		}
+
+		// create new layer package.
+		Payload = BuildPayloadMessage([]Job{PivotJob}, pivots.Parent.Encryption.AESKey, pivots.Parent.Encryption.AESIv)
+		Packer = packer.NewPacker(nil, nil)
+
+		AgentID, err = strconv.ParseInt(pivots.Parent.NameID, 16, 32)
+		if err != nil {
+			logger.Debug("Failed to convert NameID string to AgentID: " + err.Error())
+			return
+		}
+
+		Packer.AddInt32(int32(AgentID))
+		Packer.AddBytes(Payload)
+
+		PivotJob = Job{
+			Command: COMMAND_PIVOT,
+			Data: []interface{}{
+				DEMON_PIVOT_SMB_COMMAND,
+				AgentID,
+				Packer.Buffer(),
+			},
+		}
+
+		pivots = &pivots.Parent.Pivots
+	}
+
+	pivots.Parent.AddJobToQueue(PivotJob)
 }
 
 func (a *Agent) ToMap() map[string]interface{} {
