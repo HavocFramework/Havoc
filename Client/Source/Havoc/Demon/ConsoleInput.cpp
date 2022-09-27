@@ -1405,7 +1405,15 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 }
                 else if ( InputCommands[ 1 ].compare( "disconnect" ) == 0 )
                 {
-                    CONSOLE_ERROR( "Not implemented" ); return false;
+                    if ( InputCommands.size() < 3 )
+                    {
+                        CONSOLE_ERROR( "Not enough arguments" )
+                        return false;
+                    }
+
+                    Command = "11";
+                    Param   = InputCommands[ 2 ];
+                    TaskID  = CONSOLE_INFO( "Tasked demon to disconnect a smb pivot: " + Param );
                 }
                 else
                 {

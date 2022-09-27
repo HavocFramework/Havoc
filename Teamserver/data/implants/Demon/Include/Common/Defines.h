@@ -13,11 +13,6 @@
 #endif
 
 // Hashes for the dynamic winapi loading via a hashing algorithm
-#define FuncHash_CloseHandle                13820447496611088903
-#define FuncHash_CreateProcessA             14759328998768324121
-#define FuncHash_CreateRemoteThread         2258122571040978781
-#define FuncHash_CreateToolhelp32Snapshot   7730686236800914069
-#define FuncHash_VirtualAllocEx             13183570413154622132
 #define FuncHash_GetTokenInformation        881854923972837164
 #define FuncHash_CreatePipe                 8244700854143020775
 #define FuncHash_ReadFile                   7571513842702625

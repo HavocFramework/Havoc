@@ -128,7 +128,7 @@ func (h *HTTP) request(ctx *gin.Context) {
                             for j := range job {
 
                                 if len(job[j].Data) >= 1 {
-                                    logger.Info("testaaaa")
+
                                     if job[j].Command == agent.COMMAND_PIVOT && job[j].Data[0] == agent.DEMON_PIVOT_SMB_COMMAND {
                                         var (
                                             TaskBuffer   = job[j].Data[2].([]byte)

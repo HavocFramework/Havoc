@@ -37,21 +37,21 @@ func BuildPayloadMessage(Jobs []Job, AesKey []byte, AesIv []byte) []byte {
                 break
 
             case int32:
-                var xUint32 = make([]byte, 4)
-                binary.LittleEndian.PutUint32(xUint32, uint32(job.Data[i].(int32)))
-                DataPayload = append(DataPayload, xUint32...)
+                var integer32 = make([]byte, 4)
+                binary.LittleEndian.PutUint32(integer32, uint32(job.Data[i].(int32)))
+                DataPayload = append(DataPayload, integer32...)
                 break
 
             case int:
-                var xUint32 = make([]byte, 4)
-                binary.LittleEndian.PutUint32(xUint32, uint32(job.Data[i].(int)))
-                DataPayload = append(DataPayload, xUint32...)
+                var integer32 = make([]byte, 4)
+                binary.LittleEndian.PutUint32(integer32, uint32(job.Data[i].(int)))
+                DataPayload = append(DataPayload, integer32...)
                 break
 
             case uint32:
-                var xUint32 = make([]byte, 4)
-                binary.LittleEndian.PutUint32(xUint32, job.Data[i].(uint32))
-                DataPayload = append(DataPayload, xUint32...)
+                var integer32 = make([]byte, 4)
+                binary.LittleEndian.PutUint32(integer32, job.Data[i].(uint32))
+                DataPayload = append(DataPayload, integer32...)
                 break
 
             case string:
@@ -62,11 +62,9 @@ func BuildPayloadMessage(Jobs []Job, AesKey []byte, AesIv []byte) []byte {
                 break
 
             case []byte:
-                // Getting size of input and set size of DataPayload
                 var size = make([]byte, 4)
                 binary.LittleEndian.PutUint32(size, uint32(len(job.Data[i].([]byte))))
                 DataPayload = append(DataPayload, size...)
-                // append input DataPayload to buffer
                 DataPayload = append(DataPayload, job.Data[i].([]byte)...)
                 break
             }
@@ -540,7 +538,11 @@ func (a *Agent) BackgroundUpdateLastCallbackUI(routineFunc RoutineFunc) {
 
     for {
         if !a.Active {
-            Callback := map[string]string{"Output": "Dead"}
+            if len(a.Reason) == 0 {
+                a.Reason = "Dead"
+            }
+
+            Callback := map[string]string{"Output": a.Reason}
             routineFunc.DemonOutput(a.NameID, COMMAND_NOJOB, Callback)
             return
         }

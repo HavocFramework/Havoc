@@ -1104,8 +1104,14 @@ func TaskPrepare(Command int, Info any) (Job, error) {
             break
 
         case DEMON_PIVOT_SMB_DISCONNECT:
+            var AgentID, err = strconv.ParseInt(Param, 16, 32)
+            if err != nil {
+                return Job{}, err
+            }
+
             job.Data = []interface{}{
                 PivotCommand,
+                AgentID,
             }
             break
 
@@ -2977,9 +2983,13 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 
                         if AgentHdr.MagicValue == DEMON_MAGIC_VALUE {
                             AgentHdr.Data.ParseInt32()
-                            var DemonInfo = ParseResponse(AgentHdr.AgentID, AgentHdr.Data)
 
-                            if DemonInfo != nil {
+                            var DemonInfo *Agent
+
+                            if Funcs.AgentExists(AgentHdr.AgentID) {
+                                DemonInfo = Funcs.AgentGetInstance(AgentHdr.AgentID)
+                            } else {
+                                DemonInfo = ParseResponse(AgentHdr.AgentID, AgentHdr.Data)
                                 DemonInfo.Pivots.Parent = a
                                 a.Pivots.Links = append(a.Pivots.Links, DemonInfo)
                                 DemonInfo.Info.MagicValue = AgentHdr.MagicValue
@@ -2991,7 +3001,9 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
                                 Funcs.EventBroadcast("", pk)
 
                                 go DemonInfo.BackgroundUpdateLastCallbackUI(Funcs)
+                            }
 
+                            if DemonInfo != nil {
                                 Message["Type"] = "Good"
                                 Message["Message"] = "[SMB] Connected to pivot agent [" + a.NameID + "]-<>-<>-[" + DemonInfo.NameID + "]"
                             } else {
@@ -3034,10 +3046,25 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
         case DEMON_PIVOT_SMB_DISCONNECT:
 
             if Parser.Length() > 0 {
-                var DemonId = Parser.ParseInt32()
+                var (
+                    Success = Parser.ParseInt32()
+                    AgentID = Parser.ParseInt32()
+                )
 
-                Message["Type"] = "Error"
-                Message["Message"] = fmt.Sprintf("[SMB] Agent disconnected %x", DemonId)
+                if Success == win32.TRUE {
+                    Message["Type"] = "Error"
+                    Message["Message"] = fmt.Sprintf("[SMB] Agent disconnected %x", AgentID)
+
+                    AgentInstance := Funcs.AgentGetInstance(AgentID)
+                    if AgentInstance != nil {
+                        AgentInstance.Active = false
+                        AgentInstance.Reason = "Disconnected"
+                    }
+
+                } else {
+                    Message["Type"] = "Error"
+                    Message["Message"] = fmt.Sprintf("[SMB] Failed to disconnect agent %x", AgentID)
+                }
             }
 
             break

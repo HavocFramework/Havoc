@@ -133,6 +133,7 @@ func (a *AgentService) SendResponse(AgentInfo any, Header agent.AgentHeader) []b
     if channel, ok := a.client.Responses[randID]; ok {
         data = <-channel
 
+        close(a.client.Responses[randID])
         delete(a.client.Responses, randID)
     }
 

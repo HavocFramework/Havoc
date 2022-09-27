@@ -61,7 +61,6 @@ VOID DxInitialization( VOID )
         Instance->Win32.CreateProcessA                      = LdrFunctionAddr( Instance->Modules.Kernel32, 0xaeb52e19 );
         Instance->Win32.CreateFileA                         = LdrFunctionAddr( Instance->Modules.Kernel32, 0xeb96c5fa );
         Instance->Win32.GetFileSize                         = LdrFunctionAddr( Instance->Modules.Kernel32, 0x7891c520 );
-        Instance->Win32.CloseHandle                         = LdrFunctionAddr( Instance->Modules.Kernel32, 0x3870ca07 );
         Instance->Win32.CreateNamedPipeA                    = LdrFunctionAddr( Instance->Modules.Kernel32, 0x28fe1bed );
         Instance->Win32.ConvertFiberToThread                = LdrFunctionAddr( Instance->Modules.Kernel32, 0x1f194e49 );
         Instance->Win32.CreateFiberEx                       = LdrFunctionAddr( Instance->Modules.Kernel32, 0x2bac113e );
@@ -89,6 +88,7 @@ VOID DxInitialization( VOID )
         Instance->Win32.SetStdHandle                        = LdrFunctionAddr( Instance->Modules.Kernel32, 0x3ce0e4c8 );
         Instance->Win32.WaitNamedPipeA                      = LdrFunctionAddr( Instance->Modules.Kernel32, 0x85741ae  );
         Instance->Win32.PeekNamedPipe                       = LdrFunctionAddr( Instance->Modules.Kernel32, 0x94f08b9d );
+        Instance->Win32.DisconnectNamedPipe                 = LdrFunctionAddr( Instance->Modules.Kernel32, 0x55668f42 );
         Instance->Win32.WriteFile                           = LdrFunctionAddr( Instance->Modules.Kernel32, 0x663cecb0 );
         Instance->Win32.ConnectNamedPipe                    = LdrFunctionAddr( Instance->Modules.Kernel32, 0xc003c602 );
         Instance->Win32.GetCurrentDirectoryA                = LdrFunctionAddr( Instance->Modules.Kernel32, 0x2ced73de );

