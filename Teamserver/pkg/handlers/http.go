@@ -282,6 +282,7 @@ func (h *HTTP) request(ctx *gin.Context) {
                 AgentInstance = h.RoutineFunc.AgentGetInstance(AgentHeader.AgentID)
                 if AgentInstance != nil {
                     AgentData = AgentInstance.ToMap()
+                    go AgentInstance.BackgroundUpdateLastCallbackUI(h.RoutineFunc)
                 }
 
                 // receive message

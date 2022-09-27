@@ -1,22 +1,23 @@
 package service
 
 import (
-	"encoding/base64"
-	"encoding/hex"
-	"encoding/json"
-	"fmt"
-	"strconv"
-	"strings"
+    "encoding/base64"
+    "encoding/hex"
+    "encoding/json"
+    "fmt"
+    "strconv"
+    "strings"
+    "time"
 
-	"Havoc/pkg/agent"
-	"Havoc/pkg/common"
-	"Havoc/pkg/events"
-	"Havoc/pkg/logger"
-	"Havoc/pkg/logr"
+    "Havoc/pkg/agent"
+    "Havoc/pkg/common"
+    "Havoc/pkg/events"
+    "Havoc/pkg/logger"
+    "Havoc/pkg/logr"
 
-	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
-	"golang.org/x/crypto/sha3"
+    "github.com/gin-gonic/gin"
+    "github.com/gorilla/websocket"
+    "golang.org/x/crypto/sha3"
 )
 
 /*
@@ -25,419 +26,422 @@ import (
 */
 
 func NewService(engine *gin.Engine) *Service {
-	var service = new(Service)
+    var service = new(Service)
 
-	service.engine = engine
+    service.engine = engine
 
-	return service
+    return service
 }
 
 func (s *Service) Start() {
 
-	s.engine.GET("/"+s.Config.Endpoint, func(context *gin.Context) {
-		upgrade := websocket.Upgrader{}
-		WebSocket, err := upgrade.Upgrade(context.Writer, context.Request, nil)
-		if err != nil {
-			logger.Error("Failed upgrading request")
-			return
-		}
+    s.engine.GET("/"+s.Config.Endpoint, func(context *gin.Context) {
+        upgrade := websocket.Upgrader{}
+        WebSocket, err := upgrade.Upgrade(context.Writer, context.Request, nil)
+        if err != nil {
+            logger.Error("Failed upgrading request")
+            return
+        }
 
-		go s.handleConnection(WebSocket)
-	})
+        go s.handleConnection(WebSocket)
+    })
 
 }
 
 func (s *Service) handleConnection(socket *websocket.Conn) {
-	var client = new(ClientService)
-	client.Conn = socket
+    var client = new(ClientService)
+    client.Conn = socket
 
-	if !s.authenticate(client) {
-		logger.Error("Failed to authenticate service client")
+    if !s.authenticate(client) {
+        logger.Error("Failed to authenticate service client")
 
-		err := client.Conn.Close()
-		if err != nil {
-			logger.Error("Failed to close websocket service client: " + err.Error())
-			return
-		}
-		return
-	}
+        err := client.Conn.Close()
+        if err != nil {
+            logger.Error("Failed to close websocket service client: " + err.Error())
+            return
+        }
+        return
+    }
 
-	s.clients = append(s.clients, client)
+    s.clients = append(s.clients, client)
 
-	s.routine(client)
+    s.routine(client)
 }
 
 func (s *Service) authenticate(client *ClientService) bool {
-	var (
-		Hasher      = sha3.New256()
-		UserPass    string
-		ServicePass string
-		AuthRequest struct {
-			Head struct {
-				Type string `json:"Type"`
-			} `json:"Head"`
+    var (
+        Hasher      = sha3.New256()
+        UserPass    string
+        ServicePass string
+        AuthRequest struct {
+            Head struct {
+                Type string `json:"Type"`
+            } `json:"Head"`
 
-			Body struct {
-				Pass string `json:"Password"`
-			} `json:"Body"`
-		}
-		AuthResponse = map[string]map[string]interface{}{
-			"Head": {
-				"Type": HeadRegister,
-			},
-			"Body": {
-				"Success": false,
-			},
-		}
-		Response []byte
-	)
+            Body struct {
+                Pass string `json:"Password"`
+            } `json:"Body"`
+        }
+        AuthResponse = map[string]map[string]interface{}{
+            "Head": {
+                "Type": HeadRegister,
+            },
+            "Body": {
+                "Success": false,
+            },
+        }
+        Response []byte
+    )
 
-	err := client.Conn.ReadJSON(&AuthRequest)
-	if err != nil {
-		logger.Error("Failed to read JSON message from websocket service client: " + err.Error())
-		return false
-	}
+    err := client.Conn.ReadJSON(&AuthRequest)
+    if err != nil {
+        logger.Error("Failed to read JSON message from websocket service client: " + err.Error())
+        return false
+    }
 
-	if AuthRequest.Head.Type == HeadRegister {
+    if AuthRequest.Head.Type == HeadRegister {
 
-		Hasher.Write([]byte(AuthRequest.Body.Pass))
-		UserPass = hex.EncodeToString(Hasher.Sum(nil))
-		Hasher.Reset()
+        Hasher.Write([]byte(AuthRequest.Body.Pass))
+        UserPass = hex.EncodeToString(Hasher.Sum(nil))
+        Hasher.Reset()
 
-		Hasher.Write([]byte(s.Config.Password))
-		ServicePass = hex.EncodeToString(Hasher.Sum(nil))
-		Hasher.Reset()
+        Hasher.Write([]byte(s.Config.Password))
+        ServicePass = hex.EncodeToString(Hasher.Sum(nil))
+        Hasher.Reset()
 
-		if UserPass == ServicePass {
-			logger.Debug("Service client authenticated")
-			AuthResponse["Body"]["Success"] = true
-		}
+        if UserPass == ServicePass {
+            logger.Debug("Service client authenticated")
+            AuthResponse["Body"]["Success"] = true
+        }
 
-		Response, err = json.Marshal(AuthResponse)
-		if err != nil {
-			logger.Error("Failed marshaling response: " + err.Error())
-		}
+        Response, err = json.Marshal(AuthResponse)
+        if err != nil {
+            logger.Error("Failed marshaling response: " + err.Error())
+        }
 
-		client.Mutex.Lock()
-		defer client.Mutex.Unlock()
+        client.Mutex.Lock()
+        defer client.Mutex.Unlock()
 
-		err := client.Conn.WriteMessage(websocket.TextMessage, Response)
-		if err != nil {
-			logger.Error("Failed to write message: " + err.Error())
-			return false
-		}
+        err := client.Conn.WriteMessage(websocket.TextMessage, Response)
+        if err != nil {
+            logger.Error("Failed to write message: " + err.Error())
+            return false
+        }
 
-		return true
-	}
+        return true
+    }
 
-	return false
+    return false
 }
 
 // the main service routine
 func (s *Service) routine(client *ClientService) {
 
-	for {
-		var (
-			_, data, err = client.Conn.ReadMessage()
-			response     = make(map[string]map[string]any)
-		)
+    for {
+        var (
+            _, data, err = client.Conn.ReadMessage()
+            response     = make(map[string]map[string]any)
+        )
 
-		if err != nil {
-			logger.Error("Failed to read JSON message from websocket service client: " + err.Error())
-			return
-		}
+        if err != nil {
+            logger.Error("Failed to read JSON message from websocket service client: " + err.Error())
+            return
+        }
 
-		logger.Debug("data:" + string(data))
+        logger.Debug("data:" + string(data))
 
-		err = json.Unmarshal(data, &response)
-		if err != nil {
-			logger.Error("Failed to unmarshal websocket response: " + err.Error())
-			return
-		}
+        err = json.Unmarshal(data, &response)
+        if err != nil {
+            logger.Error("Failed to unmarshal websocket response: " + err.Error())
+            return
+        }
 
-		s.dispatch(response, client)
-	}
+        s.dispatch(response, client)
+    }
 }
 
 func (s *Service) dispatch(response map[string]map[string]any, client *ClientService) {
-	switch response["Head"]["Type"] {
+    switch response["Head"]["Type"] {
 
-	case HeadRegisterAgent:
-		data, err := json.Marshal(response["Body"]["Agent"])
-		if err != nil {
-			logger.Error("Failed to marshal object to json: " + err.Error())
-			return
-		}
+    case HeadRegisterAgent:
+        data, err := json.Marshal(response["Body"]["Agent"])
+        if err != nil {
+            logger.Error("Failed to marshal object to json: " + err.Error())
+            return
+        }
 
-		var agent = NewAgentService(data, client)
-		agent.service = s
+        var agent = NewAgentService(data, client)
+        agent.service = s
 
-		s.Agents = append(s.Agents, agent)
+        s.Agents = append(s.Agents, agent)
 
-		pk := events.Service.AgentRegister(string(data))
+        pk := events.Service.AgentRegister(string(data))
 
-		s.Events.EventAppend(pk)
-		s.Events.EventBroadcast("", pk)
+        s.Events.EventAppend(pk)
+        s.Events.EventBroadcast("", pk)
 
-		logger.Debug(agent.Json())
+        logger.Debug(agent.Json())
 
-	case HeadAgent:
-		// TODO: find agent and send response to it
+    case HeadAgent:
+        // TODO: find agent and send response to it
 
-		switch response["Body"]["Type"] {
+        switch response["Body"]["Type"] {
 
-		case BodyAgentTask:
-			var (
-				Agent = response["Body"]["Agent"].(map[string]any)
-				Task  string
-			)
+        case BodyAgentTask:
+            var (
+                Agent = response["Body"]["Agent"].(map[string]any)
+                Task  string
+            )
 
-			if val, ok := response["Body"]["Task"]; ok {
-				Task = val.(string)
-			} else {
-				logger.Debug("response BodyAgentTask doesn't contain Task")
-				return
-			}
+            if val, ok := response["Body"]["Task"]; ok {
+                Task = val.(string)
+            } else {
+                logger.Debug("response BodyAgentTask doesn't contain Task")
+                return
+            }
 
-			if Task == "Add" {
-				logger.Debug("Adding task to TasksQueue")
-				logger.Debug(Agent)
+            if Task == "Add" {
+                logger.Debug("Adding task to TasksQueue")
+                logger.Debug(Agent)
 
-				for index := range s.Data.ServerAgents.Agents {
-					logger.Debug(fmt.Sprintf("AgentID:[%v] NameID:[%v]", Agent["NameID"], s.Data.ServerAgents.Agents[index].NameID))
+                for index := range s.Data.ServerAgents.Agents {
+                    logger.Debug(fmt.Sprintf("AgentID:[%v] NameID:[%v]", Agent["NameID"], s.Data.ServerAgents.Agents[index].NameID))
 
-					if Agent["NameID"] == s.Data.ServerAgents.Agents[index].NameID {
-						logger.Debug("Command =>", response["Body"]["Command"])
-						var Command, err = base64.StdEncoding.DecodeString(response["Body"]["Command"].(string))
-						if err != nil {
-							logger.Error("Failed to decode command response: " + err.Error())
-						}
+                    if Agent["NameID"] == s.Data.ServerAgents.Agents[index].NameID {
+                        logger.Debug("Command =>", response["Body"]["Command"])
+                        var Command, err = base64.StdEncoding.DecodeString(response["Body"]["Command"].(string))
+                        if err != nil {
+                            logger.Error("Failed to decode command response: " + err.Error())
+                        }
 
-						var TaskJob = agent.Job{
-							Payload: Command,
-						}
+                        var TaskJob = agent.Job{
+                            Payload: Command,
+                        }
 
-						s.Data.ServerAgents.Agents[index].AddJobToQueue(TaskJob)
-					}
-				}
-			} else if Task == "Get" {
-				logger.Debug("Get tasks queue")
+                        s.Data.ServerAgents.Agents[index].AddJobToQueue(TaskJob)
+                    }
+                }
+            } else if Task == "Get" {
+                logger.Debug("Get tasks queue")
 
-				if _, ok := response["Body"]["TasksQueue"]; !ok {
-					for index := range s.Data.ServerAgents.Agents {
-						logger.Debug(fmt.Sprintf("AgentID:[%v] NameID:[%v]", Agent["NameID"], s.Data.ServerAgents.Agents[index].NameID))
+                if _, ok := response["Body"]["TasksQueue"]; !ok {
+                    for index := range s.Data.ServerAgents.Agents {
+                        logger.Debug(fmt.Sprintf("AgentID:[%v] NameID:[%v]", Agent["NameID"], s.Data.ServerAgents.Agents[index].NameID))
 
-						if Agent["NameID"] == s.Data.ServerAgents.Agents[index].NameID {
-							logger.Debug("Found agent")
-							var (
-								TasksQueue    = s.Data.ServerAgents.Agents[index].GetQueuedJobs()
-								PayloadBuffer []byte
-							)
+                        if Agent["NameID"] == s.Data.ServerAgents.Agents[index].NameID {
+                            logger.Debug("Found agent")
+                            var (
+                                TasksQueue    = s.Data.ServerAgents.Agents[index].GetQueuedJobs()
+                                PayloadBuffer []byte
+                            )
 
-							for _, task := range TasksQueue {
-								PayloadBuffer = append(PayloadBuffer, task.Payload...)
-							}
+                            for _, task := range TasksQueue {
+                                PayloadBuffer = append(PayloadBuffer, task.Payload...)
+                            }
 
-							response["Body"]["TasksQueue"] = base64.StdEncoding.EncodeToString(PayloadBuffer)
-							err := client.Conn.WriteJSON(response)
-							if err != nil {
-								logger.Debug("Failed to write json to service client: " + err.Error())
-								return
-							}
-							logger.Debug("Wrote to the client")
+                            response["Body"]["TasksQueue"] = base64.StdEncoding.EncodeToString(PayloadBuffer)
+                            err := client.Conn.WriteJSON(response)
+                            if err != nil {
+                                logger.Debug("Failed to write json to service client: " + err.Error())
+                                return
+                            }
 
-							break
-						}
-					}
-				}
-				return
-			}
+                            s.Data.ServerAgents.Agents[index].Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05")
 
-		case BodyAgentRegister:
-			var (
-				Size          int
-				MagicValue    string
-				AgentID       string
-				Header        = agent.AgentHeader{}
-				RegisterInfo  = response["Body"]["RegisterInfo"].(map[string]any)
-				AgentInstance *agent.Agent
-				err           error
-			)
+                            logger.Debug("Wrote to the client")
 
-			logger.Debug(RegisterInfo)
+                            break
+                        }
+                    }
+                }
+                return
+            }
 
-			if val, ok := response["Body"]["AgentHeader"].(map[string]any)["Size"]; ok {
-				if Size, err = strconv.Atoi(val.(string)); err != nil {
-					Size = 0
-				}
-				Header.Size = Size
-			}
+        case BodyAgentRegister:
+            var (
+                Size          int
+                MagicValue    string
+                AgentID       string
+                Header        = agent.AgentHeader{}
+                RegisterInfo  = response["Body"]["RegisterInfo"].(map[string]any)
+                AgentInstance *agent.Agent
+                err           error
+            )
 
-			if val, ok := response["Body"]["AgentHeader"].(map[string]any)["MagicValue"]; ok {
-				MagicValue = val.(string)
-			}
+            logger.Debug(RegisterInfo)
 
-			if val, ok := response["Body"]["AgentHeader"].(map[string]any)["AgentID"]; ok {
-				AgentID = val.(string)
-			}
+            if val, ok := response["Body"]["AgentHeader"].(map[string]any)["Size"]; ok {
+                if Size, err = strconv.Atoi(val.(string)); err != nil {
+                    Size = 0
+                }
+                Header.Size = Size
+            }
 
-			MagicValue64, err := strconv.ParseInt(MagicValue, 16, 32)
-			if err != nil {
-				logger.Error("MagicValue64: " + err.Error())
-			}
+            if val, ok := response["Body"]["AgentHeader"].(map[string]any)["MagicValue"]; ok {
+                MagicValue = val.(string)
+            }
 
-			AgentID64, err := strconv.ParseInt(AgentID, 16, 32)
-			if err != nil {
-				logger.Error("MagicValue64: " + err.Error())
-			}
+            if val, ok := response["Body"]["AgentHeader"].(map[string]any)["AgentID"]; ok {
+                AgentID = val.(string)
+            }
 
-			Header.AgentID = int(AgentID64)
-			Header.MagicValue = int(MagicValue64)
+            MagicValue64, err := strconv.ParseInt(MagicValue, 16, 32)
+            if err != nil {
+                logger.Error("MagicValue64: " + err.Error())
+            }
 
-			logger.Debug(Header)
+            AgentID64, err := strconv.ParseInt(AgentID, 16, 32)
+            if err != nil {
+                logger.Error("MagicValue64: " + err.Error())
+            }
 
-			AgentInstance = agent.AgentRegisterInfoToInstance(Header, RegisterInfo)
+            Header.AgentID = int(AgentID64)
+            Header.MagicValue = int(MagicValue64)
 
-			AgentInstance.Info.MagicValue = Header.MagicValue
-			// AgentInstance.Info.Listener   = h
+            logger.Debug(Header)
 
-			s.TeamAgents.AppendAgent(AgentInstance)
-			pk := events.Demons.NewDemon(AgentInstance)
-			s.Events.EventAppend(pk)
-			s.Events.EventBroadcast("", pk)
+            AgentInstance = agent.AgentRegisterInfoToInstance(Header, RegisterInfo)
 
-			break
+            AgentInstance.Info.MagicValue = Header.MagicValue
+            // AgentInstance.Info.Listener   = h
 
-		case BodyAgentResponse:
-			logger.Debug("BodyAgentResponse")
-			logger.Debug(response)
+            s.TeamAgents.AppendAgent(AgentInstance)
+            pk := events.Demons.NewDemon(AgentInstance)
+            s.Events.EventAppend(pk)
+            s.Events.EventBroadcast("", pk)
 
-			var RandID string
+            break
 
-			if val, ok := response["Body"]["RandID"]; ok {
-				logger.Debug("Found RandID")
-				RandID = val.(string)
-			} else {
-				logger.Debug("RandID not found")
-				return
-			}
+        case BodyAgentResponse:
+            logger.Debug("BodyAgentResponse")
+            logger.Debug(response)
 
-			logger.Debug(s.clients)
-			for _, c := range s.clients {
-				logger.Debug(c.Responses)
-				if channel, ok := c.Responses[RandID]; ok {
-					logger.Debug("Found channel: " + RandID)
+            var RandID string
 
-					if val, ok := response["Body"]["Response"]; ok {
-						var (
-							resp []byte
-							err  error
-						)
+            if val, ok := response["Body"]["RandID"]; ok {
+                logger.Debug("Found RandID")
+                RandID = val.(string)
+            } else {
+                logger.Debug("RandID not found")
+                return
+            }
 
-						if resp, err = base64.StdEncoding.DecodeString(val.(string)); err != nil {
-							logger.Debug("Failed to decode base64: " + err.Error())
-						}
+            logger.Debug(s.clients)
+            for _, c := range s.clients {
+                logger.Debug(c.Responses)
+                if channel, ok := c.Responses[RandID]; ok {
+                    logger.Debug("Found channel: " + RandID)
 
-						channel <- resp
-					}
+                    if val, ok := response["Body"]["Response"]; ok {
+                        var (
+                            resp []byte
+                            err  error
+                        )
 
-					break
-				}
-			}
+                        if resp, err = base64.StdEncoding.DecodeString(val.(string)); err != nil {
+                            logger.Debug("Failed to decode base64: " + err.Error())
+                        }
 
-			break
+                        channel <- resp
+                    }
 
-		case BodyAgentOutput:
-			var (
-				AgentID  = response["Body"]["AgentID"].(string)
-				Callback = response["Body"]["Callback"].(map[string]any)
-			)
+                    break
+                }
+            }
 
-			if Callback["MiscType"] == "download" {
+            break
 
-				var (
-					FileName   = Callback["FileName"].(string)
-					ContentB64 = Callback["Content"].(string)
-				)
+        case BodyAgentOutput:
+            var (
+                AgentID  = response["Body"]["AgentID"].(string)
+                Callback = response["Body"]["Callback"].(map[string]any)
+            )
 
-				if FileContent, err := base64.StdEncoding.DecodeString(ContentB64); err == nil {
+            if Callback["MiscType"] == "download" {
 
-					FileName = strings.Replace(FileName, "\x00", "", -1)
+                var (
+                    FileName   = Callback["FileName"].(string)
+                    ContentB64 = Callback["Content"].(string)
+                )
 
-					logger.Debug(fmt.Sprintf("Added downloaded file %v to agent directory: %v", FileName, AgentID))
-					logr.LogrInstance.DemonAddDownloadedFile(AgentID, FileName, FileContent)
-					Callback = make(map[string]any)
+                if FileContent, err := base64.StdEncoding.DecodeString(ContentB64); err == nil {
 
-					Callback["MiscType"] = "download"
-					Callback["MiscData"] = ContentB64
-					Callback["MiscData2"] = base64.StdEncoding.EncodeToString([]byte(FileName)) + ";" + common.ByteCountSI(int64(len(FileContent)))
+                    FileName = strings.Replace(FileName, "\x00", "", -1)
 
-				} else {
-					logger.Debug("Failed to decode FileContent base64: " + err.Error())
+                    logger.Debug(fmt.Sprintf("Added downloaded file %v to agent directory: %v", FileName, AgentID))
+                    logr.LogrInstance.DemonAddDownloadedFile(AgentID, FileName, FileContent)
+                    Callback = make(map[string]any)
 
-					Callback = make(map[string]any)
-					Callback["Type"] = "Error"
-					Callback["Message"] = "Failed to decode FileContent base64: " + err.Error()
-				}
+                    Callback["MiscType"] = "download"
+                    Callback["MiscData"] = ContentB64
+                    Callback["MiscData2"] = base64.StdEncoding.EncodeToString([]byte(FileName)) + ";" + common.ByteCountSI(int64(len(FileContent)))
 
-			}
+                } else {
+                    logger.Debug("Failed to decode FileContent base64: " + err.Error())
 
-			var (
-				out, _ = json.Marshal(Callback)
-				pk     = events.Demons.DemonOutput(AgentID, agent.HAVOC_CONSOLE_MESSAGE, string(out))
-			)
+                    Callback = make(map[string]any)
+                    Callback["Type"] = "Error"
+                    Callback["Message"] = "Failed to decode FileContent base64: " + err.Error()
+                }
 
-			s.Events.EventAppend(pk)
-			s.Events.EventBroadcast("", pk)
-			break
+            }
 
-		case BodyAgentBuild:
-			var (
-				ClientID = response["Body"]["ClientID"].(string)
-				Message  = response["Body"]["Message"].(map[string]any)
-			)
+            var (
+                out, _ = json.Marshal(Callback)
+                pk     = events.Demons.DemonOutput(AgentID, agent.HAVOC_CONSOLE_MESSAGE, string(out))
+            )
 
-			if len(ClientID) > 0 {
+            s.Events.EventAppend(pk)
+            s.Events.EventBroadcast("", pk)
+            break
 
-				if _, ok := Message["FileName"]; ok {
-					var (
-						FileName   = Message["FileName"].(string)
-						PayloadMsg = Message["Payload"].(string)
-						Payload    []byte
-						err        error
-					)
+        case BodyAgentBuild:
+            var (
+                ClientID = response["Body"]["ClientID"].(string)
+                Message  = response["Body"]["Message"].(map[string]any)
+            )
 
-					Payload, err = base64.StdEncoding.DecodeString(PayloadMsg)
-					if err != nil {
-						err = s.Events.SendEvent(ClientID, events.Gate.SendConsoleMessage("Error", "Failed to decode base64 payload: "+err.Error()))
-						if err != nil {
-							logger.Error("Couldn't send Event: " + err.Error())
-							return
-						}
-					}
+            if len(ClientID) > 0 {
 
-					err = s.Events.SendEvent(ClientID, events.Gate.SendStageless(FileName, Payload))
-					if err != nil {
-						logger.Error("Error while sending event: " + err.Error())
-						return
-					}
+                if _, ok := Message["FileName"]; ok {
+                    var (
+                        FileName   = Message["FileName"].(string)
+                        PayloadMsg = Message["Payload"].(string)
+                        Payload    []byte
+                        err        error
+                    )
 
-				} else {
-					var (
-						MessageType = Message["Type"].(string)
-						MessageText = Message["Message"].(string)
-					)
+                    Payload, err = base64.StdEncoding.DecodeString(PayloadMsg)
+                    if err != nil {
+                        err = s.Events.SendEvent(ClientID, events.Gate.SendConsoleMessage("Error", "Failed to decode base64 payload: "+err.Error()))
+                        if err != nil {
+                            logger.Error("Couldn't send Event: " + err.Error())
+                            return
+                        }
+                    }
 
-					err := s.Events.SendEvent(ClientID, events.Gate.SendConsoleMessage(MessageType, MessageText))
-					if err != nil {
-						logger.Error("Couldn't send Event: " + err.Error())
-						return
-					}
-				}
+                    err = s.Events.SendEvent(ClientID, events.Gate.SendStageless(FileName, Payload))
+                    if err != nil {
+                        logger.Error("Error while sending event: " + err.Error())
+                        return
+                    }
 
-			} else {
-				logger.Error("ClientID not specified")
-			}
-		}
-	}
+                } else {
+                    var (
+                        MessageType = Message["Type"].(string)
+                        MessageText = Message["Message"].(string)
+                    )
+
+                    err := s.Events.SendEvent(ClientID, events.Gate.SendConsoleMessage(MessageType, MessageText))
+                    if err != nil {
+                        logger.Error("Couldn't send Event: " + err.Error())
+                        return
+                    }
+                }
+
+            } else {
+                logger.Error("ClientID not specified")
+            }
+        }
+    }
 }

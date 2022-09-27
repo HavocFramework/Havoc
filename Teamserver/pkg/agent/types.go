@@ -83,6 +83,8 @@ type Agent struct {
 
 	Info   *AgentInfo
 	Pivots Pivots
+
+	BackgroundCheck bool
 }
 
 type AgentInfo struct {

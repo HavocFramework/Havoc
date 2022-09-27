@@ -204,6 +204,8 @@ func AgentRegisterInfoToInstance(Header AgentHeader, RegisterInfo map[string]any
 
     agent.Info.FirstCallIn = time.Now().Format("02/01/2006 15:04:05")
     agent.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05.999")
+    agent.BackgroundCheck = false
+    agent.Active = true
 
     return agent
 }
@@ -276,8 +278,6 @@ func ParseResponse(AgentID int, Parser *parser.Parser) *Agent {
         Parser.DecryptBuffer(Session.Encryption.AESKey, Session.Encryption.AESIv)
     }
     logger.Debug("After Dec:\n" + hex.Dump(Parser.Buffer()))
-
-    // TODO: error handling. check if there is enough in the Parser to parse -> avoid crashing or invalid sessions
 
     DemonID = Parser.ParseInt32()
     logger.Debug(fmt.Sprintf("Parsed DemonID: %x", DemonID))
@@ -440,6 +440,7 @@ func ParseResponse(AgentID int, Parser *parser.Parser) *Agent {
     Session.Info.ProcessPID = ProcessPID
     Session.Info.ProcessPPID = ProcessPPID
     Session.Info.ProcessPath = ProcessName
+    Session.BackgroundCheck = false
 
     /*for {
         if Parser.Length() >= 4 {
@@ -531,6 +532,12 @@ func (a *Agent) UpdateLastCallback(routineFunc RoutineFunc) {
 }
 
 func (a *Agent) BackgroundUpdateLastCallbackUI(routineFunc RoutineFunc) {
+    if !a.BackgroundCheck {
+        a.BackgroundCheck = true
+    } else {
+        return
+    }
+
     for {
         if !a.Active {
             Callback := map[string]string{"Output": "Dead"}
