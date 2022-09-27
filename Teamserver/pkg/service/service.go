@@ -240,6 +240,10 @@ func (s *Service) dispatch(response map[string]map[string]any, client *ClientSer
                             }
 
                             response["Body"]["TasksQueue"] = base64.StdEncoding.EncodeToString(PayloadBuffer)
+
+                            client.Mutex.Lock()
+                            defer client.Mutex.Unlock()
+
                             err := client.Conn.WriteJSON(response)
                             if err != nil {
                                 logger.Debug("Failed to write json to service client: " + err.Error())
