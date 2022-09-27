@@ -127,10 +127,9 @@ func (h *HTTP) request(ctx *gin.Context) {
                             var CallbackSizes = make(map[int64][]byte)
                             for j := range job {
 
-                                if len(job[j].Data) > 1 {
-
+                                if len(job[j].Data) >= 1 {
+                                    logger.Info("testaaaa")
                                     if job[j].Command == agent.COMMAND_PIVOT && job[j].Data[0] == agent.DEMON_PIVOT_SMB_COMMAND {
-
                                         var (
                                             TaskBuffer   = job[j].Data[2].([]byte)
                                             PivotAgentID = int(job[j].Data[1].(int64))
@@ -187,6 +186,8 @@ func (h *HTTP) request(ctx *gin.Context) {
                                         payload = agent.BuildPayloadMessage([]agent.Job{job[j]}, AgentInstance.Encryption.AESKey, AgentInstance.Encryption.AESIv)
                                         CallbackSizes[int64(AgentHeader.AgentID)] = append(CallbackSizes[int64(AgentHeader.AgentID)], payload...)
                                     }
+                                } else {
+                                    CallbackSizes[int64(AgentHeader.AgentID)] = append(CallbackSizes[int64(AgentHeader.AgentID)], payload...)
                                 }
 
                             }
@@ -232,7 +233,7 @@ func (h *HTTP) request(ctx *gin.Context) {
 
                     logger.Debug("Is register request. continue...")
 
-                    AgentInstance = agent.AgentParseResponse(AgentHeader.AgentID, AgentHeader.Data)
+                    AgentInstance = agent.ParseResponse(AgentHeader.AgentID, AgentHeader.Data)
                     if AgentInstance == nil {
                         ctx.AbortWithStatus(404)
                         return

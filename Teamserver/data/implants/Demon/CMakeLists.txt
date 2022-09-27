@@ -55,7 +55,6 @@ set( MAIN_SOURCE
 
 set( CRYPT_SOURCE
         Source/Crypt/AesCrypt.c
-        Source/Crypt/XorCrypt.c
 )
 
 # preprocessor flags

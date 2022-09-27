@@ -2,12 +2,6 @@
 
 Havoc Demon Agent source code written in C 
 
-# Build
-
-```
-make
-```
-
 # Directories
 
 ## Source/Asm

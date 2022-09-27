@@ -54,6 +54,8 @@ BOOL WINAPI DllMain( HINSTANCE hDllBase, DWORD Reason, LPVOID Reserved )
         case DLL_PROCESS_ATTACH:
         {
             hAppInstance = hDllBase;
+
+#ifdef MAIN_THREADED
             HANDLE ( WINAPI *NewThread ) (
                     LPSECURITY_ATTRIBUTES,
                     SIZE_T,
@@ -62,8 +64,10 @@ BOOL WINAPI DllMain( HINSTANCE hDllBase, DWORD Reason, LPVOID Reserved )
                     DWORD,
                     LPDWORD
             ) = LdrFunctionAddr( LdrModulePeb( HASH_KERNEL32 ), 0x7f08f451 );
-
             NewThread( NULL, 0, Start, NULL, 0, NULL );
+#else
+            Start();
+#endif
             break;
         }
 
