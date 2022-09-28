@@ -86,5 +86,15 @@ void DispatchOutput::MessageOutput( QString JsonString, const QString& Date = ""
                 }
             }
         }
+        else if ( Type.compare( "disconnect" ) == 0 )
+        {
+            HavocX::Teamserver.TabSession->SessionGraphWidget->GraphPivotNodeDisconnect( Data );
+        }
+        else if ( Type.compare( "reconnect" ) == 0 )
+        {
+            auto Split = Data.split( ";" );
+
+            HavocX::Teamserver.TabSession->SessionGraphWidget->GraphPivotNodeReconnect( Split[ 0 ], Split[ 1 ] );
+        }
     }
 }

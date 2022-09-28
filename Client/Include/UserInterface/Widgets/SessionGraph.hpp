@@ -78,8 +78,11 @@ public:
 
     Node* GraphNodeAdd( HavocNamespace::Util::SessionItem Session );
     Node* GraphNodeRemove( HavocNamespace::Util::SessionItem Session );
+    Node* GraphNodeGet( QString AgentID );
 
     void  GraphPivotNodeAdd( QString AgentID, HavocNamespace::Util::SessionItem Session );
+    void  GraphPivotNodeDisconnect( QString AgentID );
+    void  GraphPivotNodeReconnect( QString ParentAgentID, QString ChildAgentID );
 
 public slots:
     void shuffle();
@@ -106,12 +109,16 @@ private:
 class Edge : public QGraphicsItem
 {
 public:
+    Node* source = nullptr;
+    Node* dest   = nullptr;
+
     Edge( Node* sourceNode, Node* destNode, QColor Color );
 
     Node* sourceNode() const;
     Node* destNode() const;
 
     void adjust();
+    void Color( QColor color );
 
     enum { Type = UserType + 2 };
     int type() const override { return Type; }
@@ -122,8 +129,6 @@ protected:
 
 private:
     QColor  color       = QColor();
-    Node*   source      = nullptr;
-    Node*   dest        = nullptr;
     QPointF sourcePoint = QPointF();
     QPointF destPoint   = QPointF();
     qreal   arrowSize   = 10;

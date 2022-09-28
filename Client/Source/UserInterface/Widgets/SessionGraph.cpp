@@ -97,6 +97,43 @@ void GraphWidget::GraphPivotNodeAdd( QString AgentID, SessionItem Session )
     spdlog::error( "Parent AgentID {} not found for {}", AgentID.toStdString(), Session.Name.toStdString() );
 }
 
+void GraphWidget::GraphPivotNodeDisconnect( QString AgentID )
+{
+    const auto items = GraphScene->items();
+
+    for ( QGraphicsItem* g_item : items )
+    {
+        if ( qgraphicsitem_cast<Edge*>( g_item ) )
+        {
+            auto i = qgraphicsitem_cast<Edge*>( g_item );
+            if ( i->dest->NodeID.compare( AgentID ) == 0 )
+            {
+                i->Color( QColor( HavocNamespace::Util::ColorText::Colors::Hex::Red ) );
+                return;
+            }
+        }
+    }
+}
+
+void GraphWidget::GraphPivotNodeReconnect( QString ParentAgentID, QString ChildAgentID )
+{
+    const auto items = GraphScene->items();
+
+    for ( QGraphicsItem* g_item : items )
+    {
+        if ( qgraphicsitem_cast<Edge*>( g_item ) )
+        {
+            auto i = qgraphicsitem_cast<Edge*>( g_item );
+            if ( i->dest->NodeID.compare( ChildAgentID ) == 0 )
+            {
+                i->source = GraphNodeGet( ParentAgentID );
+                i->Color( QColor( HavocNamespace::Util::ColorText::Colors::Hex::Purple ) );
+                return;
+            }
+        }
+    }
+}
+
 void GraphWidget::itemMoved()
 {
     if ( ! timerId )
@@ -206,6 +243,23 @@ void GraphWidget::zoomIn()
 void GraphWidget::zoomOut()
 {
     scaleView( 1 / qreal( 1.2 ) );
+}
+
+Node *GraphWidget::GraphNodeGet( QString AgentID )
+{
+    const auto items = GraphScene->items();
+
+    for ( QGraphicsItem* g_item : items )
+    {
+        if ( qgraphicsitem_cast<Node*>( g_item ) )
+        {
+            auto i = qgraphicsitem_cast<Node*>( g_item );
+            if ( i->NodeID.compare( AgentID ) == 0 )
+            {
+                return i;
+            }
+        }
+    }
 }
 
 // ==================================================
@@ -529,6 +583,11 @@ void Edge::paint( QPainter* painter, const QStyleOptionGraphicsItem*, QWidget* )
     painter->drawLine( line );
     painter->setBrush( color );
     painter->drawPolygon( QPolygonF() << line.p1() << sourceArrowP1 << sourceArrowP2 );
+}
+
+void Edge::Color( QColor color )
+{
+    this->color = color;
 }
 
 // ==================================================
