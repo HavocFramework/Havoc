@@ -606,6 +606,18 @@ map<string, string> HavocNamespace::UserInterface::Dialogs::NewListener::Start( 
     }
     else if ( Payload.compare( HavocSpace::Listener::PayloadExternal ) == 0 )
     {
+        for ( auto& Listener : HavocX::Teamserver.Listeners )
+        {
+            if ( Listener.Protocol == HavocSpace::Listener::PayloadExternal.toStdString() )
+            {
+                if ( any_cast<HavocSpace::Listener::External>( Listener.Info ).Endpoint.compare( InputEndpoint->text() ) == 0 )
+                {
+                    MessageBox( "Listener Error", "Listener External: Endpoint already registered.", QMessageBox::Icon::Critical );
+                    return map<string,string>{};
+                }
+            }
+        }
+
         ListenerInfo.insert( { "Endpoint", InputEndpoint->text().toStdString() } );
     }
     else

@@ -93,8 +93,11 @@ void HavocNamespace::UserInterface::Widgets::ListenersTable::ButtonsInit()
 
         if ( ListenerDialog->DialogSaved )
         {
-            auto Package = CreateNewPackage( Util::Packager::Listener::Add, ListenerInfo );
-            HavocX::Connector->SendPackage( &Package );
+            if ( ! ListenerInfo.empty() )
+            {
+                auto Package = CreateNewPackage( Util::Packager::Listener::Add, ListenerInfo );
+                HavocX::Connector->SendPackage( &Package );
+            }
         }
     } );
 
@@ -122,8 +125,11 @@ void HavocNamespace::UserInterface::Widgets::ListenersTable::ButtonsInit()
 
         if ( ListenerDialog->DialogSaved )
         {
-            auto Package = CreateNewPackage( Util::Packager::Listener::Edit, ListenerInfo );
-            HavocX::Connector->SendPackage( &Package );
+            if ( ! ListenerInfo.empty() )
+            {
+                auto Package = CreateNewPackage( Util::Packager::Listener::Edit, ListenerInfo );
+                HavocX::Connector->SendPackage( &Package );
+            }
         }
     } );
 
