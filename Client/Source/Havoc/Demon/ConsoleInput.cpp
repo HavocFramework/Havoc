@@ -1335,7 +1335,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                     if ( InputCommands.size() > 2 )
                         Param = InputCommands[ 2 ];
                 }
-                else if ( InputCommands[ 1 ].compare( "computers" ) == 0 )
+                /*else if ( InputCommands[ 1 ].compare( "computers" ) == 0 )
                 {
                     Command = "4";
                     TaskID  = CONSOLE_INFO( "Tasked demon to lists computer in a domain (groups)" );
@@ -1350,7 +1350,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
 
                     if ( InputCommands.size() > 2 )
                         Param = InputCommands[ 2 ];
-                }
+                }*/
                 else if ( InputCommands[ 1 ].compare( "share" ) == 0 )
                 {
                     Command = "6";
@@ -1367,14 +1367,14 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                     if ( InputCommands.size() > 2 )
                         Param = InputCommands[ 2 ];
                 }
-                else if ( InputCommands[ 1 ].compare( "group" ) == 0 )
+                /*else if ( InputCommands[ 1 ].compare( "group" ) == 0 )
                 {
                     Command = "8";
                     TaskID  = CONSOLE_INFO( "Tasked demon to lists groups and users in groups" );
 
                     if ( InputCommands.size() > 2 )
                         Param = InputCommands[ 2 ];
-                }
+                }*/
                 else if ( InputCommands[ 1 ].compare( "users" ) == 0 )
                 {
                     Command = "9";
