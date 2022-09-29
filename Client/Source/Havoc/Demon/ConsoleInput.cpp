@@ -343,13 +343,39 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             CommandInputList[ TaskID ] = commandline;
             SEND( Execute.Checkin( TaskID ) )
         }
+        else if ( InputCommands[ 0 ].compare( "task" ) == 0 )
+        {
+            if ( InputCommands.size() == 1 )
+            {
+                CONSOLE_ERROR( "Not enough arguments" )
+                return false;
+            }
+
+            if ( InputCommands[ 1 ].compare( "list" ) == 0 )
+            {
+                TaskID = DemonConsole->TaskInfo( Send, nullptr, "Tasked teamserver to list commands in task queue" );
+                CommandInputList[ TaskID ] = commandline;
+
+                SEND( Execute.Task( TaskID, "task::list" ) );
+            }
+            else if ( InputCommands[ 1 ].compare( "clear" ) == 0 )
+            {
+                TaskID = DemonConsole->TaskInfo( Send, nullptr, "Tasked teamserver to clear all commands from task queue" );
+                CommandInputList[ TaskID ] = commandline;
+
+                SEND( Execute.Task( TaskID, "task::clear" ) );
+            }
+            else
+            {
+                CONSOLE_ERROR( "Sub command '" + InputCommands[ 1 ]+ "' in 'task' not found found" )
+                return false;
+            }
+        }
         else if ( InputCommands[ 0 ].compare( "job" ) == 0 )
         {
             if ( InputCommands.size() == 1 )
             {
-                DemonConsole->Console->append( "" );
-                DemonConsole->Console->append( Prompt );
-                DemonConsole->TaskError( "Not enough arguments" );
+                CONSOLE_ERROR( "Not enough arguments" )
                 return false;
             }
 

@@ -412,3 +412,19 @@ auto CommandExecute::Job( QString TaskID, QString SubCommand, QString Argument )
 
     NewPackageCommand( this->DemonCommandInstance->Teamserver, Body );
 }
+
+auto CommandExecute::Task( const QString& TaskID, const QString& Command ) -> void
+{
+    auto Body = Util::Packager::Body_t {
+            .SubEvent = Util::Packager::Session::SendCommand,
+            .Info = {
+                    { "TaskID",      TaskID.toStdString() },
+                    { "DemonID",     this->DemonCommandInstance->DemonConsole->SessionInfo.Name.toStdString() },
+                    { "CommandID",   "Teamserver" },
+                    { "CommandLine", DemonCommandInstance->CommandInputList[ TaskID ].toStdString() },
+                    { "Command",     Command.toStdString() },
+            },
+    };
+
+    NewPackageCommand( this->DemonCommandInstance->Teamserver, Body );
+}

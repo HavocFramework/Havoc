@@ -4,6 +4,7 @@
 #define BEHAVIOR_PROCESS_CREATION   "Process Creation"
 #define BEHAVIOR_FORK_AND_RUN       "Fork & Run"
 #define BEHAVIOR_API_ONLY           "API Only"
+#define BEHAVIOR_TEAMSERVER         "Teamserver side"
 
 #define NO_SUBCOMMANDS  .SubCommands = { { nullptr } },
 
@@ -57,6 +58,23 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                     .Behavior       = BEHAVIOR_API_ONLY,
                     .Usage          = "[id]",
                     .Example        = "1337",
+                },
+            }
+        },
+        {
+            .CommandString  = "task",
+            .Description    = "task manager",
+            .SubCommands    =
+            {
+                {
+                    .CommandString  = "list",
+                    .Description    = "list of commands in task queue",
+                    .Behavior       = BEHAVIOR_TEAMSERVER,
+                },
+                {
+                    .CommandString  = "clear",
+                    .Description    = "clear all commands in task queue",
+                    .Behavior       = BEHAVIOR_TEAMSERVER,
                 },
             }
         },

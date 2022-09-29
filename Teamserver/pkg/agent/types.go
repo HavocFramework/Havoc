@@ -55,11 +55,15 @@ type RoutineFunc struct {
 }
 
 type Job struct {
-    Command     uint32
-    Data        []interface{}
-    Payload     []byte
-    Description string
-    Encryption  struct {
+    Command uint32
+    Data    []interface{}
+    Payload []byte
+
+    CommandLine string
+    TaskID      string
+    Created     string
+
+    Encryption struct {
         Key []byte
         IV  []byte
     }

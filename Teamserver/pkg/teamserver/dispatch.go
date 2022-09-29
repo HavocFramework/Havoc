@@ -60,56 +60,96 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
                 return
             }
 
-            if val, ok := pk.Body.Info["CommandID"]; ok {
-                if pk.Body.Info["CommandID"] == "Python Plugin" {
-                    logr.LogrInstance.AddAgentInput("Demon", pk.Body.Info["DemonID"].(string), pk.Head.User, pk.Body.Info["TaskID"].(string), pk.Body.Info["CommandLine"].(string), time.Now().UTC().Format("02/01/2006 15:04:05"))
-                    return
-                } else {
-                    command, err = strconv.Atoi(val.(string))
-                    if err != nil {
-                        logger.Error("Failed to convert CommandID to integer: " + err.Error())
-                        command = 0
-                    }
-                }
-            }
-
             for i := range t.Agents.Agents {
                 if t.Agents.Agents[i].NameID == DemonID {
 
                     if t.Agents.Agents[i].Info.MagicValue == agent.DEMON_MAGIC_VALUE {
                         logger.Debug("Is Demon")
 
-                        if command == 0 {
-                            break
-                        }
-
-                        job, err = agent.TaskPrepare(command, pk.Body.Info)
-                        if err != nil {
+                        var Console = func(AgentID string, Message map[string]string) {
                             var (
-                                Output = map[string]string{
-                                    "Type":    "Error",
-                                    "Message": "Failed to create Task: " + err.Error(),
-                                }
-
-                                out, _ = json.Marshal(Output)
+                                out, _ = json.Marshal(Message)
                                 pk     = events.Demons.DemonOutput(DemonID, agent.HAVOC_CONSOLE_MESSAGE, string(out))
                             )
 
                             t.EventAppend(pk)
                             t.EventBroadcast("", pk)
-
-                            return
                         }
 
-                        if t.Agents.Agents[i].Pivots.Parent != nil {
-                            logger.Debug("Prepare command for pivot demon: " + t.Agents.Agents[i].NameID)
-                            t.Agents.Agents[i].PivotAddJob(job)
-                            logr.LogrInstance.AddAgentInput("Demon", t.Agents.Agents[i].NameID, pk.Head.User, pk.Body.Info["TaskID"].(string), pk.Body.Info["CommandLine"].(string), time.Now().UTC().Format("02/01/2006 15:04:05"))
-                        } else {
-                            t.Agents.Agents[i].AddJobToQueue(job)
-                            logr.LogrInstance.AddAgentInput("Demon", pk.Body.Info["DemonID"].(string), pk.Head.User, pk.Body.Info["TaskID"].(string), pk.Body.Info["CommandLine"].(string), time.Now().UTC().Format("02/01/2006 15:04:05"))
-                        }
+                        if val, ok := pk.Body.Info["CommandID"]; ok {
+                            if pk.Body.Info["CommandID"] == "Python Plugin" {
+                                logr.LogrInstance.AddAgentInput("Demon", pk.Body.Info["DemonID"].(string), pk.Head.User, pk.Body.Info["TaskID"].(string), pk.Body.Info["CommandLine"].(string), time.Now().UTC().Format("02/01/2006 15:04:05"))
+                                return
+                            } else if pk.Body.Info["CommandID"] == "Teamserver" {
+                                logr.LogrInstance.AddAgentInput("Demon", pk.Body.Info["DemonID"].(string), pk.Head.User, pk.Body.Info["TaskID"].(string), pk.Body.Info["CommandLine"].(string), time.Now().UTC().Format("02/01/2006 15:04:05"))
 
+                                var Command = pk.Body.Info["Command"].(string)
+
+                                if pk.Head.OneTime == "true" {
+                                    return
+                                }
+
+                                var backups = map[string]interface{}{
+                                    "TaskID":      pk.Body.Info["TaskID"].(string),
+                                    "DemonID":     DemonID,
+                                    "CommandID":   "",
+                                    "CommandLine": pk.Body.Info["CommandLine"].(string),
+                                    "AgentType":   AgentType,
+                                }
+
+                                if _, ok := pk.Body.Info["CommandID"].(string); ok {
+                                    backups["CommandID"] = pk.Body.Info["CommandID"]
+                                }
+
+                                for k := range pk.Body.Info {
+                                    delete(pk.Body.Info, k)
+                                }
+
+                                pk.Body.Info = backups
+
+                                t.EventAppend(pk)
+                                t.EventBroadcast(pk.Head.User, pk)
+
+                                err := t.Agents.Agents[i].TeamserverTaskPrepare(Command, Console)
+                                if err != nil {
+                                    var Output = map[string]string{
+                                        "Type":    "Error",
+                                        "Message": "Failed to create Task: " + err.Error(),
+                                    }
+                                    Console(t.Agents.Agents[i].NameID, Output)
+                                    return
+                                }
+
+                                return
+                            } else {
+                                command, err = strconv.Atoi(val.(string))
+                                if err != nil {
+                                    logger.Error("Failed to convert CommandID to integer: " + err.Error())
+                                    command = 0
+                                } else {
+                                    job, err = t.Agents.Agents[i].TaskPrepare(command, pk.Body.Info)
+                                    if err != nil {
+                                        var Output = map[string]string{
+                                            "Type":    "Error",
+                                            "Message": "Failed to create Task: " + err.Error(),
+                                        }
+
+                                        Console(t.Agents.Agents[i].NameID, Output)
+
+                                        return
+                                    }
+
+                                    if t.Agents.Agents[i].Pivots.Parent != nil {
+                                        logger.Debug("Prepare command for pivot demon: " + t.Agents.Agents[i].NameID)
+                                        t.Agents.Agents[i].PivotAddJob(job)
+                                        logr.LogrInstance.AddAgentInput("Demon", t.Agents.Agents[i].NameID, pk.Head.User, pk.Body.Info["TaskID"].(string), pk.Body.Info["CommandLine"].(string), time.Now().UTC().Format("02/01/2006 15:04:05"))
+                                    } else {
+                                        t.Agents.Agents[i].AddJobToQueue(job)
+                                        logr.LogrInstance.AddAgentInput("Demon", pk.Body.Info["DemonID"].(string), pk.Head.User, pk.Body.Info["TaskID"].(string), pk.Body.Info["CommandLine"].(string), time.Now().UTC().Format("02/01/2006 15:04:05"))
+                                    }
+                                }
+                            }
+                        }
                     } else {
                         logger.Debug("Is not Demon")
 
