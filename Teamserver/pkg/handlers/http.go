@@ -3,6 +3,7 @@ package handlers
 import (
     "Havoc/pkg/common/parser"
     "context"
+    "encoding/hex"
     "fmt"
     "io/ioutil"
     "log"
@@ -287,7 +288,7 @@ func (h *HTTP) request(ctx *gin.Context) {
 
                 // receive message
                 Response := h.RoutineFunc.ServiceAgentGet(AgentHeader.MagicValue).SendResponse(AgentData, AgentHeader)
-
+                logger.Debug("Response:\n", hex.Dump(Response))
                 _, err = ctx.Writer.Write(Response)
                 if err != nil {
                     logger.Error(err)

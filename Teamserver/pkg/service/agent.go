@@ -79,9 +79,9 @@ func (a *AgentService) SendTask(Command map[string]interface{}, AgentInfo any) {
     }
 
     a.client.Mutex.Lock()
-    defer a.client.Mutex.Unlock()
-
     err := a.client.Conn.WriteJSON(AgentRequest)
+    a.client.Mutex.Unlock()
+    
     if err != nil {
         logger.Error("Failed to write json to websocket: " + err.Error())
         return
@@ -122,8 +122,9 @@ func (a *AgentService) SendResponse(AgentInfo any, Header agent.AgentHeader) []b
     a.client.Responses[randID] = make(chan []byte)
 
     a.client.Mutex.Lock()
-    defer a.client.Mutex.Unlock()
     err := a.client.Conn.WriteJSON(AgentResponse)
+    a.client.Mutex.Unlock()
+
     if err != nil {
         logger.Error("Failed to write json to websocket: " + err.Error())
         return nil
@@ -133,8 +134,8 @@ func (a *AgentService) SendResponse(AgentInfo any, Header agent.AgentHeader) []b
     if channel, ok := a.client.Responses[randID]; ok {
         data = <-channel
 
-        close(a.client.Responses[randID])
-        delete(a.client.Responses, randID)
+        // close(a.client.Responses[randID])
+        // delete(a.client.Responses, randID)
     }
 
     return data
@@ -154,9 +155,9 @@ func (a *AgentService) SendAgentBuildRequest(ClientID string, Config map[string]
     }
 
     a.client.Mutex.Lock()
-    defer a.client.Mutex.Unlock()
-
     err := a.client.Conn.WriteJSON(AgentResponse)
+    a.client.Mutex.Unlock()
+
     if err != nil {
         logger.Error("Failed to write json to websocket: " + err.Error())
         return

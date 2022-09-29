@@ -120,9 +120,9 @@ func (s *Service) authenticate(client *ClientService) bool {
         }
 
         client.Mutex.Lock()
-        defer client.Mutex.Unlock()
-
         err := client.Conn.WriteMessage(websocket.TextMessage, Response)
+        client.Mutex.Unlock()
+
         if err != nil {
             logger.Error("Failed to write message: " + err.Error())
             return false
@@ -242,9 +242,10 @@ func (s *Service) dispatch(response map[string]map[string]any, client *ClientSer
                             response["Body"]["TasksQueue"] = base64.StdEncoding.EncodeToString(PayloadBuffer)
 
                             client.Mutex.Lock()
-                            defer client.Mutex.Unlock()
-
+                            logger.Debug("Write to websocket")
                             err := client.Conn.WriteJSON(response)
+                            client.Mutex.Unlock()
+
                             if err != nil {
                                 logger.Debug("Failed to write json to service client: " + err.Error())
                                 return
@@ -332,7 +333,7 @@ func (s *Service) dispatch(response map[string]map[string]any, client *ClientSer
 
             logger.Debug(s.clients)
             for _, c := range s.clients {
-                logger.Debug(c.Responses)
+                logger.Debug("c.Responses:", c.Responses)
                 if channel, ok := c.Responses[RandID]; ok {
                     logger.Debug("Found channel: " + RandID)
 
