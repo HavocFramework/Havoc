@@ -36,8 +36,8 @@ func (e *External) Request(ctx *gin.Context) {
     logger.Debug("ExternalC2 [" + e.Config.Name + "] client connected")
 
     var (
-        AgentInstance  *agent.Agent
-        RequestPasrser *parser.Parser
+        AgentInstance *agent.Agent
+        RequestParser *parser.Parser
     )
 
     Body, err := ioutil.ReadAll(ctx.Request.Body)
@@ -47,12 +47,12 @@ func (e *External) Request(ctx *gin.Context) {
 
     logger.Debug("Body: \n" + hex.Dump(Body))
 
-    RequestPasrser = parser.NewParser(Body)
+    RequestParser = parser.NewParser(Body)
 
-    for RequestPasrser.Length() != 0 {
+    for RequestParser.Length() != 0 {
         var AgentHeader = agent.AgentHeader{}
 
-        AgentHeader.Data = parser.NewParser(RequestPasrser.ParseBytes())
+        AgentHeader.Data = parser.NewParser(RequestParser.ParseBytes())
 
         AgentHeader.Size = AgentHeader.Data.Length()
         AgentHeader.MagicValue = AgentHeader.Data.ParseInt32()
@@ -62,7 +62,7 @@ func (e *External) Request(ctx *gin.Context) {
         logger.Debug(fmt.Sprintf("Header MagicValue : %x", AgentHeader.MagicValue))
         logger.Debug(fmt.Sprintf("Header AgentID    : %x", AgentHeader.AgentID))
         logger.Debug(fmt.Sprintf("Header Data       : \n%v", hex.Dump(AgentHeader.Data.Buffer())))
-        logger.Debug(fmt.Sprintf("Rest Data         : \n%v", hex.Dump(RequestPasrser.Buffer())))
+        logger.Debug(fmt.Sprintf("Rest Data         : \n%v", hex.Dump(RequestParser.Buffer())))
 
         if AgentHeader.Data.Length() > 4 {
 

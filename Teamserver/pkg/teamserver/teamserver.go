@@ -97,9 +97,11 @@ func (t *Teamserver) Start() {
     t.Server.Engine.Static("/home", "./bin/static")
 
     t.Server.Engine.POST("/:endpoint", func(context *gin.Context) {
+        var endpoint = context.Request.RequestURI[1:]
+
         if len(t.Endpoints) > 0 {
             for i := range t.Endpoints {
-                if t.Endpoints[i].Endpoint == context.Request.RequestURI {
+                if t.Endpoints[i].Endpoint == endpoint {
                     t.Endpoints[i].Function(context)
                 }
             }
