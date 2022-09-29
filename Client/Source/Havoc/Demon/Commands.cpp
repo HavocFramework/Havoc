@@ -470,13 +470,13 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                     .Usage          = R"([\\TARGET])",
                     .Example        = R"(\\localhost)",
                 },
-                /*{
+                {
                     .CommandString  = "group",
                     .Description    = "lists groups and users in groups",
                     .Behavior       = BEHAVIOR_API_ONLY,
                     .Usage          = R"([\\TARGET])",
                     .Example        = R"(\\localhost)",
-                },*/
+                },
                 {
                     .CommandString  = "users",
                     .Description    = "lists users and user information",

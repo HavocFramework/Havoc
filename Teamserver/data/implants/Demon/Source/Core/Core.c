@@ -139,7 +139,6 @@ VOID DxInitialization( VOID )
     }
     PRINTF( "OSVersion: %d\n", Instance->Session.OSVersion );
 
-    // TODO: update this
 #ifdef OBF_SYSCALL
     if ( Instance->Session.OSVersion > WIN_VERSION_10 )
     {

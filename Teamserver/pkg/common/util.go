@@ -41,12 +41,11 @@ func Bmp2Png(BmpBytes []byte) []byte {
 }
 
 func DecodeUTF16(b []byte) string {
-
-	u16s := make([]uint16, 1)
-
-	ret := &bytes.Buffer{}
-
-	b8buf := make([]byte, 4)
+	var (
+		u16s  = make([]uint16, 1)
+		b8buf = make([]byte, 4)
+		ret   = &bytes.Buffer{}
+	)
 
 	lb := len(b)
 

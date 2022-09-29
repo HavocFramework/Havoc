@@ -68,7 +68,6 @@ typedef struct
     struct {
         // Evasion
         DWORD               Sleeping;
-        DWORD               Jitter;
 
         // Kill Date
         DWORD               KillDate;

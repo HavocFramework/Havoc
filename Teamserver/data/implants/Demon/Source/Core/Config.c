@@ -20,8 +20,18 @@ VOID ConfigInit()
     ParserNew( &Parser, AgentConfig, sizeof( AgentConfig ) );
     RtlSecureZeroMemory( AgentConfig, sizeof( AgentConfig ) );
 
-    Instance->Config.Sleeping = ParserGetInt32( &Parser );
-    Instance->Config.Jitter   = ParserGetInt32( &Parser );
+    Instance->Config.Sleeping       = ParserGetInt32( &Parser );
+
+    Instance->Config.Memory.Alloc   = ParserGetInt32( &Parser );
+    Instance->Config.Memory.Execute = ParserGetInt32( &Parser );
+
+    PRINTF(
+        "[CONFIG] Memory: \n"
+        " - Allocate: %d  \n"
+        " - Execute : %d  \n",
+        Instance->Config.Memory.Alloc,
+        Instance->Config.Memory.Execute
+    )
 
     Buffer = ParserGetBytes( &Parser, &Length );
     Instance->Config.Process.Spawn64 = Instance->Win32.LocalAlloc( LPTR, Length );

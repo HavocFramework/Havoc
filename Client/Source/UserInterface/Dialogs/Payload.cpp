@@ -21,7 +21,7 @@ void Payload::setupUi( QDialog* Dialog )
     if ( PayloadDialog->objectName().isEmpty() )
         PayloadDialog->setObjectName( QString::fromUtf8( "PayloadDialog" ) );
 
-    PayloadDialog->resize( 516, 580 );
+    PayloadDialog->resize( 550, 660 );
 
     gridLayout_3  = new QGridLayout( PayloadDialog );
     OptionsBox    = new QGroupBox( PayloadDialog );
@@ -74,7 +74,7 @@ void Payload::setupUi( QDialog* Dialog )
     TreeConfig->headerItem()->setText( 0, "Config" );
     TreeConfig->headerItem()->setText( 1, "Value" );
     TreeConfig->header()->resizeSection( 0, 155 );
-    TreeConfig->resize( 400, 400 );
+
     gridLayout_2->addWidget( TreeConfig, 4, 0, 1, 2 );
     gridLayout_3->addWidget( OptionsBox, 1, 0, 1, 8 );
 
@@ -447,46 +447,62 @@ auto Payload::DefaultConfig() -> void
 
     auto DemonConfig             = HavocX::Teamserver.DemonConfig;
     auto ConfigSleep             = new QTreeWidgetItem( TreeConfig );
-    auto ConfigJitter            = new QTreeWidgetItem( TreeConfig );
+    // auto ConfigJitter            = new QTreeWidgetItem( TreeConfig );
+    auto ConfigIndirectSyscalls  = new QTreeWidgetItem( TreeConfig );
     auto ConfigSleepObfTechnique = new QTreeWidgetItem( TreeConfig );
     auto ConfigInjection         = new QTreeWidgetItem( TreeConfig );
 
+    auto ConfigInjectionAlloc    = new QTreeWidgetItem( ConfigInjection );
+    auto ConfigInjectionExecute  = new QTreeWidgetItem( ConfigInjection );
     auto ConfigInjectionSpawn64  = new QTreeWidgetItem( ConfigInjection );
     auto ConfigInjectionSpawn32  = new QTreeWidgetItem( ConfigInjection );
 
-    auto SleepObfEnableCheck     = new QCheckBox;
     auto SleepObfTechnique       = new QComboBox;
     auto SleepObfSpoofAddress    = new QLineEdit;
     auto ConfigSleepLineEdit     = new QLineEdit( QString::number( DemonConfig[ "Sleep" ].toInt() ) );
-    auto ConfigJitterLineEdit    = new QLineEdit( QString::number( DemonConfig[ "Jitter" ].toInt() ) );
+    // auto ConfigJitterLineEdit    = new QLineEdit( QString::number( DemonConfig[ "Jitter" ].toInt() ) );
+    auto ConfigIndSyscallCheck   = new QCheckBox;
+    auto ConfigInjectAlloc       = new QComboBox;
+    auto ConfigInjectExecute     = new QComboBox;
     auto ConfigSpawn64LineEdit   = new QLineEdit( DemonConfig[ "ProcessInjection" ].toObject()[ "Spawn64" ].toString() );
     auto ConfigSpawn32LineEdit   = new QLineEdit( DemonConfig[ "ProcessInjection" ].toObject()[ "Spawn32" ].toString() );
 
     ConfigSleep->setFlags( Qt::NoItemFlags );
-    ConfigJitter->setFlags( Qt::NoItemFlags );
+    ConfigIndirectSyscalls->setFlags( Qt::NoItemFlags );
     ConfigInjection->setFlags( Qt::NoItemFlags );
     ConfigSleepObfTechnique->setFlags( Qt::NoItemFlags );
     ConfigInjectionSpawn64->setFlags( Qt::NoItemFlags );
     ConfigInjectionSpawn32->setFlags( Qt::NoItemFlags );
 
     ConfigSleepLineEdit->setObjectName( "ConfigItem" );
-    ConfigJitterLineEdit->setObjectName( "ConfigItem" );
+    ConfigIndSyscallCheck->setObjectName( "ConfigItem" );
+    ConfigInjectAlloc->setObjectName( "ConfigItem" );
+    ConfigInjectExecute->setObjectName( "ConfigItem" );
     ConfigSpawn64LineEdit->setObjectName( "ConfigItem" );
     ConfigSpawn32LineEdit->setObjectName( "ConfigItem" );
     SleepObfTechnique->setObjectName( "ConfigItem" );
     SleepObfSpoofAddress->setObjectName( "ConfigItem" );
 
+    ConfigIndSyscallCheck->setChecked( true );
+
+    ConfigInjectAlloc->addItems( QStringList() << "Win32" << "Native/Syscall" );
+    ConfigInjectExecute->addItems( QStringList() << "Win32" << "Native/Syscall" );
     SleepObfTechnique->addItems( QStringList() << "WaitForSingleObjectEx" << "Foliage" << "Ekko" );
 
-    TreeConfig->setItemWidget( ConfigSleep,  1, ConfigSleepLineEdit );
-    TreeConfig->setItemWidget( ConfigJitter, 1, ConfigJitterLineEdit );
+    ConfigInjectAlloc->setCurrentIndex( 1 );
+    ConfigInjectExecute->setCurrentIndex( 1 );
+
+    TreeConfig->setItemWidget( ConfigSleep, 1, ConfigSleepLineEdit );
+    TreeConfig->setItemWidget( ConfigIndirectSyscalls, 1, ConfigIndSyscallCheck );
     TreeConfig->setItemWidget( ConfigSleepObfTechnique,1, SleepObfTechnique );
+
+    TreeConfig->setItemWidget( ConfigInjectionAlloc, 1, ConfigInjectAlloc );
+    TreeConfig->setItemWidget( ConfigInjectionExecute, 1, ConfigInjectExecute );
     TreeConfig->setItemWidget( ConfigInjectionSpawn64, 1, ConfigSpawn64LineEdit );
     TreeConfig->setItemWidget( ConfigInjectionSpawn32, 1, ConfigSpawn32LineEdit );
 
     ConfigSleep->setText( 0, "Sleep" );
-    ConfigJitter->setText( 0, "Jitter" );
-
+    ConfigIndirectSyscalls->setText(  0, "Indirect Syscall" );
     ConfigSleepObfTechnique->setText( 0, "Sleep Technique" );
 
     ConfigInjection->setText( 0, "Injection" );
@@ -494,6 +510,8 @@ auto Payload::DefaultConfig() -> void
     ConfigInjection->addChild( ConfigInjectionSpawn64 );
     ConfigInjection->addChild( ConfigInjectionSpawn32 );
 
+    ConfigInjectionAlloc->setText( 0, "Alloc" );
+    ConfigInjectionExecute->setText( 0, "Execute" );
     ConfigInjectionSpawn64->setText( 0, "Spawn64" );
     ConfigInjectionSpawn32->setText( 0, "Spawn32" );
 }

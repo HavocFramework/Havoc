@@ -3,8 +3,6 @@
 
 #include <stdio.h>
 
-#define OBF_SYSCALL
-
 #ifdef _WIN64
 #define PPEB_PTR __readgsqword( 0x60 )
 #else

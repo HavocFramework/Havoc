@@ -131,6 +131,8 @@ void HavocNamespace::UserInterface::Widgets::ListenersTable::ButtonsInit()
                 HavocX::Connector->SendPackage( &Package );
             }
         }
+
+        delete ListenerDialog;
     } );
 
     QObject::connect( buttonRemove,  &QPushButton::clicked, this, [&](){

