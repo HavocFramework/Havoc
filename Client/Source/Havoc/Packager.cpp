@@ -698,8 +698,6 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                             HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, j )->setForeground( QColor( Util::ColorText::Colors::Hex::Comment ) );
                         }
                     }
-
-
                 }
             }
 

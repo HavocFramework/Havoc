@@ -19,7 +19,7 @@ namespace PythonAPI::Havoc
             { "LoadScript", PythonAPI::Havoc::Core::Load, METH_VARARGS, "load python script" },
             { "GetDemons", PythonAPI::Havoc::Core::GetDemons, METH_VARARGS, "get list of demon ID's" },
             { "RegisterCommand", PythonAPI::Havoc::Core::RegisterCommand, METH_VARARGS, "register a command/alias" },
-            { "ConsoleWrite", PythonAPI::Havoc::Core::RegisterCommand, METH_VARARGS, "register a command/alias" },
+            { "ConsoleWrite", PythonAPI::Havoc::Core::RegisterCommand, METH_VARARGS, "write to agent console" },
 
             { NULL, NULL, 0, NULL }
     };
@@ -56,17 +56,15 @@ PyMODINIT_FUNC PythonAPI::Havoc::PyInit_Havoc( void )
 PyObject* PythonAPI::Havoc::Core::Load( PyObject *self, PyObject *args )
 {
     char* FilePath = NULL;
-    if( ! PyArg_ParseTuple( args, "s", &FilePath ) )
-    {
+
+    if ( ! PyArg_ParseTuple( args, "s", &FilePath ) )
         Py_RETURN_NONE;
-    }
 
-    QFile script( FilePath );
-    script.open( QFile::ReadOnly );
+    auto script = FileRead( FilePath );
 
-    spdlog::info("Load Script: {}", FilePath);
+    spdlog::info( "Load Script: {}", FilePath );
 
-    PyRun_SimpleStringFlags( script.readAll().toStdString().c_str(), NULL );
+    PyRun_SimpleStringFlags( script.toStdString().c_str(), NULL );
 
     Py_RETURN_NONE;
 }

@@ -324,6 +324,7 @@ void UserInterface::Widgets::TeamserverTabSession::handleDemonContextMenu( const
                         if ( SessionID.compare( Session.Name ) == 0 )
                         {
                             SessionTableWidget->SessionTableWidget->removeRow( SessionTableWidget->SessionTableWidget->currentRow() );
+                            HavocX::Teamserver.TabSession->SessionGraphWidget->GraphNodeRemove( Session );
                         }
                     }
                 }

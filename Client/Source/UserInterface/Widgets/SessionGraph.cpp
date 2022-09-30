@@ -43,6 +43,8 @@ GraphWidget::GraphWidget( QWidget* parent ) : QGraphicsView( parent )
     GraphScene->addItem( MainNode->Node );
 
     MainNode->Node->setPos( 500, 100 );
+
+    NodeList.push_back( MainNode );
 }
 
 Node* GraphWidget::GraphNodeAdd( SessionItem Session )
@@ -54,17 +56,41 @@ Node* GraphWidget::GraphNodeAdd( SessionItem Session )
         this
     );
 
-    item->NodeID = Session.Name;
+    item->NodeEdge = new Edge( MainNode->Node, item, QColor( HavocNamespace::Util::ColorText::Colors::Hex::Green ) );
+    item->NodeID   = Session.Name;
+
+    auto member = new Member {
+        .Name = Session.Name,
+        .Node = item,
+    };
 
     GraphScene->addItem( item );
-    GraphScene->addItem( new Edge( MainNode->Node, item, QColor( HavocNamespace::Util::ColorText::Colors::Hex::Green ) ) );
+    GraphScene->addItem( item->NodeEdge );
+
+    NodeList.push_back( member );
 
     return item;
 }
 
-Node* GraphWidget::GraphNodeRemove( SessionItem Session )
+void GraphWidget::GraphNodeRemove( SessionItem Session )
 {
+    for ( int i = 0; i < NodeList.size(); i++ )
+    {
+        spdlog::info( "Session.Name:[{}] == NodeList[ {} ]->Name:[{}]", Session.Name.toStdString(), i, NodeList[ i ]->Name.toStdString() );
+        if ( Session.Name.compare( NodeList[ i ]->Name ) == 0 )
+        {
+            spdlog::info( "Found" );
 
+            GraphScene->removeItem( NodeList[ i ]->Node->NodeEdge );
+            GraphScene->removeItem( NodeList[ i ]->Node );
+
+            /* delete NodeList[ i ]->Node->NodeEdge;
+            delete NodeList[ i ]->Node;
+            delete NodeList[ i ]; */
+
+            return;
+        }
+    }
 }
 
 void GraphWidget::GraphPivotNodeAdd( QString AgentID, SessionItem Session )
@@ -87,8 +113,10 @@ void GraphWidget::GraphPivotNodeAdd( QString AgentID, SessionItem Session )
             auto i = qgraphicsitem_cast<Node*>( g_item );
             if ( i->NodeID.compare( AgentID ) == 0 )
             {
-                item->NodeID = Session.Name;
-                GraphScene->addItem( new Edge( i, item, QColor( HavocNamespace::Util::ColorText::Colors::Hex::Purple ) ) );
+                item->NodeID   = Session.Name;
+                item->NodeEdge = new Edge( i, item, QColor( HavocNamespace::Util::ColorText::Colors::Hex::Purple ) );
+
+                GraphScene->addItem( item->NodeEdge );
                 return;
             }
         }
@@ -377,8 +405,6 @@ void Node::contextMenuEvent( QGraphicsSceneContextMenuEvent* event )
 
     if ( action )
     {
-        spdlog::info( "Session Item clicked: {}", action->text().toStdString() );
-
         for ( auto & Session : HavocX::Teamserver.Sessions )
         {
             // TODO: make that on Session receive
@@ -471,16 +497,23 @@ void Node::contextMenuEvent( QGraphicsSceneContextMenuEvent* event )
                 else if ( action->text().compare( "Remove" ) == 0 )
                 {
                     // TODO: Add a function to Session item that removes itself from the session table and graph.
+                    for ( int i = 0; i < HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->rowCount(); i++ )
+                    {
+                        auto Row = HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, 0 )->text();
+
+                        if ( Row.compare( Session.Name ) == 0 )
+                        {
+                            HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->removeRow( i );
+                        }
+                    }
+
+                    delete NodeEdge;
+                    delete this;
                 }
                 else if ( action->text().compare( "Thread" ) == 0 || action->text().compare( "Process" ) == 0 )
                 {
                     Session.InteractedWidget->DemonCommands->Execute.Exit( Util::gen_random( 8 ).c_str(), action->text().toLower() );
                 }
-                else if ( action->text().compare( "Info" ) == 0 )
-                {
-
-                }
-
                 if ( Session.MagicValue == DemonMagicValue )
                 {
                     if ( action->text().compare( "Process List" ) == 0 )

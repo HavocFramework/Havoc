@@ -197,8 +197,6 @@ PyObject* DemonClass_InlineExecute( PPyDemonClass self, PyObject *args )
     char* Arguments = nullptr;
     char* Flags     = nullptr;
 
-    spdlog::info( "PyTuple_Size: {}", PyTuple_Size( args ) );
-
     if ( ! PyArg_ParseTuple( args, "sssss", &TaskID, &EntryFunc, &Path , &Arguments, &Flags ) )
         return nullptr;
 
@@ -287,7 +285,7 @@ PyObject* DemonClass_DllSpawn( PPyDemonClass self, PyObject *args )
     Py_RETURN_NONE;
 }
 
-// Other Methodes
+// Other Methods
 PyObject* DemonClass_ConsoleWrite( PPyDemonClass self, PyObject *args )
 {
     u32     Type    = 0;

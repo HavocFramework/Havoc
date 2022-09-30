@@ -25,6 +25,7 @@ class Node : public QGraphicsItem
 public:
     QString      NodeID     = QString();
     NodeItemType NodeType   = NodeItemType::Nothing;
+    Edge*        NodeEdge   = nullptr;
 
 public:
     Node( NodeItemType NodeType, QString NodeLabel, GraphWidget* graphWidget );
@@ -69,7 +70,7 @@ Q_OBJECT
 
     QGraphicsScene*      GraphScene = nullptr;
     Member*              MainNode   = nullptr;
-    std::vector<Member*> NodeList   = {};
+    std::vector<Member*> NodeList   = std::vector<Member*>();
 
 public:
     GraphWidget( QWidget* parent = nullptr );
@@ -77,7 +78,7 @@ public:
     void itemMoved();
 
     Node* GraphNodeAdd( HavocNamespace::Util::SessionItem Session );
-    Node* GraphNodeRemove( HavocNamespace::Util::SessionItem Session );
+    void  GraphNodeRemove( HavocNamespace::Util::SessionItem Session );
     Node* GraphNodeGet( QString AgentID );
 
     void  GraphPivotNodeAdd( QString AgentID, HavocNamespace::Util::SessionItem Session );

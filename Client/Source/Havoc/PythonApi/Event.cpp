@@ -3,6 +3,8 @@
 
 #include <Havoc/PythonApi/Event.h>
 
+// TODO: finish this.
+
 PyMemberDef PyEventClass_members[] = {
         // { "SessionFuncList", T_OBJECT, offsetof( PyEvents, SessionFuncList ), 0, "Session function list" },
 
