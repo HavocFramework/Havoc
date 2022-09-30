@@ -11,6 +11,8 @@
   
 </div>
 
+> :warning: Havoc is in an early state of release. Breaking changes may be made to APIs/core structures as the framework matures.
+
 ### Quick Start
 
 > Please see the [Wiki](https://github.com/HavocFramework/Havoc/wiki) for complete documentation.
