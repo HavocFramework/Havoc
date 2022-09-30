@@ -76,7 +76,7 @@ RUN go env -w GOFLAGS=-mod=mod
 RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt
 #
 # Copy over Havoc TeamServer files
-COPY . Build/
+COPY ./Teamserver/ Build/
 RUN chmod -R 777 Build/
 #
 USER jenkins
