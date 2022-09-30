@@ -104,7 +104,7 @@ sudo apt install python3.10 python3.10-dev
 ```
 echo 'deb http://ftp.de.debian.org/debian bookworm main' >> /etc/apt/sources.list
 sudo apt update
-sudo apt install python3-dv python3.10-dev libpython3.10 libpython3.10-dev python3.10
+sudo apt install python3-dev python3.10-dev libpython3.10 libpython3.10-dev python3.10
 ```
 
 ### <a name="bclient"></a>Building the Client
