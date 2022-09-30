@@ -3,8 +3,12 @@
 Havoc is a modern and malleable post-exploitation command and control framework.
 
 #### Table of Contents
+- [Version History](#vhistory)
 - [Known Issues](#kissues)
 - [Installation](#install)
+	- [Local](#il)
+	- [Docker Container](#idc)
+	- [Jenkins Docker Container](#ijd)
 	- [Building the Client](#bclient)
 	- [Building the Teamserver](#bteam)
 - [Teamserver](#teamserver)
@@ -32,18 +36,29 @@ Havoc is a modern and malleable post-exploitation command and control framework.
 - [TODO](#todo)
 --------------------
 
+## <a name="vhistory"></a> Version History
+
+### 0.1 / Star Platinum
+
+> Named after the Strand of [Jotaro Kujo](https://jojo.fandom.com/wiki/Star_Platinum) in JoJo's Bizzare Adventure, Star Platinum was among the very first Strands introduced.
+
+- The first, public release of Havoc.
+
+---
 
 ## <a name="kissues"></a>Known Issues
 
 > See the Issues tab for all open issues. 
 
-**Kali Linux Font/Formatting Issues**
+### Kali Linux Font/Formatting Issues
 
 Kali has issues loading the proper font (Monaco) from the embedeed Qt resources file.
 
 _You will experience formatting issues in the Havoc client if you are not using a monospace/fixed-width font!_
 
-**Build Error: `fatal error: Python.h: No such file or directory`**
+### Build Errors 
+
+#### `fatal error: Python.h: No such file or directory`
 
 If you get an error that `Python.h` isn't found when building, you need to make sure Python 3.10 is installed and you have the Python 3.10 development files. If you are using Ubuntu LTS you may need to leverage a PPA such as `deadsnakes` to get a newer version of Python.
 
@@ -54,7 +69,7 @@ sudo apt update
 sudo apt install python3.10 python3.10-dev
 ```
 
-**Build Error: `incomplete type ‘QTime’ used in nested name specifier`**
+#### `incomplete type ‘QTime’ used in nested name specifier`
 
 You probably need a newer version of Qt. If you are using Ubuntu try adding a backports ppa and installing the latest qt6 dev packages.
 
@@ -63,16 +78,39 @@ You probably need a newer version of Qt. If you are using Ubuntu try adding a ba
 
 ## <a name="install"></a>Installation
 
+### <a name="il"></a> Local
+
+#### Pre-requisites
+
+```
+sudo apt install -y git build-essential apt-utils cmake libfontconfig1 libglu1-mesa-dev libgtest-dev libspdlog-dev libboost-all-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev mesa-common-dev qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools libqt5websockets5 libqt5websockets5-dev qtdeclarative5-dev golang-go qtbase5-dev libqt5websockets5-dev libspdlog-dev python3-dev libboost-all-dev mingw-w64 nasm
+```
+
+#### Ubuntu 20.04 / 22.04
+
+> You must enable Python 3.10 in your APT repositories before you can run the Client successfully.
+
+```
+sudo apt install build-essential
+sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt update
+sudo apt install python3.10 python3.10-dev
+```
+
+#### Debian 10/11
+
+> You must setup the `bookworm` repo for Python 3.10.
+
+```
+echo 'deb http://ftp.de.debian.org/debian bookworm main' >> /etc/apt/sources.list
+sudo apt update
+sudo apt install python3-dv python3.10-dev libpython3.10 libpython3.10-dev python3.10
+```
+
 ### <a name="bclient"></a>Building the Client
 
 > If you are using a debian-based distro, you can use the bundled installation script at `/Havoc/Client/Install.sh`. 
 
-
-Kali/Debian/Ubuntu:
-```
-sudo apt update
-sudo apt install golang-go qtbase5-dev libqt5websockets5-dev libspdlog-dev python3-dev libboost-all-dev mingw-w64 nasm cmake -y
-```
 
 Clone the repository:
 ```
@@ -110,6 +148,31 @@ cd Havoc/Teamserver
 make
 ./bin/teamserver -h
 ``` 
+
+### <a name="idc"></a> Docker
+
+Build the Dockerfile with Jenkins:
+`sudo docker build -t havoc-client -f Client-Dockerfile .`
+
+Create data volume for persistence (optional):
+`sudo docker volume create havoc-c2-client`
+
+Run the container:
+`sudo docker run -p 443:443 -p 40056:40056-it -d -v havoc-c2-client:/data havoc-client`
+
+Enter the container and run the Client:
+- NOT COMPLETE
+
+### <a name="ijd"></a> Jenkins Docker Build
+
+Build the Dockerfile with Jenkins:
+`sudo docker build -f JC-Dockerfile .`
+
+Run the container:
+`sudo docker run -p8080:8080 -it -d -v havoc-c2-data:/data havoc-client`
+
+Visit Jenkins at `localhost:8080` and create a pipeline to build the Havoc Teamserver.
+- See `Havoc-Teamserver.groovy` in the `Assets` folder.
 
 ---
 
@@ -318,8 +381,6 @@ Full documentation on commands can be accessed from the Havoc client by typing `
 
 ##### `checkin`
 
-> Results from this command are not yet fully implemented.
-
 Requests a checkin request from the Demon. This will output some basic system/configuration information to the Havoc client such as:
 
 - Demon Metadata
@@ -390,6 +451,41 @@ Demon implements a token management vault that allows for token theft, impersona
 - `token revert` - Reverts back to the default process token
 - `token remove [id]` - Removes a token from the vault
 - `token clear` - Removes all tokens from the vault.
+
+##### `shellcode`
+
+Demon is capable of injecting shellcode (supplied in raw format as a path) into remote processes using process injection or fork & run. Depending on the technique, operators can chose to use higher-level Win32 APIs or NT versions using indirect syscalls.
+
+- `shellcode inject x64 [pid] [path-to-raw-shellcode]` - Injects shellcode into the remote process
+- `shellcode spawn x64 [path-to-raw-shellcode]` - Launches the defined fork & run process and injects the shellcode
+
+> OPSEC NOTE: Depending on your injection technique and configuration settings, certain API calls may be performed outside of indirect syscalls. 
+
+Here is a high-level overview of each supported process injection technique:
+
+> `*` means the API call is performed with indirect syscalls
+
+**`INJECTION_TECHNIQUE_SYSCALL`**
+1. `CreateProcessA`
+2. Allocate Memory
+    - `DX_MEM_WIN32 -> VirtualAllocEx`
+    - `DX_MEM_SYSCALL -> NtAllocateVirtualMemory*`
+3. `NtWriteVirtualMemory*`
+4. `NtProtectVirtualMemory*`
+5. Create Thread 
+    - `DX_THREAD_WIN32 -> CreateRemoteThread`
+    - `DX_THREAD_SYSCALL -> NtCreateThreadEx*`
+6. `NtResumeThread*`
+
+##### `dotnet`
+
+- `dotnet list-versions` - Lists all of the installed dotnet versions
+- `dotnet inline-execute [path-to-assembly] [args]` - Executes the dotnet assembly inside of the current process and returns output
+
+> OPSEC NOTE: Calling `inline-execute` creates an instance of the CLR (Common Language Runtime) within the demon's process to execute dotnet assemblies. This is an irreversible procedure and may provide more IoCs to defenders.
+
+The `inline-execute` works by first creating an instance of the CLR (Common Language Runtime) within the current Demon process. After the CLR is created, `amsi.dll` is loaded and patched in-memory to bypass AMSI scanning. Demon then creates an AppDomain and loads the assembly into memory, finding the entry point and passing the commandline args supplied by the user before invoking the method. Output from the assembly is captured and returned to the teamserver.
+
 
 (INCOMPLETE)
 
@@ -503,13 +599,3 @@ Official Modules:
 Jobs are ran in their own threads, and sleep obfuscation requires that all threads are suspended in order to encrypt the heap, otherwise the process would crash. 
 
 ---
-
-## <a name="todo"></a>TODO
-
-- Write up all Demon command documentation (waiting for cmd changes to finalize)
-- Show more profile config examples for other Demon config opts
-- Finish Listener opt description table
-- Finish Modules documentation (how to compile and load a module)
-- Finish EXTC2/Custom Agent/Python API docs
-- Add FAQ
-- Add Screenshots
