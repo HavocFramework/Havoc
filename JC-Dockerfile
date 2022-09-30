@@ -3,8 +3,7 @@
 #
 # Usage:
 #    Build the image:
-#       sudo docker build -t jenkins-havoc-client -f JCDockerfile .
-#
+#       sudo docker build -t jenkins-havoc-client -f JC-Dockerfile  .
 #   Create a persistent data store:
 #	sudo docker volume create jenkins-havoc-client
 #
