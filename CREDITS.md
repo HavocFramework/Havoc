@@ -34,3 +34,6 @@ In this file i give credits to those people who helped me working on this projec
 
 - [Laith Yassin](https://twitter.com/LaithYassin13)
     Logo Designer.  
+
+- [Fawaz - بوجابر](https://twitter.com/q8fawazo)
+    Contributed and tested the C2 for flaws and bugs.
