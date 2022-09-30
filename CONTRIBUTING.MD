@@ -1,15 +1,5 @@
 # Guide to Contributing
 
-#### Stuff goes here
-F
-
-
-
-
-
-#### Code Style
-
-
 ### Pushing Changes to Master/Main
 - It is preferred that new changes are pushed to a new branch, and then a pull request is made to merge that new branch back into Main/Master
 - Steps:
