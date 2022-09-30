@@ -26,13 +26,13 @@ pipeline {
         stage('Build'){
                 steps{
                         sh "pwd && ls"
-                        sh "cd /Build/Build/ && make"
+                        sh "cd /Build/ && make"
                 }
         }
         
         stage('Sanity-Check'){
                 steps{
-                        sh 'ls /Build/Build/bin/'
+                        sh 'ls /Build/bin/'
                 }
         }
 
