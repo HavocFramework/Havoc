@@ -29,7 +29,7 @@ In this file i give credits to those people who helped me working on this projec
 - [Shawn (anthemtotheego)](https://twitter.com/anthemtotheego)
     Contributed and tested the C2 for flaws and bugs.
 
-- bobhead
+- [chbGSmCm](https://github.com/chbGSmCm)
     Contributed and tested the C2 for flaws and bugs.
 
 - [Laith Yassin](https://twitter.com/LaithYassin13)
