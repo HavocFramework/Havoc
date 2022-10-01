@@ -490,7 +490,7 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
             .CommandString  = "config",
             .Description    = "configure the behaviour of the demon session",
             .Usage          = "[config.flag]",
-            .Example        = R"(process.spawn C:\Windows\System32\rundll32.exe)",
+            .Example        = R"(inject.spawn64 C:\Windows\System32\rundll32.exe)",
 
             .SubCommands    =
             {
@@ -509,8 +509,8 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                 {
                     .CommandString  = "implant.sleep-obf.technique",
                     .Description    = "set custom thread start addr at sleep obfuscation",
-                    .Usage          = R"([0/1/2/3])",
-                    .Example        = "ntdll!LdrLoadLibrary+0x46",
+                    .Usage          = R"([0/1/2])",
+                    .Example        = "1",
                     .Options        = {
                         "0  => WaitForSingleObjectEx (No Obfuscation. simple sleep)",
                         "1  => Foliage (by @ilove2pwn_)",
