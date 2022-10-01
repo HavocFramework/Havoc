@@ -84,9 +84,15 @@ RUN sh cmake.sh --prefix=/usr/local/ --exclude-subdir
 # Install Python3.10
 RUN apt install -y python3.10-dev libpython3.10 libpython3.10-dev python3.10 build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev wget libbz2-dev
 #
-# Build the client
-COPY . Build/
-RUN cd Build/ && make
+# Copy over the client
+#COPY . Build/
+#RUN cd Build/ && make
+#
+# Pull the repo from Github
+RUN git clone https://github.com/HavocFramework/Havoc
+#
+# Build the cloned repos copy of the Teamserver-Client
+RUN cd Havoc/Client/ && make
 #
 # Add VNC Support
 RUN apt-get update && apt-get install -y x11vnc xvfb
