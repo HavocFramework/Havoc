@@ -1,18 +1,13 @@
-name: Docker Image CI
+name: Docker Image CI Test
 
-on:
-  push:
-    branches: [ $default-branch ]
-  pull_request:
-    branches: [ $default-branch ]
-
+on: [pull_request]
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+    - name: Build the Client Docker Image
+      run: docker build . --file ./Client/Client-Dockerfile --tag havoc-client:$(date +%s)
+    - name: Build the Teamserver Docker Image
+      run: docker build . --file ./Teamserver/Teamserver-Dockerfile --tag havoc-teamserver:$(date +%s)
