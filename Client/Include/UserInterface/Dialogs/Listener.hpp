@@ -27,6 +27,11 @@ using namespace std;
 
 class HavocNamespace::UserInterface::Dialogs::NewListener : public QDialog
 {
+    typedef struct {
+        int         Id;
+        QLineEdit*  Input;
+    } Data;
+
 public:
     QGridLayout*    gridLayout;
     QGridLayout*    gridLayout_2;
@@ -37,13 +42,14 @@ public:
     QWidget*        PageSMB;
     QWidget*        PageExternal;
 
-    QSpacerItem*    horizontalSpacer_3;
     QSpacerItem*    horizontalSpacer_2;
-    QSpacerItem*    horizontalSpacer;
+    QSpacerItem*    horizontalSpacer_3;
+    QSpacerItem*    horizontalSpacer_4;
     QSpacerItem*    horizontalSpacer_5;
+    QSpacerItem*    horizontalSpacer_6;
+    QSpacerItem*    horizontalSpacer;
     QSpacerItem*    verticalSpacerHeader;
     QSpacerItem*    verticalSpacerUris;
-    QSpacerItem*    horizontalSpacer_4;
 
     QLabel*         LabelListenerName;
     QLineEdit*      InputListenerName;
@@ -66,13 +72,17 @@ public:
     QLineEdit*      InputUserAgent;
     QLabel*         LabelUserAgent;
 
-    QMenu*          CtxHeaders;
     QLabel*         LabelHeaders;
-    QListWidget*    ListHeaders;
+    QGroupBox*      HeadersGroup;
+    QPushButton*    ButtonHeaderGroupAdd;
+    QPushButton*    ButtonHeaderGroupClear;
+    std::vector<QLineEdit*> HeadersData;
 
-    QMenu*          CtxUris;
     QLabel*         LabelUris;
-    QListWidget*    ListUris;
+    QGroupBox*      UrisGroup;
+    QPushButton*    ButtonUriGroupAdd;
+    QPushButton*    ButtonUriGroupClear;
+    std::vector<QLineEdit*> UrisData;
 
     QLineEdit*      InputHostHeader;
     QLabel*         LabelHostHeader;
@@ -93,6 +103,8 @@ public:
     QFormLayout*    formLayout;
     QFormLayout*    formLayout_2;
     QFormLayout*    formLayout_3;
+    QFormLayout*    formLayout_Header;
+    QFormLayout*    formLayout_Uri;
 
     // Page SMB
     QLabel*         LabelPipeName;
@@ -113,7 +125,7 @@ public:
     bool DialogSaved = false;
 
     NewListener( QDialog *Dialog );
-    map<string, string> Start( Util::ListenerItem Item, bool Edit ) const;
+    map<string, string> Start( Util::ListenerItem Item, bool Edit );
 
 protected slots:
     void onButton_Close();
@@ -122,18 +134,6 @@ protected slots:
     void onProxyEnabled();
 
     void ctx_PayloadChange( const QString& string );
-
-    void ctx_handleHeaders( const QPoint &pos );
-    void ctx_handleUris( const QPoint &pos );
-
-    void ctx_itemHeadersAdd();
-    void ctx_itemHeadersRemove();
-    void ctx_itemHeadersClear();
-
-    void ctx_itemUrisAdd();
-    void ctx_itemUrisRemove();
-    void ctx_itemUrisClear();
-
 };
 
 #endif

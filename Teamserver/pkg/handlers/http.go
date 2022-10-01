@@ -323,8 +323,6 @@ func (h *HTTP) Start() {
         return
     }
 
-    h.Config.Headers = append([]string{"Content-type: */*"}, h.Config.Headers...)
-
     if h.Config.Hosts == "" {
         logger.Error("HTTP Hosts not set")
         return
@@ -332,11 +330,6 @@ func (h *HTTP) Start() {
 
     if h.Config.Port == "" {
         logger.Error("HTTP Port not set")
-        return
-    }
-
-    if len(h.Config.Uris) == 0 {
-        logger.Error("HTTP Uris not set")
         return
     }
 

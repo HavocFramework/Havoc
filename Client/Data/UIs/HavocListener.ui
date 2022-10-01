@@ -6,14 +6,134 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>551</width>
-    <height>678</height>
+    <width>585</width>
+    <height>895</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
+   <item row="4" column="0">
+    <spacer name="horizontalSpacer_2">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>40</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="4" column="5">
+    <spacer name="horizontalSpacer_3">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>40</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="LabelPayload">
+     <property name="text">
+      <string>Payload: </string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0" colspan="6">
+    <spacer name="horizontalSpacer">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>40</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="1" column="1" colspan="5">
+    <widget class="QComboBox" name="ComboPayload">
+     <item>
+      <property name="text">
+       <string>Https</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Http</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Smb</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>External</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="0" column="0">
+    <widget class="QLabel" name="LabelListenerName">
+     <property name="text">
+      <string>Name:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="4">
+    <spacer name="horizontalSpacer_5">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>40</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="4" column="2">
+    <widget class="QPushButton" name="ButtonSave">
+     <property name="text">
+      <string>Save</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1" colspan="5">
+    <widget class="QLineEdit" name="InputListenerName"/>
+   </item>
+   <item row="4" column="1">
+    <spacer name="horizontalSpacer_4">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>40</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="4" column="3">
+    <widget class="QPushButton" name="ButtonClose">
+     <property name="text">
+      <string>Close</string>
+     </property>
+    </widget>
+   </item>
    <item row="3" column="0" colspan="6">
     <widget class="QGroupBox" name="ConfigBox">
      <property name="title">
@@ -42,84 +162,7 @@
         </property>
         <widget class="QWidget" name="PageHTTP">
          <layout class="QGridLayout" name="gridLayout_3">
-          <item row="7" column="0">
-           <widget class="QLabel" name="LabelUris">
-            <property name="text">
-             <string>Uris:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="LabelPort">
-            <property name="text">
-             <string>Port:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="7" column="1" rowspan="2">
-           <widget class="QListWidget" name="ListUris"/>
-          </item>
-          <item row="0" column="1">
-           <widget class="QLineEdit" name="InputHost"/>
-          </item>
-          <item row="6" column="0">
-           <spacer name="verticalSpacerHeader">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="3" column="0">
-           <widget class="QLabel" name="LabelUserAgent">
-            <property name="text">
-             <string>User Agent:  </string>
-            </property>
-           </widget>
-          </item>
-          <item row="9" column="0">
-           <widget class="QLabel" name="LabelHostHeader">
-            <property name="text">
-             <string>Host Header: </string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="LabelHosts">
-            <property name="text">
-             <string>Host:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QLineEdit" name="InputPort"/>
-          </item>
-          <item row="8" column="0">
-           <spacer name="verticalSpacerUris">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="5" column="0">
-           <widget class="QLabel" name="LabelHeaders">
-            <property name="text">
-             <string>Headers:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="11" column="0" colspan="2">
+          <item row="16" column="0" colspan="3">
            <widget class="QGroupBox" name="ProxyConfigBox">
             <property name="enabled">
              <bool>true</bool>
@@ -171,19 +214,145 @@
             </layout>
            </widget>
           </item>
-          <item row="9" column="1">
+          <item row="10" column="0">
+           <widget class="QLabel" name="LabelUris">
+            <property name="text">
+             <string>Uris:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="14" column="1" colspan="2">
            <widget class="QLineEdit" name="InputHostHeader"/>
           </item>
-          <item row="3" column="1">
-           <widget class="QLineEdit" name="InputUserAgent"/>
+          <item row="12" column="0">
+           <spacer name="verticalSpacerUris">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
           </item>
-          <item row="5" column="1" rowspan="2">
-           <widget class="QListWidget" name="ListHeaders"/>
+          <item row="10" column="1" rowspan="3">
+           <widget class="QGroupBox" name="UrisGroup">
+            <property name="title">
+             <string/>
+            </property>
+           </widget>
           </item>
-          <item row="10" column="0" colspan="2">
+          <item row="5" column="1" rowspan="3">
+           <widget class="QGroupBox" name="HeadersGroup">
+            <property name="title">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="LabelUserAgent">
+            <property name="text">
+             <string>User Agent:  </string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="2">
+           <widget class="QPushButton" name="ButtonHeaderGroupAdd">
+            <property name="text">
+             <string>Add</string>
+            </property>
+           </widget>
+          </item>
+          <item row="14" column="0">
+           <widget class="QLabel" name="LabelHostHeader">
+            <property name="text">
+             <string>Host Header: </string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0">
+           <widget class="QLabel" name="LabelHeaders">
+            <property name="text">
+             <string>Headers:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="LabelPort">
+            <property name="text">
+             <string>Port:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="10" column="2">
+           <widget class="QPushButton" name="ButtonUriGroupAdd">
+            <property name="text">
+             <string>Add</string>
+            </property>
+           </widget>
+          </item>
+          <item row="15" column="0" colspan="3">
            <widget class="QCheckBox" name="checkBox">
             <property name="text">
              <string>Enable Proxy connection</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="0">
+           <spacer name="verticalSpacerHeader">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="1" column="1" colspan="2">
+           <widget class="QLineEdit" name="InputPort"/>
+          </item>
+          <item row="0" column="1" colspan="2">
+           <widget class="QLineEdit" name="InputHost"/>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="LabelHosts">
+            <property name="text">
+             <string>Host:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="13" column="1">
+           <spacer name="horizontalSpacer_6">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="3" column="1" colspan="2">
+           <widget class="QLineEdit" name="InputUserAgent"/>
+          </item>
+          <item row="6" column="2">
+           <widget class="QPushButton" name="ButtonHeaderGroupClear">
+            <property name="text">
+             <string>Clear</string>
+            </property>
+           </widget>
+          </item>
+          <item row="11" column="2">
+           <widget class="QPushButton" name="ButtonUriGroupClear">
+            <property name="text">
+             <string>Clear</string>
             </property>
            </widget>
           </item>
@@ -221,126 +390,6 @@
       </item>
      </layout>
     </widget>
-   </item>
-   <item row="1" column="1" colspan="5">
-    <widget class="QComboBox" name="ComboPayload">
-     <item>
-      <property name="text">
-       <string>HTTP</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>HTTPS</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>SMB</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>External</string>
-      </property>
-     </item>
-    </widget>
-   </item>
-   <item row="0" column="0">
-    <widget class="QLabel" name="LabelListenerName">
-     <property name="text">
-      <string>Name:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="0">
-    <widget class="QLabel" name="LabelPayload">
-     <property name="text">
-      <string>Payload: </string>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="4">
-    <spacer name="horizontalSpacer_5">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>40</width>
-       <height>20</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
-   <item row="4" column="2">
-    <widget class="QPushButton" name="ButtonSave">
-     <property name="text">
-      <string>Save</string>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="1">
-    <spacer name="horizontalSpacer_4">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>40</width>
-       <height>20</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
-   <item row="4" column="5">
-    <spacer name="horizontalSpacer_3">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>40</width>
-       <height>20</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
-   <item row="0" column="1" colspan="5">
-    <widget class="QLineEdit" name="InputListenerName"/>
-   </item>
-   <item row="4" column="0">
-    <spacer name="horizontalSpacer_2">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>40</width>
-       <height>20</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
-   <item row="4" column="3">
-    <widget class="QPushButton" name="ButtonClose">
-     <property name="text">
-      <string>Close</string>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="0" colspan="6">
-    <spacer name="horizontalSpacer">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>40</width>
-       <height>20</height>
-      </size>
-     </property>
-    </spacer>
    </item>
   </layout>
  </widget>

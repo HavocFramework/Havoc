@@ -25,8 +25,7 @@ Service {
 }
 
 Demon {
-    Sleep   = 2
-    Jitter  = 20
+    Sleep = 2
 
     Injection {
         Spawn64 = "C:\\Windows\\System32\\notepad.exe"

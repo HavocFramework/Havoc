@@ -137,48 +137,12 @@ HavocNamespace::UserInterface::Dialogs::NewListener::NewListener( QDialog* Dialo
 {
     ListenerDialog = Dialog;
 
-    auto CtxStyleSheet = QString(
-        "QMenu {\n"
-        "    background-color: #282a36;\n"
-        "    color: #f8f8f2;\n"
-        "    border: 1px solid #f8f8f2;\n"
-        "}"
-        "\n"
-
-        "QMenu::separator {\n"
-        "    background: #44475a;\n"
-        "}"
-        "\n"
-
-        "QMenu::item:selected {\n"
-        "    background: #44475a;\n"
-        "}"
-        "\n"
-
-        "QAction {\n"
-        "    background-color: #282a36;\n"
-        "    color: #f8f8f2;\n"
-        "}"
-    );
-
     if ( ListenerDialog->objectName().isEmpty() )
         ListenerDialog->setObjectName( QString::fromUtf8( "ListenerWidget" ) );
 
     Dialog->setStyleSheet( FileRead( ":/stylesheets/Dialogs/Listener" ) );
 
-    CtxHeaders = new QMenu( this );
-    CtxHeaders->addAction( "Add", this, &NewListener::ctx_itemHeadersAdd );
-    CtxHeaders->addAction( "Remove", this, &NewListener::ctx_itemHeadersRemove );
-    CtxHeaders->addAction( "Clear", this, &NewListener::ctx_itemHeadersClear );
-    CtxHeaders->setStyleSheet( CtxStyleSheet );
-
-    CtxUris = new QMenu( this );
-    CtxUris->addAction( "Add", this, &NewListener::ctx_itemUrisAdd );
-    CtxUris->addAction( "Remove", this, &NewListener::ctx_itemUrisRemove );
-    CtxUris->addAction( "Clear", this, &NewListener::ctx_itemUrisClear );
-    CtxUris->setStyleSheet( CtxStyleSheet );
-
-    ListenerDialog->resize( 500, 541 );
+    ListenerDialog->resize( 550, 600 );
 
     gridLayout = new QGridLayout( ListenerDialog );
     gridLayout->setObjectName(QString::fromUtf8("gridLayout"));
@@ -197,56 +161,71 @@ HavocNamespace::UserInterface::Dialogs::NewListener::NewListener( QDialog* Dialo
     PageHTTP = new QWidget();
     PageHTTP->setObjectName( QString::fromUtf8( "PageHTTP" ) );
 
-    LabelHosts = new QLabel( PageHTTP );
-    LabelHosts->setObjectName( QString::fromUtf8( "LabelHosts" ) );
-    InputHost = new QLineEdit( PageHTTP );
-    InputHost->setObjectName( QString::fromUtf8( "InputHost" ) );
+    ButtonUriGroupClear = new QPushButton( PageHTTP );
+    ButtonUriGroupClear->setObjectName( QString::fromUtf8( "ButtonUriGroupClear" ) );
 
-    LabelPort = new QLabel( PageHTTP );
-    LabelPort->setObjectName( QString::fromUtf8( "LabelPort" ) );
-    InputPort = new QLineEdit( PageHTTP );
-    InputPort->setObjectName( QString::fromUtf8( "InputPort" ) );
+    ProxyConfigBox = new QGroupBox( PageHTTP );
+    ProxyConfigBox->setObjectName( QString::fromUtf8( "ProxyConfigBox" ) );
+    ProxyConfigBox->setEnabled( true );
+
+    LabelUris = new QLabel(PageHTTP);
+    LabelUris->setObjectName(QString::fromUtf8("LabelUris"));
+
+    verticalSpacerUris = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+
+    ButtonHeaderGroupClear = new QPushButton(PageHTTP);
+    ButtonHeaderGroupClear->setObjectName(QString::fromUtf8("ButtonHeaderGroupClear"));
+
+    UrisGroup = new QGroupBox( PageHTTP );
+    UrisGroup->setObjectName(QString::fromUtf8("UrisGroup"));
+
+    HeadersGroup = new QGroupBox(PageHTTP);
+    HeadersGroup->setObjectName(QString::fromUtf8("HeadersGroup"));
+
+    LabelUserAgent = new QLabel(PageHTTP);
+    LabelUserAgent->setObjectName(QString::fromUtf8("LabelUserAgent"));
+
+    ButtonHeaderGroupAdd = new QPushButton(PageHTTP);
+    ButtonHeaderGroupAdd->setObjectName(QString::fromUtf8("ButtonHeaderGroupAdd"));
+
+    LabelHostHeader = new QLabel(PageHTTP);
+    LabelHostHeader->setObjectName(QString::fromUtf8("LabelHostHeader"));
+
+    LabelHeaders = new QLabel(PageHTTP);
+    LabelHeaders->setObjectName(QString::fromUtf8("LabelHeaders"));
+
+    LabelPort = new QLabel(PageHTTP);
+    LabelPort->setObjectName(QString::fromUtf8("LabelPort"));
+
+    ButtonUriGroupAdd = new QPushButton( PageHTTP );
+    ButtonUriGroupAdd->setObjectName( QString::fromUtf8( "ButtonUriGroupAdd" ) );
+
+    CheckEnableProxy = new QCheckBox( PageHTTP );
+    CheckEnableProxy->setObjectName( "bool" );
+    CheckEnableProxy->setText( "Enable Proxy Connection" );
+
+    verticalSpacerHeader = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+    InputPort = new QLineEdit(PageHTTP);
+    InputPort->setObjectName(QString::fromUtf8("InputPort"));
+
+    InputHost = new QLineEdit(PageHTTP);
+    InputHost->setObjectName(QString::fromUtf8("InputHost"));
+
+    LabelHosts = new QLabel(PageHTTP);
+    LabelHosts->setObjectName(QString::fromUtf8("LabelHosts"));
 
     InputUserAgent = new QLineEdit( PageHTTP );
     InputUserAgent->setObjectName( QString::fromUtf8( "InputUserAgent" ) );
     InputUserAgent->setText( "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36" );
     InputUserAgent->setCursorPosition( 0 );
 
-    ListHeaders = new QListWidget( PageHTTP );
-    ListHeaders->setObjectName( QString::fromUtf8( "ListHeaders" ) );
-    ListHeaders->setContextMenuPolicy( Qt::CustomContextMenu );
-    ListHeaders->addAction( CtxHeaders->menuAction() );
-
-    LabelUris = new QLabel( PageHTTP );
-    LabelUris->setObjectName( QString::fromUtf8( "LabelUris" ) );
-
-    LabelHeaders = new QLabel( PageHTTP );
-    LabelHeaders->setObjectName( QString::fromUtf8( "LabelHeaders" ) );
-
-    verticalSpacerHeader = new QSpacerItem( 20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding );
-
-    LabelUserAgent = new QLabel( PageHTTP );
-    LabelUserAgent->setObjectName(QString::fromUtf8("LabelUserAgent"));
-
-    verticalSpacerUris = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
-
-    ListUris = new QListWidget(PageHTTP);
-    ListUris->setObjectName(QString::fromUtf8("ListUris"));
-    ListUris->setContextMenuPolicy( Qt::CustomContextMenu );
-    ListUris->addAction( CtxUris->menuAction() );
+    horizontalSpacer_6 = new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
     InputHostHeader = new QLineEdit(PageHTTP);
     InputHostHeader->setObjectName(QString::fromUtf8("InputHostHeader"));
 
-    LabelHostHeader = new QLabel(PageHTTP);
-    LabelHostHeader->setObjectName(QString::fromUtf8("LabelHostHeader"));
-
-    CheckEnableProxy = new QCheckBox( PageHTTP );
-    CheckEnableProxy->setObjectName( "bool" );
-    CheckEnableProxy->setText( "Enable Proxy Connection" );
-
-    ProxyConfigBox = new QGroupBox( PageHTTP );
-    ProxyConfigBox->setObjectName( QString::fromUtf8( "ProxyConfigBox" ) );
+    formLayout_Header = new QFormLayout( HeadersGroup );
+    formLayout_Uri    = new QFormLayout( UrisGroup );
 
     formLayout_3 = new QFormLayout( ProxyConfigBox );
     formLayout_3->setObjectName( QString::fromUtf8( "formLayout_3" ) );
@@ -384,27 +363,34 @@ HavocNamespace::UserInterface::Dialogs::NewListener::NewListener( QDialog* Dialo
     gridLayout_3->setObjectName( QString::fromUtf8( "gridLayout_3" ) );
 
     gridLayout_3->addWidget( LabelHosts, 0, 0, 1, 1 );
-    gridLayout_3->addWidget( InputHost,  0, 1, 1, 1 );
+    gridLayout_3->addWidget( InputHost, 0, 1, 1, 2 );
 
     gridLayout_3->addWidget( LabelPort, 1, 0, 1, 1 );
-    gridLayout_3->addWidget( InputPort, 1, 1, 1, 1 );
-
-    gridLayout_3->addWidget( LabelHeaders, 5, 0, 1, 1 );
-    gridLayout_3->addWidget( ListHeaders,  5, 1, 2, 1 );
-    gridLayout_3->addItem( verticalSpacerHeader, 6, 0, 1, 1 );
+    gridLayout_3->addWidget( InputPort, 1, 1, 1, 2 );
 
     gridLayout_3->addWidget( LabelUserAgent, 3, 0, 1, 1 );
-    gridLayout_3->addWidget( InputUserAgent, 3, 1, 1, 1 );
+    gridLayout_3->addWidget( InputUserAgent, 3, 1, 1, 2 );
 
-    gridLayout_3->addWidget( LabelUris, 7, 0, 1, 1 );
-    gridLayout_3->addWidget( ListUris,  7, 1, 2, 1 );
-    gridLayout_3->addItem( verticalSpacerUris, 8, 0, 1, 1 );
+    gridLayout_3->addItem( verticalSpacerHeader, 7, 0, 1, 1 );
 
-    gridLayout_3->addWidget( LabelHostHeader, 9, 0, 1, 1 );
-    gridLayout_3->addWidget( InputHostHeader, 9, 1, 1, 1 );
+    gridLayout_3->addWidget( LabelHeaders, 5, 0, 1, 1 );
+    gridLayout_3->addWidget( HeadersGroup, 5, 1, 3, 1 );
+    gridLayout_3->addWidget( ButtonHeaderGroupAdd,   5, 2, 1, 1 );
+    gridLayout_3->addWidget( ButtonHeaderGroupClear, 6, 2, 1, 1 );
 
-    gridLayout_3->addWidget( CheckEnableProxy, 10, 0, 1, 2 );
-    gridLayout_3->addWidget( ProxyConfigBox,   11, 0, 1, 2 );
+    gridLayout_3->addWidget( LabelUris, 10, 0, 1, 1 );
+    gridLayout_3->addWidget( UrisGroup, 10, 1, 3, 1 );
+    gridLayout_3->addWidget( ButtonUriGroupAdd,   10,  2, 1, 1 );
+    gridLayout_3->addWidget( ButtonUriGroupClear, 11, 2, 1, 1 );
+
+    gridLayout_3->addItem( verticalSpacerUris, 12, 0, 1, 1 );
+    gridLayout_3->addItem( horizontalSpacer_6, 13, 1, 1, 1 );
+
+    gridLayout_3->addWidget( LabelHostHeader, 14, 0, 1, 1 );
+    gridLayout_3->addWidget( InputHostHeader, 14, 1, 1, 2 );
+
+    gridLayout_3->addWidget( CheckEnableProxy, 15, 0, 1, 3 );
+    gridLayout_3->addWidget( ProxyConfigBox, 16, 0, 1, 3 );
 
     ProxyConfigBox->setEnabled( false );
 
@@ -438,15 +424,19 @@ HavocNamespace::UserInterface::Dialogs::NewListener::NewListener( QDialog* Dialo
     LabelHosts->setText( QCoreApplication::translate( "ListenerWidget", "Host:", nullptr ) );
     LabelUris->setText( QCoreApplication::translate( "ListenerWidget", "Uris:", nullptr ) );
     LabelHeaders->setText( QCoreApplication::translate( "ListenerWidget", "Headers:", nullptr ) );
-    LabelProxyHost->setText( QCoreApplication::translate( "ListenerWidget", "Proxy Host:", nullptr ) );
-    LabelProxyPort->setText( QCoreApplication::translate( "ListenerWidget", "Proxy Port: ", nullptr ) );
-    LabelUserName->setText( QCoreApplication::translate( "ListenerWidget", "UserName: ", nullptr ) );
-    LabelPassword->setText( QCoreApplication::translate( "ListenerWidget", "Password: ", nullptr ) );
     LabelUserAgent->setText( QCoreApplication::translate( "ListenerWidget", "User Agent:  ", nullptr ) );
     LabelHostHeader->setText( QCoreApplication::translate( "ListenerWidget", "Host Header: ", nullptr ) );
     LabelPipeName->setText( QCoreApplication::translate( "ListenerWidget", "Pipe Name: :", nullptr ) );
     LabelEndpoint->setText( QCoreApplication::translate( "ListenerWidget", "Endpoint: ", nullptr ) );
-
+    ButtonUriGroupClear->setText(QCoreApplication::translate("ListenerWidget", "Clear", nullptr));
+    // ProxyConfigBox->setTitle(QCoreApplication::translate("ListenerWidget", "Proxy Configuration", nullptr));
+    LabelProxyHost->setText(QCoreApplication::translate("ListenerWidget", "Proxy Host:", nullptr));
+    LabelProxyPort->setText(QCoreApplication::translate("ListenerWidget", "Proxy Port: ", nullptr));
+    LabelUserName->setText(QCoreApplication::translate("ListenerWidget", "UserName: ", nullptr));
+    LabelPassword->setText(QCoreApplication::translate("ListenerWidget", "Password: ", nullptr));
+    ButtonHeaderGroupAdd->setText(QCoreApplication::translate("ListenerWidget", "Add", nullptr));
+    ButtonUriGroupAdd->setText(QCoreApplication::translate("ListenerWidget", "Add", nullptr));
+    ButtonHeaderGroupClear->setText(QCoreApplication::translate("ListenerWidget", "Clear", nullptr));
     LabelListenerName->setText(QCoreApplication::translate("ListenerWidget", "Name:", nullptr));
     LabelPayload->setText(QCoreApplication::translate("ListenerWidget", "Payload: ", nullptr));
     ButtonSave->setText(QCoreApplication::translate("ListenerWidget", "Save", nullptr));
@@ -460,8 +450,43 @@ HavocNamespace::UserInterface::Dialogs::NewListener::NewListener( QDialog* Dialo
     QObject::connect( ButtonSave, &QPushButton::clicked, this, &NewListener::onButton_Save );
     QObject::connect( ButtonClose, &QPushButton::clicked, this, &NewListener::onButton_Close );
 
-    QObject::connect( ListHeaders, &QListWidget::customContextMenuRequested, this, &NewListener::ctx_handleHeaders );
-    QObject::connect( ListUris, &QListWidget::customContextMenuRequested, this, &NewListener::ctx_handleUris );
+    QObject::connect( ButtonUriGroupAdd, &QPushButton::clicked, this, [&](){
+        auto Item = new QLineEdit;
+        Item->setFocus();
+
+        formLayout_Uri->setWidget( UrisData.size(), QFormLayout::FieldRole, Item );
+
+        UrisData.push_back( Item );
+        ListenerDialog->resize( 550, 500 );
+    } );
+
+    QObject::connect( ButtonUriGroupClear, &QPushButton::clicked, this, [&](){
+        for ( auto& uri : UrisData )
+            delete uri;
+
+        UrisData.clear();
+
+        ListenerDialog->resize( 550, 500 );
+    } );
+
+    QObject::connect( ButtonHeaderGroupAdd, &QPushButton::clicked, this, [&](){
+        auto Item = new QLineEdit;
+        Item->setFocus();
+
+        formLayout_Header->setWidget( HeadersData.size(), QFormLayout::FieldRole, Item );
+
+        HeadersData.push_back( Item );
+        ListenerDialog->resize( 550, 500 );
+    } );
+
+    QObject::connect( ButtonHeaderGroupClear, &QPushButton::clicked, this, [&](){
+        for ( auto& header : HeadersData )
+            delete header;
+
+        HeadersData.clear();
+
+        ListenerDialog->resize( 550, 500 );
+    } );
 
     QObject::connect( ComboPayload, &QComboBox::currentTextChanged, this, &NewListener::ctx_PayloadChange );
     QObject::connect( CheckEnableProxy, &QCheckBox::toggled, this, &NewListener::onProxyEnabled );
@@ -476,7 +501,7 @@ bool is_number(const std::string& s)
     return !s.empty() && it == s.end();
 }
 
-map<string, string> HavocNamespace::UserInterface::Dialogs::NewListener::Start( Util::ListenerItem Item, bool Edit ) const
+map<string, string> HavocNamespace::UserInterface::Dialogs::NewListener::Start( Util::ListenerItem Item, bool Edit )
 {
     auto ListenerInfo = map<string,string>{};
     auto Payload      = QString();
@@ -503,8 +528,43 @@ map<string, string> HavocNamespace::UserInterface::Dialogs::NewListener::Start( 
             InputPort->setReadOnly( true );
 
             InputUserAgent->setText( Info.UserAgent );
-            ListHeaders->addItems( Info.Headers );
-            ListUris->addItems( Info.Uris );
+            InputUserAgent->setCursorPosition( 0 );
+
+            spdlog::info( "Info.Headers: {}", Info.Headers.size() );
+            spdlog::info( "Info.Uris   : {}", Info.Uris.size() );
+
+            if ( ! Info.Headers.empty() )
+            {
+                for ( const auto& header : Info.Headers )
+                {
+                    if ( header.isEmpty() )
+                        continue;
+
+                    auto input = new QLineEdit;
+                    input->setText( header );
+
+                    formLayout_Header->setWidget( HeadersData.size(), QFormLayout::FieldRole, input );
+
+                    HeadersData.push_back( input );
+                }
+            }
+
+            if ( ! Info.Uris.empty() )
+            {
+                for ( const auto& uri : Info.Uris )
+                {
+                    if ( uri.isEmpty() )
+                        continue;
+
+                    auto input = new QLineEdit;
+                    input->setText(uri );
+
+                    formLayout_Uri->setWidget(UrisData.size(), QFormLayout::FieldRole, input );
+
+                    UrisData.push_back(input );
+                }
+            }
+
             InputHostHeader->setText( Info.HostHeader );
 
             if ( Info.ProxyEnabled.compare( "true" ) == 0 )
@@ -562,20 +622,30 @@ map<string, string> HavocNamespace::UserInterface::Dialogs::NewListener::Start( 
         else
             ListenerInfo.insert( { "Secure", "false" } );
 
-        for ( u32 i = 0; i < ListHeaders->count(); ++i )
+        if ( HeadersData.size() > 0 )
         {
-            if ( i == ( ListHeaders->count() - 1 ) )
-                Headers += ListHeaders->item( i )->text().toStdString();
-            else
-                Headers += ListHeaders->item( i )->text().toStdString() + ", ";
+            for ( u32 i = 0; i < HeadersData.size(); ++i )
+            {
+                if ( i == ( HeadersData.size() - 1 ) )
+                    Headers += HeadersData.at( i )->text().toStdString();
+                else
+                    Headers += HeadersData.at( i )->text().toStdString() + ", ";
+
+                delete HeadersData.at( i );
+            }
         }
 
-        for ( u32 i = 0; i < ListUris->count(); ++i )
+        if ( UrisData.size() > 0 )
         {
-            if ( i == ( ListUris->count() - 1 ) )
-                Uris += ListUris->item( i )->text().toStdString();
-            else
-                Uris += ListUris->item( i )->text().toStdString() + ", ";
+            for ( u32 i = 0; i < UrisData.size(); ++i )
+            {
+                if ( i == ( UrisData.size() - 1 ) )
+                    Uris += UrisData.at( i )->text().toStdString();
+                else
+                    Uris += UrisData.at( i )->text().toStdString() + ", ";
+
+                delete UrisData.at( i );
+            }
         }
 
         ListenerInfo.insert( { "Hosts", InputHost->text().toStdString() } );
@@ -647,19 +717,6 @@ void HavocNamespace::UserInterface::Dialogs::NewListener::onButton_Save()
             MsgBox.exec();
 
             Style.close();
-            return;
-        }
-
-        if ( ListUris->count() == 0 )
-        {
-            Style.open( QIODevice::ReadOnly );
-
-            MsgBox.setWindowTitle( "Listener Error" );
-            MsgBox.setText( "No Uris specified" );
-            MsgBox.setIcon( QMessageBox::Critical );
-            MsgBox.setStyleSheet( Style.readAll() );
-            MsgBox.exec();
-
             return;
         }
 
@@ -799,18 +856,6 @@ void HavocNamespace::UserInterface::Dialogs::NewListener::onButton_Close()
     this->ListenerDialog->close();
 }
 
-void HavocNamespace::UserInterface::Dialogs::NewListener::ctx_handleHeaders( const QPoint &pos )
-{
-    QPoint globalPos = ListHeaders->mapToGlobal( pos );
-    CtxHeaders->exec( globalPos );
-}
-
-void HavocNamespace::UserInterface::Dialogs::NewListener::ctx_handleUris( const QPoint &pos )
-{
-    QPoint globalPos = ListUris->mapToGlobal( pos );
-    CtxUris->exec( globalPos );
-}
-
 void HavocNamespace::UserInterface::Dialogs::NewListener::ctx_PayloadChange( const QString& text )
 {
     if ( text.compare( HavocSpace::Listener::PayloadHTTPS ) == 0 )
@@ -833,80 +878,6 @@ void HavocNamespace::UserInterface::Dialogs::NewListener::ctx_PayloadChange( con
     {
         spdlog::error( "Payload not found" );
     }
-}
-
-void HavocNamespace::UserInterface::Dialogs::NewListener::ctx_itemHeadersAdd()
-{
-    auto InputHeaders = new InputDialog( new QDialog );
-
-    InputHeaders->Description->setText( "Add one or multiple Headers" );
-    InputHeaders->InputDialogWidget->setWindowTitle( "Headers" );
-
-    InputHeaders->InputDialogWidget->exec();
-
-    if ( InputHeaders->DialogSave )
-    {
-        auto Headers = InputHeaders->Input->text();
-        if ( Headers.size() > 0 )
-        {
-            for ( auto& Header : Headers.split( "," ) )
-                ListHeaders->addItem( new QListWidgetItem( Header.replace( " ", "" ), ListHeaders ) );
-        }
-    }
-
-    delete InputHeaders;
-}
-
-void HavocNamespace::UserInterface::Dialogs::NewListener::ctx_itemHeadersRemove()
-{
-    QList< QListWidgetItem* > items = ListHeaders->selectedItems();
-
-    foreach( QListWidgetItem* item, items )
-    {
-        delete ListHeaders->takeItem( ListHeaders->row( item ) );
-    }
-}
-
-void HavocNamespace::UserInterface::Dialogs::NewListener::ctx_itemHeadersClear()
-{
-    ListHeaders->clear();
-}
-
-void HavocNamespace::UserInterface::Dialogs::NewListener::ctx_itemUrisAdd()
-{
-    auto InputUri = new InputDialog( new QDialog );
-
-    InputUri->Description->setText( "Add one or multiple Uris" );
-    InputUri->InputDialogWidget->setWindowTitle( "Uris" );
-
-    InputUri->InputDialogWidget->exec();
-
-    if ( InputUri->DialogSave )
-    {
-        auto Uris = InputUri->Input->text();
-        if ( Uris.size() > 0 )
-        {
-            for ( auto& Uri : Uris.split( "," ) )
-                ListUris->addItem( new QListWidgetItem( Uri.replace( " ", "" ), ListUris ) );
-        }
-    }
-
-    delete InputUri;
-}
-
-void HavocNamespace::UserInterface::Dialogs::NewListener::ctx_itemUrisRemove()
-{
-    QList< QListWidgetItem* > items = ListUris->selectedItems();
-
-    foreach( QListWidgetItem* item, items )
-    {
-        delete ListUris->takeItem( ListUris->row( item ) );
-    }
-}
-
-void HavocNamespace::UserInterface::Dialogs::NewListener::ctx_itemUrisClear()
-{
-    ListUris->clear();
 }
 
 void HavocNamespace::UserInterface::Dialogs::NewListener::onProxyEnabled()
