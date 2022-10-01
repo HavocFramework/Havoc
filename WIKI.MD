@@ -40,7 +40,7 @@ Havoc is a modern and malleable post-exploitation command and control framework.
 
 ### 0.1 / Star Platinum
 
-> Named after the Strand of [Jotaro Kujo](https://jojo.fandom.com/wiki/Star_Platinum) in JoJo's Bizzare Adventure, Star Platinum was among the very first Strands introduced.
+> Named after the Stand of [Jotaro Kujo](https://jojo.fandom.com/wiki/Star_Platinum) in JoJo's Bizzare Adventure, Star Platinum was among the very first Stands introduced.
 
 - The first, public release of Havoc.
 

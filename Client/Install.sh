@@ -6,4 +6,4 @@ sudo apt --yes install cmake make python3-dev qtbase5-dev libqt5websockets5-dev 
 make clean
 ./Build.sh
 cmake --build Build
-echo "[*] Libs are installed and Client has been build."
+echo "[*] Libs are installed and Client has been built."
