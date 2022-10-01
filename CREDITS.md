@@ -38,6 +38,6 @@ In this file i give credits to those people who helped me working on this projec
 - [Fawaz - بوجابر](https://twitter.com/q8fawazo)
     Contributed and tested the C2 for flaws and bugs.
 
-- [Giorgos Karantzas](@twiiterhandle) & [Constantinos Patsakis](@kpatsak) of University of Piraeus 
+- [Giorgos Karantzas](https://twitter.com/GeKarantzas) & [Constantinos Patsakis](https://twitter.com/kpatsak) of University of Piraeus 
     Various forms of help during the research engagement (Links) - Note: All experimentation took place prior to April 2022
 
