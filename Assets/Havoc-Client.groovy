@@ -1,7 +1,7 @@
-pipeline { 
+pipeline {
     agent any
 
-    environment { 
+    environment {
         TEST="ENV vars go here"
         TOOLNAME="HavocFramework"
     }
@@ -16,6 +16,7 @@ pipeline {
             }
         }
 
+//Local
 //        stage('Add-Havoc'){
 //                steps{
 //                        sh "pwd && ls"
@@ -23,18 +24,36 @@ pipeline {
 //                }
 //        }
 
-        stage('Build'){
-                steps{
-                        sh "pwd && ls"
-                        sh "cd /Build/ && make"
+//Remote
+      stage('Git Havoc'){
+              steps{
+                        sh 'git clone --single-branch --branch main https://github.com/HavocFramework/Havoc.git'
                 }
         }
-        
+
+        stage('Build-1-make clean'){
+                steps{
+                        sh "cd ./Havoc/Client/ && make clean"
+                }
+        }
+
+        stage('Build-2-make build dir'){
+                steps{
+                        sh "mkdir cd ./Havoc/Client/Build && cd ./Havoc/Client/Build && cmake .."
+                }
+        }
+        stage('Build-3-make Build'){
+                steps{
+                        sh "cd ./Havoc/Client/ && cmake --build Build"
+                }
+        }
+
         stage('Sanity-Check'){
                 steps{
-                        sh 'ls /Build/Bin/'
+                        sh 'ls ./Havoc/Client/Bin/'
                 }
         }
 
     }
 }
+

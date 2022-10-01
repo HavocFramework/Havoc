@@ -6,7 +6,7 @@
 #	sudo docker build -t jenkins-havoc-teamserver -f JT-Dockerfile .
 #
 #    Run the image:
-#	docker run -p8080:8080 -it -d -v havoc-c2-data:/data jenkins-havoc-teamserver
+#	docker run -p8080:8080 -it -d -v havoc-c2-data:/Data jenkins-havoc-teamserver
 #
 ###################################################################
 FROM jenkins/jenkins:lts
@@ -75,7 +75,7 @@ RUN go env -w GOFLAGS=-mod=mod
 # Install Jenkins Plugins
 RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt
 #
-# Copy over Havoc TeamServer files
+# Copy over Havoc TeamServer files for local Build
 COPY . Build/
 RUN chmod -R 777 Build/
 #

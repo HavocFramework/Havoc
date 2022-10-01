@@ -11,7 +11,7 @@
 #	Copy built Teamserver from container:
 #		'docker cp <containerID>:/go/Build/bin/teamserver /host/path/target'
 #
-#	Run Built Teamserver client from Docker container:
+#	Run Built Teamserver from Docker container:
 #		`docker run -p40056:40056 -p 443:443 -it -d -v havoc-c2-data:/data havoc-teamserver`
 #		`docker exec -t <container_id> "/go/Build/bin/teamserver"`
 #
