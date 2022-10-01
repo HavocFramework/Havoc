@@ -106,7 +106,7 @@ VOID ConfigInit()
         Instance->Config.Transport.Uris[ i ] = Instance->Win32.LocalAlloc( LPTR, Length * 2 );
         CharStringToWCharString( Instance->Config.Transport.Uris[ i ], Buffer, Length );
 #ifdef DEBUG
-        printf( "  - \"%ls\"\n", Instance->Config.Transport.Uris[ i ] );
+        printf( "  - %ls\n", Instance->Config.Transport.Uris[ i ] );
 #endif
     }
     Instance->Config.Transport.Uris[ J + 1 ] = NULL;

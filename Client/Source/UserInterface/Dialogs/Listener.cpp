@@ -446,18 +446,14 @@ HavocNamespace::UserInterface::Dialogs::NewListener::NewListener( QDialog* Dialo
     LabelHostHeader->setText( QCoreApplication::translate( "ListenerWidget", "Host Header: ", nullptr ) );
     LabelPipeName->setText( QCoreApplication::translate( "ListenerWidget", "Pipe Name: :", nullptr ) );
     LabelEndpoint->setText( QCoreApplication::translate( "ListenerWidget", "Endpoint: ", nullptr ) );
-    ComboPayload->setItemText( 0, QCoreApplication::translate( "ListenerWidget", "HTTP", nullptr ) );
-    ComboPayload->setItemText( 1, QCoreApplication::translate( "ListenerWidget", "HTTPS", nullptr ) );
-    ComboPayload->setItemText( 2, QCoreApplication::translate( "ListenerWidget", "SMB", nullptr ) );
-    ComboPayload->setItemText( 3, QCoreApplication::translate( "ListenerWidget", "External", nullptr ) );
 
     LabelListenerName->setText(QCoreApplication::translate("ListenerWidget", "Name:", nullptr));
     LabelPayload->setText(QCoreApplication::translate("ListenerWidget", "Payload: ", nullptr));
     ButtonSave->setText(QCoreApplication::translate("ListenerWidget", "Save", nullptr));
     ButtonClose->setText(QCoreApplication::translate("ListenerWidget", "Close", nullptr));
 
-    ComboPayload->addItem( "Http" );
     ComboPayload->addItem( "Https" );
+    ComboPayload->addItem( "Http" );
     ComboPayload->addItem( "Smb" );
     ComboPayload->addItem( "External" );
 

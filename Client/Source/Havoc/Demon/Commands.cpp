@@ -549,17 +549,6 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                         "2  => Native API (NtCreateThreadEx)",
                     },
                 },
-                /*{
-                    .CommandString  = "inject.technique",
-                    .Description    = "inject code using a specific technique",
-                    .Usage          = R"([ 1 / 2 / 3 ])",
-                    .Example        = "1",
-                    .Options        = {
-                            "1  => Win32",
-                            "2  => Native / Syscall",
-                            "3  => Apc / Earlybird",
-                    },
-                },*/
                 {
                     .CommandString  = "inject.spoofaddr",
                     .Description    = "inject code with spoofed thread start addr",
