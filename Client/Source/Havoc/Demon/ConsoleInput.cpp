@@ -1512,24 +1512,66 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
         }
         else
         {
-            CONSOLE_ERROR( "Command/Module not found: " + commandline )
-            return false;
-        }
+            auto FoundCommand = false;
 
-        // check for registered commands
-        for ( auto& Command : HavocX::Teamserver.RegisteredCommands )
-        {
-            if ( InputCommands[ 0 ].isEmpty() )
-                break;
-
-            if ( InputCommands[ 0 ].compare( Command.Module.c_str() ) == 0 )
+            // check for registered commands
+            for ( auto& Command : HavocX::Teamserver.RegisteredCommands )
             {
-                if ( InputCommands[ 1 ].compare( Command.Command.c_str() ) == 0 )
-                {
-                    PyObject* FuncArgs  = PyTuple_New( InputCommands.size() );
-                    PyObject* Return    = NULL;
+                if ( InputCommands[ 0 ].isEmpty() )
+                    break;
 
-                    /*if ( Send )
+                if ( InputCommands[ 0 ].compare( Command.Module.c_str() ) == 0 )
+                {
+                    if ( InputCommands[ 1 ].compare( Command.Command.c_str() ) == 0 )
+                    {
+                        PyObject* FuncArgs  = PyTuple_New( InputCommands.size() );
+                        PyObject* Return    = NULL;
+
+                        if ( ! PyCallable_Check( ( PyObject* ) Command.Function ) )
+                        {
+                            PyErr_SetString( PyExc_TypeError, "a callable is required" );
+                            return false;
+                        }
+
+                        FoundCommand = true;
+
+                        // First arg is the DemonID
+                        PyTuple_SetItem( FuncArgs, 0, PyUnicode_FromString( this->DemonID.toStdString().c_str() ) );
+
+                        DemonConsole->AppendRaw();
+                        DemonConsole->AppendRaw( Prompt );
+
+                        if ( InputCommands.size() > 1 )
+                        {
+                            // Set arguments of the functions
+                            for ( u32 i = 1; i < InputCommands.size(); i++ )
+                                PyTuple_SetItem( FuncArgs, i, PyUnicode_FromString( InputCommands[ i ].toStdString().c_str() ) );
+
+                            Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
+                        }
+                        else
+                        {
+                            Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
+                        }
+
+                        if ( PyErr_Occurred() )
+                        {
+                            PyErr_PrintEx( 0 );
+                            PyErr_Clear();
+                        }
+
+                        Py_CLEAR( Return );
+
+                        return true;
+                    }
+                }
+                else if ( InputCommands[ 0 ].compare( Command.Command.c_str() ) == 0 )
+                {
+
+                    PyObject* FuncArgs = PyTuple_New( InputCommands.size() );
+                    PyObject* Return   = NULL;
+
+                    if ( Send )
                     {
                         NewPackageCommand( Teamserver, Util::Packager::Body_t {
                                 .SubEvent = Util::Packager::Session::SendCommand,
@@ -1540,7 +1582,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                                         { "CommandLine", commandline.toStdString() },
                                 },
                         } );
-                    }*/
+                    }
 
                     if ( ! PyCallable_Check( ( PyObject* ) Command.Function ) )
                     {
@@ -1551,9 +1593,6 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                     // First arg is the DemonID
                     PyTuple_SetItem( FuncArgs, 0, PyUnicode_FromString( this->DemonID.toStdString().c_str() ) );
 
-                    DemonConsole->AppendRaw();
-                    DemonConsole->AppendRaw( Prompt );
-
                     if ( InputCommands.size() > 1 )
                     {
                         // Set arguments of the functions
@@ -1563,9 +1602,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                         Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
                     }
                     else
-                    {
                         Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
-                    }
 
                     if ( PyErr_Occurred() )
                     {
@@ -1573,68 +1610,23 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                         PyErr_Clear();
                     }
 
+                    if ( ! Return )
+                        return false;
+
                     Py_CLEAR( Return );
 
                     return true;
                 }
             }
-            else if ( InputCommands[ 0 ].compare( Command.Command.c_str() ) == 0 )
-            {
 
-                PyObject* FuncArgs = PyTuple_New( InputCommands.size() );
-                PyObject* Return   = NULL;
-
-                if ( Send )
-                {
-                    NewPackageCommand( Teamserver, Util::Packager::Body_t {
-                            .SubEvent = Util::Packager::Session::SendCommand,
-                            .Info     = {
-                                    { "TaskID",      TaskID.toStdString() },
-                                    { "DemonID",     DemonConsole->SessionInfo.Name.toStdString() },
-                                    { "CommandID",   "Python Plugin" },
-                                    { "CommandLine", commandline.toStdString() },
-                            },
-                    } );
-                }
-
-                if ( ! PyCallable_Check( ( PyObject* ) Command.Function ) )
-                {
-                    PyErr_SetString( PyExc_TypeError, "a callable is required" );
-                    return false;
-                }
-
-                // First arg is the DemonID
-                PyTuple_SetItem( FuncArgs, 0, PyUnicode_FromString( this->DemonID.toStdString().c_str() ) );
-
-                if ( InputCommands.size() > 1 )
-                {
-                    // Set arguments of the functions
-                    for ( u32 i = 1; i < InputCommands.size(); i++ )
-                        PyTuple_SetItem( FuncArgs, i, PyUnicode_FromString( InputCommands[ i ].toStdString().c_str() ) );
-
-                    Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
-                }
-                else
-                    Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
-
-                if ( PyErr_Occurred() )
-                {
-                    PyErr_PrintEx( 0 );
-                    PyErr_Clear();
-                }
-
-                if ( ! Return )
-                    return false;
-
-                Py_CLEAR( Return );
-
-                return true;
-            }
+            if ( ! FoundCommand )
+                CONSOLE_ERROR( "Command/Module not found: " + commandline )
+                
+            return false;
         }
     }
     else
     {
-
         if ( InputCommands[ 0 ].compare( "help" ) == 0 )
         {
             if ( InputCommands.size() > 1 && InputCommands[ 1 ] != "" )
@@ -1682,6 +1674,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             DemonConsole->Console->moveCursor ( QTextCursor::End );
             DemonConsole->Console->insertHtml( AgentMessageInfo );
             DemonConsole->Console->setTextCursor( prev_cursor );
+
 
             return true;
         }
