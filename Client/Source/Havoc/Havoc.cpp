@@ -8,7 +8,7 @@ HavocSpace::Havoc::Havoc( QMainWindow* w )
     w->setVisible( false );
 
     this->HavocMainWindow = w;
-    this->dbManager = new HavocSpace::DBManager("../Data/database.db", DBManager::CreateSqlFile);
+    this->dbManager = new HavocSpace::DBManager( "Data/database.db", DBManager::CreateSqlFile );
 }
 
 void HavocSpace::Havoc::Init( int argc, char** argv )

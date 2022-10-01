@@ -26,7 +26,7 @@ include_directories( "/usr/include/python3.10" )
 
 set( APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/Havoc.qrc" )
 
-set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ../Bin )
+set( CMAKE_RUNTIME_OUTPUT_DIRECTORY .. )
 set( CMAKE_INCLUDE_CURRENT_DIR ON )
 
 set(
