@@ -1620,8 +1620,10 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             }
 
             if ( ! FoundCommand )
+            {
                 CONSOLE_ERROR( "Command/Module not found: " + commandline )
-                
+            }
+
             return false;
         }
     }

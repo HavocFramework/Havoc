@@ -76,7 +76,6 @@ void GraphWidget::GraphNodeRemove( SessionItem Session )
 {
     for ( int i = 0; i < NodeList.size(); i++ )
     {
-        spdlog::info( "Session.Name:[{}] == NodeList[ {} ]->Name:[{}]", Session.Name.toStdString(), i, NodeList[ i ]->Name.toStdString() );
         if ( Session.Name.compare( NodeList[ i ]->Name ) == 0 )
         {
             spdlog::info( "Found" );

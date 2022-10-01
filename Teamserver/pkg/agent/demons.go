@@ -2950,7 +2950,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 			var Data string
 
 			if Parser.Length() > 0 {
-				var Domain = common.DecodeUTF16(Parser.ParseBytes())
+				var Domain = string(Parser.ParseBytes())
 
 				if Parser.Length() > 0 {
 					Data += fmt.Sprintf(" %-48s %s\n", "Group", "Description")
@@ -2976,23 +2976,23 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 			var Data string
 
 			if Parser.Length() > 0 {
-				// var Domain = string(Parser.ParseBytes())
+				var Target = string(Parser.ParseBytes())
 
 				for Parser.Length() != 0 {
 					var (
 						User  = string(Parser.ParseBytes())
-						Admin = int(Parser.ParseInt32())
+						Admin = Parser.ParseInt32()
 					)
 
-					if Admin == 1 {
-						Data += fmt.Sprintf(" - %v (Admin)\n", User)
+					if Admin == win32.TRUE {
+						Data += fmt.Sprintf(" - %s (Admin)\n", User)
 					} else {
-						Data += fmt.Sprintf(" - %v \n", User)
+						Data += fmt.Sprintf(" - %s \n", User)
 					}
 				}
 
 				Message["Type"] = "Info"
-				Message["Message"] = fmt.Sprintf("Users: ")
+				Message["Message"] = fmt.Sprintf("Users on %v: ", Target)
 				Message["Output"] = "\n" + Data
 			}
 			break
