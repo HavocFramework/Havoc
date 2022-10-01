@@ -1,0 +1,56 @@
+# Havoc Teamserver Dockerfile
+# ------------------------------------------------------------------------------
+# Commands for usage:
+#
+#	Build image file:
+#		'sudo docker build -t ga-teamserver -f GA-Teamserver .'
+#	Copy built Teamserver from container:
+#		'docker cp <containerID>:/go/Build/bin/teamserver /host/path/target'
+#
+# Extras
+# 	Create Data storage for persistence
+#       'docker volume create havoc-teamserver-data'
+# 	Enter Container:
+#		'docker run exec -it <containerID> bash'
+# ------------------------------------------------------------------------------
+ARG GO_VERSION="1.19.1"
+FROM golang:${GO_VERSION}
+#
+ENV PATH=/root/.local/bin:$PATH
+ENV USER=root
+#
+RUN apt update \
+	&& apt -y install \
+	alien \
+	debhelper \
+	devscripts \
+	golang-go \
+	nasm \
+	mingw-w64 \
+	dh-golang \
+	dh-make \
+	fakeroot \
+	pkg-config \
+	python3-all-dev \
+	python3-pip \
+	rpm \
+	sudo \
+	upx-ucl \
+	&& pip install --upgrade jsonschema
+#
+# Copy over the client
+COPY . Build
+#
+# Pull the repo from Github
+#RUN git clone https://github.com/HavocFramework/Havoc
+#
+# Build the cloned repos copy of the Teamserver-Client  
+RUN cd Build && make
+#
+# ------------------------------------------------------------------------------#
+# original @author      Nicola Asuni <info@tecnick.com>
+# @copyright   2016-2022 Nicola Asuni - Tecnick.com LTD
+# @license     MIT (see LICENSE)
+# @link        https://github.com/tecnickcom/alldev
+# ------------------------------------------------------------------------------
+
