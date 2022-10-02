@@ -128,8 +128,6 @@ cd ..
 ./Havoc
 ```
 
-Running `Havoc.sh` will automatically build the Client and start it. 
-
 ### <a name="bteam"></a>Building the Teamserver
 
 > If you are using a debian-based distro, you can use the bundled installation script at `/Havoc/Teamserver/Install.sh`
