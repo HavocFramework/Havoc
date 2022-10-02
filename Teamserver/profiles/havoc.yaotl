@@ -19,6 +19,31 @@ Operators {
 	}
 }
 
+Listeners {
+	Http {
+        Name        = "Agent - HTTPs"
+        Host        = "192.168.0.148"
+        Port        = 443
+        Method      = "POST"
+        Secure      = true
+        UserAgent   = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
+        Uris        = [
+            "/text.gif",
+        ]
+        Headers     = [
+            "X-Havoc: true",
+            "X-Havoc-Agent: Demon",
+        ]
+
+        Response {
+            Headers = [
+                "Content-type: text/plain",
+                "X-IsHavocFramework: true",
+            ]
+        }
+    }
+}
+
 Service {
     Endpoint = "service-endpoint"
     Password = "service-password"

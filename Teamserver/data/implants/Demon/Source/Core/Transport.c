@@ -377,7 +377,7 @@ LEAVE:
     {
         // PRINTF( "Create Named Pipe Server => %s\n", Instance->Config.Transport.Name )
 
-        Instance->Config.Transport.Handle = Instance->Win32.CreateNamedPipeA( Instance->Config.Transport.Name,  // Named Pipe
+        Instance->Config.Transport.Handle = Instance->Win32.CreateNamedPipeW( Instance->Config.Transport.Name,  // Named Pipe
                                                                               PIPE_ACCESS_DUPLEX,               // read/write access
                                                                               PIPE_TYPE_MESSAGE     |           // message type pipe
                                                                               PIPE_READMODE_MESSAGE |           // message-read mode

