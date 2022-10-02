@@ -10,7 +10,8 @@ Source code of Havoc teamserver. Written in Golang.
 	- To build the Teamserver client locally, run the following command in this folder(`~/Havoc/Teamserver/`):
 		1. `make`
 	- That's it! If it ran successfully to completion, you should now have a compiled binary ready for use in the `/bin` folder.
-	- Example use: `sudo ./bin/teamserver server --profile profiles/havoc.yaotl -v`
+	- Example use with a prewritten profile: `sudo ./teamserver server --profile profiles/havoc.yaotl --verbose`
+	- Example use with default profile: `sudo ./teamserver --default --verbose`
 - **Docker**
 	- To build the Teamserver client using a local Docker container, run the following commands(assuming you have Docker installed):
 		1. Build the Dockerfile:

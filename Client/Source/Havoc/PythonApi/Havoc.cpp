@@ -85,6 +85,7 @@ PyObject* PythonAPI::Havoc::Core::GetDemons( PyObject *self, PyObject *args )
     return DemonObjects;
 }
 
+// RegisterCommand( PyFunction: func, Module: str, Command: str, Description: str, Behavior: int, Usage: str, Example: str )
 PyObject* PythonAPI::Havoc::Core::RegisterCommand( PyObject *self, PyObject *args )
 {
     RegisteredCommand RCommand = { };

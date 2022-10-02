@@ -246,7 +246,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                                             int         TotalSize   = 24;
                                             std::string Spaces      = std::string( ( TotalSize - Command.Command.size() ), ' ' );
 
-                                            DemonConsole->Console->append( "  " + QString( Command.Command.c_str() ) + QString( Spaces.c_str() ) + "Command" + "         " + QString( Command.Help.c_str() ) );
+                                            DemonConsole->Console->append( "  " + QString( Command.Command.c_str() ) + QString( Spaces.c_str() ) + "       " + QString( Command.Help.c_str() ) );
                                         }
                                     }
                                 }
