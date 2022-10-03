@@ -1,0 +1,51 @@
+--- 
+name: Documentation Bug Report
+description: File a bug report for the Documentation relating to the Havoc Framework.
+title: "[File a bug report for the Havoc Framework Documentation]: "
+labels: ["documentation"]
+
+assignees: 
+  - C5pider
+body: 
+  - 
+    attributes: 
+      value: "Thanks for taking the time to fill out this bug report!\n"
+    type: markdown
+  - 
+    attributes: 
+      description: "How can we get in touch with you if we need more info?"
+      label: "Contact Details"
+      placeholder: "ex. email@example.com"
+    id: contact
+    type: input
+    validations: 
+      required: false
+  - 
+    attributes: 
+      description: "Also tell us, what should it be?"
+      label: "What's the issue?"
+      placeholder: "Tell me about the numbers Mason!"
+      value: "You mispelled 'cat'!"
+    id: what-grammar
+    type: textarea
+    validations: 
+      required: true
+  - 
+    attributes: 
+      description: "If this isn't related to the github wiki, What version of our software are you running?"
+      label: Did_You_Do_a_Pull_First?
+      options: 
+        - "Latest (You performed a pull first)"
+        - "Anything else (You didn't pull...)"
+    id: version
+    type: dropdown
+    validations: 
+      required: true
+  - 
+    attributes: 
+      description: "By submitting this issue, you declare you fully thought about your suggestion and have read it aloud back to yourself and made sure it sounds alright."
+      label: Did-You-Read-Over-Your-Issue-First?
+      options: 
+        - 
+          label: "I declare I made an effort and provided the necessary information for identification and remediation of the issue."
+          required: true

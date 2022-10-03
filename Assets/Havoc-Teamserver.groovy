@@ -40,7 +40,7 @@ pipeline {
 
         stage('Sanity-Check'){
                 steps{
-                        sh 'ls ./Havoc/Teamserver/bin/'
+                        sh 'file ./Havoc/Teamserver/teamserver'
                 }
         }
 

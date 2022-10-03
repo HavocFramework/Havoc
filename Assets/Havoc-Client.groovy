@@ -50,7 +50,7 @@ pipeline {
 
         stage('Sanity-Check'){
                 steps{
-                        sh 'ls ./Havoc/Client/Bin/'
+                        sh 'file ./Havoc/Client/Havoc'
                 }
         }
 
