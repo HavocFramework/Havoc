@@ -107,23 +107,22 @@ You probably need a newer version of Qt. If you are using Ubuntu try adding a ba
 		10. Since we Have the Teamserver already running, we can simply launch the Teamserver-Client:
 			* `./Havoc`
 		11. You should now see the Teamserver-Client window open:
-			* <Insert image of teamserver client window>
-		12. We must now enter the credentials for the Teamserver we wan	t to connect to:
-			* <Insert image of teamserver client window connecting to localhost instance>
+			* ![teamserver-client](./Assets/Wiki/Teamserver-Client-Fresh.png)
+		12. Now enter the credentials for the Teamserver we want to connect to.
 		13. We now have a Teamserver instance and an associated client to interact with it running!
+			* ![teamserver-and-client](./Assets/Wiki/Teamserver-LoggedIn.png)
 - **Creating a Listener, and Spawning an Agent**
 	* This part assumes you have a Teamserver running, with a Teamserver-client connected to the running instance.
 	- **Creating a Listener:**
 		1. To create a new listener, we must first open the `Listeners` subwindow.
 			* To do this, in the upper left hand corner, click on the `View` button, and then on the `Listeners` button in the drop down menu.
-			* <image>	
+			* ![Listeners-select](./Assets/Wiki/Listeners-select.png))	
 		2. You should see a new sub window in the bottom of the server window, with the title of `Listeners` on the header tab.
-		3. You should also now see 4 buttons on the bottom of the server window, `Add`, `Remove`, `Restart`, `Edit`.
-			* <image>
+		3. You should also now see three(3) buttons on the bottom of the server window, `Add`, `Remove` and `Edit`.
+			* ![Listeners-Add-select](./Assets/Wiki/Listeners-Add-select.png))	
 		4. We want to click the `Add` button.
 		5. Once we click the `Add` button, you should see a new window come up, with the title of `Create Listener`.
 		6. We will want to fill out the appropriate information for each field in the `Create Listener` window.
-			* Please note that you must 'right-click' in order to interact with the `Headers` and `Uris` fields currently.
 		7. After entering the appropriate information into each field, then click the `Save` button.
 		8. The window will close, and you will now see a new line in the `Listeners` sub-window.
 		9. We now have an active Listener, and are ready to receive an incoming agent's communications!
@@ -133,7 +132,7 @@ You probably need a newer version of Qt. If you are using Ubuntu try adding a ba
 		2. Doing so, we see the `Payload` button appear in the drop down menu. We want to then click on it.
 		3. This will open the `Payload` window, where we may then configure the various options for generating our payload.
 		4. Once we have selected the appropriate options, we then click on the `Generate` button.
-			* <image>
+			* ![Generate-Demon](./Assets/Wiki/Listeners-select.png)
 		5. It might take a little bit for the compilation to take place. Once it has completed, it will prompt you as to where to save the resulting file output.
 		6. After selecting where to save the file, you will now have a generated agent ready for execution or injection!
 
