@@ -78,8 +78,6 @@ void GraphWidget::GraphNodeRemove( SessionItem Session )
     {
         if ( Session.Name.compare( NodeList[ i ]->Name ) == 0 )
         {
-            spdlog::info( "Found" );
-
             GraphScene->removeItem( NodeList[ i ]->Node->NodeEdge );
             GraphScene->removeItem( NodeList[ i ]->Node );
 

@@ -192,6 +192,10 @@ bool Packager::DispatchInitConnection( Util::Packager::PPackage Package )
 
         case 0x5:
         {
+            auto TeamserverIPs = QString( Package->Body.Info[ "TeamserverIPs" ].c_str() );
+            for ( auto& Ip : TeamserverIPs.split( ", " ) )
+                HavocX::Teamserver.IpAddresses << Ip;
+
             HavocX::Teamserver.DemonConfig = QJsonDocument::fromJson( Package->Body.Info[ "Demon" ].c_str() );
         }
 
@@ -228,21 +232,27 @@ bool Packager::DispatchListener( Util::Packager::PPackage Package )
                 for ( auto& uri : QString( Package->Body.Info[ "Uris" ].c_str() ).split( ", " ) )
                     Uris << uri;
 
-                ListenerInfo.Info = Listener::HTTP {
-                    .Host       = Package->Body.Info[ "Hosts" ].c_str(),
-                    .Port       = Package->Body.Info[ "Port" ].c_str(),
-                    .UserAgent  = Package->Body.Info[ "UserAgent" ].c_str(),
-                    .Headers    = Headers,
-                    .Uris       = Uris,
-                    .HostHeader = Package->Body.Info[ "HostHeader" ].c_str(),
-                    .Secure     = Package->Body.Info[ "Secure" ].c_str(),
+                auto Hosts = QStringList();
+                for ( auto& host : QString( Package->Body.Info[ "Hosts" ].c_str() ).split( ", " ) )
+                    Hosts << host;
 
-                    .ProxyEnabled  = Package->Body.Info[ "Proxy Enabled" ].c_str(),
-                    .ProxyType     = Package->Body.Info[ "Proxy Type" ].c_str(),
-                    .ProxyHost     = Package->Body.Info[ "Proxy Host" ].c_str(),
-                    .ProxyPort     = Package->Body.Info[ "Proxy Port" ].c_str(),
-                    .ProxyUsername = Package->Body.Info[ "Proxy Username" ].c_str(),
-                    .ProxyPassword = Package->Body.Info[ "Proxy Password" ].c_str(),
+                ListenerInfo.Info = Listener::HTTP {
+                        .Hosts          = Hosts,
+                        .HostBind       = Package->Body.Info[ "HostBind" ].c_str(),
+                        .HostRotation   = Package->Body.Info[ "HostRotation" ].c_str(),
+                        .Port           = Package->Body.Info[ "Port" ].c_str(),
+                        .UserAgent      = Package->Body.Info[ "UserAgent" ].c_str(),
+                        .Headers        = Headers,
+                        .Uris           = Uris,
+                        .HostHeader     = Package->Body.Info[ "HostHeader" ].c_str(),
+                        .Secure         = Package->Body.Info[ "Secure" ].c_str(),
+
+                        .ProxyEnabled   = Package->Body.Info[ "Proxy Enabled" ].c_str(),
+                        .ProxyType      = Package->Body.Info[ "Proxy Type" ].c_str(),
+                        .ProxyHost      = Package->Body.Info[ "Proxy Host" ].c_str(),
+                        .ProxyPort      = Package->Body.Info[ "Proxy Port" ].c_str(),
+                        .ProxyUsername  = Package->Body.Info[ "Proxy Username" ].c_str(),
+                        .ProxyPassword  = Package->Body.Info[ "Proxy Password" ].c_str(),
                 };
 
                 if ( Package->Body.Info[ "Secure" ] == "true" )
@@ -321,21 +331,28 @@ bool Packager::DispatchListener( Util::Packager::PPackage Package )
                 for ( auto& uri : QString( Package->Body.Info[ "Uris" ].c_str() ).split( ", " ) )
                     Uris << uri;
 
-                ListenerInfo.Info = Listener::HTTP {
-                        .Host       = Package->Body.Info[ "Hosts" ].c_str(),
-                        .Port       = Package->Body.Info[ "Port" ].c_str(),
-                        .UserAgent  = Package->Body.Info[ "UserAgent" ].c_str(),
-                        .Headers    = Headers,
-                        .Uris       = Uris,
-                        .HostHeader = Package->Body.Info[ "HostHeader" ].c_str(),
-                        .Secure     = Package->Body.Info[ "Secure" ].c_str(),
+                auto Hosts = QStringList();
+                for ( auto& host : QString( Package->Body.Info[ "Hosts" ].c_str() ).split( ", " ) )
+                    Hosts << host;
 
-                        .ProxyEnabled  = Package->Body.Info[ "Proxy Enabled" ].c_str(),
-                        .ProxyType     = Package->Body.Info[ "Proxy Type" ].c_str(),
-                        .ProxyHost     = Package->Body.Info[ "Proxy Host" ].c_str(),
-                        .ProxyPort     = Package->Body.Info[ "Proxy Port" ].c_str(),
-                        .ProxyUsername = Package->Body.Info[ "Proxy Username" ].c_str(),
-                        .ProxyPassword = Package->Body.Info[ "Proxy Password" ].c_str(),
+
+                ListenerInfo.Info = Listener::HTTP {
+                        .Hosts          = Hosts,
+                        .HostBind       = Package->Body.Info[ "HostBind" ].c_str(),
+                        .HostRotation   = Package->Body.Info[ "HostRotation" ].c_str(),
+                        .Port           = Package->Body.Info[ "Port" ].c_str(),
+                        .UserAgent      = Package->Body.Info[ "UserAgent" ].c_str(),
+                        .Headers        = Headers,
+                        .Uris           = Uris,
+                        .HostHeader     = Package->Body.Info[ "HostHeader" ].c_str(),
+                        .Secure         = Package->Body.Info[ "Secure" ].c_str(),
+
+                        .ProxyEnabled   = Package->Body.Info[ "Proxy Enabled" ].c_str(),
+                        .ProxyType      = Package->Body.Info[ "Proxy Type" ].c_str(),
+                        .ProxyHost      = Package->Body.Info[ "Proxy Host" ].c_str(),
+                        .ProxyPort      = Package->Body.Info[ "Proxy Port" ].c_str(),
+                        .ProxyUsername  = Package->Body.Info[ "Proxy Username" ].c_str(),
+                        .ProxyPassword  = Package->Body.Info[ "Proxy Password" ].c_str(),
                 };
 
                 if ( Package->Body.Info[ "Secure" ] == "true" )

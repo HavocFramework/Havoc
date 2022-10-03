@@ -163,7 +163,9 @@ namespace HavocNamespace
 
             typedef struct
             {
-                QString     Host;
+                QStringList Hosts;
+                QString     HostBind;
+                QString     HostRotation;
                 QString     Port;
                 QString     UserAgent;
                 QStringList Headers;
@@ -260,6 +262,7 @@ namespace HavocNamespace
             PyThreadState*                  PythonState;
             QStringList                     AddedCommands;
             QJsonDocument                   DemonConfig;
+            QStringList                     IpAddresses;
 
             UserInterface::Widgets::TeamserverTabSession* TabSession;
         } ConnectionInfo;

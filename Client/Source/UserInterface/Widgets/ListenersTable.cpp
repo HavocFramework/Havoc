@@ -198,12 +198,12 @@ void HavocNamespace::UserInterface::Widgets::ListenersTable::ListenerAdd( Util::
     }
     else if ( item.Protocol == Listener::PayloadHTTP.toStdString() || item.Protocol == Listener::PayloadHTTPS.toStdString() )
     {
-        item_Host->setText( any_cast<Listener::HTTP>(item.Info).Host );
-        item_Port->setText( any_cast<Listener::HTTP>(item.Info).Port );
+        item_Host->setText( any_cast<Listener::HTTP>( item.Info ).HostBind );
+        item_Port->setText( any_cast<Listener::HTTP>( item.Info ).Port );
     }
     else if ( item.Protocol == Listener::PayloadExternal.toStdString() )
     {
-        item_Host->setText( any_cast<Listener::External>(item.Info).Endpoint );
+        item_Host->setText( any_cast<Listener::External>( item.Info ).Endpoint );
     }
 
     item_Host->setFlags( item_Host->flags() ^ Qt::ItemIsEditable );

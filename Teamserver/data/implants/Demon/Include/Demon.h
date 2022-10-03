@@ -75,7 +75,9 @@ typedef struct
         struct {
 #ifdef TRANSPORT_HTTP
             LPWSTR  Method;
-            LPWSTR  Host;
+            LPWSTR* Hosts;
+            DWORD   HostRotation;
+            DWORD   HostIndex;
             UINT32  Port;
             DWORD   Secure;
             LPWSTR  UserAgent;

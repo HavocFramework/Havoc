@@ -21,13 +21,15 @@ Operators {
 
 Listeners {
 	Http {
-        Name        = "Agent - HTTPs"
-        Host        = "192.168.0.148"
-        Port        = 443
-        Method      = "POST"
-        Secure      = true
-        UserAgent   = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
-        Uris        = [
+        Name         = "Agent - HTTPs"
+        Hosts        = ["192.168.0.148"]
+        HostBind     = "192.168.0.148"
+        HostRotation = "random"
+        Port         = 443
+        Method       = "POST"
+        Secure       = true
+        UserAgent    = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
+        Uris         = [
             "/text.gif",
         ]
         Headers     = [

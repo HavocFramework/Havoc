@@ -146,13 +146,15 @@ func (t *Teamserver) Start() {
         // Start all HTTP/s listeners
         for _, listener := range t.Profile.Config.Listener.ListenerHTTP {
             var HandlerData = handlers.HTTPConfig{
-                Name:      listener.Name,
-                Hosts:     listener.Host,
-                Port:      strconv.Itoa(listener.Port),
-                UserAgent: listener.UserAgent,
-                Headers:   listener.Headers,
-                Uris:      listener.Uris,
-                Secure:    listener.Secure,
+                Name:         listener.Name,
+                Hosts:        listener.Hosts,
+                HostBind:     listener.HostBind,
+                HostRotation: listener.HostRotation,
+                Port:         strconv.Itoa(listener.Port),
+                UserAgent:    listener.UserAgent,
+                Headers:      listener.Headers,
+                Uris:         listener.Uris,
+                Secure:       listener.Secure,
             }
 
             if listener.Response != nil {
@@ -193,7 +195,7 @@ func (t *Teamserver) Start() {
 
     }
 
-    t.EventAppend(events.SendDemonProfile(t.Profile.Config.Demon))
+    t.EventAppend(events.SendProfile(t.Profile))
 
     // This should hold the Teamserver as long as the WebSocket Server is running
     logger.Debug("Wait til the server shutdown")

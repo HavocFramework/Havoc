@@ -310,8 +310,9 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
     PVOID           Wow64Value      = NULL;
     BOOL            Return          = TRUE;
 
-    StartUpInfo.cb      = sizeof( STARTUPINFOA );
-    StartUpInfo.dwFlags = STARTF_USESTDHANDLES;
+    StartUpInfo.cb          = sizeof( STARTUPINFOA );
+    StartUpInfo.dwFlags     = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+    StartUpInfo.wShowWindow = SW_HIDE;
 
     Package = PackageCreate( DEMON_INFO );
     PackageAddInt32( Package, DEMON_INFO_PROC_CREATE );

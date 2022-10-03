@@ -60,7 +60,7 @@ func (h *HTTP) generateCertFiles() bool {
     h.TLS.CertPath = ListenerPath + "server.crt"
     h.TLS.KeyPath = ListenerPath + "server.key"
 
-    h.TLS.Cert, h.TLS.Key, err = certs.HTTPSGenerateRSACertificate(h.Config.Hosts)
+    h.TLS.Cert, h.TLS.Key, err = certs.HTTPSGenerateRSACertificate(h.Config.HostBind)
 
     err = os.WriteFile(h.TLS.CertPath, h.TLS.Cert, 0644)
     if err != nil {
@@ -323,7 +323,7 @@ func (h *HTTP) Start() {
         return
     }
 
-    if h.Config.Hosts == "" {
+    if len(h.Config.Hosts) == 0 {
         logger.Error("HTTP Hosts not set")
         return
     }
@@ -338,7 +338,7 @@ func (h *HTTP) Start() {
 
     if h.Config.Secure {
         if h.generateCertFiles() {
-            logger.Info("Started \"" + colors.Green(h.Config.Name) + "\" listener: " + colors.BlueUnderline("https://"+h.Config.Hosts+":"+h.Config.Port))
+            logger.Info("Started \"" + colors.Green(h.Config.Name) + "\" listener: " + colors.BlueUnderline("https://"+h.Config.HostBind+":"+h.Config.Port))
 
             pk := h.RoutineFunc.AppendListener("", LISTENER_HTTP, h)
             h.RoutineFunc.EventAppend(pk)
@@ -346,7 +346,7 @@ func (h *HTTP) Start() {
 
             go func() {
                 h.Server = &http.Server{
-                    Addr:    h.Config.Hosts + ":" + h.Config.Port,
+                    Addr:    h.Config.HostBind + ":" + h.Config.Port,
                     Handler: h.GinEngine,
                 }
 
@@ -361,7 +361,7 @@ func (h *HTTP) Start() {
             logger.Error("Failed to generate server tls certifications")
         }
     } else {
-        logger.Info("Started \"" + colors.Green(h.Config.Name) + "\" listener: " + colors.BlueUnderline("http://"+h.Config.Hosts+":"+h.Config.Port))
+        logger.Info("Started \"" + colors.Green(h.Config.Name) + "\" listener: " + colors.BlueUnderline("http://"+h.Config.HostBind+":"+h.Config.Port))
 
         pk := h.RoutineFunc.AppendListener("", LISTENER_HTTP, h)
         h.RoutineFunc.EventAppend(pk)
@@ -369,7 +369,7 @@ func (h *HTTP) Start() {
 
         go func() {
             h.Server = &http.Server{
-                Addr:    h.Config.Hosts + ":" + h.Config.Port,
+                Addr:    h.Config.HostBind + ":" + h.Config.Port,
                 Handler: h.GinEngine,
             }
 

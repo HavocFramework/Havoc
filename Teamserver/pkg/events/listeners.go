@@ -55,6 +55,17 @@ func (listeners) ListenerAdd(FromUser string, Type int, Config any) packager.Pac
 
 		delete(Package.Body.Info, "Proxy")
 		delete(Package.Body.Info, "Response")
+		delete(Package.Body.Info, "Hosts")
+
+		var Hosts string
+		for _, host := range Config.(*handlers.HTTP).Config.Hosts {
+			if len(Hosts) == 0 {
+				Hosts = host
+			} else {
+				Hosts += ", " + host
+			}
+		}
+		Package.Body.Info["Hosts"] = Hosts
 
 		break
 
@@ -118,6 +129,17 @@ func (listeners) ListenerEdit(Type int, Config any) packager.Package {
 
 		delete(Package.Body.Info, "Proxy")
 		delete(Package.Body.Info, "Response")
+		delete(Package.Body.Info, "Hosts")
+
+		var Hosts string
+		for _, host := range Config.(*handlers.HTTPConfig).Hosts {
+			if len(Hosts) == 0 {
+				Hosts = host
+			} else {
+				Hosts += ", " + host
+			}
+		}
+		Package.Body.Info["Hosts"] = Hosts
 
 		break
 	}
