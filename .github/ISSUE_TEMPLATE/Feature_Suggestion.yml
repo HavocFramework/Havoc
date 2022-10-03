@@ -1,0 +1,52 @@
+name: Feature Suggestion
+description: File a feature suggestion for the Havoc Framework
+title: "[Feature Suggestions/Enhancements]: "
+labels: ["enhancement"]
+assignees:
+  - C5pider
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to suggest a feature!
+  - type: input
+    id: contact
+    attributes:
+      label: Contact Details
+      description: How can we get in touch with you if we need more info?
+      placeholder: ex. email@example.com
+    validations:
+      required: false
+  - type: textarea
+    id: what-is
+    attributes:
+      label: What is the idea?
+      description: Please expound on it, and list any supporting resources that be helpful.
+      placeholder: Tell me what the numbers mean Mason!
+      value: "You should convert the teamserver to C++"
+    validations:
+      required: true
+  - type: dropdown
+    id: version
+    attributes:
+      label: Is_it_already_in?
+      description: Does the feature already exist in Havoc?
+      options:
+        - No (You checked and it doesn't.)
+        - Yes (You didn't check...)
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant code samples
+      description: Please insert any relevant code you think may be helpful in understanding/implementing the feature. This will be automatically formatted into code, so no need for backticks. If you already have a feature built and would like to add it to the project, please make a pull request instead.
+      render: shell
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Are-You-Trolling?
+      description: By submitting this issue, you declare you are making a sincere effort towards improving the functionality/feature set of the Havoc Framework..
+      options:
+        - label: I declare I made an effort and provided the necessary information for an understanding of the feature by the Framework authors.
+          required: true
