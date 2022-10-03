@@ -69,7 +69,7 @@ See the [Installation](https://github.com/HavocFramework/Havoc/wiki#installation
 
 ### Support
 
-Consider supporting C5pider on [Patreon](https://www.patreon.com/5pider). Additional features are planned for supporters in the future, such as custom agents/plugins/commands/etc.
+Consider supporting C5pider on [Patreon](https://www.patreon.com/5pider)/[Github Sponsors](https://github.com/sponsors/Cracked5pider). Additional features are planned for supporters in the future, such as custom agents/plugins/commands/etc.
 
 ### Community
 
