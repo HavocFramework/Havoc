@@ -6,10 +6,9 @@ labels: ["clientside/teamserver"]
 assignees: 
   - C5pider
 body: 
-  - 
+  - type: markdown
     attributes: 
       value: "Thanks for taking the time to fill out this bug report!\n"
-    type: markdown
   - 
     attributes: 
       description: "How can we get in touch with you if we need more info?"
