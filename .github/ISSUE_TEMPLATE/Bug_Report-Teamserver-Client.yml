@@ -29,7 +29,7 @@ body:
     id: version
     attributes: 
       description: "What version of our software are you running?"
-      label: Did_You_Do_a_Pull_First?
+      label: Did You Do a Pull First?
       options: 
         - "Latest (You performed a pull first)"
         - "Anything else (You didn't pull...)"
@@ -46,7 +46,7 @@ body:
     id: terms
     attributes: 
       description: "By submitting this issue, you declare you posted replication steps and information about the issue, so that it may be fully understood ."
-      label: Did-You-Read-Over-Your-Issue-First?
+      label: Did You Read Over Your Issue First?
       options: 
         - label: "I declare I made an effort and provided the necessary information for replication of the issue."
           required: true

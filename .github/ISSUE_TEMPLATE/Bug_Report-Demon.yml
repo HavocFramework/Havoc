@@ -29,7 +29,7 @@ body:
   - type: dropdown
     id: version
     attributes: 
-      label: Did_You_Do_a_Pull_First?
+      label: Did You Do a Pull First?
       description: "What version of our software are you running?"
       options: 
         - "Latest (You performed a pull first)"
@@ -45,8 +45,8 @@ body:
   - type: checkboxes
     id: terms
     attributes: 
-      label: Did-You-Read-Over-Your-Issue-First?
-      description: "By submitting this issue, you declare you posted replication steps and information about the issue, so that it may be fully understood ."
+      label: Did You Read Over Your Issue First?
+      description: "By submitting this issue, you confirm you posted replication steps and information about the issue, so that it may be fully understood ."
       options: 
         - label: "I declare I made an effort and provided the necessary information for replication of the issue."
           required: true
