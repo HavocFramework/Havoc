@@ -17,3 +17,7 @@ Client/Data/database.db
 
 # ignore go stuff
 Teamserver/go.sum
+
+# ignore compiled binaries
+*/Client/Havoc
+*/Teamserver/teamserver
