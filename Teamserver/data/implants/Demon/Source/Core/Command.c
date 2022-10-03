@@ -144,7 +144,13 @@ VOID CommandSleep( PPARSER DataArgs )
 {
     PPACKAGE Package = PackageCreate( DEMON_COMMAND_SLEEP );
 
-    Instance->Config.Sleeping = ParserGetInt32( DataArgs );
+    int sleeping = ParserGetInt32( DataArgs );
+    if(sleeping < 0){
+        Instance->Config.Sleeping = 0;
+    }else{
+        Instance->Config.Sleeping = sleeping;
+    }
+    
     PRINTF( "Instance->Sleeping: [%d]\n", Instance->Config.Sleeping );
 
     PackageAddInt32( Package, Instance->Config.Sleeping );
