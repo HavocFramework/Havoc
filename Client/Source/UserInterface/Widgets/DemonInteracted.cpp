@@ -265,11 +265,11 @@ void DemonInteracted::AppendNoNL( const QString &text )
 
 void DemonInteracted::AutoCompleteAdd( QString text )
 {
-    auto model = ( QStringListModel* ) CommandCompleter->model();
+    /*auto model = ( QStringListModel* ) CommandCompleter->model();
 
     CompleterCommands << text;
     model->setStringList( CompleterCommands );
-    CommandCompleter->setModel( model );
+    CommandCompleter->setModel( model );*/
 }
 
 void DemonInteracted::AutoCompleteClear()
