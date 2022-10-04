@@ -124,7 +124,7 @@ mkdir Build
 cd Build
 cmake ..
 cd ..
-./Havoc.sh
+./Havoc
 ```
 
 Running `Havoc.sh` will automatically build the Client and start it. 
