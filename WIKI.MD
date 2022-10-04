@@ -146,7 +146,7 @@ Build and Run:
 ```
 cd Havoc/Teamserver
 make
-./bin/teamserver -h
+./teamserver -h
 ``` 
 
 ### <a name="idc"></a> Docker
