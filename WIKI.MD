@@ -107,6 +107,28 @@ sudo apt update
 sudo apt install python3-dev python3.10-dev libpython3.10 libpython3.10-dev python3.10
 ```
 
+#### macOS M1
+
+Client  
+```  
+brew install python gcc spdlog cmake qt5 golang
+git clone https://github.com/HavocFramework/Havoc
+cd Havoc/Client
+mkdir Build
+cd Build
+cmake .. -DQt5_DIR=$(brew --prefix qt5)/lib/cmake/Qt5 -DPYTHON_LIBRARY=/opt/homebrew/Cellar/python@3.10/3.10.7/Frameworks/Python.framework/Versions/3.10/lib/libpython3.10.dylib -DPYTHON_INCLUDE_DIR=/opt/homebrew/Cellar/python@3.10/3.10.7/Frameworks/Python.framework/Headers/
+cd ..
+cp -r /opt/homebrew/Cellar/python@3.10/3.10.7/Frameworks/Python.framework/Headers/* ./
+cmake --build Build
+```
+
+Teamserver  
+```
+cd Havoc/Teamserver
+go build
+./Havoc server --profile ./profiles/havoc.yaotl
+```
+
 ### <a name="bclient"></a>Building the Client
 
 > If you are using a debian-based distro, you can use the bundled installation script at `/Havoc/Client/Install.sh`. 
