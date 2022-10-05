@@ -23,7 +23,7 @@ Havoc Gui Client source code.
 		5. One liner for installing all necessary packages: `sudo apt install -y git build-essential apt-utils cmake libfontconfig1 libglu1-mesa-dev libgtest-dev libspdlog-dev libboost-all-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev mesa-common-dev qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools libqt5websockets5 libqt5websockets5-dev qtdeclarative5-dev`
 - **Local Build**
 	- To build the Teamserver Client locally, perform the following steps:
-		1. `./Build.sh`
+		1. `make`
 		5. `./Havoc`
 	- You should now have a fully built Teamserver client available.
 - **Docker Build**

@@ -26,7 +26,7 @@ elseif(UNIX)
     include_directories( "/usr/include/python3.10" )
 endif()
 
-set( APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/Havoc.qrc" )
+set( APP_ICON_RESOURCE_WINDOWS "Data/Havoc.qrc" )
 
 set( CMAKE_RUNTIME_OUTPUT_DIRECTORY .. )
 set( CMAKE_INCLUDE_CURRENT_DIR ON )
@@ -153,7 +153,7 @@ set(
         ${HAVOC_UI}
 )
 
-add_executable( ${PROJECT_NAME} ${HAVOC_INCLUDE} ${HAVOC_SOURCE} ${HAVOC_UTIL} ${APP_ICON_RESOURCE_WINDOWS} Havoc.rc )
+add_executable( ${PROJECT_NAME} ${HAVOC_INCLUDE} ${HAVOC_SOURCE} ${HAVOC_UTIL} ${APP_ICON_RESOURCE_WINDOWS} Data/Havoc.rc )
 add_definitions( -DQT_NO_DEBUG_OUTPUT )
 # Boost libary
 # set(Boost_USE_STATIC_LIBS OFF)

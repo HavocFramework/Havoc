@@ -5,8 +5,8 @@ ifndef VERBOSE
 endif
 
 all:
-	@ rm -rf Build; mkdir Build; cd Build; cmake ..
-	@ cmake --build Build
+	@ mkdir Build; cd Build; cmake ..
+	@ cmake --build Build -- -j 4
 
 clean:
 	@ rm -rf Build

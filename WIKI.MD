@@ -127,7 +127,7 @@ git clone https://github.com/HavocFramework/Havoc.git
 Build and Run:
 ```
 cd Havoc/Client
-./Build.sh 
+make 
 ./Havoc 
 ```
 
