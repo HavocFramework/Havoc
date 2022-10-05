@@ -1,7 +1,7 @@
 #include <global.hpp>
 #include <UserInterface/Widgets/DemonInteracted.h>
 #include <Util/ColorText.h>
-
+#include <QTime>
 #include <QCompleter>
 #include <QKeyEvent>
 #include <QEvent>
