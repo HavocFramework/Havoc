@@ -16,7 +16,15 @@ set( REQUIRED_LIBS Core Gui Widgets Network WebSockets Sql )
 set( REQUIRED_LIBS_QUALIFIED Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Network Qt5::WebSockets Qt5::Sql )
 
 include_directories( Include )
-include_directories( "/usr/include/python3.10" )
+
+if(APPLE)
+    execute_process(COMMAND brew --prefix OUTPUT_VARIABLE BREW_PREFIX) #this because brew install location differs Intel/Apple Silicon macs
+    string(STRIP ${BREW_PREFIX} BREW_PREFIX) #for some reason this happens: https://gitlab.kitware.com/cmake/cmake/-/issues/22404
+    include_directories( "${BREW_PREFIX}/bin/python3.10" )
+    include_directories( "${BREW_PREFIX}/Frameworks/Python.framework/Headers" )
+elseif(UNIX)
+    include_directories( "/usr/include/python3.10" )
+endif()
 
 set( APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/Havoc.qrc" )
 
@@ -156,7 +164,20 @@ add_definitions( -DQT_NO_DEBUG_OUTPUT )
 
 set( Python_ADDITIONAL_VERSIONS )
 
-find_package( PythonLibs REQUIRED )
+if(APPLE)
+  find_package(Python 3 COMPONENTS Interpreter Development REQUIRED)
+  set(PYTHON_MAJOR $ENV{Python_VERSION_MAJOR})
+  set(PYTHON_MINOR $ENV{Python_VERSION_MINOR})
+  set(PYTHONLIBS_VERSION_STRING ${Python_VERSION})
+  set(PYTHON_INCLUDE_DIR ${Python_INCLUDE_DIRS})
+  set(PYTHON_LIBRARIES ${Python_LIBRARIES})
+  message("Apple - Using Python:${Python_VERSION_MAJOR} - Libraries:${PYTHON_LIBRARIES} - IncludeDirs: ${PYTHON_INCLUDE_DIR}")
+elseif(UNIX)
+  find_package(PythonLibs 3 REQUIRED)
+else()
+  set(PYTHONLIBS_VERSION_STRING $ENV{PY_VERSION})
+endif()
+
 find_package( spdlog REQUIRED )
 find_package( Qt${QT_VERSION} COMPONENTS ${REQUIRED_LIBS} REQUIRED )
 
