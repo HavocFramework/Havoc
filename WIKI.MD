@@ -124,10 +124,9 @@ mkdir Build
 cd Build
 cmake ..
 cd ..
-./Havoc.sh
+./Build.sh
+./Havoc
 ```
-
-Running `Havoc.sh` will automatically build the Client and start it. 
 
 ### <a name="bteam"></a>Building the Teamserver
 
