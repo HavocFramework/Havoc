@@ -8,7 +8,7 @@ endif
 
 all:
 		echo [*] Compiling....
-		GOOS=linux GOARCH=amd64 $(GOBUILD)
+		$(GOBUILD)
 		echo [+] Finished
 
 clean:
