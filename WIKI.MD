@@ -120,14 +120,11 @@ git clone https://github.com/HavocFramework/Havoc.git
 Build and Run:
 ```
 cd Havoc/Client
-mkdir Build
-cd Build
-cmake ..
-cd ..
-./Havoc.sh
+./Build.sh 
+./Havoc 
 ```
 
-Running `Havoc.sh` will automatically build the Client and start it. 
+Running `Havoc` will start the Client. 
 
 ### <a name="bteam"></a>Building the Teamserver
 
@@ -146,7 +143,7 @@ Build and Run:
 ```
 cd Havoc/Teamserver
 make
-./bin/teamserver -h
+./teamserver -h
 ``` 
 
 ### <a name="idc"></a> Docker

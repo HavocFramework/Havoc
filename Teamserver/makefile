@@ -15,3 +15,4 @@ clean:
 		rm -rf ./bin
 		rm -rf ./data/loot
 		rm -rf .idea
+		rm -rf ./teamserver

@@ -4,6 +4,8 @@ import (
     "fmt"
     "log"
     "os"
+    "path/filepath"
+    "strings"
 
     "Havoc/pkg/common"
     "Havoc/pkg/logger"
@@ -15,6 +17,13 @@ func (l Logr) AddAgentInput(AgentType, AgentID, User, TaskID, Input string, time
         DemonLogFile = DemonPath + "/Console_" + AgentID + ".log"
         InputString  string
     )
+
+    // check if we don't have a path traversal
+    path := filepath.Clean(DemonLogFile)
+    if !strings.HasPrefix(path, DemonPath) {
+        logger.Error("File didn't started with agent loot path. abort")
+        return
+    }
 
     if _, err := os.Stat(DemonPath); os.IsNotExist(err) {
         if err = os.Mkdir(DemonPath, os.ModePerm); err != nil {
@@ -28,7 +37,7 @@ func (l Logr) AddAgentInput(AgentType, AgentID, User, TaskID, Input string, time
         log.Fatal(err)
     }
 
-    InputString = fmt.Sprintf("\n[%v] [%v] %v => %v\n", time, User, AgentType, Input)
+    InputString = fmt.Sprintf("\n[Time: %v] [User: %v] [TaskID: %v]%v => %v\n", time, User, TaskID, AgentType, Input)
 
     _, err = f.Write([]byte(InputString))
     if err != nil {
@@ -42,6 +51,13 @@ func (l Logr) AddAgentRaw(AgentID, Raw string) {
         DemonPath    = l.AgentPath + "/" + AgentID
         DemonLogFile = DemonPath + "/Console_" + AgentID + ".log"
     )
+
+    // check if we don't have a path traversal
+    path := filepath.Clean(DemonLogFile)
+    if !strings.HasPrefix(path, DemonPath) {
+        logger.Error("File didn't started with agent loot path. abort")
+        return
+    }
 
     if _, err := os.Stat(DemonPath); os.IsNotExist(err) {
         if err = os.Mkdir(DemonPath, os.ModePerm); err != nil {
@@ -64,9 +80,16 @@ func (l Logr) AddAgentRaw(AgentID, Raw string) {
 
 func (l Logr) DemonAddOutput(DemonID string, Output map[string]string, time string) {
     var (
-        DemonPath    = l.AgentPath + "/" + DemonID
+        DemonPath    = l.AgentPath + "/" + filepath.Clean(DemonID)
         DemonLogFile = DemonPath + "/Console_" + DemonID + ".log"
     )
+
+    // check if we don't have a path traversal
+    path := filepath.Clean(DemonLogFile)
+    if !strings.HasPrefix(path, DemonPath) {
+        logger.Error("File didn't started with agent loot path. abort")
+        return
+    }
 
     if _, err := os.Stat(DemonPath); os.IsNotExist(err) {
         if err = os.Mkdir(DemonPath, os.ModePerm); err != nil {
@@ -114,6 +137,13 @@ func (l Logr) DemonAddDownloadedFile(DemonID, FileName string, FileBytes []byte)
         DemonDownload    = DemonDownloadDir + "/" + FileName
     )
 
+    // check if we don't have a path traversal
+    path := filepath.Clean(DemonDownload)
+    if !strings.HasPrefix(path, DemonDownloadDir) {
+        logger.Error("File didn't started with agent download path. abort")
+        return
+    }
+
     if _, err := os.Stat(DemonPath); os.IsNotExist(err) {
         if err = os.Mkdir(DemonPath, os.ModePerm); err != nil {
             logger.Error("Failed to create Logr demon " + DemonID + " folder: " + err.Error())
@@ -149,6 +179,13 @@ func (l Logr) DemonSaveScreenshot(DemonID, Name string, BmpBytes []byte) {
         DemonScreenshotDir = DemonPath + "/Screenshots"
         DemonScreenshot    = DemonScreenshotDir + "/" + Name
     )
+
+    // check if we don't have a path traversal
+    path := filepath.Clean(DemonScreenshot)
+    if !strings.HasPrefix(path, DemonScreenshotDir) {
+        logger.Error("File didn't started with agent screenshot path. abort")
+        return
+    }
 
     if _, err := os.Stat(DemonPath); os.IsNotExist(err) {
         if err = os.Mkdir(DemonPath, os.ModePerm); err != nil {

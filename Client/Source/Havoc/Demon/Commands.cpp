@@ -140,14 +140,6 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                     .Usage          = "[pid] [PAGE_READ | PAGE_READWRITE | PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE]",
                     .Example        = "1337 PAGE_EXECUTE_READWRITE",
                 },
-                {
-                    .CommandString  = "find-module",
-                    .Description    = "query for processes with specified loaded module",
-                    .Behavior       = BEHAVIOR_API_ONLY,
-                    .MitreTechniques= {  },
-                    .Usage          = "[module.dll]",
-                    .Example        = "clr.dll",
-                },
             },
         },
         {

@@ -12,14 +12,8 @@ set(CMAKE_C_COMPILER /usr/bin/x86_64-w64-mingw32-gcc)
 set(CMAKE_CXX_FLAGS "-fpermissive")
 
 set( QT_VERSION 5 )
-#set( REQUIRED_LIBS Core Gui Widgets Network Sql QuickControls2 )
 set( REQUIRED_LIBS Core Gui Widgets Network WebSockets Sql )
 set( REQUIRED_LIBS_QUALIFIED Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Network Qt5::WebSockets Qt5::Sql )
-
-# include this into your project folder
-#include_directories( ${CMAKE_CURRENT_SOURCE_DIR} "/home/spider/.install/QuickQanava/QuickContainers/include" )
-#include_directories( ${CMAKE_CURRENT_SOURCE_DIR} "/home/spider/.install/QuickQanava/GTpo/src" )
-#include_directories( ${CMAKE_CURRENT_SOURCE_DIR} "/home/spider/.install/QuickQanava/src" )
 
 include_directories( Include )
 include_directories( "/usr/include/python3.10" )

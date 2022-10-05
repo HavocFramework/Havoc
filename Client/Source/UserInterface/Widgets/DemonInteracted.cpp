@@ -2,6 +2,8 @@
 #include <UserInterface/Widgets/DemonInteracted.h>
 #include <Util/ColorText.h>
 
+#include <QDate>
+#include <QTime>
 #include <QCompleter>
 #include <QKeyEvent>
 #include <QEvent>
