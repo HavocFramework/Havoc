@@ -67,9 +67,9 @@ void HavocNamespace::UserInterface::Widgets::Chat::AppendText(const QString& Tim
 void HavocNamespace::UserInterface::Widgets::Chat::AddUserMessage(const QString Time, QString User, QString text) const
 {
     if ( HavocX::Teamserver.User.compare( User ) == 0 )
-        this->AppendText( Time, "[" + Util::ColorText::UnderlineGreen( User ) + "]" + Util::ColorText::Bold(" :: ") + text.toHtmlEscaped() );
+        this->AppendText( Time, "[" + Util::ColorText::UnderlineGreen( User ) + "]" + Util::ColorText::Bold(" :: ") + text );
     else
-        this->AppendText( Time, "[" + Util::ColorText::Underline( User ) + "]" + Util::ColorText::Bold(" :: ") + text.toHtmlEscaped() );
+        this->AppendText( Time, "[" + Util::ColorText::Underline( User ) + "]" + Util::ColorText::Bold(" :: ") + text );
 }
 
 void HavocNamespace::UserInterface::Widgets::Chat::AppendFromInput()
@@ -89,7 +89,7 @@ void HavocNamespace::UserInterface::Widgets::Chat::AppendFromInput()
         Head.Time         = QTime::currentTime().toString("hh:mm:ss").toStdString();
         Head.User         = User;
         Body.SubEvent     = Util::Packager::Chat::NewMessage;
-        Body.Info[ User ] = text.toHtmlEscaped().toUtf8().toBase64().toStdString();
+        Body.Info[ User ] = text().toUtf8().toBase64().toStdString();
 
         Package.Head = Head;
         Package.Body = Body;
