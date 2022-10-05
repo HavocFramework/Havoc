@@ -67,9 +67,9 @@ void HavocNamespace::UserInterface::Widgets::Chat::AppendText(const QString& Tim
 void HavocNamespace::UserInterface::Widgets::Chat::AddUserMessage(const QString Time, QString User, QString text) const
 {
     if ( HavocX::Teamserver.User.compare( User ) == 0 )
-        this->AppendText( Time, "[" + Util::ColorText::UnderlineGreen( User ) + "]" + Util::ColorText::Bold(" :: ") + text) );
+        this->AppendText( Time, "[" + Util::ColorText::UnderlineGreen( User ) + "]" + Util::ColorText::Bold(" :: ") + text );
     else
-        this->AppendText( Time, "[" + Util::ColorText::Underline( User ) + "]" + Util::ColorText::Bold(" :: ") + text) );
+        this->AppendText( Time, "[" + Util::ColorText::Underline( User ) + "]" + Util::ColorText::Bold(" :: ") + text );
 }
 
 void HavocNamespace::UserInterface::Widgets::Chat::AppendFromInput()

@@ -682,7 +682,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             }
             else if ( InputCommands[ 1 ].compare( "memory" ) == 0 )
             {
-                if ( InputCommands.size() >= 3 )
+                if ( InputCommands.size() >= 4 )
                 {
                     TaskID = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to query for" + InputCommands[ 3 ] + " memory regions from " + InputCommands[ 2 ] );
                     CommandInputList[ TaskID ] = commandline;
