@@ -72,8 +72,10 @@ sudo apt install python3.10 python3.10-dev
 #### `incomplete type ‘QTime’ used in nested name specifier`
 
 You probably need a newer version of Qt. If you are using Ubuntu try adding a backports ppa and installing the latest qt6 dev packages.
+Please see https://github.com/HavocFramework/Havoc/issues/95.
 
-
+#### `Known compiler issue: [-] Couldn't compile implant: exit status 1`
+Please see https://github.com/HavocFramework/Havoc/issues/105.
 ---
 
 ## <a name="install"></a>Installation
