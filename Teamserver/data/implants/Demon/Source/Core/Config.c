@@ -60,8 +60,7 @@ VOID ConfigInit()
     )
 
 #ifdef TRANSPORT_HTTP
-    Instance->Config.Transport.Method = L"POST";
-
+    Instance->Config.Transport.Method       = L"POST";
     Instance->Config.Transport.HostRotation = ParserGetInt32( &Parser );
 
     J = ParserGetInt32( &Parser );
@@ -70,8 +69,8 @@ VOID ConfigInit()
     for ( INT i = 0; i < J; i++ )
     {
         Buffer = ParserGetBytes( &Parser, &Length );
-        Instance->Config.Transport.Hosts[ i ] = Instance->Win32.LocalAlloc( LPTR, Length * 2 );
-        CharStringToWCharString( Instance->Config.Transport.Hosts[ i ], Buffer, Length );
+        Instance->Config.Transport.Hosts[ i ] = Instance->Win32.LocalAlloc( LPTR, Length );
+        MemCopy( Instance->Config.Transport.Hosts[ i ], Buffer, Length );
 #ifdef DEBUG
         printf( "  - %ls\n", Instance->Config.Transport.Hosts[ i ] );
 #endif
@@ -89,8 +88,8 @@ VOID ConfigInit()
 
     // UserAgent
     Buffer = ParserGetBytes( &Parser, &Length );
-    Instance->Config.Transport.UserAgent = Instance->Win32.LocalAlloc( LPTR, Length * 2 );
-    CharStringToWCharString( Instance->Config.Transport.UserAgent, Buffer, Length );
+    Instance->Config.Transport.UserAgent = Instance->Win32.LocalAlloc( LPTR, Length );
+    MemCopy( Instance->Config.Transport.UserAgent, Buffer, Length );
     PRINTF( "[CONFIG] UserAgent: %ls\n", Instance->Config.Transport.UserAgent );
 
     // Headers
@@ -100,8 +99,8 @@ VOID ConfigInit()
     for ( INT i = 0; i < J; i++ )
     {
         Buffer = ParserGetBytes( &Parser, &Length );
-        Instance->Config.Transport.Headers[ i ] = Instance->Win32.LocalAlloc( LPTR, Length * 2 );
-        CharStringToWCharString( Instance->Config.Transport.Headers[ i ], Buffer, Length );
+        Instance->Config.Transport.Headers[ i ] = Instance->Win32.LocalAlloc( LPTR, Length );
+        MemCopy( Instance->Config.Transport.Headers[ i ], Buffer, Length );
 #ifdef DEBUG
         printf( "  - %ls\n", Instance->Config.Transport.Headers[ i ] );
 #endif
@@ -115,8 +114,8 @@ VOID ConfigInit()
     for ( INT i = 0; i < J; i++ )
     {
         Buffer = ParserGetBytes( &Parser, &Length );
-        Instance->Config.Transport.Uris[ i ] = Instance->Win32.LocalAlloc( LPTR, Length * 2 );
-        CharStringToWCharString( Instance->Config.Transport.Uris[ i ], Buffer, Length );
+        Instance->Config.Transport.Uris[ i ] = Instance->Win32.LocalAlloc( LPTR, Length );
+        MemCopy( Instance->Config.Transport.Uris[ i ], Buffer, Length );
 #ifdef DEBUG
         printf( "  - %ls\n", Instance->Config.Transport.Uris[ i ] );
 #endif
@@ -129,15 +128,15 @@ VOID ConfigInit()
     {
         PUTS( "[CONFIG] [PROXY] Enabled" );
         Buffer = ParserGetBytes( &Parser, &Length );
-        Instance->Config.Transport.Proxy.Url = Instance->Win32.LocalAlloc( LPTR, Length * 2 );
-        CharStringToWCharString( Instance->Config.Transport.Proxy.Url, Buffer, Length );
+        Instance->Config.Transport.Proxy.Url = Instance->Win32.LocalAlloc( LPTR, Length );
+        MemCopy( Instance->Config.Transport.Proxy.Url, Buffer, Length );
         PRINTF( "[CONFIG] [PROXY] Url: %ls\n", Instance->Config.Transport.Proxy.Url );
 
         Buffer = ParserGetBytes( &Parser, &Length );
         if ( Length > 0 )
         {
-            Instance->Config.Transport.Proxy.Username = Instance->Win32.LocalAlloc( LPTR, Length * 2 );
-            CharStringToWCharString( Instance->Config.Transport.Proxy.Username, Buffer, Length );
+            Instance->Config.Transport.Proxy.Username = Instance->Win32.LocalAlloc( LPTR, Length );
+            MemCopy( Instance->Config.Transport.Proxy.Username, Buffer, Length );
             PRINTF( "[CONFIG] [PROXY] Username: %ls\n", Instance->Config.Transport.Proxy.Username );
         }
         else
@@ -146,8 +145,8 @@ VOID ConfigInit()
         Buffer = ParserGetBytes( &Parser, &Length );
         if ( Length > 0 )
         {
-            Instance->Config.Transport.Proxy.Password = Instance->Win32.LocalAlloc( LPTR, Length * 2 );
-            CharStringToWCharString( Instance->Config.Transport.Proxy.Password, Buffer, Length );
+            Instance->Config.Transport.Proxy.Password = Instance->Win32.LocalAlloc( LPTR, Length );
+            MemCopy( Instance->Config.Transport.Proxy.Password, Buffer, Length );
             PRINTF( "[CONFIG] [PROXY] Password: %ls\n", Instance->Config.Transport.Proxy.Password );
         }
         else

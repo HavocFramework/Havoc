@@ -1,6 +1,7 @@
 package builder
 
 import (
+    "Havoc/pkg/common"
     "Havoc/pkg/common/packer"
     "Havoc/pkg/handlers"
     "Havoc/pkg/logger"
@@ -526,9 +527,9 @@ func (b *Builder) PatchConfig() []byte {
         }
 
         DemonConfig.AddInt(len(Config.Config.Hosts))
-        for _, headers := range Config.Config.Hosts {
-            logger.Debug(headers)
-            DemonConfig.AddString(headers)
+        for _, host := range Config.Config.Hosts {
+            logger.Debug(host)
+            DemonConfig.AddString(common.EncodeUTF16(host))
         }
 
         DemonConfig.AddInt(Port)
@@ -542,35 +543,34 @@ func (b *Builder) PatchConfig() []byte {
 
         if len(Config.Config.Headers) == 0 {
             DemonConfig.AddInt(1)
-            DemonConfig.AddString("Content-type: */*")
+            DemonConfig.AddString(common.EncodeUTF16("Content-type: */*"))
         } else {
             DemonConfig.AddInt(len(Config.Config.Headers))
             for _, headers := range Config.Config.Headers {
                 logger.Debug(headers)
-                DemonConfig.AddString(headers)
+                DemonConfig.AddString(common.EncodeUTF16(headers))
             }
         }
 
         if len(Config.Config.Uris) == 0 {
             DemonConfig.AddInt(1)
-            DemonConfig.AddString("/")
+            DemonConfig.AddString(common.EncodeUTF16("/"))
         } else {
             DemonConfig.AddInt(len(Config.Config.Uris))
             for _, uri := range Config.Config.Uris {
                 logger.Debug(uri)
-                DemonConfig.AddString(uri)
+                DemonConfig.AddString(common.EncodeUTF16(uri))
             }
         }
 
         // adding proxy connection info
         if Config.Config.Proxy.Enabled {
             DemonConfig.AddInt(win32.TRUE)
-
             var ProxyUrl = fmt.Sprintf("%v://%v:%v", Config.Config.Proxy.Type, Config.Config.Proxy.Host, Config.Config.Proxy.Port)
 
-            DemonConfig.AddString(ProxyUrl)
-            DemonConfig.AddString(Config.Config.Proxy.Username)
-            DemonConfig.AddString(Config.Config.Proxy.Password)
+            DemonConfig.AddString(common.EncodeUTF16(ProxyUrl))
+            DemonConfig.AddString(common.EncodeUTF16(Config.Config.Proxy.Username))
+            DemonConfig.AddString(common.EncodeUTF16(Config.Config.Proxy.Password))
         } else {
             DemonConfig.AddInt(win32.FALSE)
         }
