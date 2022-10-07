@@ -19,6 +19,10 @@
 
 #define RVA( TYPE, DLLBASE, RVA )  ( TYPE ) ( ( PBYTE ) DLLBASE + RVA )
 #define HTONS( x )                      __builtin_bswap16( x )
+#define DATA_FREE( d, l ) \
+    MemSet( d, 0, l ); \
+    Instance->Win32.LocalFree( d ); \
+    d = NULL;
 
 //#define SEC( s, x )                     __attribute__( ( section( "." #s "$" #x "" ) ) )
 #define SEC( x )                        __attribute__( ( section( ".text$" #x "" ) ) )

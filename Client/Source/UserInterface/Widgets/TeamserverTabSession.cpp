@@ -348,6 +348,10 @@ void UserInterface::Widgets::TeamserverTabSession::handleDemonContextMenu( const
 
                             HavocX::Teamserver.TabSession->NewBottomTab( Session.ProcessList->ProcessListWidget, TabName.toStdString() );
                         }
+                        else
+                        {
+                            HavocX::Teamserver.TabSession->NewBottomTab( Session.ProcessList->ProcessListWidget, TabName.toStdString() );
+                        }
 
                         Session.InteractedWidget->DemonCommands->Execute.ProcList( Util::gen_random( 8 ).c_str(), true );
                     }
@@ -361,6 +365,10 @@ void UserInterface::Widgets::TeamserverTabSession::handleDemonContextMenu( const
                             Session.FileBrowser->setupUi( new QWidget );
                             Session.FileBrowser->SessionID = Session.Name;
 
+                            HavocX::Teamserver.TabSession->NewBottomTab( Session.FileBrowser->FileBrowserWidget, TabName.toStdString(), "" );
+                        }
+                        else
+                        {
                             HavocX::Teamserver.TabSession->NewBottomTab( Session.FileBrowser->FileBrowserWidget, TabName.toStdString(), "" );
                         }
 

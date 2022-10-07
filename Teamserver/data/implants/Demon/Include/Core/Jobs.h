@@ -3,11 +3,13 @@
 
 #include <windows.h>
 
-#define JOB_TYPE_THREAD      0x1
-#define JOB_TYPE_PROCESS     0x2
+#define JOB_TYPE_THREAD         0x1
+#define JOB_TYPE_PROCESS        0x2
+#define JOB_TYPE_TRACK_PROCESS  0x3
 
 #define JOB_STATE_RUNNING    0x1
 #define JOB_STATE_SUSPENDED  0x2
+#define JOB_STATE_DEAD       0x3
 
 typedef struct _JOB_DATA
 {
@@ -15,6 +17,7 @@ typedef struct _JOB_DATA
     SHORT             Type;
     SHORT             State;
     HANDLE            Handle;
+    PVOID             Data;
     struct _JOB_DATA* Next;
 } JOB_DATA, *PJOB_DATA;
 
@@ -24,9 +27,16 @@ typedef struct _JOB_DATA
  * @param JobID
  * @param Type
  * @param State
+ * @param Data
  * @return
  */
-VOID JobAdd( DWORD JobID, SHORT Type, SHORT State, HANDLE Handle );
+VOID JobAdd( DWORD JobID, SHORT Type, SHORT State, HANDLE Handle, PVOID Data );
+
+/*!
+ * Check if all jobs are still running and exists
+ * @return
+ */
+VOID JobCheckList();
 
 /*!
  * JobSuspend

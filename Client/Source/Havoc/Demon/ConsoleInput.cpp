@@ -844,6 +844,41 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                     return false;
                 }
             }
+            else if ( InputCommands[ 1 ].compare( "execute" ) == 0 )
+            {
+                if ( InputCommands.size() >= 2 )
+                {
+                    auto TargetArch          = InputCommands[ 2 ];
+                    auto ShellcodeBinaryPath = InputCommands[ 3 ];
+
+                    if ( TargetArch.compare( "x64" ) == 0 )
+                    {
+                        TaskID = CONSOLE_INFO( "Tasked demon to self inject a x64 shellcode" );
+                    }
+                    else if ( TargetArch.compare( "x86" ) == 0 )
+                    {
+                        TaskID = CONSOLE_INFO( "Tasked demon to self inject a x86 shellcode" );
+                    }
+                    else
+                    {
+                        CONSOLE_ERROR( "Incorrect process arch specified: " + TargetArch )
+                    }
+
+                    if ( ! QFile::exists( ShellcodeBinaryPath ) )
+                    {
+                        CONSOLE_ERROR( "Couldn't find specified binary: " + ShellcodeBinaryPath )
+                        return false;
+                    }
+
+                    CommandInputList[ TaskID ] = commandline;
+                    SEND( Execute.ShellcodeExecute( TaskID, "0", TargetArch, ShellcodeBinaryPath, "" ); )
+                }
+                else
+                {
+                    CONSOLE_ERROR( "Not enough arguments" )
+                    return false;
+                }
+            }
         }
 
         // NOTE: this function is only for debug purpose only. don't forget to remove this on final release

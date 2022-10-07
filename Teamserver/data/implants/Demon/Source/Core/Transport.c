@@ -13,11 +13,6 @@
 
 #include <iptypes.h>
 
-#define DATA_FREE( d, l ) \
-    MemSet( d, 0, l ); \
-    Instance->Win32.LocalFree( d ); \
-    d = NULL;
-
 BOOL TransportInit( PPACKAGE Package )
 {
     BOOL             Success    = FALSE;

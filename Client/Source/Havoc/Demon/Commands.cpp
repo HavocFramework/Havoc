@@ -269,6 +269,16 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                     .Usage          = "[arch] [/path/to/shellcode.x64.bin]",
                     .Example        = R"(x64 /tmp/rev_shell.x64.bin)",
                 },
+
+                    // Spawn & Inject Commands
+                {
+                    .CommandString  = "execute",
+                    .Description    = "executes shellcode in the current process (self inject)",
+                    .Behavior       = BEHAVIOR_PROCESS_INJECTION,
+                    .MitreTechniques= {"T1055"},
+                    .Usage          = "[arch] [/path/to/shellcode.x64.bin]",
+                    .Example        = R"([arch] /tmp/rev_shell.x64.bin)",
+                },
             },
         },
         {

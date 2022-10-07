@@ -163,6 +163,8 @@ typedef struct
         WIN_FUNC( LocalReAlloc )
         WIN_FUNC( CreateProcessA )
         WIN_FUNC( ExitProcess )
+        WIN_FUNC( GetExitCodeProcess )
+        WIN_FUNC( GetExitCodeThread )
         WIN_FUNC( TerminateProcess )
         WIN_FUNC( InitializeProcThreadAttributeList )
         WIN_FUNC( UpdateProcThreadAttribute )

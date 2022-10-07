@@ -71,6 +71,7 @@ public:
 
     auto ShellcodeInject( QString TaskID, QString InjectionTechnique, QString TargetPID, QString TargetArch, QString Path, QString Arguments ) const -> void;
     auto ShellcodeSpawn( QString TaskID, QString InjectionTechnique, QString TargetArch, QString Path, QString Arguments ) -> void;
+    auto ShellcodeExecute( QString TaskID, QString InjectionTechnique, QString TargetArch, QString Path, QString Arguments ) -> void;
 
     auto DllInject( QString TaskID, QString TargetPID, QString Path, QString Params ) -> void;
     auto DllSpawn( QString TaskID, QString FilePath, QByteArray Args ) -> void;

