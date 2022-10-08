@@ -34,6 +34,8 @@ VOID DxInitialization( VOID )
         // Ntdll
         Instance->Win32.LdrGetProcedureAddress              = LdrFunctionAddr( Instance->Modules.Ntdll, 0x2e5a99f6 );
         Instance->Win32.LdrLoadDll                          = LdrFunctionAddr( Instance->Modules.Ntdll, 0x307db23  );
+        Instance->Win32.RtlAllocateHeap                     = LdrFunctionAddr( Instance->Modules.Ntdll, 0xc0b381da );
+        Instance->Win32.RtlFreeHeap                         = LdrFunctionAddr( Instance->Modules.Ntdll, 0x70ba71d7 );
         Instance->Win32.RtlExitUserThread                   = LdrFunctionAddr( Instance->Modules.Ntdll, 0x8e492b88 );
         Instance->Win32.RtlExitUserProcess                  = LdrFunctionAddr( Instance->Modules.Ntdll, 0x3aa1f0ef );
         Instance->Win32.RtlRandomEx                         = LdrFunctionAddr( Instance->Modules.Ntdll, 0x7c3439f5 );

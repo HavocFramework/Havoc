@@ -15,7 +15,8 @@
 #define NtGetLastError()                Instance->ThreadEnvBlock->LastErrorValue
 #define NtSetLastError(x)               Instance->ThreadEnvBlock->LastErrorValue = x
 #define NtSetLastError(x)               Instance->ThreadEnvBlock->LastErrorValue = x
-#define NtGetProcessHeap()              Instance->ThreadEnvBlock->ProcessEnvironmentBlock->lpProcessHeap
+#define NtProcessHeap()                 Instance->ThreadEnvBlock->ProcessEnvironmentBlock->lpProcessHeap
+#define NtHeapAlloc( x )                Instance->Win32.RtlAllocateHeap( NtProcessHeap(), HEAP_ZERO_MEMORY, x );
 
 #define RVA( TYPE, DLLBASE, RVA )  ( TYPE ) ( ( PBYTE ) DLLBASE + RVA )
 #define HTONS( x )                      __builtin_bswap16( x )
