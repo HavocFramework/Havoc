@@ -69,7 +69,8 @@ VOID ConfigInit()
     for ( INT i = 0; i < J; i++ )
     {
         Buffer = ParserGetBytes( &Parser, &Length );
-        Instance->Config.Transport.Hosts[ i ] = Instance->Win32.LocalAlloc( LPTR, Length );
+        Instance->Config.Transport.Hosts[ i ] = Instance->Win32.LocalAlloc( LPTR, Length + sizeof( WCHAR ) );
+        MemSet( Instance->Config.Transport.Hosts[ i ], 0, Length + sizeof( WCHAR ) );
         MemCopy( Instance->Config.Transport.Hosts[ i ], Buffer, Length );
 #ifdef DEBUG
         printf( "  - %ls\n", Instance->Config.Transport.Hosts[ i ] );
@@ -88,7 +89,7 @@ VOID ConfigInit()
 
     // UserAgent
     Buffer = ParserGetBytes( &Parser, &Length );
-    Instance->Config.Transport.UserAgent = Instance->Win32.LocalAlloc( LPTR, Length );
+    Instance->Config.Transport.UserAgent = Instance->Win32.LocalAlloc( LPTR, Length + sizeof( WCHAR ) );
     MemCopy( Instance->Config.Transport.UserAgent, Buffer, Length );
     PRINTF( "[CONFIG] UserAgent: %ls\n", Instance->Config.Transport.UserAgent );
 
@@ -99,7 +100,8 @@ VOID ConfigInit()
     for ( INT i = 0; i < J; i++ )
     {
         Buffer = ParserGetBytes( &Parser, &Length );
-        Instance->Config.Transport.Headers[ i ] = Instance->Win32.LocalAlloc( LPTR, Length );
+        Instance->Config.Transport.Headers[ i ] = Instance->Win32.LocalAlloc( LPTR, Length + sizeof( WCHAR ) );
+        MemSet( Instance->Config.Transport.Headers[ i ], 0, Length );
         MemCopy( Instance->Config.Transport.Headers[ i ], Buffer, Length );
 #ifdef DEBUG
         printf( "  - %ls\n", Instance->Config.Transport.Headers[ i ] );
@@ -114,7 +116,8 @@ VOID ConfigInit()
     for ( INT i = 0; i < J; i++ )
     {
         Buffer = ParserGetBytes( &Parser, &Length );
-        Instance->Config.Transport.Uris[ i ] = Instance->Win32.LocalAlloc( LPTR, Length );
+        Instance->Config.Transport.Uris[ i ] = Instance->Win32.LocalAlloc( LPTR, Length + sizeof( WCHAR ) );
+        MemSet( Instance->Config.Transport.Uris[ i ], 0, Length + sizeof( WCHAR ) );
         MemCopy( Instance->Config.Transport.Uris[ i ], Buffer, Length );
 #ifdef DEBUG
         printf( "  - %ls\n", Instance->Config.Transport.Uris[ i ] );
@@ -128,7 +131,7 @@ VOID ConfigInit()
     {
         PUTS( "[CONFIG] [PROXY] Enabled" );
         Buffer = ParserGetBytes( &Parser, &Length );
-        Instance->Config.Transport.Proxy.Url = Instance->Win32.LocalAlloc( LPTR, Length );
+        Instance->Config.Transport.Proxy.Url = Instance->Win32.LocalAlloc( LPTR, Length + sizeof( WCHAR ) );
         MemCopy( Instance->Config.Transport.Proxy.Url, Buffer, Length );
         PRINTF( "[CONFIG] [PROXY] Url: %ls\n", Instance->Config.Transport.Proxy.Url );
 

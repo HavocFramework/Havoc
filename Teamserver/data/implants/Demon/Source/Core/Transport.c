@@ -281,7 +281,7 @@ BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T RecvSize 
     if ( Instance->Config.Transport.Secure )
         HttpFlags |= WINHTTP_FLAG_SECURE;
 
-    // PRINTF( "WinHttpOpenRequest( %x, %ls, %ls, NULL, NULL, NULL, %d )\n", hConnect, Instance->Config.Transport.Method, HttpEndpoint, HttpFlags )
+    PRINTF( "WinHttpOpenRequest( %x, %ls, %ls, NULL, NULL, NULL, %d )\n", hConnect, Instance->Config.Transport.Method, HttpEndpoint, HttpFlags )
     hRequest = Instance->Win32.WinHttpOpenRequest( hConnect, Instance->Config.Transport.Method, HttpEndpoint, NULL, NULL, NULL, HttpFlags );
     if ( ! hRequest )
     {
