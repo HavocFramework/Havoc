@@ -811,7 +811,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             }
             else if ( InputCommands[ 1 ].compare( "spawn" ) == 0 )
             {
-                if ( InputCommands.size() >= 2 )
+                if ( InputCommands.size() >= 4 )
                 {
                     auto TargetArch          = InputCommands[ 2 ];
                     auto ShellcodeBinaryPath = InputCommands[ 3 ];
@@ -846,7 +846,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             }
             else if ( InputCommands[ 1 ].compare( "execute" ) == 0 )
             {
-                if ( InputCommands.size() >= 2 )
+                if ( InputCommands.size() >= 4 )
                 {
                     auto TargetArch          = InputCommands[ 2 ];
                     auto ShellcodeBinaryPath = InputCommands[ 3 ];

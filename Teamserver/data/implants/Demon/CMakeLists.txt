@@ -48,9 +48,6 @@ set( MAIN_SOURCE
 
         # windows dll
         Source/Main/MainDll.c
-
-        # windows reflective dll
-        Source/Main/MainReflectiveDll.c
 )
 
 set( CRYPT_SOURCE

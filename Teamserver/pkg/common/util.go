@@ -108,3 +108,7 @@ func Int32ToLittle(x uint32) uint32 {
 	binary.LittleEndian.PutUint32(bs, x)
 	return binary.LittleEndian.Uint32(bs)
 }
+
+func StripNull(s string) string {
+	return string(bytes.Trim([]byte(s), "\x00"))
+}

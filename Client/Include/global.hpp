@@ -272,6 +272,7 @@ namespace HavocNamespace
 // Global Instance
 namespace HavocX
 {
+    extern bool DebugMode;
     extern HavocNamespace::Util::ConnectionInfo Teamserver;
     extern HavocNamespace::Connector*           Connector;
 }

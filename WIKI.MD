@@ -75,7 +75,9 @@ You probably need a newer version of Qt. If you are using Ubuntu try adding a ba
 Please see https://github.com/HavocFramework/Havoc/issues/95.
 
 #### `Known compiler issue: [-] Couldn't compile implant: exit status 1`
+
 Please see https://github.com/HavocFramework/Havoc/issues/105.
+
 ---
 
 ## <a name="install"></a>Installation
@@ -364,7 +366,7 @@ From the Havoc UI, nagivate to `Attack -> Payload`.
 | --------------- | ----------------------------------------------------- |
 | `Source/Asm`    | Assembly code (return address stack spoofing)         |
 | `Source/Core`   | Core functionality (transport, win32 apis, syscalls)  |
-| `Source/Crypt`  | AES/XOR encryption functionality                      |
+| `Source/Crypt`  | AES encryption functionality                          |
 | `Source/Extra`  | KaynLdr (reflective loader)                           |
 | `Source/Inject` | Injection functionality                               |
 | `Source/Loader` | COFF Loader, Beacon API                               |
@@ -440,7 +442,11 @@ Process management and enumeration system.
 
 - `proc list` - Display a list of running processes on the target.
 - `proc kill [pid]` - Kills a process with the specified PID
-- `proc blockdll [on|off]` - Blocks the loading of DLLs that aren't signed by Microsoft using Process Mitigation Policies
+- `proc create [state] [process] (args)` Start a process either in suspended or normal mode.
+- `proc module [pid]` lists loaded modules from the specified process. 
+- `proc grep [process name]` searches for specified running process and shows Process Name, Process ID, Process Parent PID, Process User, Process Arch
+- `proc memory [pid] [memory protection]` queries process memory pages with specified Protection. 
+
 
 ##### `token`
 

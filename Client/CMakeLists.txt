@@ -1,15 +1,15 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required( VERSION 3.15 )
 project( Havoc )
 
-set(CMAKE_CXX_STANDARD 20)
+set( CMAKE_CXX_STANDARD 20 )
 
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
+set( CMAKE_AUTOMOC ON )
+set( CMAKE_AUTORCC ON )
+set( CMAKE_AUTOUIC ON )
 
-set(CMAKE_CPP_COMPILER /usr/bin/x86_64-w64-mingw32-g++)
-set(CMAKE_C_COMPILER /usr/bin/x86_64-w64-mingw32-gcc)
-set(CMAKE_CXX_FLAGS "-fpermissive")
+set( CMAKE_CPP_COMPILER /usr/bin/x86_64-w64-mingw32-g++ )
+set( CMAKE_C_COMPILER /usr/bin/x86_64-w64-mingw32-gcc )
+set( CMAKE_CXX_FLAGS "-fpermissive" )
 
 set( QT_VERSION 5 )
 set( REQUIRED_LIBS Core Gui Widgets Network WebSockets Sql )
@@ -42,6 +42,7 @@ set(
         Include/Havoc/Packager.hpp
         Include/Havoc/Havoc.hpp
         Include/Havoc/Service.hpp
+        Include/Havoc/CmdLine.hpp
 
         # Python Api
         Include/Havoc/PythonApi/PythonApi.h

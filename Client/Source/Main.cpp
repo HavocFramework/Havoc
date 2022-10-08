@@ -1,17 +1,24 @@
 #include <global.hpp>
-
 #include <Havoc/Havoc.hpp>
-
-#include <QMultiMap>
+#include <Havoc/CmdLine.hpp>
 
 int main( int argc, char** argv )
 {
-    QApplication HavocApp( argc, argv );
+    auto Arguments = cmdline::parser();
+    auto HavocApp  = QApplication( argc, argv );
 
     spdlog::set_pattern( "[%T] [%^%l%$] %v" );
-    spdlog::set_level( spdlog::level::debug );
-
     spdlog::info( "Havoc Framework [Version: {}] [CodeName: {}]", HavocNamespace::Version, HavocNamespace::CodeName );
+
+    Arguments.add( "debug", '\0', "debug mode" );
+    Arguments.parse_check( argc, argv );
+
+    if ( Arguments.exist( "debug" ) )
+    {
+        spdlog::set_level( spdlog::level::debug );
+        spdlog::debug( "Debug mode enabled" );
+        HavocX::DebugMode = true;
+    }
 
     auto FontID = QFontDatabase::addApplicationFont( ":/icons/Monaco" );
     auto Family = QFontDatabase::applicationFontFamilies( FontID ).at( 0 );

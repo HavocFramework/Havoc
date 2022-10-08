@@ -101,14 +101,6 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                     .Example        = "1337",
                 },
                 {
-                    .CommandString  = "blockdll",
-                    .Description    = "block non microsoft signed dlls",
-                    .Behavior       = BEHAVIOR_API_ONLY,
-                    .MitreTechniques = { },
-                    .Usage          = "[on/off]",
-                    .Example        = "on",
-                },
-                {
                     .CommandString  = "create",
                     .Description    = "create a process",
                     .Behavior       = BEHAVIOR_API_ONLY,

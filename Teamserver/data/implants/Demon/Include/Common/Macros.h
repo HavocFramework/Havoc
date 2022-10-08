@@ -24,7 +24,6 @@
     Instance->Win32.LocalFree( d ); \
     d = NULL;
 
-//#define SEC( s, x )                     __attribute__( ( section( "." #s "$" #x "" ) ) )
 #define SEC( x )                        __attribute__( ( section( ".text$" #x "" ) ) )
 #define U_PTR( x )                      ( ( UINT_PTR ) x )
 #define C_PTR( x )                      ( ( LPVOID ) x )
@@ -45,6 +44,7 @@
 #define MemCopy                         __builtin_memcpy
 #define CALLBACK_GETLASTERROR                 PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
 
+#ifdef DEBUG
 #define PRINT_HEX( b, l )                               \
     printf( #b ": [%d] [ ", l );                        \
     for ( int i = 0 ; i < l; i++ )                      \
@@ -52,5 +52,8 @@
         printf( "%02x ", ( ( PUCHAR ) b ) [ i ] );      \
     }                                                   \
     puts( "]" );
+#else
+#define PRINT_HEX( b, l ) {}
+#endif
 
 #endif

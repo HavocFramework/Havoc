@@ -1250,6 +1250,8 @@ func (a *Agent) TaskPrepare(Command int, Info any) (Job, error) {
 func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs RoutineFunc) {
 	Parser.DecryptBuffer(a.Encryption.AESKey, a.Encryption.AESIv)
 
+	logger.Debug("Task Output: \n" + hex.Dump(Parser.Buffer()))
+
 	a.UpdateLastCallback(Funcs)
 
 	switch CommandID {
@@ -1320,7 +1322,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 			logger.Debug(fmt.Sprintf("Parsed DemonID: %x", DemonID))
 
 			if Parser.Length() >= 4 {
-				Hostname = string(Parser.ParseBytes())
+				Hostname = common.StripNull(string(Parser.ParseBytes()))
 			} else {
 				Message["Type"] = "Info"
 				Message["Message"] = "Failed to parse agent request"
@@ -1328,7 +1330,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 			}
 
 			if Parser.Length() >= 4 {
-				Username = string(Parser.ParseBytes())
+				Username = common.StripNull(string(Parser.ParseBytes()))
 			} else {
 				Message["Type"] = "Info"
 				Message["Message"] = "Failed to parse agent request"
@@ -1336,7 +1338,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 			}
 
 			if Parser.Length() >= 4 {
-				DomainName = string(Parser.ParseBytes())
+				DomainName = common.StripNull(string(Parser.ParseBytes()))
 			} else {
 				Message["Type"] = "Info"
 				Message["Message"] = "Failed to parse agent request"
@@ -1344,14 +1346,14 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 			}
 
 			if Parser.Length() >= 4 {
-				InternalIP = string(Parser.ParseBytes())
+				InternalIP = common.StripNull(string(Parser.ParseBytes()))
 			} else {
 				Message["Type"] = "Info"
 				Message["Message"] = "Failed to parse agent request"
 				goto SendMessage
 			}
 
-			ProcessName = string(Parser.ParseBytes())
+			ProcessName = common.StripNull(string(Parser.ParseBytes()))
 			ProcessPID = Parser.ParseInt32()
 			ProcessPPID = Parser.ParseInt32()
 			ProcessArch = Parser.ParseInt32()
@@ -2964,7 +2966,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 			)
 
 			if Parser.Length() > 0 {
-				var Domain = string(Parser.ParseBytes())
+				var Domain = common.DecodeUTF16(Parser.ParseBytes())
 
 				table := tablewriter.NewWriter(&Buffer)
 

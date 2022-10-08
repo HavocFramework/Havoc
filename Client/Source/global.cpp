@@ -17,6 +17,7 @@ HavocSpace::Havoc* HavocNamespace::HavocApplication;
 
 Util::ConnectionInfo       HavocX::Teamserver;
 HavocNamespace::Connector* HavocX::Connector;
+bool                       HavocX::DebugMode = false;
 
 // Static Variables
 string Util::CredentialsItem::PasswordTypes::Cleartext = "cleartext";

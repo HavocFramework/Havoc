@@ -284,23 +284,31 @@ void UserInterface::Widgets::ListenersTable::ListenerRemove( QString ListenerNam
 {
     auto Name = QString();
 
-    for ( int i = 0; i < tableWidget->rowCount(); i++ )
+    if ( ! ListenerName.isEmpty() )
     {
-        Name = tableWidget->item( i, 0 )->text();
-
-        if ( Name.compare( ListenerName ) == 0 )
+        if ( tableWidget->rowCount() > 0 )
         {
-            tableWidget->removeRow( i );
-        }
-    }
-
-    if ( ! Name.isEmpty() )
-    {
-        for ( int i = 0; i < HavocX::Teamserver.Listeners.size(); i++ )
-        {
-            if ( HavocX::Teamserver.Listeners[ i ].Name == Name.toStdString() )
+            for ( int i = 0; i < tableWidget->rowCount(); i++ )
             {
-                HavocX::Teamserver.Listeners.erase( HavocX::Teamserver.Listeners.begin() + i );
+                Name = tableWidget->item( i, 0 )->text();
+
+                if ( Name.compare( ListenerName ) == 0 )
+                {
+                    spdlog::debug( "Remove listener from table" );
+                    tableWidget->removeRow( i );
+                }
+            }
+        }
+
+        if ( ! HavocX::Teamserver.Listeners.empty() )
+        {
+            for ( int i = 0; i < HavocX::Teamserver.Listeners.size(); i++ )
+            {
+                if ( HavocX::Teamserver.Listeners[ i ].Name == ListenerName.toStdString() )
+                {
+                    spdlog::debug( "Remove listener from list" );
+                    HavocX::Teamserver.Listeners.erase( HavocX::Teamserver.Listeners.begin() + i );
+                }
             }
         }
     }
