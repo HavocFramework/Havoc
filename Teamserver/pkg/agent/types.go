@@ -90,6 +90,7 @@ type Agent struct {
     Pivots Pivots
 
     BackgroundCheck bool
+    TaskedOnce      bool
 }
 
 type AgentInfo struct {

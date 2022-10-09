@@ -36,6 +36,10 @@ func Debug(args ...interface{}) {
     LoggerInstance.Debug(args...)
 }
 
+func DebugError(args ...interface{}) {
+    LoggerInstance.DebugError(args...)
+}
+
 func Warn(args ...interface{}) {
     LoggerInstance.Warn(args...)
 }

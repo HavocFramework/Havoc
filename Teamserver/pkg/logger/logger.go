@@ -71,6 +71,19 @@ func (logger *Logger) Debug(args ...interface{}) {
     }
 }
 
+func (logger *Logger) DebugError(args ...interface{}) {
+    var Trace, Line = FunctionTrace()
+    var Functions = strings.Split(Trace, "/")
+    if logger.debug {
+        if logger.showTime {
+            logger.log.SetPrefix("[" + colors.Green(time.Now().Format("15:04:05")) + "] [" + colors.BoldRed("DBER") + "] [" + colors.BlueUnderline(Functions[len(Functions)-1]+":"+strconv.Itoa(Line)) + "]: ")
+        } else {
+            logger.log.SetPrefix("[" + colors.BoldRed("DBER") + "] [" + Functions[len(Functions)-1] + ":" + fmt.Sprintf("%03d", Line) + "]: ")
+        }
+        logger.log.Println(args...)
+    }
+}
+
 func (logger *Logger) Warn(args ...interface{}) {
     if logger.showTime {
         logger.log.SetPrefix("[" + colors.Green(time.Now().Format("15:04:05")) + "] [" + colors.Yellow("WARN") + "] ")
