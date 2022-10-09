@@ -157,7 +157,7 @@ void HavocNamespace::UserInterface::Widgets::ProcessList::setupUi(QWidget *Widge
     ProcessListMenu->setStyleSheet( MenuStyle );
 
     ProcessListMenu->addAction( actionCopyProcessID );
-    ProcessListMenu->addAction( actionSetAsParentProcess );
+    // ProcessListMenu->addAction( actionSetAsParentProcess );
 
     ProcessListWidget->setWindowTitle(QCoreApplication::translate("Process List", "Process List", nullptr));
 
