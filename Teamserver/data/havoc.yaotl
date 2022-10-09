@@ -1,6 +1,11 @@
 Teamserver {
 	Host = "0.0.0.0"
 	Port = 40056
+
+	Build {
+		Compiler64 = "data/x86_64-w64-mingw32-cross/bin/x86_64-w64-mingw32-gcc"
+		Nasm = "/usr/bin/nasm"
+	}
 }
 
 Operators {
