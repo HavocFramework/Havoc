@@ -16,6 +16,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -187,8 +188,28 @@ func (b *Builder) Build() bool {
 
 	// add compiler
 	if b.config.Arch == ARCHITECTURE_X64 {
+		abs, err := filepath.Abs(b.compilerOptions.Config.Compiler64)
+
+		if err != nil {
+			if !b.silent {
+				b.SendConsoleMessage("Error", fmt.Sprintf("Failed to resolve x64 compiler path: %v", err))
+				return false
+			}
+		}
+		b.compilerOptions.Config.Compiler64 = abs
+
 		CompileCommand += b.compilerOptions.Config.Compiler64 + " "
 	} else {
+		abs, err := filepath.Abs(b.compilerOptions.Config.Compiler86)
+
+		if err != nil {
+			if !b.silent {
+				b.SendConsoleMessage("Error", fmt.Sprintf("Failed to resolve x86 compiler path: %v", err))
+				return false
+			}
+		}
+		b.compilerOptions.Config.Compiler86 = abs
+
 		CompileCommand += b.compilerOptions.Config.Compiler86 + " "
 	}
 
@@ -664,6 +685,8 @@ func (b *Builder) Cmd(cmd string) bool {
 
 	err = Command.Run()
 	if err != nil {
+		path, _ := os.Getwd()
+		logger.Info("Path: " + path)
 		logger.Error("Couldn't compile implant: " + err.Error())
 		if !b.silent {
 			b.SendConsoleMessage("Error", "Couldn't compile implant: "+err.Error())
