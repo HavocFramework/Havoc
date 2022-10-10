@@ -808,13 +808,11 @@ VOID CommandFS( PPARSER DataArgs )
             DWORD  FileSize = 0;
             DWORD  NameSize = 0;
             DWORD  Written  = 0;
+            HANDLE hFile    = NULL;
             LPWSTR FileName = ParserGetBytes( DataArgs, &NameSize );
             PVOID  Content  = ParserGetBytes( DataArgs, &FileSize );
-            HANDLE hFile    = NULL;
 
-            FileName[ NameSize ] = 0;
-
-            PRINTF( "FileName => %s (FileSize: %d)", FileName, FileSize )
+            PRINTF( "FileName[%d] => %ls\n", FileSize, FileName )
 
             hFile = Instance->Win32.CreateFileW( FileName, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL );
 

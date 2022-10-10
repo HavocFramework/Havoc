@@ -194,13 +194,13 @@ func (a *Agent) TaskPrepare(Command int, Info any) (Job, error) {
 			ArgArray = strings.Split(Arguments, ";")
 
 			if val, err := base64.StdEncoding.DecodeString(ArgArray[0]); err == nil {
-				FileName = []byte(common.EncodeUTF16(string(val)))
+				FileName = append([]byte(common.EncodeUTF16(string(val))), []byte{0, 0}...)
 			} else {
 				return Job{}, err
 			}
 
 			if val, err := base64.StdEncoding.DecodeString(ArgArray[1]); err == nil {
-				Content = []byte(common.EncodeUTF16(string(val)))
+				Content = val
 			} else {
 				return Job{}, err
 			}
