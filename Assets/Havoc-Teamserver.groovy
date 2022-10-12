@@ -31,6 +31,13 @@ pipeline {
                 }
         }
 
+        stage('Install-MUSL C compiler'){
+                steps{
+                        sh "pwd && ls"
+                        sh "cd ./Havoc/Teamserver/ && chmod +x ./Install.sh && ./Install.sh"
+                }
+        }
+
         stage('Build'){
                 steps{
                         sh "pwd && ls"
