@@ -1,0 +1,65 @@
+Teamserver {
+	Host = "0.0.0.0"
+	Port = 56585
+
+	Build {
+	    Compiler64 = "/usr/bin/x86_64-w64-mingw32-gcc"
+	    Compiler86 = "/usr/bin/i686-w64-mingw32-gcc"
+	    Nasm = "/usr/bin/nasm"
+	}
+}
+
+Operators {
+	user "0x1" {
+		Password = "P@ss"
+	}
+}
+
+Listeners {
+	Http {
+        Name         = "Agent - HTTPs"
+        Hosts        = ["192.168.1.104"]
+        HostBind     = "192.168.1.104"
+        HostRotation = "random"
+        Port         = 443
+        Method       = "POST"
+        Secure       = true
+        UserAgent    = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.101 Safari/537.36"
+        Uris         = [
+            "/favicon.ico",
+            "/index.html",
+            "/submit.php",
+            "/profile.php"
+        ]
+        Headers     = [
+            "accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+            "accept-encoding: gzip, deflate, br",
+            "accept-language: en-US,en;q=0.9",
+            "upgrade-insecure-requests: 1",
+
+        ]
+
+        Response {
+            Headers = [
+                "Content-type: text/plain",
+                "cache-control: private, no-cache, no-store, must-revalidate",
+                "pragma: no-cache",
+                "x-frame-options: DENY",
+                "x-xss-protection: 0"
+            ]
+        }
+    }
+
+Service {
+    Endpoint = "sep"
+    Password = "P@ss"
+}
+
+Demon {
+    Sleep = 4
+
+    Injection {
+        Spawn64 = "C:\\Windows\\System32\\magnify.exe"
+        Spawn32 = "C:\\Windows\\SysWOW64\\mspaint.exe"
+    }
+}
