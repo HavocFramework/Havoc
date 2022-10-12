@@ -111,6 +111,7 @@ VOID DxInitialization( VOID )
         Instance->Win32.SetCurrentDirectoryW                = LdrFunctionAddr( Instance->Modules.Kernel32, 0xbec3a080 );
         Instance->Win32.Wow64DisableWow64FsRedirection      = LdrFunctionAddr( Instance->Modules.Kernel32, 0xd859b1d8 );
         Instance->Win32.Wow64RevertWow64FsRedirection       = LdrFunctionAddr( Instance->Modules.Kernel32, 0x72f47e1c );
+        Instance->Win32.GetModuleHandleA                    = LdrFunctionAddr( Instance->Modules.Kernel32, 0x5a153f58 );
     }
 
     // Check if it's min win xp. no one uses win 95 and below (from Meterpreter)

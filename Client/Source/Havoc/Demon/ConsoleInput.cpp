@@ -1027,6 +1027,12 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
         }
         else if ( InputCommands[ 0 ].compare( "inline-execute" ) == 0 )
         {
+            if ( InputCommands.length() < 2 )
+            {
+                CONSOLE_ERROR( "Not enough arguments" )
+                return false;
+            }
+
             auto Path = InputCommands[ 1 ];
             auto Args = QString( "" );
             if ( InputCommands.size() > 3 )

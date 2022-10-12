@@ -149,7 +149,5 @@ VOID        AnonPipesClose( PANONPIPE AnonPipes );
 
 BOOL        BypassPatchAMSI( );
 ULONG       RandomNumber32( VOID );
-UINT_PTR    HashStringEx( LPVOID String, UINT_PTR Length );
 UINT_PTR    HashEx( LPVOID String, UINT_PTR Length, BOOL Upper );
-BOOL        Win32_CreateProcessA( );
 #endif

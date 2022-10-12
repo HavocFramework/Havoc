@@ -43,6 +43,8 @@ set( LOADER_SOURCE
 )
 
 set( MAIN_SOURCE
+        Source/Main/Main.c
+
         # windows exe
         Source/Main/MainExe.c
 
