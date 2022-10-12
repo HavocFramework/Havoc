@@ -97,7 +97,8 @@ PyObject* PythonAPI::Havoc::Core::RegisterCommand( PyObject *self, PyObject *arg
     u32   Behavior      = 0;
     char* Usage         = NULL;
     char* Example       = NULL;
-    auto  CompleteText = QString();
+    auto  CompleteText  = QString();
+    auto  Path          = HavocX::Teamserver.LoadingScript;
 
     if( ! PyArg_ParseTuple( args, "Osssiss", &Function, &Module, &Command, &Description, &Behavior, &Usage, &Example ) )
         Py_RETURN_NONE;
@@ -109,6 +110,7 @@ PyObject* PythonAPI::Havoc::Core::RegisterCommand( PyObject *self, PyObject *arg
     RCommand.Behaviour = Behavior;
     RCommand.Usage     = Usage;
     RCommand.Example   = Example;
+    RCommand.Path      = Path.substr( 0, Path.find_last_of( "\\/" ) );
 
     // Check if command already exists... if it is already existing then replace it with new one.
     for ( u32 i = 0; i < HavocX::Teamserver.RegisteredCommands.size(); i++ )

@@ -105,7 +105,7 @@ auto CommandExecute::InlineExecute( QString TaskID, QString FunctionName, QStrin
 
             { "FunctionName",   FunctionName.toStdString() },
             { "Binary",         Content.toBase64().toStdString() },
-            { "Arguments",      Args.toStdString() },
+            { "Arguments",      Args.toUtf8().toBase64().toStdString() },
             { "Flags",          Flags.toStdString() },
          },
     };

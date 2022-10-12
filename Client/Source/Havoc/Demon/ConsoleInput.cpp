@@ -9,6 +9,7 @@
 #include <sstream>
 #include <vector>
 #include <iomanip>
+#include <filesystem>
 
 using namespace HavocNamespace::HavocSpace;
 using namespace Util;
@@ -1559,13 +1560,21 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 {
                     if ( InputCommands[ 1 ].compare( Command.Command.c_str() ) == 0 )
                     {
-                        PyObject* FuncArgs  = PyTuple_New( InputCommands.size() );
-                        PyObject* Return    = NULL;
+                        PyObject* FuncArgs = PyTuple_New( InputCommands.size() );
+                        PyObject* Return   = NULL;
+                        auto      Path     = std::string();
 
                         if ( ! PyCallable_Check( ( PyObject* ) Command.Function ) )
                         {
                             PyErr_SetString( PyExc_TypeError, "a callable is required" );
                             return false;
+                        }
+
+                        if ( ! Command.Path.empty() )
+                        {
+                            Path = std::filesystem::current_path();
+                            spdlog::debug( "Set current path to {}", Command.Path );
+                            std::filesystem::current_path( Command.Path );
                         }
 
                         FoundCommand = true;
@@ -1589,6 +1598,12 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                             Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
                         }
 
+                        if ( ! Path.empty() )
+                        {
+                            spdlog::debug( "Set path back to {}", Path );
+                            std::filesystem::current_path( Path );
+                        }
+
                         if ( PyErr_Occurred() )
                         {
                             PyErr_PrintEx( 0 );
@@ -1605,6 +1620,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
 
                     PyObject* FuncArgs = PyTuple_New( InputCommands.size() );
                     PyObject* Return   = NULL;
+                    auto      Path     = std::string();
 
                     if ( Send )
                     {
@@ -1625,6 +1641,13 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                         return false;
                     }
 
+                    if ( ! Command.Path.empty() )
+                    {
+                        Path = std::filesystem::current_path();
+                        spdlog::debug( "Set current path to {}", Command.Path );
+                        std::filesystem::current_path( Command.Path );
+                    }
+
                     // First arg is the DemonID
                     PyTuple_SetItem( FuncArgs, 0, PyUnicode_FromString( this->DemonID.toStdString().c_str() ) );
 
@@ -1638,6 +1661,12 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                     }
                     else
                         Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
+
+                    if ( ! Path.empty() )
+                    {
+                        spdlog::debug( "Set path back to {}", Path );
+                        std::filesystem::current_path( Path );
+                    }
 
                     if ( PyErr_Occurred() )
                     {

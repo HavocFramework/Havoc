@@ -188,23 +188,35 @@ PyObject* DemonClass_Shell( PPyDemonClass self, PyObject *args )
     Py_RETURN_NONE;
 }
 
-// Demon.InlineExecute( TaskID: str, EntryFunc: str, Path: str, Args: str, Flag: str )
+// Demon.InlineExecute( TaskID: str, EntryFunc: str, Path: str, Args: str, Threaded: bool )
 PyObject* DemonClass_InlineExecute( PPyDemonClass self, PyObject *args )
 {
-    char* TaskID    = nullptr;
-    char* EntryFunc = nullptr;
-    char* Path      = nullptr;
-    char* Arguments = nullptr;
-    char* Flags     = nullptr;
+    char*     TaskID    = nullptr;
+    char*     EntryFunc = nullptr;
+    char*     Path      = nullptr;
+    char*     Arguments = nullptr;
+    auto      Flags     = QString();
+    PyObject* Threaded  = nullptr;
 
-    if ( ! PyArg_ParseTuple( args, "sssss", &TaskID, &EntryFunc, &Path , &Arguments, &Flags ) )
+    if ( ! PyArg_ParseTuple( args, "ssssO", &TaskID, &EntryFunc, &Path , &Arguments, &Threaded ) )
         return nullptr;
+
+    if ( PyObject_IsTrue( Threaded ) == true )
+    {
+        Flags = "threaded";
+        spdlog::debug( "execute object file in threaded" );
+    }
+    else
+    {
+        Flags = "non-threaded";
+        spdlog::debug( "execute object file in non-threaded" );
+    }
 
     for ( auto& Sessions : HavocX::Teamserver.Sessions )
     {
         if ( Sessions.Name.compare( self->DemonID ) == 0 )
         {
-            Sessions.InteractedWidget->DemonCommands->Execute.InlineExecute( ( char* ) TaskID, ( char* ) EntryFunc, ( char* ) Path, ( char* ) Arguments, ( char* ) Flags );
+            Sessions.InteractedWidget->DemonCommands->Execute.InlineExecute( ( char* ) TaskID, ( char* ) EntryFunc, ( char* ) Path, ( char* ) Arguments, Flags );
             break;
         }
     }
