@@ -88,8 +88,8 @@ Please see https://github.com/HavocFramework/Havoc/issues/105.
 
 ### <a name="il"></a> Local
 
-#### Pre-requisites
-> The immediate following is for Debian based Distros only.
+#### Dependencies
+> For Debian based Distros only.
 
 ```
 sudo apt install -y git build-essential apt-utils cmake libfontconfig1 libglu1-mesa-dev libgtest-dev libspdlog-dev libboost-all-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev mesa-common-dev qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools libqt5websockets5 libqt5websockets5-dev qtdeclarative5-dev golang-go qtbase5-dev libqt5websockets5-dev libspdlog-dev python3-dev libboost-all-dev mingw-w64 nasm
@@ -97,7 +97,7 @@ sudo apt install -y git build-essential apt-utils cmake libfontconfig1 libglu1-m
 
 #### Ubuntu 20.04 / 22.04
 
-> You must enable Python 3.10 in your APT repositories before you can run the Client successfully.
+> You must enable Python 3.10 in your APT repositories before you can run the Client.
 
 ```
 sudo apt install build-essential
@@ -128,7 +128,7 @@ brew link --overwrite qt@5
 
 ### <a name="bclient"></a>Building the Client
 
-> If you are using a Debian-based distro, you can use the bundled installation script at `/Havoc/Client/Install.sh`. 
+> If you are using a Debian-based distro, use the installation script at `/Havoc/Client/Install.sh`. 
 
 Clone the repository:
 
@@ -144,11 +144,11 @@ make
 ./Havoc 
 ```
 
-> On macOS, run `brew unlink qt && brew link qt` after cmake build is done.
+> On macOS, run `brew unlink qt && brew link qt` after cmake build is complete.
 
 ### <a name="bteam"></a>Building the Teamserver
 
-Install additional Go dependencies:
+Install Go dependencies:
 
 ```
 cd Havoc/Teamserver
@@ -170,11 +170,10 @@ make
 ./teamserver -h
 
 # Run the teamserver
-sudo ./teamserver server --profile ./profiles/havoc.yaotl -v --debug
+sudo ./teamserver server --profile profiles/havoc.yaotl -v --debug
 ``` 
 
-All files created during interaction with the Teamserver are stored within the `/Havoc/Teamserver/data/*` folder.
-
+All files created during interaction with the Teamserver are stored in `/Havoc/Teamserver/data/*`.
 
 ### <a name="idc"></a> Docker
 
@@ -182,7 +181,7 @@ Build the Dockerfile with Jenkins:
 
 `sudo docker build -t havoc-client -f Client-Dockerfile .`
 
-Create data volume for persistence (optional):
+Create a data volume for persistence (optional):
 
 `sudo docker volume create havoc-c2-client`
 
@@ -191,7 +190,7 @@ Run the container:
 `sudo docker run -p 443:443 -p 40056:40056-it -d -v havoc-c2-client:/data havoc-client`
 
 Enter the container and run the Client:
-- NOT COMPLETE
+- WORK IN PROGRESS
 
 ### <a name="ijd"></a> Jenkins Docker Build
 
@@ -203,36 +202,31 @@ Run the container:
 
 `sudo docker run -p8080:8080 -it -d -v havoc-c2-data:/data havoc-client`
 
-Visit Jenkins at `localhost:8080` and create a pipeline to build the Havoc Teamserver.
+Visit Jenkins at `localhost:8080` and create a pipeline to build the Teamserver.
 - See `Havoc-Teamserver.groovy` in the `Assets` folder.
 
-### <a name="aquick"></a> Creating a Listener, and Spawning an Agent
-This part assumes you have a Teamserver running, with a Teamserver-client connected to the running instance.
-- Creating a Listener:
-	1. To create a new listener, we must first open the `Listeners` subwindow.
-		* To do this, in the upper left hand corner, click on the `View` button, and then on the `Listeners` button in the drop down menu.
+### <a name="aquick"></a> Creating a Listener and Spawning an Agent
+This part assumes you have a Teamserver running with a Client connected.
+- Create a Listener:
+	1. Click `View` then `Listeners` in the drop-down menu.
 		* ![Listeners-select](./Assets/Screenshots/Listeners-select.png)	
-	2. You should see a new sub window in the bottom of the server window, with the title of `Listeners` on the header tab.
-	3. You should also now see three(3) buttons on the bottom of the server window, `Add`, `Remove` and `Edit`.
+	2. A new sub-window will apprear with the title `Listeners`.
+	3. You will see three buttons: `Add`, `Remove`, and `Edit`.
 		* ![Listeners-Add-select](./Assets/Screenshots/Listeners-Add-select.png)
-	4. We want to click the `Add` button.
-	5. Once we click the `Add` button, you should see a new window come up, with the title of `Create Listener`.
+	4. Click `Add`. You will see a new window open with the title of `Create Listener`.
 		* ![Listeners-New](./Assets/Screenshots/Listeners-new.png)
-	6. We will want to fill out the appropriate information for each field in the `Create Listener` window.
-	7. After entering the appropriate information into each field, then click the `Save` button.
-	8. The window will close, and you will now see a new line in the `Listeners` sub-window.
+	5. Fill out the appropriate information for each field in the `Create Listener` window.
+	6. Click `Save`. You will see a new line in the `Listeners` sub-window.
 		* ![Listener-created](./Assets/Screenshots/Listener-created)
-	9. We now have an active Listener, and are ready to receive an incoming agent's communications!
+	7. We now have an active Listener and are ready to receive an incoming agent's comms!
 - Spawning an Agent:
 	1. To create an Agent Payload, we must first open the `Payload` window.
-		* We can do so by going up to the upper left hand corner, and clicking on the `Attack` button. 
-	2. Doing so, we see the `Payload` button appear in the drop down menu. We want to then click on it.
+		* Click `Attack`. 
+	2. Doing so, we see the `Payload` button appear in the drop-down menu. We want to then click on it.
 		* ![Agent-select](./Assets/Screenshots/Agent-select.png)
-	3. This will open the `Payload` window, where we may then configure the various options for generating our payload.
+	3. This will open the `Payload` window. Choose the various options for your payload then click `Generate`.
 		* ![Agent-creation](./Assets/Screenshots/Agent-create.png)
-	4. Once we have selected the appropriate options, we then click on the `Generate` button.
-	5. It might take a little bit for the compilation to take place. Once it has completed, it will prompt you as to where to save the resulting file output.
-	6. After selecting where to save the file, you will now have a generated agent ready for execution or injection!
+	4. It will take a few second for the payload to compile. Save the resulting demon file.
 
 ---
 
