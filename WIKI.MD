@@ -89,7 +89,8 @@ Please see https://github.com/HavocFramework/Havoc/issues/105.
 ### <a name="il"></a> Local
 
 #### Dependencies
-> For Debian based Distros only.
+
+> For Debian based distros only.
 
 ```
 sudo apt install -y git build-essential apt-utils cmake libfontconfig1 libglu1-mesa-dev libgtest-dev libspdlog-dev libboost-all-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev mesa-common-dev qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools libqt5websockets5 libqt5websockets5-dev qtdeclarative5-dev golang-go qtbase5-dev libqt5websockets5-dev libspdlog-dev python3-dev libboost-all-dev mingw-w64 nasm
@@ -126,9 +127,7 @@ brew install python@3.10 qt@5 spdlog golang
 brew link --overwrite qt@5
 ```
 
-### <a name="bclient"></a>Building the Client
-
-> If you are using a Debian-based distro, use the installation script at `/Havoc/Client/Install.sh`. 
+### <a name="bteam"></a>Building the Teamserver
 
 Clone the repo and build the teamserver:
 
@@ -139,18 +138,20 @@ cd Havoc/Teamserver/
 ```
 
 Modify the default profile with your host IP, username, and password.
+
 ```
 vi profiles/havoc.yaotl
 ```
 
 Start the teamserver.
+
 ```
 ./teamserver server --profile profiles/havoc.yaotl
 ```
 
 > On macOS, run `brew unlink qt && brew link qt` after cmake build is complete.
 
-### <a name="bteam"></a>Building the Teamserver
+### <a name="bclient"></a>Building the Client
 
 Install Go dependencies:
 
