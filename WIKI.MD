@@ -142,15 +142,6 @@ make
 
 > On macOS, run `brew unlink qt && brew link qt` after cmake build is done.
 
-Running `Havoc` will start the Client.
-
-![teamserver-client](./Assets/Screenshots/Teamserver-Client-Fresh.png)
-
-
-Now enter the credentials for the Teamserver we want to connect to, and hit 'Connect' to connect your configured teamserver.
-
-![teamserver-and-client](./Assets/Screenshots/Teamserver-LoggedIn.png)
-
 
 
 
@@ -389,10 +380,18 @@ The Havoc Client is written in C++ and Qt.
 
 ```
 cd Havoc/Client
-./Havoc.sh
+./Havoc
 ```
+Running `./Havoc` will start the Client.
 
-The `Havoc.sh` script will automatically build the Client and execute it afterwards.
+![teamserver-client](./Assets/Screenshots/Teamserver-Client-Fresh.png)
+
+
+Now enter the credentials for the Teamserver we want to connect to, and hit 'Connect' to connect your configured teamserver.
+
+![teamserver-and-client](./Assets/Screenshots/Teamserver-LoggedIn.png)
+
+
 
 ### <a name="cctt"></a>Connecting to the Teamserver
 
