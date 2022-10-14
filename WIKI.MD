@@ -116,7 +116,7 @@ sudo apt update
 sudo apt install python3-dev python3.10-dev libpython3.10 libpython3.10-dev python3.10
 ```
 
-#### MacOS
+#### macOS
 
 > You must have [`homebrew`](https://brew.sh) installed.
 
@@ -128,7 +128,7 @@ brew link --overwrite qt@5
 
 ### <a name="bclient"></a>Building the Client
 
-> If you are using a debian-based distro, you can use the bundled installation script at `/Havoc/Client/Install.sh`. 
+> If you are using a Debian-based distro, you can use the bundled installation script at `/Havoc/Client/Install.sh`. 
 
 Clone the repository:
 
@@ -136,7 +136,7 @@ Clone the repository:
 git clone https://github.com/HavocFramework/Havoc.git
 ```
 
-Build and Run:
+Build and run:
 
 ```
 cd Havoc/Client
@@ -157,7 +157,7 @@ go mod download golang.org/x/sys
 go mod download github.com/ugorji/go
 ```
 
-Build and Run:
+Build and run:
 
 ```
 cd Teamserver
@@ -165,7 +165,7 @@ cd Teamserver
 # Install MUSL C Compiler
 ./Install.sh
 
-# Build Binary
+# Build the binary
 make
 ./teamserver -h
 
