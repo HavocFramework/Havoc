@@ -21,7 +21,7 @@ Havoc is a modern and malleable post-exploitation command and control framework.
 	- [Demon](#pdemon)
 	- [Listeners](#plisten)
 - [Client](#client)
-	- [Starting the client](#cstc)
+	- [Starting the Client](#cstc)
 	- [Connecting to the Teamserver](#cctt)
 - [Agents](#agents)
 	- [Demon](#ademon)
