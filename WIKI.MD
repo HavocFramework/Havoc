@@ -656,5 +656,3 @@ Official Modules:
 
 ### Why does Havoc not perform sleep obfuscation when jobs are running?
 Jobs are ran in their own threads, and sleep obfuscation requires that all threads are suspended in order to encrypt the heap, otherwise the process would crash. 
-
----
