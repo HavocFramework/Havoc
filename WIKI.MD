@@ -5,7 +5,6 @@ Havoc is a modern and malleable post-exploitation command and control framework.
 #### Table of Contents
 - [Version History](#vhistory)
 - [Known Issues](#kissues)
-- [Quickstart](#quickstart)
 - [Installation](#install)
 	- [Local](#il)
 	- [Docker Container](#idc)
