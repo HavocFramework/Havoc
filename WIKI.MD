@@ -143,10 +143,13 @@ make
 > On macOS, run `brew unlink qt && brew link qt` after cmake build is done.
 
 Running `Havoc` will start the Client.
-	* ![teamserver-client](./Assets/Screenshots/Teamserver-Client-Fresh.png)
+
+![teamserver-client](./Assets/Screenshots/Teamserver-Client-Fresh.png)
+
 
 Now enter the credentials for the Teamserver we want to connect to, and hit 'Connect' to connect your configured teamserver.
-	* ![teamserver-and-client](./Assets/Screenshots/Teamserver-LoggedIn.png)
+
+![teamserver-and-client](./Assets/Screenshots/Teamserver-LoggedIn.png)
 
 
 
@@ -179,6 +182,31 @@ sudo ./teamserver server --profile ./profiles/havoc.yaotl -v --debug
 All files created during interaction with the Teamserver are stored within the `/Havoc/Teamserver/data/*` folder.
 
 
+### <a name="idc"></a> Docker
+
+Build the Dockerfile with Jenkins:
+`sudo docker build -t havoc-client -f Client-Dockerfile .`
+
+Create data volume for persistence (optional):
+`sudo docker volume create havoc-c2-client`
+
+Run the container:
+`sudo docker run -p 443:443 -p 40056:40056-it -d -v havoc-c2-client:/data havoc-client`
+
+Enter the container and run the Client:
+- NOT COMPLETE
+
+### <a name="ijd"></a> Jenkins Docker Build
+
+Build the Dockerfile with Jenkins:
+`sudo docker build -f JC-Dockerfile .`
+
+Run the container:
+`sudo docker run -p8080:8080 -it -d -v havoc-c2-data:/data havoc-client`
+
+Visit Jenkins at `localhost:8080` and create a pipeline to build the Havoc Teamserver.
+- See `Havoc-Teamserver.groovy` in the `Assets` folder.
+
 
 ### <a name="aquick"></a> Creating a Listener, and Spawning an Agent
 This part assumes you have a Teamserver running, with a Teamserver-client connected to the running instance.
@@ -208,33 +236,6 @@ This part assumes you have a Teamserver running, with a Teamserver-client connec
 	5. It might take a little bit for the compilation to take place. Once it has completed, it will prompt you as to where to save the resulting file output.
 	6. After selecting where to save the file, you will now have a generated agent ready for execution or injection!
 
-
-
-
-### <a name="idc"></a> Docker
-
-Build the Dockerfile with Jenkins:
-`sudo docker build -t havoc-client -f Client-Dockerfile .`
-
-Create data volume for persistence (optional):
-`sudo docker volume create havoc-c2-client`
-
-Run the container:
-`sudo docker run -p 443:443 -p 40056:40056-it -d -v havoc-c2-client:/data havoc-client`
-
-Enter the container and run the Client:
-- NOT COMPLETE
-
-### <a name="ijd"></a> Jenkins Docker Build
-
-Build the Dockerfile with Jenkins:
-`sudo docker build -f JC-Dockerfile .`
-
-Run the container:
-`sudo docker run -p8080:8080 -it -d -v havoc-c2-data:/data havoc-client`
-
-Visit Jenkins at `localhost:8080` and create a pipeline to build the Havoc Teamserver.
-- See `Havoc-Teamserver.groovy` in the `Assets` folder.
 
 ---
 
