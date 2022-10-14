@@ -5,13 +5,13 @@ Havoc is a modern and malleable post-exploitation command and control framework.
 #### Table of Contents
 - [Version History](#vhistory)
 - [Known Issues](#kissues)
-- [Quickstart](#quickstart)
 - [Installation](#install)
 	- [Local](#il)
 	- [Docker Container](#idc)
 	- [Jenkins Docker Container](#ijd)
 	- [Building the Client](#bclient)
 	- [Building the Teamserver](#bteam)
+	- [Creating a Listener and Spawning an Agent](#aquick)
 - [Teamserver](#teamserver)
 	- [Starting the Teamserver](#stt)
 	- [Arguments](#targ)
@@ -39,8 +39,11 @@ Havoc is a modern and malleable post-exploitation command and control framework.
 
 ## <a name="vhistory"></a> Version History
 
-### 0.1 / Star Platinum
+### 0.2 / Magicians Red
+> Magician's Red (Majishanzu Reddo) is the Stand of Muhammad Avdol, featured in Stardust Crusaders.
+- Second public 'release' of Havoc.
 
+`0.1 / Star Platinum`
 > Named after the Stand of [Jotaro Kujo](https://jojo.fandom.com/wiki/Star_Platinum) in JoJo's Bizzare Adventure, Star Platinum was among the very first Stands introduced.
 
 - The first, public release of Havoc.
@@ -81,67 +84,6 @@ Please see https://github.com/HavocFramework/Havoc/issues/105.
 
 ---
 
-### <a name="quickstart"></a>Quick-Start
-- Currently, Havoc has been confirmed to work on Arch, Debian 10/11, Kali Linux(latest), and Ubuntu 20.04/22.04;
-- **Teamserver and Teamserver-Client Quickstart**
-	- **Debian 10/11; Kali(rolling); Ubuntu 20.04/22.04 Quickstart Instructions**
-		1. Clone the Havoc repo to your local machine:
-			* `git clone https://github.com/HavocFramework/Havoc`
-		2. Install the pre-requisite packages for the teamserver(Golang 1.19):
-			* https://go.dev/doc/install
-		3. Navigate into the `./Havoc/Teamserver/` directory, and install the musl C compiler:
-			* `chmod +x ./Install.sh`
-		4. Build the teamserver with the following command:
-			* `make`
-		5. You should now have the `Teamserver` binary available at `./Havoc/Teamserver/Build/Bin/Teamserver`
-		6. You can run the teamserver with the following command:
-			* `sudo ./teamserver server --profile ../../profiles/havoc_default.yaotl -v --debug-dev`
-			* This should result in the Teamserver now running locally in your terminal.
-		7. Now, to build the client, we need to ensure we have the proper packages.
-			* We first need to ensure that we have the appropriate repos setup for the necessary packages (Python3.10-dev)
-			* `echo 'deb http://ftp.de.debian.org/debian bookworm main' >> /etc/apt/sources.list`
-		8. Then we can Install all necessary packages: `sudo apt install -y git build-essential apt-utils cmake	 libfontconfig1 libglu1-mesa-dev libgtest-dev libspdlog-dev libboost-all-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev mesa-common-dev mingw-w64 nasm python3 python3-pip python3-all-dev python3.10-dev libpyton3.10 libpython3.10-dev python3.10  qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools libqt5websockets5 libqt5websockets5-dev qtdeclarative5-dev`
-		9. Once we've installed all the pre-requisite packages, we can build the Teamserver-Client:
-			* `cd ./Client && make`
-		10. The Teamserver-Client should now be built with successful completion of the last command.
-		11. Since we Have the Teamserver already running, we can simply launch the Teamserver-Client:
-			* `./Havoc`
-		12. You should now see the Teamserver-Client window open:
-			* ![teamserver-client](./Assets/Screenshots/Teamserver-Client-Fresh.png)
-		13. Now enter the credentials for the Teamserver we want to connect to.
-		14. We now have a Teamserver instance and an associated client to interact with it running!
-			* ![teamserver-and-client](./Assets/Screenshots/Teamserver-LoggedIn.png)
-- **Creating a Listener, and Spawning an Agent**
-	* This part assumes you have a Teamserver running, with a Teamserver-client connected to the running instance.
-	- **Creating a Listener:**
-		1. To create a new listener, we must first open the `Listeners` subwindow.
-			* To do this, in the upper left hand corner, click on the `View` button, and then on the `Listeners` button in the drop down menu.
-			* ![Listeners-select](./Assets/Screenshots/Listeners-select.png)	
-		2. You should see a new sub window in the bottom of the server window, with the title of `Listeners` on the header tab.
-		3. You should also now see three(3) buttons on the bottom of the server window, `Add`, `Remove` and `Edit`.
-			* ![Listeners-Add-select](./Assets/Screenshots/Listeners-Add-select.png)
-		4. We want to click the `Add` button.
-		5. Once we click the `Add` button, you should see a new window come up, with the title of `Create Listener`.
-			* ![Listeners-New](./Assets/Screenshots/Listeners-new.png)
-		6. We will want to fill out the appropriate information for each field in the `Create Listener` window.
-		7. After entering the appropriate information into each field, then click the `Save` button.
-		8. The window will close, and you will now see a new line in the `Listeners` sub-window.
-			* ![Listener-created](./Assets/Screenshots/Listener-created)
-		9. We now have an active Listener, and are ready to receive an incoming agent's communications!
-	- **Spawning an Agent:**
-		1. To create an Agent Payload, we must first open the `Payload` window.
-			* We can do so by going up to the upper left hand corner, and clicking on the `Attack` button. 
-		2. Doing so, we see the `Payload` button appear in the drop down menu. We want to then click on it.
-			* ![Agent-select](./Assets/Screenshots/Agent-select.png)
-		3. This will open the `Payload` window, where we may then configure the various options for generating our payload.
-			* ![Agent-creation](./Assets/Screenshots/Agent-create.png)
-		4. Once we have selected the appropriate options, we then click on the `Generate` button.
-		5. It might take a little bit for the compilation to take place. Once it has completed, it will prompt you as to where to save the resulting file output.
-		6. After selecting where to save the file, you will now have a generated agent ready for execution or injection!
-
-
----
-
 ## <a name="install"></a>Installation
 
 ### <a name="il"></a> Local
@@ -151,6 +93,7 @@ Please see https://github.com/HavocFramework/Havoc/issues/105.
 ```
 sudo apt install -y git build-essential apt-utils cmake libfontconfig1 libglu1-mesa-dev libgtest-dev libspdlog-dev libboost-all-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev mesa-common-dev qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools libqt5websockets5 libqt5websockets5-dev qtdeclarative5-dev golang-go qtbase5-dev libqt5websockets5-dev libspdlog-dev python3-dev libboost-all-dev mingw-w64 nasm
 ```
+
 
 #### Ubuntu 20.04 / 22.04
 
@@ -197,13 +140,12 @@ make
 ./Havoc 
 ```
 
-Running `Havoc` will start the Client. 
 > On macOS, run `brew unlink qt && brew link qt` after cmake build is done.
 
+
+
+
 ### <a name="bteam"></a>Building the Teamserver
-
-> If you are using a debian-based distro, you can use the bundled installation script at `/Havoc/Teamserver/Install.sh`
-
 
 Install additional Go dependencies:
 ```
@@ -215,10 +157,21 @@ go mod download github.com/ugorji/go
 
 Build and Run:
 ```
-cd Havoc/Teamserver
+cd Teamserver
+
+# Install MUSL C Compiler
+./Install.sh
+
+# Build Binary
 make
 ./teamserver -h
+
+# Run the teamserver
+sudo ./teamserver server --profile ./profiles/havoc.yaotl -v --debug
 ``` 
+
+All files created during interaction with the Teamserver are stored within the `/Havoc/Teamserver/data/*` folder.
+
 
 ### <a name="idc"></a> Docker
 
@@ -245,6 +198,36 @@ Run the container:
 Visit Jenkins at `localhost:8080` and create a pipeline to build the Havoc Teamserver.
 - See `Havoc-Teamserver.groovy` in the `Assets` folder.
 
+
+### <a name="aquick"></a> Creating a Listener, and Spawning an Agent
+This part assumes you have a Teamserver running, with a Teamserver-client connected to the running instance.
+- Creating a Listener:
+	1. To create a new listener, we must first open the `Listeners` subwindow.
+		* To do this, in the upper left hand corner, click on the `View` button, and then on the `Listeners` button in the drop down menu.
+		* ![Listeners-select](./Assets/Screenshots/Listeners-select.png)	
+	2. You should see a new sub window in the bottom of the server window, with the title of `Listeners` on the header tab.
+	3. You should also now see three(3) buttons on the bottom of the server window, `Add`, `Remove` and `Edit`.
+		* ![Listeners-Add-select](./Assets/Screenshots/Listeners-Add-select.png)
+	4. We want to click the `Add` button.
+	5. Once we click the `Add` button, you should see a new window come up, with the title of `Create Listener`.
+		* ![Listeners-New](./Assets/Screenshots/Listeners-new.png)
+	6. We will want to fill out the appropriate information for each field in the `Create Listener` window.
+	7. After entering the appropriate information into each field, then click the `Save` button.
+	8. The window will close, and you will now see a new line in the `Listeners` sub-window.
+		* ![Listener-created](./Assets/Screenshots/Listener-created)
+	9. We now have an active Listener, and are ready to receive an incoming agent's communications!
+- Spawning an Agent:
+	1. To create an Agent Payload, we must first open the `Payload` window.
+		* We can do so by going up to the upper left hand corner, and clicking on the `Attack` button. 
+	2. Doing so, we see the `Payload` button appear in the drop down menu. We want to then click on it.
+		* ![Agent-select](./Assets/Screenshots/Agent-select.png)
+	3. This will open the `Payload` window, where we may then configure the various options for generating our payload.
+		* ![Agent-creation](./Assets/Screenshots/Agent-create.png)
+	4. Once we have selected the appropriate options, we then click on the `Generate` button.
+	5. It might take a little bit for the compilation to take place. Once it has completed, it will prompt you as to where to save the resulting file output.
+	6. After selecting where to save the file, you will now have a generated agent ready for execution or injection!
+
+
 ---
 
 ## <a name="teamserver"></a>Teamserver
@@ -253,11 +236,9 @@ The Havoc Teamserver is written in Golang. It handles the listeners, teamserver 
 
 ### <a name="stt"></a> Starting the Teamserver
 
-> A script is included to automatically start the Teamserver using some default options: `Havoc/Teamserver/teamserver`.
+Running `./teamserver server --profile ./profiles/havoc.yaotl -v --debug` will launch the built Teamserver with verbosity and debugging enabled.
 
-Running `./teamserver` will automatically build the Teamserver, set it as executable and start it with the following options:
-
-`./bin/teamserver server --profile profiles/havoc.yaotl -v`
+Data collected by the Teamserver is stored in the `/Havoc/Teamserver/data/*` directory.
 
 ### <a name="targ"></a>Arguments
 
@@ -397,16 +378,23 @@ The Havoc Client is written in C++ and Qt.
 
 ```
 cd Havoc/Client
-./Havoc.sh
+./Havoc
 ```
+Running `./Havoc` will start the Client.
 
-The `Havoc.sh` script will automatically build the Client and execute it afterwards.
 
 ### <a name="cctt"></a>Connecting to the Teamserver
 
 When the client opens, you will be presented with a profile window similar to that in other C2 frameworks like Cobalt Strike. 
 
-Enter the profile name, teamserver bind address (`Host`) and `Port`, along with your defined username/password in the teamserver profile.
+![teamserver-client](./Assets/Screenshots/Teamserver-Client-Fresh.png)
+
+Enter the profile name, teamserver bind address (`Host`) and `Port`, along with your defined username/password in the teamserver profile. 
+Then hit 'Connect' to connect your configured teamserver.
+
+![teamserver-and-client](./Assets/Screenshots/Teamserver-LoggedIn.png)
+
+
 
 ---
 
