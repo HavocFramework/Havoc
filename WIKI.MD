@@ -572,6 +572,8 @@ Service {
 
 This would create a service endpoint at `<teamserver-host>:<teamserver-port>/service-endpoint` that is authenticated with `service-password`. 
 
+---
+
 ## <a name="ca"></a>Custom Agents
 
 Using Havoc's Service API, custom, third-party agents can be written to interact with the teamserver using the intermediate Python API.
