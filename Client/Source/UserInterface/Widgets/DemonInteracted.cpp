@@ -198,6 +198,9 @@ void DemonInteracted::AppendText( const QString& text )
         }
     }
 
+    if ( AgentTypeName.isEmpty() )
+        AgentTypeName = "Demon";
+
     DemonCommands->Prompt = QString(
             ColorText::Comment( QDate::currentDate().toString( "dd/MM/yyyy" ) + " "+ QTime::currentTime().toString( "hh:mm:ss" ) +
             " [" + HavocX::Teamserver.User + "] " ) +

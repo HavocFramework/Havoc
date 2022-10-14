@@ -596,6 +596,9 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
 
                     if ( ! Package->Body.Info[ "CommandLine" ].empty() )
                     {
+                        if ( AgentType.isEmpty() )
+                            AgentType = "Demon";
+
                         Session.InteractedWidget->DemonCommands->Prompt = QString (
                                 Util::ColorText::Comment( QString( Package->Head.Time.c_str() ) + " [" + QString( Package->Head.User.c_str() ) + "]" ) +
                                 " " + Util::ColorText::UnderlinePink( AgentType ) +
