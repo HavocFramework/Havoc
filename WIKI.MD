@@ -39,14 +39,14 @@ Havoc is a modern and malleable post-exploitation command and control framework.
 
 ## <a name="vhistory"></a> Version History
 
-### 0.2 / Magicians Red
+`0.2 / Magicians Red`
 > Magician's Red (Majishanzu Reddo) is the Stand of Muhammad Avdol, featured in Stardust Crusaders.
-- Second public 'release' of Havoc.
+- Second public release of Havoc.
 
 `0.1 / Star Platinum`
 > Named after the Stand of [Jotaro Kujo](https://jojo.fandom.com/wiki/Star_Platinum) in JoJo's Bizzare Adventure, Star Platinum was among the very first Stands introduced.
 
-- The first, public release of Havoc.
+- First public release of Havoc.
 
 ---
 
