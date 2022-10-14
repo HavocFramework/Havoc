@@ -968,6 +968,9 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 User     = InputCommands[ 3 ];
                 Password = InputCommands[ 4 ];
 
+                TaskID = CONSOLE_INFO( "Tasked demon to make a new network token for " + Domain + "\\" + User );
+                CommandInputList[ TaskID ] = commandline;
+
                 SEND( Execute.Token( TaskID, "make", Domain.toLocal8Bit().toBase64() + ";" + User.toLocal8Bit().toBase64() + ";" + Password.toLocal8Bit().toBase64() ) );
             }
             else if ( InputCommands[ 1 ].compare( "revert" ) == 0 )
