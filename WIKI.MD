@@ -238,6 +238,7 @@ The Havoc Teamserver is written in Golang. It handles the listeners, teamserver 
 
 Running `./teamserver server --profile ./profiles/havoc.yaotl -v --debug` will launch the built Teamserver with verbosity and debugging enabled.
 
+Data collected by the Teamserver is stored in the `/Havoc/Teamserver/data/*` directory.
 
 ### <a name="targ"></a>Arguments
 
@@ -381,20 +382,19 @@ cd Havoc/Client
 ```
 Running `./Havoc` will start the Client.
 
-![teamserver-client](./Assets/Screenshots/Teamserver-Client-Fresh.png)
-
-
-Now enter the credentials for the Teamserver we want to connect to, and hit 'Connect' to connect your configured teamserver.
-
-![teamserver-and-client](./Assets/Screenshots/Teamserver-LoggedIn.png)
-
-
 
 ### <a name="cctt"></a>Connecting to the Teamserver
 
 When the client opens, you will be presented with a profile window similar to that in other C2 frameworks like Cobalt Strike. 
 
-Enter the profile name, teamserver bind address (`Host`) and `Port`, along with your defined username/password in the teamserver profile.
+![teamserver-client](./Assets/Screenshots/Teamserver-Client-Fresh.png)
+
+Enter the profile name, teamserver bind address (`Host`) and `Port`, along with your defined username/password in the teamserver profile. 
+Then hit 'Connect' to connect your configured teamserver.
+
+![teamserver-and-client](./Assets/Screenshots/Teamserver-LoggedIn.png)
+
+
 
 ---
 
