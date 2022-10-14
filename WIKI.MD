@@ -130,18 +130,22 @@ brew link --overwrite qt@5
 
 > If you are using a Debian-based distro, use the installation script at `/Havoc/Client/Install.sh`. 
 
-Clone the repository:
+Clone the repo and build the teamserver:
 
 ```
 git clone https://github.com/HavocFramework/Havoc.git
+cd Havoc/Teamserver/ 
+./Install.sh
 ```
 
-Build and run:
-
+Modify the default profile with your host IP, username, and password.
 ```
-cd Havoc/Client
-make 
-./Havoc 
+vi profiles/havoc.yaotl
+```
+
+Start the teamserver.
+```
+./teamserver server --profile profiles/havoc.yaotl
 ```
 
 > On macOS, run `brew unlink qt && brew link qt` after cmake build is complete.
