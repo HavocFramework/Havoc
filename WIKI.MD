@@ -64,7 +64,7 @@ _You will experience formatting issues in the Havoc client if you are not using 
 
 #### `fatal error: Python.h: No such file or directory`
 
-If you get an error that `Python.h` isn't found when building, you need to make sure Python 3.10 is installed and you have the Python 3.10 development files. If you are using Ubuntu LTS you may need to leverage a PPA such as `deadsnakes` to get a newer version of Python.
+If you get an error that `Python.h` is not found when building, you need to make sure Python 3.10 is installed and you have the Python 3.10 development files. If you are using Ubuntu LTS you may need to leverage a PPA such as `deadsnakes` to get a newer version of Python.
 
 ```
 sudo apt install build-essential
@@ -90,10 +90,10 @@ Please see https://github.com/HavocFramework/Havoc/issues/105.
 
 #### Pre-requisites
 > The immediate following is for Debian based Distros only.
+
 ```
 sudo apt install -y git build-essential apt-utils cmake libfontconfig1 libglu1-mesa-dev libgtest-dev libspdlog-dev libboost-all-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev mesa-common-dev qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools libqt5websockets5 libqt5websockets5-dev qtdeclarative5-dev golang-go qtbase5-dev libqt5websockets5-dev libspdlog-dev python3-dev libboost-all-dev mingw-w64 nasm
 ```
-
 
 #### Ubuntu 20.04 / 22.04
 
@@ -115,25 +115,29 @@ echo 'deb http://ftp.de.debian.org/debian bookworm main' >> /etc/apt/sources.lis
 sudo apt update
 sudo apt install python3-dev python3.10-dev libpython3.10 libpython3.10-dev python3.10
 ```
+
 #### MacOS
 
 > You must have [`homebrew`](https://brew.sh) installed.
+
 ```
 brew install --cask cmake
 brew install python@3.10 qt@5 spdlog golang
 brew link --overwrite qt@5
 ```
+
 ### <a name="bclient"></a>Building the Client
 
 > If you are using a debian-based distro, you can use the bundled installation script at `/Havoc/Client/Install.sh`. 
 
-
 Clone the repository:
+
 ```
 git clone https://github.com/HavocFramework/Havoc.git
 ```
 
 Build and Run:
+
 ```
 cd Havoc/Client
 make 
@@ -142,12 +146,10 @@ make
 
 > On macOS, run `brew unlink qt && brew link qt` after cmake build is done.
 
-
-
-
 ### <a name="bteam"></a>Building the Teamserver
 
 Install additional Go dependencies:
+
 ```
 cd Havoc/Teamserver
 
@@ -156,6 +158,7 @@ go mod download github.com/ugorji/go
 ```
 
 Build and Run:
+
 ```
 cd Teamserver
 
@@ -176,12 +179,15 @@ All files created during interaction with the Teamserver are stored within the `
 ### <a name="idc"></a> Docker
 
 Build the Dockerfile with Jenkins:
+
 `sudo docker build -t havoc-client -f Client-Dockerfile .`
 
 Create data volume for persistence (optional):
+
 `sudo docker volume create havoc-c2-client`
 
 Run the container:
+
 `sudo docker run -p 443:443 -p 40056:40056-it -d -v havoc-c2-client:/data havoc-client`
 
 Enter the container and run the Client:
@@ -190,14 +196,15 @@ Enter the container and run the Client:
 ### <a name="ijd"></a> Jenkins Docker Build
 
 Build the Dockerfile with Jenkins:
+
 `sudo docker build -f JC-Dockerfile .`
 
 Run the container:
+
 `sudo docker run -p8080:8080 -it -d -v havoc-c2-data:/data havoc-client`
 
 Visit Jenkins at `localhost:8080` and create a pipeline to build the Havoc Teamserver.
 - See `Havoc-Teamserver.groovy` in the `Assets` folder.
-
 
 ### <a name="aquick"></a> Creating a Listener, and Spawning an Agent
 This part assumes you have a Teamserver running, with a Teamserver-client connected to the running instance.
@@ -226,7 +233,6 @@ This part assumes you have a Teamserver running, with a Teamserver-client connec
 	4. Once we have selected the appropriate options, we then click on the `Generate` button.
 	5. It might take a little bit for the compilation to take place. Once it has completed, it will prompt you as to where to save the resulting file output.
 	6. After selecting where to save the file, you will now have a generated agent ready for execution or injection!
-
 
 ---
 
@@ -267,7 +273,6 @@ Havoc's Teamserver uses profiles in the `yaotl` format, which is a custom config
 Profiles are located at: `Havoc/Teamserver/profiles` and can be passed to the `teamserver` with the `--profile <path-to-profile` flag.
 
 The default example profile can be found at `Havoc/Teamserver/profiles/havoc_default.yaotl`.
-
 
 #### <a name="pteam"></a>Teamserver
 The teamserver can be configured to listen on a specific bind address and port with the following directive:
@@ -394,8 +399,6 @@ Then hit 'Connect' to connect your configured teamserver.
 
 ![teamserver-and-client](./Assets/Screenshots/Teamserver-LoggedIn.png)
 
-
-
 ---
 
 ## <a name="agents"></a>Agents
@@ -497,7 +500,6 @@ Process management and enumeration system.
 - `proc grep [process name]` searches for specified running process and shows Process Name, Process ID, Process Parent PID, Process User, Process Arch
 - `proc memory [pid] [memory protection]` queries process memory pages with specified Protection. 
 
-
 ##### `token`
 
 Demon implements a token management vault that allows for token theft, impersonation and privilege modification. All tokens are preserved within a token vault, allowing the operator to list and impersonate any stolen token when convenient.
@@ -549,7 +551,6 @@ Here is a high-level overview of each supported process injection technique:
 
 The `inline-execute` works by first creating an instance of the CLR (Common Language Runtime) within the current Demon process. After the CLR is created, `amsi.dll` is loaded and patched in-memory to bypass AMSI scanning. Demon then creates an AppDomain and loads the assembly into memory, finding the entry point and passing the commandline args supplied by the user before invoking the method. Output from the assembly is captured and returned to the teamserver.
 
-
 (INCOMPLETE)
 
 ---
@@ -570,7 +571,6 @@ Service {
 ```
 
 This would create a service endpoint at `<teamserver-host>:<teamserver-port>/service-endpoint` that is authenticated with `service-password`. 
-
 
 ## <a name="ca"></a>Custom Agents
 
@@ -629,7 +629,6 @@ class CommandShell(Command):
 
 ## <a name="pyapi"></a>Python API
 
-
 [https://github.com/HavocFramework/havoc-py](https://github.com/HavocFramework/havoc-py)
 
 ---
@@ -642,9 +641,7 @@ An example of some of Havoc's official modules can be found at this repository:
 
 [https://github.com/HavocFramework/Modules](https://github.com/HavocFramework/Modules)
 
-
 Module Template: [https://github.com/HavocFramework/Modules/tree/main/Template](https://github.com/HavocFramework/Modules/tree/main/Template)
-
 
 Official Modules:
 - Powerpick
@@ -652,7 +649,6 @@ Official Modules:
 - InvokeAssembly
     - Executes a dotnet assembly into a separate process by bootsrapping the CLR into the designated fork & run process and passing the arguments.
     - The dotnet version can be specified in the arguments (`v4.0.30319` is default), as well as the AppDomain name (`DefaultAppDomain` is default).
-
 
 ---
 
