@@ -40,6 +40,8 @@ GraphWidget::GraphWidget( QWidget* parent ) : QGraphicsView( parent )
         .Node = new Node( NodeItemType::MainNode, QString(), this ),
     };
 
+    MainNode->Node->Session = {};
+
     GraphScene->addItem( MainNode->Node );
 
     MainNode->Node->setPos( 500, 100 );
@@ -58,6 +60,7 @@ Node* GraphWidget::GraphNodeAdd( SessionItem Session )
 
     item->NodeEdge = new Edge( MainNode->Node, item, QColor( HavocNamespace::Util::ColorText::Colors::Hex::Green ) );
     item->NodeID   = Session.Name;
+    item->Session  = Session;
 
     auto member = new Member {
         .Name = Session.Name,
@@ -99,6 +102,8 @@ void GraphWidget::GraphPivotNodeAdd( QString AgentID, SessionItem Session )
         this
     );
 
+    item->Session = Session;
+
     GraphScene->addItem( item );
 
     const auto items = scene()->items();
@@ -133,7 +138,12 @@ void GraphWidget::GraphPivotNodeDisconnect( QString AgentID )
             auto i = qgraphicsitem_cast<Edge*>( g_item );
             if ( i->dest->NodeID.compare( AgentID ) == 0 )
             {
+                i->dest->Disconnected = true;
                 i->Color( QColor( HavocNamespace::Util::ColorText::Colors::Hex::Red ) );
+
+                i->dest->update();
+                i->source->update();
+
                 return;
             }
         }
@@ -151,8 +161,17 @@ void GraphWidget::GraphPivotNodeReconnect( QString ParentAgentID, QString ChildA
             auto i = qgraphicsitem_cast<Edge*>( g_item );
             if ( i->dest->NodeID.compare( ChildAgentID ) == 0 )
             {
-                i->source = GraphNodeGet( ParentAgentID );
-                i->Color( QColor( HavocNamespace::Util::ColorText::Colors::Hex::Purple ) );
+                GraphScene->addItem( new Edge( GraphNodeGet( ParentAgentID ), i->dest, QColor( HavocNamespace::Util::ColorText::Colors::Hex::Purple ) ) );
+                GraphScene->removeItem( i );
+
+                // TODO: somehow remove/free i (Edge*)
+                // i->source = GraphNodeGet( ParentAgentID );
+                // i->dest->Disconnected = false;
+                // i->Color( QColor( HavocNamespace::Util::ColorText::Colors::Hex::Purple ) );
+
+                // i->dest->update();
+                // i->source->update();
+
                 return;
             }
         }
@@ -334,7 +353,6 @@ void Node::contextMenuEvent( QGraphicsSceneContextMenuEvent* event )
             "}"
     );
 
-
     auto Agent     = Util::SessionItem{};
 
     for ( auto s : HavocX::Teamserver.Sessions )
@@ -453,7 +471,11 @@ void Node::contextMenuEvent( QGraphicsSceneContextMenuEvent* event )
                                 Marked = "Alive";
                                 Session.Marked = Marked;
 
-                                HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, 0 )->setIcon( QIcon( ":/images/SessionItem" ) );
+                                auto Icon = ( Session.Elevated.compare( "true" ) == 0 ) ?
+                                            WinVersionIcon( Session.OS, true ) :
+                                            WinVersionIcon( Session.OS, false );
+
+                                HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, 0 )->setIcon( Icon );
 
                                 for ( int j = 0; j < HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->columnCount(); j++ )
                                 {
@@ -613,14 +635,21 @@ void Edge::paint( QPainter* painter, const QStyleOptionGraphicsItem*, QWidget* )
 
     // Draw the arrows
     auto angle         = std::atan2( -line.dy(), line.dx() );
-    auto sourceArrowP1 = QPointF( sourcePoint + QPointF( sin( angle + M_PI / 3 )        * arrowSize, cos( angle + M_PI / 3 )        * arrowSize ) );
-    auto sourceArrowP2 = QPointF( sourcePoint + QPointF( sin( angle + M_PI - M_PI / 3 ) * arrowSize, cos( angle + M_PI - M_PI / 3 ) * arrowSize ) );
+
+    auto sourceArrowP1 = sourcePoint + QPointF( sin( angle + M_PI / 3 ) * arrowSize, cos( angle + M_PI / 3 ) * arrowSize );
+    auto sourceArrowP2 = sourcePoint + QPointF( sin( angle + M_PI - M_PI / 3 ) * arrowSize, cos( angle + M_PI - M_PI / 3 ) * arrowSize );
+    auto destArrowP1   = destPoint   + QPointF( sin( angle - M_PI / 3 ) * arrowSize, cos( angle - M_PI / 3 ) * arrowSize );
+    auto destArrowP2   = destPoint   + QPointF( sin( angle - M_PI + M_PI / 3 ) * arrowSize, cos( angle - M_PI + M_PI / 3 ) * arrowSize );
 
     // Draw the line itself
     painter->setPen( QPen( color, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin ) );
     painter->drawLine( line );
     painter->setBrush( color );
-    painter->drawPolygon( QPolygonF() << line.p1() << sourceArrowP1 << sourceArrowP2 );
+
+    if ( source->NodeType == NodeItemType::MainNode )
+        painter->drawPolygon( QPolygonF() << line.p1() << sourceArrowP1 << sourceArrowP2 );
+    else
+        painter->drawPolygon( QPolygonF() << line.p2() << destArrowP1 << destArrowP2 );
 }
 
 void Edge::Color( QColor color )
@@ -639,22 +668,18 @@ Node::Node( NodeItemType NodeType, QString NodeLabel, GraphWidget* graphWidget )
     if ( NodeType == NodeItemType::MainNode )
         this->NodePainterSize = QRectF( -40, -50, 80, 80 );
     else
-        this->NodePainterSize = QRectF( -150, -150, 400, 250 );
-
-    // this->NodePainterSize = QRectF( -50, -30, 400, 120 );
+        this->NodePainterSize = QRectF( -150, -150, 400, 230 );
 
     setFlag( ItemIsMovable );
     setFlag( ItemSendsGeometryChanges );
     setCacheMode( DeviceCoordinateCache );
     setZValue( -1 );
-
 }
 
 QRectF Node::boundingRect() const
 {
     return NodePainterSize;
 }
-
 
 void Node::addEdge( Edge* edge )
 {
@@ -727,11 +752,28 @@ void Node::paint( QPainter *painter, const QStyleOptionGraphicsItem* option, QWi
     }
     else if ( NodeType == NodeItemType::Session )
     {
-        auto image1 = QImage( ":/images/SessionItem" );
         auto text   = NodeLabel.split( " " );
+        auto image1 = ( Session.Elevated.compare( "true" ) == 0 ) ?
+                      WinVersionImage( Session.OS, true ) :
+                      WinVersionImage( Session.OS, false );
 
-        painter->drawImage( QRectF( -40, -35, 80, 80 ), image1 );
+        if ( Disconnected )
+        {
+            image1 = GrayScale( image1 );
+        }
+        else
+        {
+            for ( auto& session : HavocX::Teamserver.Sessions )
+            {
+                if ( session.Name.compare( NodeID ) == 0 )
+                {
+                    if ( session.Marked.compare( "Dead" ) == 0 )
+                        image1 = GrayScale( image1 );
+                }
+            }
+        }
 
+        painter->drawImage( QRectF( -40, -35, 90, 90 ), image1 );
         painter->setPen( QPen( Qt::white ) );
         painter->drawText( -90, 60, text[ 0 ] + " @ " + text[ 1 ] );
         painter->drawText( -80, 75, text[ 2 ] );

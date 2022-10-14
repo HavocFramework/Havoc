@@ -186,6 +186,7 @@ typedef struct
         WIN_FUNC( Wow64DisableWow64FsRedirection )
         WIN_FUNC( Wow64RevertWow64FsRedirection )
         WIN_FUNC( CopyFileW )
+        WIN_FUNC( GetModuleHandleA )
 
         // Ntdll
         NTSTATUS ( NTAPI *LdrLoadDll ) (

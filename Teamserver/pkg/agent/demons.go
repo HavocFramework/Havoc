@@ -3164,7 +3164,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 								a.Pivots.Links = append(a.Pivots.Links, DemonInfo)
 								DemonInfo.Info.MagicValue = AgentHdr.MagicValue
 
-								LogDemonCallback(DemonInfo)
+								// LogDemonCallback(DemonInfo)
 								Funcs.AppendDemon(DemonInfo)
 								pk := Funcs.EventNewDemon(DemonInfo)
 								Funcs.EventAppend(pk)

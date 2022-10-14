@@ -1027,6 +1027,12 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
         }
         else if ( InputCommands[ 0 ].compare( "inline-execute" ) == 0 )
         {
+            if ( InputCommands.length() < 2 )
+            {
+                CONSOLE_ERROR( "Not enough arguments" )
+                return false;
+            }
+
             auto Path = InputCommands[ 1 ];
             auto Args = QString( "" );
             if ( InputCommands.size() > 3 )
@@ -1048,7 +1054,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
 
             SEND( Execute.InlineExecute( TaskID, "go", Path, Args, "default" ); )
         }
-        else if (InputCommands[ 0 ].compare( "dotnet" ) == 0)
+        else if ( InputCommands[ 0 ].compare( "dotnet" ) == 0 )
         {
             if ( InputCommands.size() == 1 )
             {
@@ -1089,9 +1095,9 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
 
                 SEND( Execute.AssemblyListVersions( TaskID ) )
             }
-            else if (InputCommands[1].compare("search") == 0)
+            else
             {
-                // search
+                goto CheckRegisteredCommands;
             }
         }
         else if ( InputCommands[ 0 ].compare( "download" ) == 0 )
@@ -1542,12 +1548,12 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
 
             return true;
         }
-        else if ( InputCommands[ 0 ].compare( "" ) == 0 )
-        {
-            // do nothing
-        }
+        else if ( InputCommands[ 0 ].compare( "" ) == 0 ) { /* do nothing */ }
         else
         {
+        CheckRegisteredCommands:
+            spdlog::debug( "Check if one of the registered commands it is lol." );
+
             auto FoundCommand = false;
 
             // check for registered commands
@@ -1560,64 +1566,77 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 {
                     if ( InputCommands[ 1 ].compare( Command.Command.c_str() ) == 0 )
                     {
+                        spdlog::debug( "Found module command: {}", commandline.toStdString() );
+
                         PyObject* FuncArgs = PyTuple_New( InputCommands.size() );
-                        PyObject* Return   = NULL;
+                        PyObject* Return   = nullptr;
                         auto      Path     = std::string();
 
-                        if ( ! PyCallable_Check( ( PyObject* ) Command.Function ) )
+                        if ( Send )
                         {
-                            PyErr_SetString( PyExc_TypeError, "a callable is required" );
-                            return false;
+                            NewPackageCommand( Teamserver, Util::Packager::Body_t {
+                                    .SubEvent = Util::Packager::Session::SendCommand,
+                                    .Info     = {
+                                            { "TaskID",      TaskID.toStdString() },
+                                            { "DemonID",     DemonConsole->SessionInfo.Name.toStdString() },
+                                            { "CommandID",   "Python Plugin" },
+                                            { "CommandLine", commandline.toStdString() },
+                                    },
+                            } );
+
+                            if ( ! PyCallable_Check( ( PyObject* ) Command.Function ) )
+                            {
+                                PyErr_SetString( PyExc_TypeError, "a callable is required" );
+                                return false;
+                            }
+
+                            if ( ! Command.Path.empty() )
+                            {
+                                Path = std::filesystem::current_path();
+                                spdlog::debug( "Set current path to {}", Command.Path );
+                                std::filesystem::current_path( Command.Path );
+                            }
+
+                            DemonConsole->AppendRaw();
+                            DemonConsole->AppendRaw( Prompt );
+
+                            // First arg is the DemonID
+                            PyTuple_SetItem( FuncArgs, 0, PyUnicode_FromString( this->DemonID.toStdString().c_str() ) );
+
+                            if ( InputCommands.size() > 1 )
+                            {
+                                // Set arguments of the functions
+                                for ( u32 i = 1; i < InputCommands.size(); i++ )
+                                    PyTuple_SetItem( FuncArgs, i, PyUnicode_FromString( InputCommands[ i ].toStdString().c_str() ) );
+
+                                Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
+                            }
+                            else
+                                Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
+
+                            if ( ! Path.empty() )
+                            {
+                                spdlog::debug( "Set path back to {}", Path );
+                                std::filesystem::current_path( Path );
+                            }
+
+                            if ( PyErr_Occurred() )
+                            {
+                                PyErr_PrintEx( 0 );
+                                PyErr_Clear();
+                            }
+
+                            if ( ! Return )
+                                return false;
+
+                            Py_CLEAR( Return );
                         }
-
-                        if ( ! Command.Path.empty() )
-                        {
-                            Path = std::filesystem::current_path();
-                            spdlog::debug( "Set current path to {}", Command.Path );
-                            std::filesystem::current_path( Command.Path );
-                        }
-
-                        FoundCommand = true;
-
-                        // First arg is the DemonID
-                        PyTuple_SetItem( FuncArgs, 0, PyUnicode_FromString( this->DemonID.toStdString().c_str() ) );
-
-                        DemonConsole->AppendRaw();
-                        DemonConsole->AppendRaw( Prompt );
-
-                        if ( InputCommands.size() > 1 )
-                        {
-                            // Set arguments of the functions
-                            for ( u32 i = 1; i < InputCommands.size(); i++ )
-                                PyTuple_SetItem( FuncArgs, i, PyUnicode_FromString( InputCommands[ i ].toStdString().c_str() ) );
-
-                            Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
-                        }
-                        else
-                        {
-                            Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
-                        }
-
-                        if ( ! Path.empty() )
-                        {
-                            spdlog::debug( "Set path back to {}", Path );
-                            std::filesystem::current_path( Path );
-                        }
-
-                        if ( PyErr_Occurred() )
-                        {
-                            PyErr_PrintEx( 0 );
-                            PyErr_Clear();
-                        }
-
-                        Py_CLEAR( Return );
 
                         return true;
                     }
                 }
                 else if ( InputCommands[ 0 ].compare( Command.Command.c_str() ) == 0 )
                 {
-
                     PyObject* FuncArgs = PyTuple_New( InputCommands.size() );
                     PyObject* Return   = NULL;
                     auto      Path     = std::string();
@@ -1633,51 +1652,52 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                                         { "CommandLine", commandline.toStdString() },
                                 },
                         } );
+
+                        if ( ! PyCallable_Check( ( PyObject* ) Command.Function ) )
+                        {
+                            PyErr_SetString( PyExc_TypeError, "a callable is required" );
+                            return false;
+                        }
+
+                        if ( ! Command.Path.empty() )
+                        {
+                            Path = std::filesystem::current_path();
+                            spdlog::debug( "Set current path to {}", Command.Path );
+                            std::filesystem::current_path( Command.Path );
+                        }
+
+                        // First arg is the DemonID
+                        PyTuple_SetItem( FuncArgs, 0, PyUnicode_FromString( this->DemonID.toStdString().c_str() ) );
+
+                        if ( InputCommands.size() > 1 )
+                        {
+                            // Set arguments of the functions
+                            for ( u32 i = 1; i < InputCommands.size(); i++ )
+                                PyTuple_SetItem( FuncArgs, i, PyUnicode_FromString( InputCommands[ i ].toStdString().c_str() ) );
+
+                            Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
+                        }
+                        else
+                            Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
+
+                        if ( ! Path.empty() )
+                        {
+                            spdlog::debug( "Set path back to {}", Path );
+                            std::filesystem::current_path( Path );
+                        }
+
+                        if ( PyErr_Occurred() )
+                        {
+                            PyErr_PrintEx( 0 );
+                            PyErr_Clear();
+                        }
+
+                        if ( ! Return )
+                            return false;
+
+                        Py_CLEAR( Return );
+
                     }
-
-                    if ( ! PyCallable_Check( ( PyObject* ) Command.Function ) )
-                    {
-                        PyErr_SetString( PyExc_TypeError, "a callable is required" );
-                        return false;
-                    }
-
-                    if ( ! Command.Path.empty() )
-                    {
-                        Path = std::filesystem::current_path();
-                        spdlog::debug( "Set current path to {}", Command.Path );
-                        std::filesystem::current_path( Command.Path );
-                    }
-
-                    // First arg is the DemonID
-                    PyTuple_SetItem( FuncArgs, 0, PyUnicode_FromString( this->DemonID.toStdString().c_str() ) );
-
-                    if ( InputCommands.size() > 1 )
-                    {
-                        // Set arguments of the functions
-                        for ( u32 i = 1; i < InputCommands.size(); i++ )
-                            PyTuple_SetItem( FuncArgs, i, PyUnicode_FromString( InputCommands[ i ].toStdString().c_str() ) );
-
-                        Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
-                    }
-                    else
-                        Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
-
-                    if ( ! Path.empty() )
-                    {
-                        spdlog::debug( "Set path back to {}", Path );
-                        std::filesystem::current_path( Path );
-                    }
-
-                    if ( PyErr_Occurred() )
-                    {
-                        PyErr_PrintEx( 0 );
-                        PyErr_Clear();
-                    }
-
-                    if ( ! Return )
-                        return false;
-
-                    Py_CLEAR( Return );
 
                     return true;
                 }

