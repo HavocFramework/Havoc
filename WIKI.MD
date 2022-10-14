@@ -236,11 +236,8 @@ The Havoc Teamserver is written in Golang. It handles the listeners, teamserver 
 
 ### <a name="stt"></a> Starting the Teamserver
 
-> A script is included to automatically start the Teamserver using some default options: `Havoc/Teamserver/teamserver`.
+Running `./teamserver server --profile ./profiles/havoc.yaotl -v --debug` will launch the built Teamserver with verbosity and debugging enabled.
 
-Running `./teamserver` will automatically build the Teamserver, set it as executable and start it with the following options:
-
-`sudo ./teamserver server --profile ./profiles/havoc.yaotl -v --debug`
 
 ### <a name="targ"></a>Arguments
 
