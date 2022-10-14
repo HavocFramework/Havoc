@@ -128,7 +128,8 @@ VOID JobCheckList()
 
                             if ( Available > 0 )
                             {
-                                Buffer = Instance->Win32.LocalAlloc( LPTR, Available );
+                                DWORD Size = Available;
+                                Buffer = Instance->Win32.LocalAlloc( LPTR, Size );
 
                                 if ( Instance->Win32.ReadFile( ( ( PANONPIPE ) JobList->Data )->StdOutRead, Buffer, Available, &Available, NULL ) )
                                 {
@@ -137,7 +138,7 @@ VOID JobCheckList()
                                     PackageTransmit( Package, NULL, NULL );
                                 }
 
-                                DATA_FREE( Buffer, Available )
+                                DATA_FREE( Buffer, Size )
                             }
                         }
                     }
@@ -336,7 +337,8 @@ BOOL JobKill( DWORD JobID )
 
                             if ( Available > 0 )
                             {
-                                Buffer = Instance->Win32.LocalAlloc( LPTR, Available );
+                                DWORD Size = Available;
+                                Buffer = Instance->Win32.LocalAlloc( LPTR, Size );
 
                                 if ( Instance->Win32.ReadFile( ( ( PANONPIPE ) JobList->Data )->StdOutRead, Buffer, Available, &Available, NULL ) )
                                 {
@@ -345,7 +347,7 @@ BOOL JobKill( DWORD JobID )
                                     PackageTransmit( Package, NULL, NULL );
                                 }
 
-                                DATA_FREE( Buffer, Available )
+                                DATA_FREE( Buffer, Size )
                             }
                         }
                     }

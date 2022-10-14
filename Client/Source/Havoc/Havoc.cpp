@@ -1,6 +1,6 @@
 #include <Havoc/Havoc.hpp>
 #include <QApplication>
-#include "Include/Havoc/Connector.hpp"
+#include <Havoc/Connector.hpp>
 // #include <QQuickView>
 
 HavocSpace::Havoc::Havoc( QMainWindow* w )

@@ -109,12 +109,16 @@ void HavocNamespace::UserInterface::Widgets::SessionTable::NewSessionItem( Util:
     auto *item_ProcessID = new QTableWidgetItem();
     auto *item_Arch      = new QTableWidgetItem();
     auto *item_Last      = new QTableWidgetItem();
+    auto Icon            = QIcon();
 
     if ( item.Elevated.compare( "true" ) == 0 )
+    {
         item_ID->setForeground( QColor( 255, 85, 85 ) );
+        Icon = WinVersionIcon( item.OS, true );
+    } else Icon = WinVersionIcon( item.OS, false );
 
     item_ID->setText( item.Name );
-    item_ID->setIcon( QIcon( ":/images/SessionItem" ) );
+    item_ID->setIcon( Icon );
     item_ID->setTextAlignment( Qt::AlignCenter );
     item_ID->setFlags( item_ID->flags() ^ Qt::ItemIsEditable );
     SessionTableWidget->setItem( SessionTableWidget->rowCount() - 1, 0, item_ID );

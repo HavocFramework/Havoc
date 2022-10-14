@@ -23,9 +23,12 @@ class Node : public QGraphicsItem
     QString NodeLabel       = QString();
 
 public:
-    QString      NodeID     = QString();
-    NodeItemType NodeType   = NodeItemType::Nothing;
-    Edge*        NodeEdge   = nullptr;
+    QString      NodeID       = QString();
+    NodeItemType NodeType     = NodeItemType::Nothing;
+    Edge*        NodeEdge     = nullptr;
+    bool         Disconnected = false;
+
+    HavocNamespace::Util::SessionItem Session;
 
 public:
     Node( NodeItemType NodeType, QString NodeLabel, GraphWidget* graphWidget );

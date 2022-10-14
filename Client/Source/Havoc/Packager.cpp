@@ -8,14 +8,17 @@
 #include <UserInterface/Widgets/TeamserverTabSession.h>
 #include <UserInterface/SmallWidgets/EventViewer.hpp>
 #include <UserInterface/Widgets/DemonInteracted.h>
+#include <UserInterface/Widgets/ScriptManager.h>
 
 #include <Util/ColorText.h>
 #include <Util/Base.hpp>
 
+#include <sstream>
+
 #include <QScrollBar>
 #include <QByteArray>
-#include <sstream>
 #include <QJsonArray>
+#include <QDir>
 
 const int Util::Packager::InitConnection::Type      = 0x1;
 const int Util::Packager::InitConnection::Success   = 0x1;
@@ -52,6 +55,8 @@ const int Util::Packager::Service::AgentRegister    = 0x1;
 const int Util::Packager::Teamserver::Type          = 0x10;
 const int Util::Packager::Teamserver::Logger        = 0x1;
 const int Util::Packager::Teamserver::Profile       = 0x2;
+
+using HavocNamespace::UserInterface::Widgets::ScriptManager;
 
 Util::Packager::PPackage Packager::DecodePackage( const QString& Package )
 {
@@ -168,6 +173,19 @@ bool Packager::DispatchInitConnection( Util::Packager::PPackage Package )
                 {
                     HavocApplication->HavocAppUI.setupUi( HavocApplication->HavocMainWindow );
                     HavocApplication->HavocAppUI.setDBManager( HavocApplication->dbManager );
+                }
+
+                // add some "default" scripts
+                if ( QDir( "Modules" ).exists( ) )
+                {
+                    ScriptManager::AddScript( "Modules/InvokeAssembly/invokeassembly.py" );
+                    ScriptManager::AddScript( "Modules/PowerPick/powerpick.py" );
+                    ScriptManager::AddScript( "Modules/SituationalAwareness/SituationalAwareness.py" );
+                    ScriptManager::AddScript( "Modules/Domaininfo/Domaininfo.py" );
+                }
+                else
+                {
+                    spdlog::debug( "Modules folder does not exists" );
                 }
 
                 HavocApplication->Start();
@@ -617,7 +635,7 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
 
                             if ( Row.compare( Session.Name ) == 0 )
                             {
-                                HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, 0 )->setIcon( QIcon( ":/images/SessionItem" ) );
+                                HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, 0 )->setIcon( WinVersionIcon( Session.OS, true ) );
 
                                 for ( int j = 0; j < HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->columnCount(); j++ )
                                 {
@@ -697,7 +715,17 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                 {
                     if ( Marked.compare( "Alive" ) == 0 )
                     {
-                        HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, 0 )->setIcon( QIcon( ":/images/SessionItem" ) );
+                        for ( auto& session : HavocX::Teamserver.Sessions )
+                        {
+                            if ( session.Name.toStdString() == AgentID )
+                            {
+                                auto Icon = ( session.Elevated.compare( "true" ) == 0 ) ?
+                                        WinVersionIcon( session.OS, true ) :
+                                        WinVersionIcon( session.OS, false );
+
+                                HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, 0 )->setIcon( Icon );
+                            }
+                        }
 
                         for ( int j = 0; j < HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->columnCount(); j++ )
                         {

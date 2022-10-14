@@ -5,7 +5,7 @@
 #include <Core/Parser.h>
 #include <Core/MiniStd.h>
 
-BYTE AgentConfig[ CONFIG_SIZE ]  = CONFIG_BYTES;
+BYTE AgentConfig[ CONFIG_SIZE ] = CONFIG_BYTES;
 
 // TODO: Clear memory at exit
 VOID ConfigInit()

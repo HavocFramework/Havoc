@@ -120,6 +120,29 @@ void HavocNamespace::UserInterface::Widgets::TeamserverTabSession::setupUi( QWid
     connect( tabWidget->tabBar(), &QTabBar::tabCloseRequested, this, &TeamserverTabSession::removeTab );
     connect( tabWidgetSmall->tabBar(), &QTabBar::tabCloseRequested, this, &TeamserverTabSession::removeTabSmall );
 
+    connect( SessionTableWidget->SessionTableWidget, &QTableWidget::doubleClicked, this, [&]( const QModelIndex &index ) {
+
+        auto SessionID = SessionTableWidget->SessionTableWidget->item( index.row(), 0 )->text();
+
+        for ( auto Session : HavocX::Teamserver.Sessions )
+        {
+            if ( Session.Name.compare( SessionID ) == 0 )
+            {
+                auto tabName = "[" + Session.Name + "] " + Session.User + "/" + Session.Computer;
+                for ( int i = 0 ; i < HavocX::Teamserver.TabSession->tabWidget->count(); i++ )
+                {
+                    if ( HavocX::Teamserver.TabSession->tabWidget->tabText( i ) == tabName )
+                    {
+                        HavocX::Teamserver.TabSession->tabWidget->setCurrentIndex( i );
+                        return;
+                    }
+                }
+
+                HavocX::Teamserver.TabSession->NewBottomTab( Session.InteractedWidget->DemonInteractedWidget, tabName.toStdString() );
+                Session.InteractedWidget->lineEdit->setFocus();
+            }
+        }
+    } );
 }
 
 void UserInterface::Widgets::TeamserverTabSession::removeTab(int index) const {
@@ -277,7 +300,11 @@ void UserInterface::Widgets::TeamserverTabSession::handleDemonContextMenu( const
                                 Marked = "Alive";
                                 Session.Marked = Marked;
 
-                                HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, 0 )->setIcon( QIcon( ":/images/SessionItem" ) );
+                                auto Icon = ( Session.Elevated.compare( "true" ) == 0 ) ?
+                                            WinVersionIcon( Session.OS, true ) :
+                                            WinVersionIcon( Session.OS, false );
+
+                                HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, 0 )->setIcon( Icon );
 
                                 for ( int j = 0; j < HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->columnCount(); j++ )
                                 {

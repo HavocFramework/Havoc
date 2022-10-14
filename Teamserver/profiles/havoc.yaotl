@@ -18,6 +18,7 @@ Operators {
 	}
 }
 
+# this is optional. if you dont use it you can remove it.
 Service {
     Endpoint = "service-endpoint"
     Password = "service-password"

@@ -3,8 +3,6 @@
 
 #include <windows.h>
 
-extern BYTE AgentConfig[ CONFIG_SIZE ];
-
 VOID ConfigInit();
 
 #endif

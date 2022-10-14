@@ -175,9 +175,8 @@ func (b *Builder) Build() bool {
 		}
 	}
 	array += "}"
-
 	logger.Debug("array = " + array)
-
+	
 	b.compilerOptions.Defines = append(b.compilerOptions.Defines, "CONFIG_BYTES="+array)
 	b.compilerOptions.Defines = append(b.compilerOptions.Defines, fmt.Sprintf("CONFIG_SIZE=%v", len(Config)))
 
