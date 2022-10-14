@@ -10,7 +10,7 @@ Havoc is a modern and malleable post-exploitation command and control framework.
 	- [Docker Container](#idc)
 	- [Jenkins Docker Container](#ijd)
 	- [Build the Teamserver](#bteam)
-	- - [Build the Client](#bclient)
+	- [Build the Client](#bclient)
 	- [Creating a Listener and Spawning an Agent](#aquick)
 - [Teamserver](#teamserver)
 	- [Starting the Teamserver](#stt)
