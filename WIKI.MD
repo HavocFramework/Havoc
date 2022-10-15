@@ -236,7 +236,7 @@ The Havoc Teamserver is written in Golang. It handles the listeners, teamserver 
 
 ### <a name="stt"></a> Starting the Teamserver
 
-Running `./teamserver server --profile ./profiles/havoc.yaotl -v --debug` will launch the built Teamserver with verbosity and debugging enabled.
+Running `sudo ./teamserver server --profile ./profiles/havoc.yaotl -v --debug` will launch the built Teamserver with verbosity and debugging enabled.
 
 Data collected by the Teamserver is stored in the `/Havoc/Teamserver/data/*` directory.
 
