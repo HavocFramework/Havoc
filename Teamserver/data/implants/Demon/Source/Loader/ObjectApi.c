@@ -298,6 +298,17 @@ VOID BeaconCleanupProcess( PROCESS_INFORMATION* pInfo )
 
 BOOL toWideChar( char* src, wchar_t* dst, int max )
 {
-    // TODO: handle this
-    return FALSE;
+    int size = strlen(src) + 1;
+    if (size > max)
+    {
+        return FALSE;
+    }
+
+    int result = swprintf(dst, max, L"hs", src);
+    if (result == -1)
+    {
+        return FALSE;
+    }
+
+    return TRUE;
 }
