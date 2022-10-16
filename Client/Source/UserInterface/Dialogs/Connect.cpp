@@ -334,7 +334,7 @@ void HavocNamespace::UserInterface::Dialogs::Connect::onButton_NewProfile()
     lineEdit_Host->setText( "127.0.0.1" );
     lineEdit_Port->setText( "40056" );
     lineEdit_User->setText( "5pider" );
-    lineEdit_Password->setText( "password" );
+    lineEdit_Password->setText( "password1234" );
 }
 
 void HavocNamespace::UserInterface::Dialogs::Connect::handleContextMenu( const QPoint &pos )
