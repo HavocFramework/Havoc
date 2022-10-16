@@ -154,7 +154,6 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
         }
     }
 
-
     for ( DWORD SymCounter = 0; SymCounter < Coffee->Header->NumberOfSymbols; SymCounter++ )
     {
         if ( StringCompareA( Coffee->Symbol[ SymCounter ].First.Name, Function ) == 0 )
