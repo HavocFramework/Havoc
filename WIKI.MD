@@ -142,7 +142,7 @@ make
 
 > On macOS, run `brew unlink qt && brew link qt` after cmake build is done.
 
-
+> On WSL navigate to https://learn.microsoft.com/en-us/windows/wsl/tutorials/gui-apps and download the needed driver for the GUI to launch.
 
 
 ### <a name="bteam"></a>Building the Teamserver
