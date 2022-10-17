@@ -9,6 +9,7 @@
 #define PPEB_PTR __readgsqword( 0x30 )
 #endif
 
+#define TYPEOF( x )                     __typeof__( x )
 #define NT_SUCCESS(Status)              ( ( ( NTSTATUS ) ( Status ) ) >= 0 )
 #define NtCurrentProcess()              ( HANDLE ) ( ( HANDLE ) - 1 )
 #define NtCurrentThread()               ( ( HANDLE ) ( LONG_PTR ) - 2 )
@@ -31,7 +32,11 @@
 
 // DEBUG
 #ifdef DEBUG
+#ifdef SVC_EXE
+#define PRINTF( f, ... )                { DbgPrint( "[DEBUG::%s::%d] " f, __FUNCTION__, __LINE__, __VA_ARGS__ ); }
+#else
 #define PRINTF( f, ... )                { printf( "[DEBUG::%s::%d] " f, __FUNCTION__, __LINE__, __VA_ARGS__ ); }
+#endif
 #else
 #define PRINTF( f, ... )                { ; }
 #endif

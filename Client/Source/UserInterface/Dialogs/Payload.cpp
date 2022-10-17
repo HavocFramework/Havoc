@@ -121,6 +121,13 @@ void Payload::setupUi( QDialog* Dialog )
 
     connect( ButtonGenerate, &QPushButton::clicked, this, &Payload::buttonGenerate );
     connect( ComboAgentType, &QComboBox::currentTextChanged, this, &Payload::CtxAgentPayloadChange );
+    connect( ComboFormat, &QComboBox::currentTextChanged, this, [&]( const QString& text ){
+
+        // only add config if our agent type is the default one (demon)
+        if ( ComboAgentType->currentText().compare( "Demon" ) == 0 )
+            DefaultConfig();
+
+    } );
 
     QMetaObject::connectSlotsByName( PayloadDialog );
 }
@@ -321,6 +328,7 @@ auto Payload::CtxAgentPayloadChange( const QString& AgentType ) -> void
             ComboFormat->addItem( "Windows Exe" );
             ComboFormat->addItem( "Windows Dll" );
             ComboFormat->addItem( "Windows Shellcode" );
+            ComboFormat->addItem( "Windows Service Exe" );
 
             ComboArch->clear();
             ComboArch->addItem( "x64" );
@@ -445,9 +453,18 @@ auto Payload::DefaultConfig() -> void
 {
     TreeConfig->clear();
 
+    auto Format                  = ComboFormat->currentText();
     auto DemonConfig             = HavocX::Teamserver.DemonConfig;
     auto ConfigSleep             = new QTreeWidgetItem( TreeConfig );
-    // auto ConfigJitter            = new QTreeWidgetItem( TreeConfig );
+
+    auto ConfigServiceName       = ( QTreeWidgetItem* ) nullptr;
+    auto ConfigServiceNameInput  = ( QLineEdit* ) nullptr;
+    if ( Format.compare( "Windows Service Exe" ) == 0 )
+    {
+        ConfigServiceName       = new QTreeWidgetItem( TreeConfig );
+        ConfigServiceNameInput  = new QLineEdit( "DemonSvc" );
+    }
+
     auto ConfigIndirectSyscalls  = new QTreeWidgetItem( TreeConfig );
     auto ConfigSleepObfTechnique = new QTreeWidgetItem( TreeConfig );
     auto ConfigInjection         = new QTreeWidgetItem( TreeConfig );
@@ -459,8 +476,8 @@ auto Payload::DefaultConfig() -> void
 
     auto SleepObfTechnique       = new QComboBox;
     auto SleepObfSpoofAddress    = new QLineEdit;
+
     auto ConfigSleepLineEdit     = new QLineEdit( QString::number( DemonConfig[ "Sleep" ].toInt() ) );
-    // auto ConfigJitterLineEdit    = new QLineEdit( QString::number( DemonConfig[ "Jitter" ].toInt() ) );
     auto ConfigIndSyscallCheck   = new QCheckBox;
     auto ConfigInjectAlloc       = new QComboBox;
     auto ConfigInjectExecute     = new QComboBox;
@@ -468,6 +485,12 @@ auto Payload::DefaultConfig() -> void
     auto ConfigSpawn32LineEdit   = new QLineEdit( DemonConfig[ "ProcessInjection" ].toObject()[ "Spawn32" ].toString() );
 
     ConfigSleep->setFlags( Qt::NoItemFlags );
+    if ( Format.compare( "Windows Service Exe" ) == 0 )
+    {
+        ConfigServiceName->setFlags( Qt::NoItemFlags );
+        ConfigServiceNameInput->setObjectName( "ConfigItem" );
+    }
+
     ConfigIndirectSyscalls->setFlags( Qt::NoItemFlags );
     ConfigInjection->setFlags( Qt::NoItemFlags );
     ConfigSleepObfTechnique->setFlags( Qt::NoItemFlags );
@@ -493,6 +516,8 @@ auto Payload::DefaultConfig() -> void
     ConfigInjectExecute->setCurrentIndex( 1 );
 
     TreeConfig->setItemWidget( ConfigSleep, 1, ConfigSleepLineEdit );
+    if ( Format.compare( "Windows Service Exe" ) == 0 )
+        TreeConfig->setItemWidget( ConfigServiceName, 1, ConfigServiceNameInput );
     TreeConfig->setItemWidget( ConfigIndirectSyscalls, 1, ConfigIndSyscallCheck );
     TreeConfig->setItemWidget( ConfigSleepObfTechnique,1, SleepObfTechnique );
 
@@ -502,6 +527,8 @@ auto Payload::DefaultConfig() -> void
     TreeConfig->setItemWidget( ConfigInjectionSpawn32, 1, ConfigSpawn32LineEdit );
 
     ConfigSleep->setText( 0, "Sleep" );
+    if ( Format.compare( "Windows Service Exe" ) == 0 )
+        ConfigServiceName->setText( 0, "Service Name" );
     ConfigIndirectSyscalls->setText(  0, "Indirect Syscall" );
     ConfigSleepObfTechnique->setText( 0, "Sleep Technique" );
 

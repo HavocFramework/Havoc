@@ -9,8 +9,8 @@ using namespace std;
 using namespace HavocNamespace;
 using namespace HavocNamespace::HavocSpace;
 
-string HavocNamespace::Version  = "0.2";
-string HavocNamespace::CodeName = "Magician's Red";
+string HavocNamespace::Version  = "0.3";
+string HavocNamespace::CodeName = "Hermit Purple";
 
 // Global Variables in the Havoc Namespace
 HavocSpace::Havoc* HavocNamespace::HavocApplication;

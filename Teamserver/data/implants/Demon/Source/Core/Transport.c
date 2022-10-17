@@ -161,7 +161,6 @@ BOOL TransportInit( PPACKAGE Package )
     PackageAddInt32( Package, Instance->Config.Sleeping );
 
     // End of Options
-
     if ( Initialize )
     {
 #ifdef TRANSPORT_HTTP

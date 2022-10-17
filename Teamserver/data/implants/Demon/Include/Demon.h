@@ -116,8 +116,6 @@ typedef struct
         // Process Config
         struct
         {
-            DWORD           PpidSpoof;
-            BOOL            BlockDll;
             PCHAR           Spawn64;
             PCHAR           Spawn86;
         } Process;
@@ -134,6 +132,8 @@ typedef struct
             PBYTE           Key;
             PBYTE           IV;
         } AES;
+
+        PVOID PowershellImport;
 
     } Config ;
 
@@ -292,7 +292,7 @@ typedef struct
         WIN_FUNC( GetTokenInformation )
         WIN_FUNC( GetUserNameA )
         WIN_FUNC( CreateProcessWithTokenW )
-        WIN_FUNC( CreateProcessAsUserA )
+        WIN_FUNC( CreateProcessWithLogonW )
         NTSTATUS ( WINAPI* SystemFunction032 ) ( struct ustring* data, struct ustring* key );
 
         // Thread Management
@@ -648,7 +648,8 @@ typedef struct
 
 extern PINSTANCE Instance;
 
-VOID        DxInitialization( VOID );
-VOID        Int32ToBuffer( PUCHAR, UINT32 );
+VOID DxInitialization( VOID );
+VOID Int32ToBuffer( PUCHAR, UINT32 );
+VOID DemonMain( PVOID ModuleInst );
 
 #endif

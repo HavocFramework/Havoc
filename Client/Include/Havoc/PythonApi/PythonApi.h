@@ -21,6 +21,7 @@ namespace PythonAPI
             PY_FUNCTION( Load )
             PY_FUNCTION( GetDemons )
             PY_FUNCTION( RegisterCommand )
+            PY_FUNCTION( RegisterModule )
         }
 
         namespace Types
