@@ -342,3 +342,17 @@ VOID TokenClear()
     Instance->Tokens.Vault       = NULL;
     Instance->Tokens.Token       = NULL;
 }
+
+VOID TokenImpersonate( BOOL Impersonate )
+{
+    if ( Impersonate && Instance->Tokens.Token )
+    {
+        // impersonate the current token.
+        if ( Instance->Win32.ImpersonateLoggedOnUser( Instance->Tokens.Token->Handle ) )
+            Instance->Tokens.Impersonate = TRUE;
+        else
+            Instance->Tokens.Impersonate = FALSE;
+    }
+    else
+        Instance->Win32.RevertToSelf();
+}
