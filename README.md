@@ -17,7 +17,7 @@
 
 > Please see the [Wiki](https://github.com/HavocFramework/Havoc/wiki) for complete documentation.
 
-Havoc works well on Debian 10/11, Ubuntu 20.04/22.04 and Kali Linux. It's recommended to use the latest versions possible to avoid issues. You'll need a modern version of Qt and Python 3.10.x to avoid build issues.
+Havoc works well on Debian 10/11, Ubuntu 20.04/22.04, and Kali Linux. It is recommended to use the latest versions possible to avoid issues. You will need a modern version of Qt and Python 3.10.x to avoid build issues.
 
 See the [Installation](https://github.com/HavocFramework/Havoc/wiki#installation) guide in the Wiki for instructions. If you run into issues, check the [Known Issues](https://github.com/HavocFramework/Havoc/wiki#known-issues) page as well as the open/closed [Issues](https://github.com/HavocFramework/Havoc/issues) list.
 
