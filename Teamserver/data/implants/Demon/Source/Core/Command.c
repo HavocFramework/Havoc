@@ -584,9 +584,9 @@ VOID CommandProcList( PPARSER Parser )
         CLIENT_ID         ClientID    = { ProcessID, 0 };
         OBJECT_ATTRIBUTES ObjAttr     = { sizeof( OBJECT_ATTRIBUTES ) };
 
-        Instance->Syscall.NtOpenProcess( &hProcess, PROCESS_ALL_ACCESS, &ObjAttr, &ClientID );
-        Instance->Syscall.NtOpenProcessToken( hProcess, TOKEN_QUERY, &hToken );
+        hProcess = ProcessOpen( ProcessID, ( Instance->Session.OSVersion > WIN_VERSION_XP ) ? PROCESS_QUERY_LIMITED_INFORMATION : PROCESS_QUERY_INFORMATION );
 
+        Instance->Syscall.NtOpenProcessToken( hProcess, TOKEN_QUERY, &hToken );
         ProcessUser = TokenGetUserDomain( hToken, &UserSize );
 
         PackageAddBytes( Package, ProcessInformationList->ImageName.Buffer, ProcessInformationList->ImageName.Length );
@@ -601,7 +601,8 @@ VOID CommandProcList( PPARSER Parser )
         if ( ProcessID != Instance->Session.PID )
             Instance->Win32.NtClose( hProcess );
 #else
-        Instance->Win32.NtClose( hProcess );
+        if ( hProcess  )
+            Instance->Win32.NtClose( hProcess );
 #endif
 
         if ( hToken )
