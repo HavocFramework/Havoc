@@ -360,10 +360,9 @@ BOOL BeaconSpawnTemporaryProcess( BOOL x86, BOOL ignoreToken, STARTUPINFO* sInfo
         SIZE_T Size     = 0;
         SIZE_T Len      = 0;
 
-        Len = strlen(Path) + 1;
+        Len = StringLengthA(Path) + 1;
         Size = Len * sizeof(WCHAR);
-        wPath = (PWCHAR) malloc(Size);
-        memset(wPath, 0, Size);
+        wPath = Instance->Win32.LocalAlloc(LPTR, Size);
 
         if (toWideChar(Path, wPath, Size) <= 0) {
             return FALSE;
