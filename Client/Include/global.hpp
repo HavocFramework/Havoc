@@ -105,6 +105,15 @@ namespace HavocNamespace
             std::string     Path;
         } RegisteredCommand ;
 
+        typedef struct RegisteredModule
+        {
+            std::string Name;
+            std::string Description;
+            std::string Behavior;
+            std::string Usage;
+            std::string Example;
+        } RegisteredModule;
+
         typedef struct ListenerItem
         {
             std::string Name;
@@ -260,6 +269,7 @@ namespace HavocNamespace
             std::vector<SessionItem>       Sessions;
             std::vector<CredentialsItem>   Credentials;
             std::vector<RegisteredCommand> RegisteredCommands;
+            std::vector<RegisteredModule>  RegisteredModules;
             std::vector<ServiceAgent>      ServiceAgents;
 
             QStringList   AddedCommands;

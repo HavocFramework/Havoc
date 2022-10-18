@@ -34,11 +34,11 @@ PVOID LdrFunctionAddrString( PVOID Module, PCHAR Function )
 }
 
 COFFAPIFUNC BeaconApi[] = {
-        { .NameHash = COFFAPI_BEACONDATAPARSER,             .Pointer = ParserNew                        },
-        { .NameHash = COFFAPI_BEACONDATAINT,                .Pointer = ParserGetInt32                   },
+        { .NameHash = COFFAPI_BEACONDATAPARSER,             .Pointer = BeaconDataParse                  },
+        { .NameHash = COFFAPI_BEACONDATAINT,                .Pointer = BeaconDataInt                    },
         { .NameHash = COFFAPI_BEACONDATASHORT,              .Pointer = BeaconDataShort                  },
         { .NameHash = COFFAPI_BEACONDATALENGTH,             .Pointer = BeaconDataLength                 },
-        { .NameHash = COFFAPI_BEACONDATAEXTRACT,            .Pointer = ParserGetBytes                   },
+        { .NameHash = COFFAPI_BEACONDATAEXTRACT,            .Pointer = BeaconDataExtract                },
         { .NameHash = COFFAPI_BEACONFORMATALLOC,            .Pointer = BeaconFormatAlloc                },
         { .NameHash = COFFAPI_BEACONFORMATRESET,            .Pointer = BeaconFormatReset                },
         { .NameHash = COFFAPI_BEACONFORMATFREE,             .Pointer = BeaconFormatFree                 },
@@ -81,21 +81,77 @@ uint32_t swap_endianess(uint32_t indata) {
     return outint;
 }
 
+VOID BeaconDataParse( PDATA parser, PCHAR buffer, INT size )
+{
+    if ( parser == NULL )
+        return;
+
+    parser->original = buffer;
+    parser->buffer   = buffer;
+    parser->length   = size - 4;
+    parser->size     = size - 4;
+    parser->buffer   += 4;
+}
+
+INT BeaconDataInt( PDATA parser )
+{
+    UINT32 Value = 0;
+
+    if ( parser->length < 4 )
+        return 0;
+
+    MemCopy( &Value, parser->buffer, 4 );
+
+    parser->buffer += 4;
+    parser->length -= 4;
+
+    return ( INT ) Value;
+}
+
+SHORT BeaconDataShort( datap* parser )
+{
+    UINT16 Value = 0;
+
+    if ( parser->length < 2 )
+        return 0;
+
+    MemCopy( &Value, parser->buffer, 2 );
+
+    parser->buffer += 2;
+    parser->length -= 2;
+
+    return ( short ) Value;
+}
+
 INT BeaconDataLength( PDATA parser )
 {
     return parser->length;
 }
 
-short BeaconDataShort(datap* parser)
+PCHAR BeaconDataExtract( PDATA parser, PINT size )
 {
-    UINT16 retvalue = 0;
-    if (parser->length < 2) {
-        return 0;
-    }
-    memcpy(&retvalue, parser->buffer, 2);
-    parser->buffer += 2;
-    parser->length -= 2;
-    return (short)retvalue;
+    INT   Length = 0;
+    PVOID Data   = NULL;
+
+    if ( parser->length < 4 )
+        return NULL;
+
+    MemCopy( &Length, parser->buffer, 4 );
+
+    parser->buffer += 4;
+
+    Data = parser->buffer;
+    if ( Data == NULL )
+        return NULL;
+
+    parser->length -= 4;
+    parser->length -= Length;
+    parser->buffer += Length;
+
+    if ( size != NULL )
+        *size = Length;
+
+    return Data;
 }
 
 VOID BeaconPrintf( INT Type, PCHAR fmt, ... )

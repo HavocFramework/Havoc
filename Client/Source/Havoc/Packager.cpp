@@ -145,7 +145,6 @@ auto Packager::DispatchPackage( Util::Packager::PPackage Package ) -> bool
         case Util::Packager::Gate::Type:
             return DispatchGate( Package );
 
-
         case Util::Packager::Session::Type:
             return DispatchSession( Package );
 
@@ -182,6 +181,8 @@ bool Packager::DispatchInitConnection( Util::Packager::PPackage Package )
                     ScriptManager::AddScript( "Modules/PowerPick/powerpick.py" );
                     ScriptManager::AddScript( "Modules/SituationalAwareness/SituationalAwareness.py" );
                     ScriptManager::AddScript( "Modules/Domaininfo/Domaininfo.py" );
+                    ScriptManager::AddScript( "Modules/Jump-exec/ScShell/scshell.py" );
+                    ScriptManager::AddScript( "Modules/Jump-exec/Psexec/psexec.py" );
                 }
                 else
                 {
@@ -616,8 +617,6 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
 
         case Util::Packager::Session::ReceiveCommand:
         {
-            bool scrollmouse = true;
-
             for ( auto & Session : HavocX::Teamserver.Sessions )
             {
                 if ( Session.Name.compare( Package->Body.Info[ "DemonID" ].c_str() ) == 0 )
@@ -669,7 +668,18 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                     switch ( CommandID )
                     {
                         case 0x80:
-                            Session.InteractedWidget->DemonCommands->OutputDispatch.MessageOutput( Output, QString( Package->Head.Time.c_str() ) );
+
+                            if ( QByteArray::fromBase64( Output.toLocal8Bit() ).length() > 5 )
+                            {
+                                Session.InteractedWidget->DemonCommands->OutputDispatch.MessageOutput(
+                                        Output,
+                                        QString( Package->Head.Time.c_str() )
+                                );
+                                Session.InteractedWidget->Console->verticalScrollBar()->setValue(
+                                        Session.InteractedWidget->Console->verticalScrollBar()->maximum()
+                                );
+                            }
+
                             break;
 
                         case ( int ) Commands::CALLBACK:
@@ -678,10 +688,8 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                             auto LastTimeJson = QJsonDocument::fromJson( LastTime.toLocal8Bit() );
 
                             HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue(
-                                    Package->Body.Info["DemonID"].c_str(), 8, LastTimeJson["Output"].toString()
+                                Package->Body.Info["DemonID"].c_str(), 8, LastTimeJson["Output"].toString()
                             );
-
-                            scrollmouse = false;
                             break;
                         }
 
@@ -689,9 +697,6 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                             spdlog::error( "[PACKAGE] Command not found" );
                             break;
                     }
-
-                    if ( scrollmouse )
-                        Session.InteractedWidget->Console->verticalScrollBar()->setValue( Session.InteractedWidget->Console->verticalScrollBar()->maximum() );
 
                     break;
                 }

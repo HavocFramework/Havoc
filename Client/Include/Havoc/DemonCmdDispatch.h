@@ -31,9 +31,9 @@ enum class Commands {
     INJECT_DLL              = 22,
     INJECT_SHELLCODE        = 24,
     INJECT_DLL_SPAWN        = 26,
-    PROC_PPIDSPOOF          = 27,
     TOKEN                   = 40,
     PROC                    = 0x1010,
+    PS_IMPORT               = 0x1011,
     INLINE_EXECUTE_ASSEMBLY = 0x2001,
     ASSEMBLY_LIST_VERSIONS 	= 0x2003,
     NET                     = 2100,
@@ -67,7 +67,7 @@ public:
 
     auto ProcModule( QString TaskID, int SubCommand, QString Args ) -> void;
     auto ProcList( QString TaskID, bool FromProcessManager ) -> void;
-    auto ProcPpidSpoof( QString TaskID, QString PPIDSpoof ) -> void;
+    auto PsImport( QString TaskID, QString Content );
 
     auto ShellcodeInject( QString TaskID, QString InjectionTechnique, QString TargetPID, QString TargetArch, QString Path, QString Arguments ) const -> void;
     auto ShellcodeSpawn( QString TaskID, QString InjectionTechnique, QString TargetArch, QString Path, QString Arguments ) -> void;
@@ -76,7 +76,7 @@ public:
     auto DllInject( QString TaskID, QString TargetPID, QString Path, QString Params ) -> void;
     auto DllSpawn( QString TaskID, QString FilePath, QByteArray Args ) -> void;
 
-    auto InlineExecute( QString TaskID, QString FunctionName, QString Path, QString Args, QString Flags ) -> void;
+    auto InlineExecute( QString TaskID, QString FunctionName, QString Path, QByteArray Args, QString Flags ) -> void;
     auto AssemblyInlineExecute( QString TaskID, QString Path, QString Args ) -> void;
     auto AssemblyListVersions( QString TaskID ) -> void;
     auto Net( QString TaskID, QString Command, QString Param ) -> void;
@@ -123,8 +123,7 @@ public:
         QStringList MitreTechniques;
         QString     Usage;
         QString     Example;
-
-        bool        Config;
+        bool        Module;
 
         std::vector<SubCommand_t> SubCommands;
     } Command_t;

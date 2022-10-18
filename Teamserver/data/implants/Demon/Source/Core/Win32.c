@@ -7,13 +7,12 @@
 #include <ntstatus.h>
 
 BOOL Win32_DuplicateTokenEx(
-        HANDLE                          ExistingTokenHandle,
-        DWORD                           dwDesiredAccess,
-        LPSECURITY_ATTRIBUTES           lpTokenAttributes,
-        SECURITY_IMPERSONATION_LEVEL    ImpersonationLevel,
-        TOKEN_TYPE                      TokenType,
-        PHANDLE                         DuplicateTokenHandle
-)
+        HANDLE                       ExistingTokenHandle,
+        DWORD                        dwDesiredAccess,
+        LPSECURITY_ATTRIBUTES        lpTokenAttributes,
+        SECURITY_IMPERSONATION_LEVEL ImpersonationLevel,
+        TOKEN_TYPE                   TokenType,
+        PHANDLE                      DuplicateTokenHandle )
 {
     OBJECT_ATTRIBUTES           ObjectAttributes    = { 0 };
     NTSTATUS                    Status              = STATUS_SUCCESS;

