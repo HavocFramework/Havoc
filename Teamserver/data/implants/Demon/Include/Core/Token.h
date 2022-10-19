@@ -32,5 +32,6 @@ HANDLE           TokenSteal( DWORD dwTargetPID );
 HANDLE           TokenMake( LPSTR User, LPSTR Password, LPSTR Domain );
 PTOKEN_LIST_DATA TokenGet( DWORD TokenID );
 VOID             TokenClear( );
+VOID             TokenImpersonate( BOOL Impersonate );
 
 #endif

