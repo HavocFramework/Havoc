@@ -472,7 +472,7 @@ func (t *Teamserver) FindSystemPackages() bool {
 		if len(t.Profile.Config.Server.Build.Compiler64) > 0 {
 			if _, err := os.Stat(t.Profile.Config.Server.Build.Compiler64); os.IsNotExist(err) {
 				logger.SetStdOut(os.Stderr)
-				logger.Error("Compiler x64 path doesn't exists: " + t.Profile.Config.Server.Build.Compiler64)
+				logger.Error("Compiler x64 path doesn't exist: " + t.Profile.Config.Server.Build.Compiler64)
 				return false
 			}
 
@@ -489,7 +489,7 @@ func (t *Teamserver) FindSystemPackages() bool {
 		if len(t.Profile.Config.Server.Build.Compiler86) > 0 {
 			if _, err := os.Stat(t.Profile.Config.Server.Build.Compiler86); os.IsNotExist(err) {
 				logger.SetStdOut(os.Stderr)
-				logger.Error("Compiler x86 path doesn't exists: " + t.Profile.Config.Server.Build.Compiler86)
+				logger.Error("Compiler x86 path doesn't exist: " + t.Profile.Config.Server.Build.Compiler86)
 				return false
 			}
 
@@ -506,7 +506,7 @@ func (t *Teamserver) FindSystemPackages() bool {
 		if len(t.Profile.Config.Server.Build.Nasm) > 0 {
 			if _, err := os.Stat(t.Profile.Config.Server.Build.Nasm); os.IsNotExist(err) {
 				logger.SetStdOut(os.Stderr)
-				logger.Error("Nasm path doesn't exists: " + t.Profile.Config.Server.Build.Nasm)
+				logger.Error("Nasm path doesn't exist: " + t.Profile.Config.Server.Build.Nasm)
 				return false
 			}
 
