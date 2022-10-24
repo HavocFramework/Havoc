@@ -41,3 +41,6 @@ In this file i give credits to those people who helped me working on this projec
 - [Giorgos Karantzas](https://twitter.com/GeKarantzas) & [Constantinos Patsakis](https://twitter.com/kpatsak) of University of Piraeus: 
     Various forms of generic\academic help during a past research engagement. Note: All experimentation took place prior to April 2022
 
+- [@infosecnoodle](https://twitter.com/infosecnoodle)
+  Designed session graph/table agent icons (with lighting bolt effects for high elevated targets)
+

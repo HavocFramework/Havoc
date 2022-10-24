@@ -110,14 +110,23 @@ void ScriptManager::RetranslateUi( )
 
 void ScriptManager::AddScript( QString Path )
 {
-    QFile Script( Path );
-    Script.open( QIODevice::ReadOnly );
+    auto Script = FileRead( Path );
 
-    if ( Script.isOpen() )
-        PyRun_SimpleStringFlags( Script.readAll().toStdString().c_str(), NULL );
+    HavocX::Teamserver.LoadingScript = Path.toStdString();
+
+    if ( Script != nullptr )
+    {
+        if ( ! Script.isEmpty() )
+            PyRun_SimpleStringFlags( Script.toStdString().c_str(), NULL );
+        else
+            spdlog::error( "Script path not found: {}", Path.toStdString() );
+    }
     else
-        spdlog::error( "Script path not found: {}", Path.toStdString() );
+    {
+        spdlog::error( "Failed to load script: {}", Path.toStdString() );
+    }
 
+    HavocX::Teamserver.LoadingScript = "";
 }
 
 void ScriptManager::AddScriptTable( QString Path )

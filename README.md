@@ -6,12 +6,16 @@
   <p><i>Havoc is a modern and malleable post-exploitation command and control framework, created by <a href="https://twitter.com/C5pider">@C5pider</a>.</i></p>
   <br />
 
-  <img src="Assets/Screenshots/SessionGraphSmbEkko.png" width="90%" /><br /><br />
+  <img src="Assets/Screenshots/FullSessionGraph.jpeg" width="90%" /><br />
   <img src="Assets/Screenshots/MultiUserAgentControl.png" width="90%" /><br />
   
 </div>
 
 > :warning: Havoc is in an early state of release. Breaking changes may be made to APIs/core structures as the framework matures.
+
+### Support
+
+Consider supporting C5pider on [Patreon](https://www.patreon.com/5pider)/[Github Sponsors](https://github.com/sponsors/Cracked5pider). Additional features are planned for supporters in the future, such as custom agents/plugins/commands/etc.
 
 ### Quick Start
 
@@ -66,10 +70,6 @@ See the [Installation](https://github.com/HavocFramework/Havoc/wiki#installation
 - [Modules](https://github.com/HavocFramework/Modules)
 
 ---
-
-### Support
-
-Consider supporting C5pider on [Patreon](https://www.patreon.com/5pider)/[Github Sponsors](https://github.com/sponsors/Cracked5pider). Additional features are planned for supporters in the future, such as custom agents/plugins/commands/etc.
 
 ### Community
 

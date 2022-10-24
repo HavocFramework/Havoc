@@ -11,6 +11,7 @@ const (
 	PROCESS_ARCH_IA64    = 3
 )
 
+// TODO: change Command IDs. use something more readable and understandable.
 const (
 	COMMAND_GET_JOB                 = 1
 	DEMON_INIT                      = 99
@@ -18,6 +19,7 @@ const (
 	COMMAND_NOJOB                   = 10
 	COMMAND_SLEEP                   = 11
 	COMMAND_PROC                    = 0x1010
+	COMMAND_PS_IMPORT               = 0x1011
 	COMMAND_PROC_LIST               = 12
 	COMMAND_FS                      = 15
 	COMMAND_INLINEEXECUTE           = 20

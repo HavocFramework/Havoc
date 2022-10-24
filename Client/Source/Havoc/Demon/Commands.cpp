@@ -31,6 +31,8 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
         {
             .CommandString  = "job",
             .Description    = "job manager",
+            .Module         = true,
+
             .SubCommands    =
             {
                 {
@@ -64,6 +66,8 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
         {
             .CommandString  = "task",
             .Description    = "task manager",
+            .Module         = true,
+
             .SubCommands    =
             {
                 {
@@ -83,6 +87,7 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
             .Description    = "process enumeration and management",
             .Usage          = "[command]",
             .Example        = "list",
+            .Module         = true,
 
             .SubCommands    =
             {
@@ -241,6 +246,8 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
             .Description    = "shellcode injection techniques",
             .Usage          = "[subcommand]",
             .Example        = R"(inject-sys x64 1337 /tmp/rev_shell.x64.bin)",
+            .Module         = true,
+
             .SubCommands    =
             {
                 {
@@ -278,6 +285,7 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
             .Description    = "dll spawn and injection modules",
             .Usage          = "[subcommand]",
             .Example        = R"(inject 1337 /tmp/module.dll argument)",
+            .Module         = true,
 
             .SubCommands    =
             {
@@ -313,6 +321,7 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
             .Description    = "token manipulation and impersonation",
             .Usage          = "[subcommand]",
             .Example        = R"(steal 1337)",
+            .Module         = true,
 
             .SubCommands    =
             {
@@ -390,6 +399,7 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
             .Behavior       = BEHAVIOR_API_ONLY,
             .Usage          = "[sub command]",
             .Example        = R"(inline-execute /tmp/seatbelt.exe)",
+            .Module         = true,
 
             .SubCommands    =
             {
@@ -414,6 +424,7 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
             .Behavior       = BEHAVIOR_API_ONLY,
             .Usage          = "[sub command] (args)",
             .Example        = R"(domain)",
+            .Module         = true,
 
             .SubCommands    =
             {
@@ -485,6 +496,7 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
             .Description    = "configure the behaviour of the demon session",
             .Usage          = "[config.flag]",
             .Example        = R"(inject.spawn64 C:\Windows\System32\rundll32.exe)",
+            .Module         = true,
 
             .SubCommands    =
             {
@@ -569,6 +581,7 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
             .Behavior       = BEHAVIOR_API_ONLY,
             .Usage          = "[sub command]",
             .Example        = R"(connect SPIDERS-PC agent_6d6e)",
+            .Module         = true,
 
             .SubCommands    =
             {
@@ -592,5 +605,11 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                     .Example        = R"(64656d6e)",
                 },
             },
-        }
+        },
+        /*{
+            .CommandString  = "jump-exec",
+            .Description    = "lateral movement module",
+            .Usage          = "[exploit] (args)",
+            .Module         = true,
+        },*/
 };

