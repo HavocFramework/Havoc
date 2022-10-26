@@ -1,58 +1,51 @@
---- 
 name: Demon-Implant Bug Report
 description: File a bug report for the Demon Implant
 title: "[File a bug report for the Demon Implant]: "
 labels: ["bug"]
-
 assignees: 
   - C5pider
 body: 
-  - 
-    attributes: 
-      value: "Thanks for taking the time to fill out this bug report!\n"
-    type: markdown
-  - 
-    attributes: 
-      description: "How can we get in touch with you if we need more info?"
-      label: "Contact Details"
-      placeholder: "ex. email@example.com"
+  - type: markdown
+    attributes:
+      value: "Thanks for taking the time to fill out this bug report!"
+  - type: input
     id: contact
-    type: input
+    attributes: 
+      label: "Contact Details"
+      description: "How can we get in touch with you if we need more info?"
+      placeholder: "ex. email@example.com"
     validations: 
       required: false
-  - 
+  - type: textarea
+    id: what-happened
     attributes: 
-      description: "Also tell us, what did you expect to happen?"
       label: "What happened?"
+      description: "Also tell us, what did you expect to happen?"
       placeholder: "Tell me about the numbers Mason!"
       value: "A bug happened!"
-    id: what-happened
-    type: textarea
     validations: 
       required: true
-  - 
+  - type: dropdown
+    id: version
     attributes: 
+      label: Did You Do a Pull First?
       description: "What version of our software are you running?"
-      label: Did_You_Do_a_Pull_First?
       options: 
         - "Latest (You performed a pull first)"
         - "Anything else (You didn't pull...)"
-    id: version
-    type: dropdown
     validations: 
       required: true
-  - 
+  - type: textarea
+    id: logs
     attributes: 
       description: "Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks."
       label: "Relevant log output"
       render: shell
-    id: logs
-    type: textarea
-  - 
+  - type: checkboxes
+    id: terms
     attributes: 
-      description: "By submitting this issue, you declare you posted replication steps and information about the issue, so that it may be fully understood ."
-      label: Did-You-Read-Over-Your-Issue-First?
+      label: Did You Read Over Your Issue First?
+      description: "By submitting this issue, you confirm you posted replication steps and information about the issue, so that it may be fully understood ."
       options: 
-        - 
-          label: "I declare I made an effort and provided the necessary information for replication of the issue."
+        - label: "I declare I made an effort and provided the necessary information for replication of the issue."
           required: true

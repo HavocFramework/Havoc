@@ -90,7 +90,7 @@ auto CommandExecute::ProcList( QString TaskID, bool FromProcessManager ) -> void
     NewPackageCommand( this->DemonCommandInstance->Teamserver, Body );
 }
 
-auto CommandExecute::InlineExecute( QString TaskID, QString FunctionName, QString Path, QString Args, QString Flags ) -> void
+auto CommandExecute::InlineExecute( QString TaskID, QString FunctionName, QString Path, QByteArray Args, QString Flags ) -> void
 {
     auto Content = FileRead( Path );
     if ( Content.isEmpty() ) return;
@@ -105,7 +105,7 @@ auto CommandExecute::InlineExecute( QString TaskID, QString FunctionName, QStrin
 
             { "FunctionName",   FunctionName.toStdString() },
             { "Binary",         Content.toBase64().toStdString() },
-            { "Arguments",      Args.toStdString() },
+            { "Arguments",      Util::base64_encode( Args.toStdString().c_str(), Args.length() ) },
             { "Flags",          Flags.toStdString() },
          },
     };
@@ -162,7 +162,7 @@ auto CommandExecute::ShellcodeInject( QString TaskID, QString InjectionTechnique
             { "CommandID",   to_string( static_cast<int>( Commands::INJECT_SHELLCODE ) ).c_str() },
             { "CommandLine", DemonCommandInstance->CommandInputList[ TaskID ].toStdString() },
 
-            { "Inject",      "true" },
+            { "Way",         "Inject" },
             { "Technique",   InjectionTechnique.toStdString() },
             { "Binary",      Content.toBase64().toStdString() },
             { "Arguments",   Arguments.toUtf8().toBase64().toStdString() },
@@ -187,7 +187,7 @@ auto CommandExecute::ShellcodeSpawn( QString TaskID, QString InjectionTechnique,
             { "CommandID",   to_string(static_cast<int>(Commands::INJECT_SHELLCODE)).c_str() },
             { "CommandLine", DemonCommandInstance->CommandInputList[TaskID].toStdString() },
 
-            { "Inject",      "false" },
+            { "Way",         "Spawn" },
             { "Technique",   InjectionTechnique.toStdString() },
             { "Binary",      Content.toBase64().toStdString() },
             { "Arguments",   Arguments.toUtf8().toBase64().toStdString() },
@@ -198,6 +198,29 @@ auto CommandExecute::ShellcodeSpawn( QString TaskID, QString InjectionTechnique,
     NewPackageCommand( this->DemonCommandInstance->Teamserver, Body );
 }
 
+auto CommandExecute::ShellcodeExecute( QString TaskID, QString InjectionTechnique, QString TargetArch, QString Path, QString Arguments ) -> void
+{
+    auto Content = FileRead( Path );
+    if ( Content.isEmpty() ) return;
+
+    auto Body    = Util::Packager::Body_t {
+            .SubEvent = Util::Packager::Session::SendCommand,
+            .Info = {
+                { "TaskID",      TaskID.toStdString()},
+                { "DemonID",     this->DemonCommandInstance->DemonConsole->SessionInfo.Name.toStdString() },
+                { "CommandID",   to_string(static_cast<int>(Commands::INJECT_SHELLCODE)).c_str() },
+                { "CommandLine", DemonCommandInstance->CommandInputList[TaskID].toStdString() },
+
+                { "Way",         "Execute" },
+                { "Technique",   InjectionTechnique.toStdString() },
+                { "Binary",      Content.toBase64().toStdString() },
+                { "Arguments",   Arguments.toUtf8().toBase64().toStdString() },
+                { "Arch",        TargetArch.toStdString() },
+            },
+    };
+
+    NewPackageCommand( this->DemonCommandInstance->Teamserver, Body );
+}
 
 auto CommandExecute::DllSpawn( QString TaskID, QString Path, QByteArray Args ) -> void
 {
@@ -215,22 +238,6 @@ auto CommandExecute::DllSpawn( QString TaskID, QString Path, QByteArray Args ) -
             {"Binary",      Content.toBase64().toStdString() },
             {"Arguments",   Util::base64_encode( Args.toStdString().c_str(), Args.length() ) },
         },
-    };
-
-    NewPackageCommand( this->DemonCommandInstance->Teamserver, Body );
-}
-
-auto CommandExecute::ProcPpidSpoof( QString TaskID, QString PPIDSpoof ) -> void
-{
-    auto Body = Util::Packager::Body_t {
-        .SubEvent = Util::Packager::Session::SendCommand,
-        .Info = {
-            {"TaskID", TaskID.toStdString()},
-            {"CommandLine", DemonCommandInstance->CommandInputList[TaskID].toStdString()},
-            {"DemonID", this->DemonCommandInstance->DemonConsole->SessionInfo.Name.toStdString()},
-            {"CommandID", to_string(static_cast<int>(Commands::PROC_PPIDSPOOF)).c_str()},
-            {"PPID", PPIDSpoof.toStdString()}
-        }
     };
 
     NewPackageCommand( this->DemonCommandInstance->Teamserver, Body );

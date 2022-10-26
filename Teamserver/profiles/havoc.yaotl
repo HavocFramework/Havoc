@@ -3,8 +3,7 @@ Teamserver {
 	Port = 40056
 
 	Build {
-	    Compiler64 = "/usr/bin/x86_64-w64-mingw32-gcc"
-	    Compiler86 = "/usr/bin/i686-w64-mingw32-gcc"
+	    Compiler64 = "data/x86_64-w64-mingw32-cross/bin/x86_64-w64-mingw32-gcc"
 	    Nasm = "/usr/bin/nasm"
 	}
 }
@@ -19,31 +18,7 @@ Operators {
 	}
 }
 
-Listeners {
-	Http {
-        Name        = "Agent - HTTPs"
-        Host        = "192.168.0.148"
-        Port        = 443
-        Method      = "POST"
-        Secure      = true
-        UserAgent   = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
-        Uris        = [
-            "/text.gif",
-        ]
-        Headers     = [
-            "X-Havoc: true",
-            "X-Havoc-Agent: Demon",
-        ]
-
-        Response {
-            Headers = [
-                "Content-type: text/plain",
-                "X-IsHavocFramework: true",
-            ]
-        }
-    }
-}
-
+# this is optional. if you dont use it you can remove it.
 Service {
     Endpoint = "service-endpoint"
     Password = "service-password"

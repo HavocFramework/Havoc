@@ -1,17 +1,16 @@
-GOCMD		    = go
-BINARY_NAME	= teamserver
-GOBUILD		  = GO111MODULE="on" $(GOCMD) build -ldflags="-s -w" -o ./$(BINARY_NAME) main.go
+GOCMD	= go
+GOBUILD	= GO111MODULE="on" $(GOCMD) build -ldflags="-s -w -X cmd.VersionCommit=$(git rev-parse HEAD)" -o ./teamserver main.go
 
 ifndef VERBOSE
 .SILENT:
 endif
 
 all:
-		echo [*] Compiling....
-		GOOS=linux GOARCH=amd64 $(GOBUILD)
-		echo [+] Finished
+	$(GOBUILD)
 
 clean:
-		rm -rf ./bin
-		rm -rf ./data/loot
-		rm -rf .idea
+	rm -rf ./bin
+	rm -rf ./data/loot
+	rm -rf ./data/x86_64-w64-mingw32-cross 
+	rm -rf .idea
+	rm -rf ./teamserver

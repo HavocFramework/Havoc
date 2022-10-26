@@ -1,0 +1,60 @@
+<!DOCTYPE RCC><RCC version="1.0">
+
+    <qresource prefix="/">
+        <file>Havoc.ico</file>
+    </qresource>
+
+    <qresource prefix="/icons">
+        <file alias="tab-close-button">../Data/img/fclose.png</file>
+        <file alias="Monaco">../Data/resources/Monaco.ttf</file>
+        <file alias="FileBrowserFolder">../Data/img/FileBrowser/Folder.png</file>
+        <file alias="FileBrowserFile">../Data/img/FileBrowser/File.png</file>
+        <file alias="FileBrowserHardDisk">../Data/img/FileBrowser/HardDisk.png</file>
+
+        <file alias="DeadWhite">../Data/img/DeadWhite.png</file>
+    </qresource>
+
+    <qresource prefix="/images">
+        <file alias="linux">../Data/resources/linux-icon.png</file>
+        <file alias="linux-high">../Data/resources/linux-icon-high.png</file>
+        <file alias="macos">../Data/resources/macos-icon.png</file>
+        <file alias="macos-high">../Data/resources/macos-icon-high.png</file>
+        <file alias="unknown">../Data/resources/unknown-icon.png</file>
+        <file alias="unknown-high">../Data/resources/unknown-icon-high.png</file>
+        <file alias="win7-vista">../Data/resources/win7-vista-icon.png</file>
+        <file alias="win7-vista-high">../Data/resources/win7-vista-icon-high.png</file>
+        <file alias="win10-8">../Data/resources/win10-8-icon.png</file>
+        <file alias="win10-8-high">../Data/resources/win10-8-icon-high.png</file>
+        <file alias="win11">../Data/resources/win11-icon.png</file>
+        <file alias="win11-high">../Data/resources/win11-icon-high.png</file>
+        <file alias="winxp">../Data/resources/winxp-icon.png</file>
+        <file alias="winxp-high">../Data/resources/winxp-icon-high.png</file>
+
+        <file alias="SessionHavoc">../Data/resources/firewall.png</file>
+    </qresource>
+
+    <qresource prefix="/treewidget/">
+        <file alias="branch-closed">../Data/img/treewidget/stylesheet-branch-closed.png</file>
+        <file alias="branch-more">../Data/img/treewidget/stylesheet-branch-more.png</file>
+        <file alias="vline">../Data/img/treewidget/stylesheet-vline.png</file>
+        <file alias="branch-end">../Data/img/treewidget/stylesheet-branch-end.png</file>
+        <file alias="branch-open">../Data/img/treewidget/stylesheet-branch-open.png</file>
+    </qresource>
+
+    <qresource prefix="/stylesheets">
+        <file alias="menubar">../Data/stylesheets/menubar.qss</file>
+        <file alias="bottomTab">../Data/stylesheets/bottomTab.qss</file>
+        <file alias="MenuStyle">../Data/stylesheets/Widgets/MenuStyle.qss</file>
+        <file alias="teamserverTab">../Data/stylesheets/teamserverTab.qss</file>
+        <file alias="Havoc">../Data/stylesheets/Havoc.qss</file>
+        <file alias="MessageBox">../Data/stylesheets/Widgets/MessageBox.qss</file>
+    </qresource>
+
+    <qresource prefix="/stylesheets/Dialogs">
+        <file alias="Connect">../Data/stylesheets/Dialogs/Connect.qss</file>
+        <file alias="Preferences">../Data/stylesheets/Dialogs/Preferences.qss</file>
+        <file alias="Listener">../Data/stylesheets/Dialogs/Listener.qss</file>
+        <file alias="BasicDialog">../Data/stylesheets/Dialogs/BasicDialog.qss</file>
+        <file alias="FileDialog">../Data/stylesheets/Dialogs/FileDialog.qss</file>
+    </qresource>
+</RCC>

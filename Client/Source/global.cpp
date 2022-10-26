@@ -9,14 +9,15 @@ using namespace std;
 using namespace HavocNamespace;
 using namespace HavocNamespace::HavocSpace;
 
-string HavocNamespace::Version  = "0.1";
-string HavocNamespace::CodeName = "Star Platinum";
+string HavocNamespace::Version  = "0.3";
+string HavocNamespace::CodeName = "Hermit Purple";
 
 // Global Variables in the Havoc Namespace
 HavocSpace::Havoc* HavocNamespace::HavocApplication;
 
 Util::ConnectionInfo       HavocX::Teamserver;
 HavocNamespace::Connector* HavocX::Connector;
+bool                       HavocX::DebugMode = false;
 
 // Static Variables
 string Util::CredentialsItem::PasswordTypes::Cleartext = "cleartext";

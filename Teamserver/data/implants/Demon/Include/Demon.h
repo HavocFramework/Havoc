@@ -75,7 +75,9 @@ typedef struct
         struct {
 #ifdef TRANSPORT_HTTP
             LPWSTR  Method;
-            LPWSTR  Host;
+            LPWSTR* Hosts;
+            DWORD   HostRotation;
+            DWORD   HostIndex;
             UINT32  Port;
             DWORD   Secure;
             LPWSTR  UserAgent;
@@ -114,8 +116,6 @@ typedef struct
         // Process Config
         struct
         {
-            DWORD           PpidSpoof;
-            BOOL            BlockDll;
             PCHAR           Spawn64;
             PCHAR           Spawn86;
         } Process;
@@ -132,6 +132,8 @@ typedef struct
             PBYTE           Key;
             PBYTE           IV;
         } AES;
+
+        PVOID PowershellImport;
 
     } Config ;
 
@@ -161,6 +163,8 @@ typedef struct
         WIN_FUNC( LocalReAlloc )
         WIN_FUNC( CreateProcessA )
         WIN_FUNC( ExitProcess )
+        WIN_FUNC( GetExitCodeProcess )
+        WIN_FUNC( GetExitCodeThread )
         WIN_FUNC( TerminateProcess )
         WIN_FUNC( InitializeProcThreadAttributeList )
         WIN_FUNC( UpdateProcThreadAttribute )
@@ -182,6 +186,7 @@ typedef struct
         WIN_FUNC( Wow64DisableWow64FsRedirection )
         WIN_FUNC( Wow64RevertWow64FsRedirection )
         WIN_FUNC( CopyFileW )
+        WIN_FUNC( GetModuleHandleA )
 
         // Ntdll
         NTSTATUS ( NTAPI *LdrLoadDll ) (
@@ -287,7 +292,7 @@ typedef struct
         WIN_FUNC( GetTokenInformation )
         WIN_FUNC( GetUserNameA )
         WIN_FUNC( CreateProcessWithTokenW )
-        WIN_FUNC( CreateProcessAsUserA )
+        WIN_FUNC( CreateProcessWithLogonW )
         NTSTATUS ( WINAPI* SystemFunction032 ) ( struct ustring* data, struct ustring* key );
 
         // Thread Management
@@ -643,7 +648,8 @@ typedef struct
 
 extern PINSTANCE Instance;
 
-VOID        DxInitialization( VOID );
-VOID        Int32ToBuffer( PUCHAR, UINT32 );
+VOID DxInitialization( VOID );
+VOID Int32ToBuffer( PUCHAR, UINT32 );
+VOID DemonMain( PVOID ModuleInst );
 
 #endif

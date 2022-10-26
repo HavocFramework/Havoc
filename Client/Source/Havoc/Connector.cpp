@@ -99,7 +99,6 @@ Connector::~Connector() noexcept
 {
     delete this->Socket;
 }
-
 void Connector::SendLogin()
 {
     Util::Packager::Package Package;

@@ -31,6 +31,8 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
         {
             .CommandString  = "job",
             .Description    = "job manager",
+            .Module         = true,
+
             .SubCommands    =
             {
                 {
@@ -64,6 +66,8 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
         {
             .CommandString  = "task",
             .Description    = "task manager",
+            .Module         = true,
+
             .SubCommands    =
             {
                 {
@@ -83,6 +87,7 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
             .Description    = "process enumeration and management",
             .Usage          = "[command]",
             .Example        = "list",
+            .Module         = true,
 
             .SubCommands    =
             {
@@ -99,14 +104,6 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                     .MitreTechniques= { "T1057" },
                     .Usage          = "[pid]",
                     .Example        = "1337",
-                },
-                {
-                    .CommandString  = "blockdll",
-                    .Description    = "block non microsoft signed dlls",
-                    .Behavior       = BEHAVIOR_API_ONLY,
-                    .MitreTechniques = { },
-                    .Usage          = "[on/off]",
-                    .Example        = "on",
                 },
                 {
                     .CommandString  = "create",
@@ -139,14 +136,6 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                     .MitreTechniques= {  },
                     .Usage          = "[pid] [PAGE_READ | PAGE_READWRITE | PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE]",
                     .Example        = "1337 PAGE_EXECUTE_READWRITE",
-                },
-                {
-                    .CommandString  = "find-module",
-                    .Description    = "query for processes with specified loaded module",
-                    .Behavior       = BEHAVIOR_API_ONLY,
-                    .MitreTechniques= {  },
-                    .Usage          = "[module.dll]",
-                    .Example        = "clr.dll",
                 },
             },
         },
@@ -257,6 +246,8 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
             .Description    = "shellcode injection techniques",
             .Usage          = "[subcommand]",
             .Example        = R"(inject-sys x64 1337 /tmp/rev_shell.x64.bin)",
+            .Module         = true,
+
             .SubCommands    =
             {
                 {
@@ -277,6 +268,16 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                     .Usage          = "[arch] [/path/to/shellcode.x64.bin]",
                     .Example        = R"(x64 /tmp/rev_shell.x64.bin)",
                 },
+
+                    // Spawn & Inject Commands
+                {
+                    .CommandString  = "execute",
+                    .Description    = "executes shellcode in the current process (self inject)",
+                    .Behavior       = BEHAVIOR_PROCESS_INJECTION,
+                    .MitreTechniques= {"T1055"},
+                    .Usage          = "[arch] [/path/to/shellcode.x64.bin]",
+                    .Example        = R"([arch] /tmp/rev_shell.x64.bin)",
+                },
             },
         },
         {
@@ -284,6 +285,7 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
             .Description    = "dll spawn and injection modules",
             .Usage          = "[subcommand]",
             .Example        = R"(inject 1337 /tmp/module.dll argument)",
+            .Module         = true,
 
             .SubCommands    =
             {
@@ -319,6 +321,7 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
             .Description    = "token manipulation and impersonation",
             .Usage          = "[subcommand]",
             .Example        = R"(steal 1337)",
+            .Module         = true,
 
             .SubCommands    =
             {
@@ -396,6 +399,7 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
             .Behavior       = BEHAVIOR_API_ONLY,
             .Usage          = "[sub command]",
             .Example        = R"(inline-execute /tmp/seatbelt.exe)",
+            .Module         = true,
 
             .SubCommands    =
             {
@@ -420,6 +424,7 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
             .Behavior       = BEHAVIOR_API_ONLY,
             .Usage          = "[sub command] (args)",
             .Example        = R"(domain)",
+            .Module         = true,
 
             .SubCommands    =
             {
@@ -491,6 +496,7 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
             .Description    = "configure the behaviour of the demon session",
             .Usage          = "[config.flag]",
             .Example        = R"(inject.spawn64 C:\Windows\System32\rundll32.exe)",
+            .Module         = true,
 
             .SubCommands    =
             {
@@ -575,6 +581,7 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
             .Behavior       = BEHAVIOR_API_ONLY,
             .Usage          = "[sub command]",
             .Example        = R"(connect SPIDERS-PC agent_6d6e)",
+            .Module         = true,
 
             .SubCommands    =
             {
@@ -598,5 +605,11 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                     .Example        = R"(64656d6e)",
                 },
             },
-        }
+        },
+        /*{
+            .CommandString  = "jump-exec",
+            .Description    = "lateral movement module",
+            .Usage          = "[exploit] (args)",
+            .Module         = true,
+        },*/
 };

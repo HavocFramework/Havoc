@@ -60,7 +60,7 @@ func (h *HTTP) generateCertFiles() bool {
     h.TLS.CertPath = ListenerPath + "server.crt"
     h.TLS.KeyPath = ListenerPath + "server.key"
 
-    h.TLS.Cert, h.TLS.Key, err = certs.HTTPSGenerateRSACertificate(h.Config.Hosts)
+    h.TLS.Cert, h.TLS.Key, err = certs.HTTPSGenerateRSACertificate(h.Config.HostBind)
 
     err = os.WriteFile(h.TLS.CertPath, h.TLS.Cert, 0644)
     if err != nil {
@@ -85,7 +85,8 @@ func (h *HTTP) request(ctx *gin.Context) {
         logger.Debug("Error while reading request: " + err.Error())
     }
 
-    logger.Debug("Body: \n", hex.Dump(Body))
+    logger.Debug(" - HTTP Host : " + ctx.Request.Host)
+    logger.Debug(" - HTTP Body : \n" + hex.Dump(Body))
 
     for _, Header := range h.Config.Response.Headers {
         var hdr = strings.Split(Header, ":")
@@ -114,6 +115,11 @@ func (h *HTTP) request(ctx *gin.Context) {
                 logger.Debug(fmt.Sprintf("Command: %d (%x)", Command, Command))
 
                 if Command == agent.COMMAND_GET_JOB {
+
+                    if !AgentInstance.TaskedOnce {
+                        // alright it's the first time that the agent requests for tasks.
+                        AgentInstance.TaskedOnce = true
+                    }
 
                     AgentInstance.UpdateLastCallback(h.RoutineFunc)
 
@@ -221,7 +227,11 @@ func (h *HTTP) request(ctx *gin.Context) {
                         }
                     }
                 } else {
-                    AgentInstance.TaskDispatch(Command, AgentHeader.Data, h.RoutineFunc)
+                    if AgentInstance.TaskedOnce {
+                        AgentInstance.TaskDispatch(Command, AgentHeader.Data, h.RoutineFunc)
+                    } else {
+                        logger.DebugError("Agent hasn't tasked once and callbacks with output. rejected.")
+                    }
                 }
 
             } else {
@@ -245,6 +255,7 @@ func (h *HTTP) request(ctx *gin.Context) {
 
                     go AgentInstance.BackgroundUpdateLastCallbackUI(h.RoutineFunc)
 
+                    AgentInstance.TaskedOnce = false
                     AgentInstance.Info.ExternalIP = strings.Split(ctx.Request.RemoteAddr, ":")[0]
                     AgentInstance.Info.MagicValue = AgentHeader.MagicValue
                     AgentInstance.Info.Listener = h
@@ -323,7 +334,7 @@ func (h *HTTP) Start() {
         return
     }
 
-    if h.Config.Hosts == "" {
+    if len(h.Config.Hosts) == 0 {
         logger.Error("HTTP Hosts not set")
         return
     }
@@ -338,7 +349,7 @@ func (h *HTTP) Start() {
 
     if h.Config.Secure {
         if h.generateCertFiles() {
-            logger.Info("Started \"" + colors.Green(h.Config.Name) + "\" listener: " + colors.BlueUnderline("https://"+h.Config.Hosts+":"+h.Config.Port))
+            logger.Info("Started \"" + colors.Green(h.Config.Name) + "\" listener: " + colors.BlueUnderline("https://"+h.Config.HostBind+":"+h.Config.Port))
 
             pk := h.RoutineFunc.AppendListener("", LISTENER_HTTP, h)
             h.RoutineFunc.EventAppend(pk)
@@ -346,7 +357,7 @@ func (h *HTTP) Start() {
 
             go func() {
                 h.Server = &http.Server{
-                    Addr:    h.Config.Hosts + ":" + h.Config.Port,
+                    Addr:    h.Config.HostBind + ":" + h.Config.Port,
                     Handler: h.GinEngine,
                 }
 
@@ -361,7 +372,7 @@ func (h *HTTP) Start() {
             logger.Error("Failed to generate server tls certifications")
         }
     } else {
-        logger.Info("Started \"" + colors.Green(h.Config.Name) + "\" listener: " + colors.BlueUnderline("http://"+h.Config.Hosts+":"+h.Config.Port))
+        logger.Info("Started \"" + colors.Green(h.Config.Name) + "\" listener: " + colors.BlueUnderline("http://"+h.Config.HostBind+":"+h.Config.Port))
 
         pk := h.RoutineFunc.AppendListener("", LISTENER_HTTP, h)
         h.RoutineFunc.EventAppend(pk)
@@ -369,7 +380,7 @@ func (h *HTTP) Start() {
 
         go func() {
             h.Server = &http.Server{
-                Addr:    h.Config.Hosts + ":" + h.Config.Port,
+                Addr:    h.Config.HostBind + ":" + h.Config.Port,
                 Handler: h.GinEngine,
             }
 

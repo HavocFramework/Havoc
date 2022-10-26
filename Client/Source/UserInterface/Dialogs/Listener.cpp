@@ -158,135 +158,105 @@ HavocNamespace::UserInterface::Dialogs::NewListener::NewListener( QDialog* Dialo
     StackWidgetConfigPages = new QStackedWidget( ConfigBox );
     StackWidgetConfigPages->setObjectName( QString::fromUtf8( "StackWidgetConfigPages" ) );
 
+    // ============
+    // === HTTP ===
+    // ============
     PageHTTP = new QWidget();
     PageHTTP->setObjectName( QString::fromUtf8( "PageHTTP" ) );
 
-    ButtonUriGroupClear = new QPushButton( PageHTTP );
-    ButtonUriGroupClear->setObjectName( QString::fromUtf8( "ButtonUriGroupClear" ) );
+    LabelHosts              = new QLabel( PageHTTP );
+    HostsGroup              = new QGroupBox( PageHTTP );
+    ButtonHostsGroupAdd     = new QPushButton( PageHTTP );
+    ButtonHostsGroupClear   = new QPushButton( PageHTTP );
 
-    ProxyConfigBox = new QGroupBox( PageHTTP );
-    ProxyConfigBox->setObjectName( QString::fromUtf8( "ProxyConfigBox" ) );
-    ProxyConfigBox->setEnabled( true );
+    LabelHostRotation       = new QLabel( PageHTTP );
+    ComboHostRotation       = new QComboBox( PageHTTP );
 
-    LabelUris = new QLabel(PageHTTP);
-    LabelUris->setObjectName(QString::fromUtf8("LabelUris"));
+    LabelHostBind           = new QLabel( PageHTTP );
+    ComboHostBind           = new QComboBox( PageHTTP );
 
-    verticalSpacerUris = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+    LabelPort               = new QLabel( PageHTTP );
+    InputPort               = new QLineEdit( PageHTTP );
 
-    ButtonHeaderGroupClear = new QPushButton(PageHTTP);
-    ButtonHeaderGroupClear->setObjectName(QString::fromUtf8("ButtonHeaderGroupClear"));
+    LabelUserAgent          = new QLabel( PageHTTP );
+    InputUserAgent          = new QLineEdit( PageHTTP );
 
-    UrisGroup = new QGroupBox( PageHTTP );
-    UrisGroup->setObjectName(QString::fromUtf8("UrisGroup"));
+    LabelHeaders            = new QLabel( PageHTTP );
+    HeadersGroup            = new QGroupBox( PageHTTP );
+    ButtonHeaderGroupAdd    = new QPushButton( PageHTTP );
+    ButtonHeaderGroupClear  = new QPushButton( PageHTTP );
 
-    HeadersGroup = new QGroupBox(PageHTTP);
-    HeadersGroup->setObjectName(QString::fromUtf8("HeadersGroup"));
+    LabelUris               = new QLabel( PageHTTP );
+    UrisGroup               = new QGroupBox( PageHTTP );
+    ButtonUriGroupClear     = new QPushButton( PageHTTP );
+    ButtonUriGroupAdd       = new QPushButton( PageHTTP );
 
-    LabelUserAgent = new QLabel(PageHTTP);
-    LabelUserAgent->setObjectName(QString::fromUtf8("LabelUserAgent"));
+    LabelHostHeader         = new QLabel( PageHTTP );
+    InputHostHeader         = new QLineEdit( PageHTTP );
 
-    ButtonHeaderGroupAdd = new QPushButton(PageHTTP);
-    ButtonHeaderGroupAdd->setObjectName(QString::fromUtf8("ButtonHeaderGroupAdd"));
+    CheckEnableProxy        = new QCheckBox( PageHTTP );
 
-    LabelHostHeader = new QLabel(PageHTTP);
-    LabelHostHeader->setObjectName(QString::fromUtf8("LabelHostHeader"));
+    horizontalSpacer_6      = new QSpacerItem( 0, 0, QSizePolicy::Expanding, QSizePolicy::Minimum );
+    verticalSpacer          = new QSpacerItem( 20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding );
+    verticalSpacerHeader    = new QSpacerItem( 20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding );
+    ProxyConfigBox          = new QGroupBox( PageHTTP );
+    verticalSpacerUris      = new QSpacerItem( 20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding );
 
-    LabelHeaders = new QLabel(PageHTTP);
-    LabelHeaders->setObjectName(QString::fromUtf8("LabelHeaders"));
-
-    LabelPort = new QLabel(PageHTTP);
-    LabelPort->setObjectName(QString::fromUtf8("LabelPort"));
-
-    ButtonUriGroupAdd = new QPushButton( PageHTTP );
-    ButtonUriGroupAdd->setObjectName( QString::fromUtf8( "ButtonUriGroupAdd" ) );
-
-    CheckEnableProxy = new QCheckBox( PageHTTP );
-    CheckEnableProxy->setObjectName( "bool" );
-    CheckEnableProxy->setText( "Enable Proxy Connection" );
-
-    verticalSpacerHeader = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
-    InputPort = new QLineEdit(PageHTTP);
-    InputPort->setObjectName(QString::fromUtf8("InputPort"));
-
-    InputHost = new QLineEdit(PageHTTP);
-    InputHost->setObjectName(QString::fromUtf8("InputHost"));
-
-    LabelHosts = new QLabel(PageHTTP);
-    LabelHosts->setObjectName(QString::fromUtf8("LabelHosts"));
-
-    InputUserAgent = new QLineEdit( PageHTTP );
-    InputUserAgent->setObjectName( QString::fromUtf8( "InputUserAgent" ) );
-    InputUserAgent->setText( "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36" );
-    InputUserAgent->setCursorPosition( 0 );
-
-    horizontalSpacer_6 = new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Minimum);
-
-    InputHostHeader = new QLineEdit(PageHTTP);
-    InputHostHeader->setObjectName(QString::fromUtf8("InputHostHeader"));
-
-    formLayout_Header = new QFormLayout( HeadersGroup );
-    formLayout_Uri    = new QFormLayout( UrisGroup );
-
-    formLayout_3 = new QFormLayout( ProxyConfigBox );
-    formLayout_3->setObjectName( QString::fromUtf8( "formLayout_3" ) );
+    formLayout_Hosts        = new QFormLayout( HostsGroup );
+    formLayout_Header       = new QFormLayout( HeadersGroup );
+    formLayout_Uri          = new QFormLayout( UrisGroup );
+    formLayout_3            = new QFormLayout( ProxyConfigBox );
 
     LabelProxyType = new QLabel( ProxyConfigBox );
-    LabelProxyType->setObjectName( QString::fromUtf8( "LabelProxyHost" ) );
-    LabelProxyType->setText( "Proxy Type" );
-    formLayout_3->setWidget( 0, QFormLayout::LabelRole, LabelProxyType );
-
     ComboProxyType = new QComboBox( ProxyConfigBox );
-    ComboProxyType->setObjectName( QString::fromUtf8( "ComboProxyType" ) );
-    ComboProxyType->addItem( QString( "http" ) );
-    ComboProxyType->addItem( QString( "https" ) );
-    formLayout_3->setWidget( 0, QFormLayout::FieldRole, ComboProxyType );
-
     LabelProxyHost = new QLabel( ProxyConfigBox );
-    LabelProxyHost->setObjectName( QString::fromUtf8( "LabelProxyHost" ) );
-    formLayout_3->setWidget( 1, QFormLayout::LabelRole, LabelProxyHost );
-
     InputProxyHost = new QLineEdit( ProxyConfigBox );
-    InputProxyHost->setObjectName( QString::fromUtf8( "InputProxyHost" ) );
-    formLayout_3->setWidget( 1, QFormLayout::FieldRole, InputProxyHost );
-
     LabelProxyPort = new QLabel( ProxyConfigBox );
-    LabelProxyPort->setObjectName(QString::fromUtf8("LabelProxyPort"));
+    InputProxyPort = new QLineEdit( ProxyConfigBox );
+    LabelUserName  = new QLabel( ProxyConfigBox );
+    InputUserName  = new QLineEdit( ProxyConfigBox );
+    LabelPassword  = new QLabel( ProxyConfigBox );
+    InputPassword  = new QLineEdit( ProxyConfigBox );
+
+    formLayout_3->setWidget( 0, QFormLayout::LabelRole, LabelProxyType );
+    formLayout_3->setWidget( 0, QFormLayout::FieldRole, ComboProxyType );
+    formLayout_3->setWidget( 1, QFormLayout::LabelRole, LabelProxyHost );
+    formLayout_3->setWidget( 1, QFormLayout::FieldRole, InputProxyHost );
     formLayout_3->setWidget( 2, QFormLayout::LabelRole, LabelProxyPort );
-
-    InputProxyPort = new QLineEdit(ProxyConfigBox);
-    InputProxyPort->setObjectName(QString::fromUtf8("InputProxyPort"));
     formLayout_3->setWidget( 2, QFormLayout::FieldRole, InputProxyPort );
-
-    LabelUserName = new QLabel(ProxyConfigBox);
-    LabelUserName->setObjectName(QString::fromUtf8("LabelUserName"));
     formLayout_3->setWidget( 3, QFormLayout::LabelRole, LabelUserName );
-
-    InputUserName = new QLineEdit(ProxyConfigBox);
-    InputUserName->setObjectName(QString::fromUtf8("InputUserName"));
     formLayout_3->setWidget( 3, QFormLayout::FieldRole, InputUserName );
-
-    LabelPassword = new QLabel( ProxyConfigBox );
-    LabelPassword->setObjectName( QString::fromUtf8( "LabelPassword" ) );
     formLayout_3->setWidget( 4, QFormLayout::LabelRole, LabelPassword );
-
-    InputPassword = new QLineEdit( ProxyConfigBox );
-    InputPassword->setObjectName(QString::fromUtf8("InputPassword"));
     formLayout_3->setWidget( 4, QFormLayout::FieldRole, InputPassword );
 
+    ComboHostBind->addItems( QStringList() << HavocX::Teamserver.IpAddresses << "127.0.0.1" << "0.0.0.0" );
+
+    CheckEnableProxy->setObjectName( "bool" );
+    ProxyConfigBox->setEnabled( true );
+    InputUserAgent->setText( "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36" ); // default. maybe make it dynamic/random ?
+    InputUserAgent->setCursorPosition( 0 );
+    InputPort->setText( "443" );
+
+    // =============
+    // ==== SMB ====
+    // =============
     PageSMB = new QWidget();
     PageSMB->setObjectName(QString::fromUtf8("PageSMB"));
-    formLayout = new QFormLayout(PageSMB);
+    formLayout = new QFormLayout( PageSMB );
     formLayout->setObjectName(QString::fromUtf8("formLayout"));
-    LabelPipeName = new QLabel(PageSMB);
+    LabelPipeName = new QLabel( PageSMB );
     LabelPipeName->setObjectName(QString::fromUtf8("LabelPipeName"));
 
     formLayout->setWidget(0, QFormLayout::LabelRole, LabelPipeName);
 
-    InputPipeName = new QLineEdit(PageSMB);
-    InputPipeName->setObjectName(QString::fromUtf8("InputPipeName"));
+    InputPipeName = new QLineEdit( PageSMB );
+    InputPipeName->setObjectName( QString::fromUtf8( "InputPipeName" ) );
 
     formLayout->setWidget(0, QFormLayout::FieldRole, InputPipeName);
 
+    // ==============
+    // == External ==
+    // ==============
     PageExternal = new QWidget();
     PageExternal->setObjectName(QString::fromUtf8("PageExternal"));
     formLayout_2 = new QFormLayout(PageExternal);
@@ -362,35 +332,34 @@ HavocNamespace::UserInterface::Dialogs::NewListener::NewListener( QDialog* Dialo
     gridLayout_3 = new QGridLayout( PageHTTP );
     gridLayout_3->setObjectName( QString::fromUtf8( "gridLayout_3" ) );
 
+    gridLayout_3->addWidget( LabelUserAgent, 8, 0, 1, 1 );
+    gridLayout_3->addWidget( ButtonUriGroupClear, 16, 2, 1, 1 );
+    gridLayout_3->addWidget( ComboHostBind, 5, 1, 1, 2 );
+    gridLayout_3->addWidget( LabelUris, 15, 0, 1, 1 );
+    gridLayout_3->addWidget( LabelHostHeader, 19, 0, 1, 1 );
+    gridLayout_3->addWidget( InputPort, 6, 1, 1, 2 );
+    gridLayout_3->addWidget( CheckEnableProxy, 20, 0, 1, 3 );
+    gridLayout_3->addWidget( ButtonHeaderGroupClear, 11, 2, 1, 1 );
+    gridLayout_3->addWidget( InputHostHeader, 19, 1, 1, 2 );
+    gridLayout_3->addWidget( LabelHeaders, 10, 0, 1, 1 );
+    gridLayout_3->addWidget( ButtonHostsGroupAdd, 0, 2, 1, 1 );
+    gridLayout_3->addWidget( LabelHostBind, 5, 0, 1, 1 );
+    gridLayout_3->addWidget( InputUserAgent, 8, 1, 1, 2 );
+    gridLayout_3->addWidget( ButtonUriGroupAdd, 15, 2, 1, 1 );
+    gridLayout_3->addWidget( HeadersGroup, 10, 1, 3, 1 );
     gridLayout_3->addWidget( LabelHosts, 0, 0, 1, 1 );
-    gridLayout_3->addWidget( InputHost, 0, 1, 1, 2 );
-
-    gridLayout_3->addWidget( LabelPort, 1, 0, 1, 1 );
-    gridLayout_3->addWidget( InputPort, 1, 1, 1, 2 );
-
-    gridLayout_3->addWidget( LabelUserAgent, 3, 0, 1, 1 );
-    gridLayout_3->addWidget( InputUserAgent, 3, 1, 1, 2 );
-
-    gridLayout_3->addItem( verticalSpacerHeader, 7, 0, 1, 1 );
-
-    gridLayout_3->addWidget( LabelHeaders, 5, 0, 1, 1 );
-    gridLayout_3->addWidget( HeadersGroup, 5, 1, 3, 1 );
-    gridLayout_3->addWidget( ButtonHeaderGroupAdd,   5, 2, 1, 1 );
-    gridLayout_3->addWidget( ButtonHeaderGroupClear, 6, 2, 1, 1 );
-
-    gridLayout_3->addWidget( LabelUris, 10, 0, 1, 1 );
-    gridLayout_3->addWidget( UrisGroup, 10, 1, 3, 1 );
-    gridLayout_3->addWidget( ButtonUriGroupAdd,   10,  2, 1, 1 );
-    gridLayout_3->addWidget( ButtonUriGroupClear, 11, 2, 1, 1 );
-
-    gridLayout_3->addItem( verticalSpacerUris, 12, 0, 1, 1 );
-    gridLayout_3->addItem( horizontalSpacer_6, 13, 1, 1, 1 );
-
-    gridLayout_3->addWidget( LabelHostHeader, 14, 0, 1, 1 );
-    gridLayout_3->addWidget( InputHostHeader, 14, 1, 1, 2 );
-
-    gridLayout_3->addWidget( CheckEnableProxy, 15, 0, 1, 3 );
-    gridLayout_3->addWidget( ProxyConfigBox, 16, 0, 1, 3 );
+    gridLayout_3->addWidget( ButtonHostsGroupClear, 1, 2, 1, 1 );
+    gridLayout_3->addWidget( ButtonHeaderGroupAdd, 10, 2, 1, 1 );
+    gridLayout_3->addWidget( HostsGroup, 0, 1, 4, 1 );
+    gridLayout_3->addWidget( LabelPort, 6, 0, 1, 1 );
+    gridLayout_3->addWidget( ProxyConfigBox, 21, 0, 1, 3 );
+    gridLayout_3->addWidget( UrisGroup, 15, 1, 3, 1 );
+    gridLayout_3->addWidget( LabelHostRotation, 4, 0, 1, 1 );
+    gridLayout_3->addWidget( ComboHostRotation, 4, 1, 1, 2 );
+    gridLayout_3->addItem( horizontalSpacer_6, 18, 1, 1, 1 );
+    gridLayout_3->addItem( verticalSpacer, 2, 0, 1, 1 );
+    gridLayout_3->addItem( verticalSpacerHeader, 12, 0, 1, 1 );
+    gridLayout_3->addItem( verticalSpacerUris, 17, 0, 1, 1 );
 
     ProxyConfigBox->setEnabled( false );
 
@@ -419,36 +388,74 @@ HavocNamespace::UserInterface::Dialogs::NewListener::NewListener( QDialog* Dialo
     StackWidgetConfigPages->addWidget( PageExternal );
 
     ListenerDialog->setWindowTitle( "Create Listener" );
-    ConfigBox->setTitle( QCoreApplication::translate( "ListenerWidget", "Config Options", nullptr ) );
-    LabelPort->setText( QCoreApplication::translate( "ListenerWidget", "Port:", nullptr ) );
-    LabelHosts->setText( QCoreApplication::translate( "ListenerWidget", "Host:", nullptr ) );
-    LabelUris->setText( QCoreApplication::translate( "ListenerWidget", "Uris:", nullptr ) );
-    LabelHeaders->setText( QCoreApplication::translate( "ListenerWidget", "Headers:", nullptr ) );
-    LabelUserAgent->setText( QCoreApplication::translate( "ListenerWidget", "User Agent:  ", nullptr ) );
-    LabelHostHeader->setText( QCoreApplication::translate( "ListenerWidget", "Host Header: ", nullptr ) );
-    LabelPipeName->setText( QCoreApplication::translate( "ListenerWidget", "Pipe Name: :", nullptr ) );
-    LabelEndpoint->setText( QCoreApplication::translate( "ListenerWidget", "Endpoint: ", nullptr ) );
+    LabelPayload->setText(QCoreApplication::translate("ListenerWidget", "Payload: ", nullptr));
+    ComboPayload->setItemText(0, QCoreApplication::translate("ListenerWidget", "Https", nullptr));
+    ComboPayload->setItemText(1, QCoreApplication::translate("ListenerWidget", "Http", nullptr));
+    ComboPayload->setItemText(2, QCoreApplication::translate("ListenerWidget", "Smb", nullptr));
+    ComboPayload->setItemText(3, QCoreApplication::translate("ListenerWidget", "External", nullptr));
+
+    LabelListenerName->setText(QCoreApplication::translate("ListenerWidget", "Name:", nullptr));
+    ButtonSave->setText(QCoreApplication::translate("ListenerWidget", "Save", nullptr));
+    ButtonClose->setText(QCoreApplication::translate("ListenerWidget", "Close", nullptr));
+    ConfigBox->setTitle(QCoreApplication::translate("ListenerWidget", "Config Options", nullptr));
+    LabelUserAgent->setText(QCoreApplication::translate("ListenerWidget", "User Agent:  ", nullptr));
     ButtonUriGroupClear->setText(QCoreApplication::translate("ListenerWidget", "Clear", nullptr));
-    // ProxyConfigBox->setTitle(QCoreApplication::translate("ListenerWidget", "Proxy Configuration", nullptr));
+    LabelUris->setText(QCoreApplication::translate("ListenerWidget", "Uris:", nullptr));
+    LabelHostHeader->setText(QCoreApplication::translate("ListenerWidget", "Host Header: ", nullptr));
+    CheckEnableProxy->setText(QCoreApplication::translate("ListenerWidget", "Enable Proxy connection", nullptr));
+    ButtonHeaderGroupClear->setText(QCoreApplication::translate("ListenerWidget", "Clear", nullptr));
+    LabelHeaders->setText(QCoreApplication::translate("ListenerWidget", "Headers:", nullptr));
+    ButtonHostsGroupAdd->setText(QCoreApplication::translate("ListenerWidget", "Add", nullptr));
+    LabelHostBind->setText(QCoreApplication::translate("ListenerWidget", "Host (Bind):", nullptr));
+    ButtonUriGroupAdd->setText(QCoreApplication::translate("ListenerWidget", "Add", nullptr));
+    LabelHosts->setText(QCoreApplication::translate("ListenerWidget", "Hosts", nullptr));
+    ButtonHostsGroupClear->setText(QCoreApplication::translate("ListenerWidget", "Clear", nullptr));
+    ButtonHeaderGroupAdd->setText(QCoreApplication::translate("ListenerWidget", "Add", nullptr));
+    LabelPort->setText(QCoreApplication::translate("ListenerWidget", "Port:", nullptr));
+    LabelProxyType->setText(QCoreApplication::translate("ListenerWidget", "Proxy Type:", nullptr));
     LabelProxyHost->setText(QCoreApplication::translate("ListenerWidget", "Proxy Host:", nullptr));
     LabelProxyPort->setText(QCoreApplication::translate("ListenerWidget", "Proxy Port: ", nullptr));
     LabelUserName->setText(QCoreApplication::translate("ListenerWidget", "UserName: ", nullptr));
     LabelPassword->setText(QCoreApplication::translate("ListenerWidget", "Password: ", nullptr));
-    ButtonHeaderGroupAdd->setText(QCoreApplication::translate("ListenerWidget", "Add", nullptr));
-    ButtonUriGroupAdd->setText(QCoreApplication::translate("ListenerWidget", "Add", nullptr));
-    ButtonHeaderGroupClear->setText(QCoreApplication::translate("ListenerWidget", "Clear", nullptr));
-    LabelListenerName->setText(QCoreApplication::translate("ListenerWidget", "Name:", nullptr));
-    LabelPayload->setText(QCoreApplication::translate("ListenerWidget", "Payload: ", nullptr));
-    ButtonSave->setText(QCoreApplication::translate("ListenerWidget", "Save", nullptr));
-    ButtonClose->setText(QCoreApplication::translate("ListenerWidget", "Close", nullptr));
+    LabelHostRotation->setText(QCoreApplication::translate("ListenerWidget", "Host Rotation: ", nullptr));
+    LabelPipeName->setText(QCoreApplication::translate("ListenerWidget", "Pipe Name: :", nullptr));
+    LabelEndpoint->setText(QCoreApplication::translate("ListenerWidget", "Endpoint: ", nullptr));
 
     ComboPayload->addItem( "Https" );
     ComboPayload->addItem( "Http" );
     ComboPayload->addItem( "Smb" );
     ComboPayload->addItem( "External" );
 
+    ComboProxyType->addItem( "http" );
+    ComboProxyType->addItem( "https" );
+
+    ComboHostRotation->addItem( "round-robin" );
+    ComboHostRotation->addItem( "random" );
+
     QObject::connect( ButtonSave, &QPushButton::clicked, this, &NewListener::onButton_Save );
     QObject::connect( ButtonClose, &QPushButton::clicked, this, &NewListener::onButton_Close );
+
+    QObject::connect( ButtonHostsGroupAdd, &QPushButton::clicked, this, [&](){
+        auto Item = new QLineEdit;
+        Item->setFocus();
+
+        if ( HostsData.size() == 0 )
+            Item->setText( HavocX::Teamserver.IpAddresses[ 0 ] );
+
+        formLayout_Hosts->setWidget( HostsData.size(), QFormLayout::FieldRole, Item );
+
+        HostsData.push_back( Item );
+        ListenerDialog->resize( 550, 500 );
+    } );
+
+    QObject::connect( ButtonHostsGroupClear, &QPushButton::clicked, this, [&](){
+        for ( auto& uri : HostsData )
+            delete uri;
+
+        HostsData.clear();
+
+        ListenerDialog->resize( 550, 500 );
+    } );
 
     QObject::connect( ButtonUriGroupAdd, &QPushButton::clicked, this, [&](){
         auto Item = new QLineEdit;
@@ -521,8 +528,15 @@ map<string, string> HavocNamespace::UserInterface::Dialogs::NewListener::Start( 
 
             auto Info = any_cast<Listener::HTTP>( Item.Info );
 
-            InputHost->setText( Info.Host );
-            InputHost->setReadOnly( true );
+            ComboHostBind->addItem( Info.HostBind );
+            ComboHostBind->setDisabled( true );
+
+            if ( Info.HostRotation.compare( "round-robin" ) == 0 )
+                ComboHostRotation->setCurrentIndex( 0 );
+            else if ( Info.HostRotation.compare( "random" ) == 0 )
+                ComboHostRotation->setCurrentIndex( 1 );
+            else
+                ComboHostRotation->setCurrentIndex( 0 );
 
             InputPort->setText( Info.Port );
             InputPort->setReadOnly( true );
@@ -530,8 +544,21 @@ map<string, string> HavocNamespace::UserInterface::Dialogs::NewListener::Start( 
             InputUserAgent->setText( Info.UserAgent );
             InputUserAgent->setCursorPosition( 0 );
 
-            spdlog::info( "Info.Headers: {}", Info.Headers.size() );
-            spdlog::info( "Info.Uris   : {}", Info.Uris.size() );
+            if ( ! Info.Hosts.empty() )
+            {
+                for ( const auto& host : Info.Hosts )
+                {
+                    if ( host.isEmpty() )
+                        continue;
+
+                    auto input = new QLineEdit;
+                    input->setText( host );
+
+                    formLayout_Hosts->setWidget( HostsData.size(), QFormLayout::FieldRole, input );
+
+                    HostsData.push_back( input );
+                }
+            }
 
             if ( ! Info.Headers.empty() )
             {
@@ -614,6 +641,7 @@ map<string, string> HavocNamespace::UserInterface::Dialogs::NewListener::Start( 
 
     if ( ( Payload.compare( HavocSpace::Listener::PayloadHTTPS ) == 0 ) || ( Payload.compare( HavocSpace::Listener::PayloadHTTP ) == 0 ) )
     {
+        auto Hosts   = std::string();
         auto Headers = std::string();
         auto Uris    = std::string();
 
@@ -621,6 +649,23 @@ map<string, string> HavocNamespace::UserInterface::Dialogs::NewListener::Start( 
             ListenerInfo.insert( { "Secure", "true" } );
         else
             ListenerInfo.insert( { "Secure", "false" } );
+
+        if ( HostsData.size() > 0 )
+        {
+            for ( u32 i = 0; i < HostsData.size(); ++i )
+            {
+                if ( i == ( HostsData.size() - 1 ) )
+                    Hosts += HostsData.at( i )->text().toStdString();
+                else
+                    Hosts += HostsData.at( i )->text().toStdString() + ", ";
+
+                delete HostsData.at( i );
+            }
+        }
+        else
+        {
+            Hosts = ComboHostBind->currentText().toStdString();
+        }
 
         if ( HeadersData.size() > 0 )
         {
@@ -648,7 +693,9 @@ map<string, string> HavocNamespace::UserInterface::Dialogs::NewListener::Start( 
             }
         }
 
-        ListenerInfo.insert( { "Hosts", InputHost->text().toStdString() } );
+        ListenerInfo.insert( { "Hosts", Hosts } );
+        ListenerInfo.insert( { "HostBind", ComboHostBind->currentText().toStdString() } );
+        ListenerInfo.insert( { "HostRotation", ComboHostRotation->currentText().toStdString() } );
         ListenerInfo.insert( { "Port", InputPort->text().toStdString() } );
         ListenerInfo.insert( { "Headers", Headers } );
         ListenerInfo.insert( { "Uris", Uris } );
@@ -706,12 +753,12 @@ void HavocNamespace::UserInterface::Dialogs::NewListener::onButton_Save()
         ( Payload.compare( HavocSpace::Listener::PayloadHTTP )  == 0 )
     )
     {
-        if ( InputHost->text().isEmpty() )
+        if ( InputListenerName->text().isEmpty() )
         {
             Style.open( QIODevice::ReadOnly );
 
             MsgBox.setWindowTitle( "Listener Error" );
-            MsgBox.setText( "No Host specified" );
+            MsgBox.setText( "No Listener Name specified" );
             MsgBox.setIcon( QMessageBox::Critical );
             MsgBox.setStyleSheet( Style.readAll() );
             MsgBox.exec();
@@ -861,10 +908,12 @@ void HavocNamespace::UserInterface::Dialogs::NewListener::ctx_PayloadChange( con
     if ( text.compare( HavocSpace::Listener::PayloadHTTPS ) == 0 )
     {
         StackWidgetConfigPages->setCurrentIndex( 0 );
+        InputPort->setText( "443" );
     }
     else if ( text.compare( HavocSpace::Listener::PayloadHTTP ) == 0 )
     {
         StackWidgetConfigPages->setCurrentIndex( 0 );
+        InputPort->setText( "80" );
     }
     else if ( text.compare( HavocSpace::Listener::PayloadSMB ) == 0 )
     {

@@ -62,7 +62,7 @@
 #define COFFAPI_TOWIDECHAR                      0x59fcf3cf
 #define COFFAPI_LOADLIBRARYA                    0x5fbff0fb
 #define COFFAPI_GETPROCADDRESS                  0xcf31bb1f
-#define COFFAPI_GETMODULEHANDLE                 0x504e3837
+#define COFFAPI_GETMODULEHANDLE                 0x5a153f58
 #define COFFAPI_FREELIBRARY                     0x30eece3c
 
 #define HASH_KERNEL32                           0xadd31df0

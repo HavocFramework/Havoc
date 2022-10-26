@@ -7,6 +7,7 @@
 #include <Havoc/PythonApi/PyDemonClass.h>
 #include <UserInterface/Widgets/DemonInteracted.h>
 #include <Util/ColorText.h>
+#include <spdlog/fmt/bin_to_hex.h>
 
 PyMemberDef PyDemonClass_members[] = {
 
@@ -34,7 +35,7 @@ PyMemberDef PyDemonClass_members[] = {
 PyMethodDef PyDemonClass_methods[] = {
         { "ConsoleWrite",           ( PyCFunction ) DemonClass_ConsoleWrite, METH_VARARGS, "Prints messages to the demon sessions console" },
 
-        { "Shell",                  ( PyCFunction ) DemonClass_Shell, METH_VARARGS, "Executes a shell command in the context of the demon sessions" },
+        { "ProcessCreate",          ( PyCFunction ) DemonClass_ProcessCreate, METH_VARARGS, "Creates a Process" },
         { "InlineExecute",          ( PyCFunction ) DemonClass_InlineExecute, METH_VARARGS, "Executes a coff file in the context of the demon sessions" },
 
         { "DllSpawn",               ( PyCFunction ) DemonClass_DllSpawn, METH_VARARGS, "Spawn and injects a reflective dll and get output from it" },
@@ -188,23 +189,48 @@ PyObject* DemonClass_Shell( PPyDemonClass self, PyObject *args )
     Py_RETURN_NONE;
 }
 
-// Demon.InlineExecute( TaskID: str, EntryFunc: str, Path: str, Args: str, Flag: str )
+// Demon.InlineExecute( TaskID: str, EntryFunc: str, Path: str, Args: str, Threaded: bool )
 PyObject* DemonClass_InlineExecute( PPyDemonClass self, PyObject *args )
 {
-    char* TaskID    = nullptr;
-    char* EntryFunc = nullptr;
-    char* Path      = nullptr;
-    char* Arguments = nullptr;
-    char* Flags     = nullptr;
+    char*     TaskID     = nullptr;
+    char*     EntryFunc  = nullptr;
+    char*     Path       = nullptr;
+    PyObject* PyArgBytes = nullptr;
+    auto      Flags      = QString();
+    PyObject* Threaded   = nullptr;
 
-    if ( ! PyArg_ParseTuple( args, "sssss", &TaskID, &EntryFunc, &Path , &Arguments, &Flags ) )
+    if ( ! PyArg_ParseTuple( args, "sssSO", &TaskID, &EntryFunc, &Path, &PyArgBytes, &Threaded ) )
         return nullptr;
+
+    if ( PyObject_IsTrue( Threaded ) == true )
+    {
+        Flags = "threaded";
+        spdlog::debug( "execute object file in threaded" );
+    }
+    else
+    {
+        Flags = "non-threaded";
+        spdlog::debug( "execute object file in non-threaded" );
+    }
 
     for ( auto& Sessions : HavocX::Teamserver.Sessions )
     {
         if ( Sessions.Name.compare( self->DemonID ) == 0 )
         {
-            Sessions.InteractedWidget->DemonCommands->Execute.InlineExecute( ( char* ) TaskID, ( char* ) EntryFunc, ( char* ) Path, ( char* ) Arguments, ( char* ) Flags );
+            if ( FileRead( Path ) == nullptr )
+            {
+                Sessions.InteractedWidget->AppendRaw();
+                Sessions.InteractedWidget->TaskError( "Failed to open object file path: " + QString( Path ) );
+            }
+            else
+            {
+                auto ArgSize       = PyBytes_GET_SIZE( PyArgBytes );
+                auto ObjArgs       = PyBytes_AS_STRING( PyArgBytes );
+                auto ArgsByteArray = QByteArray( ObjArgs, ArgSize );
+
+                Sessions.InteractedWidget->DemonCommands->Execute.InlineExecute( ( char* ) TaskID, ( char* ) EntryFunc, ( char* ) Path, ArgsByteArray, Flags );
+            }
+
             break;
         }
     }
@@ -277,7 +303,66 @@ PyObject* DemonClass_DllSpawn( PPyDemonClass self, PyObject *args )
     {
         if ( Sessions.Name.compare( self->DemonID ) == 0 )
         {
-            Sessions.InteractedWidget->DemonCommands->Execute.DllSpawn( TaskID, DllPath, ArgsByteArray );
+
+            if ( FileRead( DllPath ) == nullptr )
+            {
+                Sessions.InteractedWidget->AppendRaw();
+                Sessions.InteractedWidget->TaskError( "Failed to open dll path: " + QString( DllPath ) );
+            }
+            else
+            {
+                Sessions.InteractedWidget->DemonCommands->Execute.DllSpawn( TaskID, DllPath, ArgsByteArray );
+            }
+
+            break;
+        }
+    }
+
+    Py_RETURN_NONE;
+}
+
+
+// Demon.ProcessCreate( TaskID: str App: str, Cmdline: str, Suspended: bool, Piped: bool, Verbose: bool )
+PyObject* DemonClass_ProcessCreate( PPyDemonClass self, PyObject *args )
+{
+    PCHAR     TaskID    = nullptr;
+    PCHAR     App       = nullptr;
+    PCHAR     CmdLine   = nullptr;
+    PyObject* Suspended = nullptr;
+    PyObject* Piped     = nullptr;
+    PyObject* Verbose   = nullptr;
+    auto      ProcArg   = QString();
+
+    if ( ! PyArg_ParseTuple( args, "sssOOO", &TaskID, &App, &CmdLine, &Suspended, &Piped, &Verbose ) )
+        Py_RETURN_NONE;
+
+    if ( PyObject_IsTrue( Suspended ) )
+        ProcArg += "4";
+    else
+        ProcArg += "0";
+
+    if ( ! QString( App ).isEmpty() )
+        ProcArg += ";" + QString( App );
+    else
+        ProcArg += ";";
+
+    if ( PyObject_IsTrue( Verbose ) )
+        ProcArg += ";TRUE";
+    else
+        ProcArg += ";FALSE";
+
+    if ( PyObject_IsTrue( Piped ) )
+        ProcArg += ";TRUE";
+    else
+        ProcArg += ";FALSE";
+
+    ProcArg += ";" + QString( CmdLine ).toUtf8().toBase64();
+
+    for ( auto& Sessions : HavocX::Teamserver.Sessions )
+    {
+        if ( Sessions.Name.compare( self->DemonID ) == 0 )
+        {
+            Sessions.InteractedWidget->DemonCommands->Execute.ProcModule( TaskID, 4, ProcArg );
             break;
         }
     }

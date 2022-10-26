@@ -33,13 +33,11 @@ Source code of Havoc teamserver. Written in Golang.
 
 
 ### Run the Teamserver
-- **Pre-Configured:**
-	- There is a script that can be run that has all the needed arguments & flags set.
-		* `./teamserver`
-- **Manual:**
+- **Base:**
 	- The teamserver can also be used directly:
-		* `./bin/teamserver -h`
-		* `./bin/teamserver server --profile profiles/havoc.yaotl -v`
+		* `./teamserver -h`
+		* `./teamserver server --profile profiles/havoc.yaotl -v`
+		* `./teamserver server --default -v`
 - **Docker**
 	- We can run the teamserver completely from within a container!
 	1. Build the container: 

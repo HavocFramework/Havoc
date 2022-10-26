@@ -224,14 +224,19 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 
             case handlers.DEMON_HTTP, handlers.DEMON_HTTPS:
                 var (
-                    Host    string
-                    Headers []string
-                    Uris    []string
+                    HostBind string
+                    Hosts    []string
+                    Headers  []string
+                    Uris     []string
                 )
 
-                logger.Debug(pk.Body.Info)
+                HostBind = pk.Body.Info["HostBind"].(string)
 
-                Host = pk.Body.Info["Hosts"].(string)
+                for _, s := range strings.Split(pk.Body.Info["Hosts"].(string), ", ") {
+                    if len(s) > 0 {
+                        Hosts = append(Hosts, s)
+                    }
+                }
 
                 for _, s := range strings.Split(pk.Body.Info["Headers"].(string), ", ") {
                     if len(s) > 0 {
@@ -246,13 +251,15 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
                 }
 
                 var Config = handlers.HTTPConfig{
-                    Name:       pk.Body.Info["Name"].(string),
-                    Hosts:      Host,
-                    Port:       pk.Body.Info["Port"].(string),
-                    Headers:    Headers,
-                    Uris:       Uris,
-                    HostHeader: pk.Body.Info["HostHeader"].(string),
-                    UserAgent:  pk.Body.Info["UserAgent"].(string),
+                    Name:         pk.Body.Info["Name"].(string),
+                    Hosts:        Hosts,
+                    HostBind:     HostBind,
+                    HostRotation: pk.Body.Info["HostRotation"].(string),
+                    Port:         pk.Body.Info["Port"].(string),
+                    Headers:      Headers,
+                    Uris:         Uris,
+                    HostHeader:   pk.Body.Info["HostHeader"].(string),
+                    UserAgent:    pk.Body.Info["UserAgent"].(string),
                 }
 
                 if val, ok := pk.Body.Info["Proxy Enabled"].(string); ok {
@@ -434,14 +441,19 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 
             case handlers.DEMON_HTTP, handlers.DEMON_HTTPS:
                 var (
-                    Host    string
-                    Headers []string
-                    Uris    []string
+                    HostBind string
+                    Hosts    []string
+                    Headers  []string
+                    Uris     []string
                 )
 
-                logger.Debug(pk.Body.Info)
+                HostBind = pk.Body.Info["HostBind"].(string)
 
-                Host = pk.Body.Info["Hosts"].(string)
+                for _, s := range strings.Split(pk.Body.Info["Hosts"].(string), ", ") {
+                    if len(s) > 0 {
+                        Hosts = append(Hosts, s)
+                    }
+                }
 
                 for _, s := range strings.Split(pk.Body.Info["Headers"].(string), ", ") {
                     if len(s) > 0 {
@@ -456,13 +468,15 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
                 }
 
                 var Config = handlers.HTTPConfig{
-                    Name:       pk.Body.Info["Name"].(string),
-                    Hosts:      Host,
-                    Port:       pk.Body.Info["Port"].(string),
-                    Headers:    Headers,
-                    Uris:       Uris,
-                    UserAgent:  pk.Body.Info["UserAgent"].(string),
-                    HostHeader: pk.Body.Info["HostHeader"].(string),
+                    Name:         pk.Body.Info["Name"].(string),
+                    Hosts:        Hosts,
+                    HostBind:     HostBind,
+                    HostRotation: pk.Body.Info["HostRotation"].(string),
+                    Port:         pk.Body.Info["Port"].(string),
+                    Headers:      Headers,
+                    Uris:         Uris,
+                    HostHeader:   pk.Body.Info["HostHeader"].(string),
+                    UserAgent:    pk.Body.Info["UserAgent"].(string),
                 }
 
                 if val, ok := pk.Body.Info["Proxy Enabled"].(string); ok {

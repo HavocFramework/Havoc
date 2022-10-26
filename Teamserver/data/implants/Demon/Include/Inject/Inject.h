@@ -60,6 +60,6 @@ BOOL  ShellcodeInjectionSys( LPVOID lpShellcodeBytes, SIZE_T ShellcodeSize, PINJ
 BOOL  ShellcodeInjectionSysApc( HANDLE hProcess, LPVOID lpShellcodeBytes, SIZE_T ShellcodeSize, PINJECTION_CTX ctx );
 
 DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID lpDllBuffer, DWORD dwDllLength, PVOID Parameter, SIZE_T ParamSize, PINJECTION_CTX ctx );
-BOOL  DllSpawnReflective( LPVOID lpDllBuffer, DWORD dwDllLength, PVOID Parameter, SIZE_T ParamSize, PINJECTION_CTX ctx );
+DWORD DllSpawnReflective( LPVOID lpDllBuffer, DWORD dwDllLength, PVOID Parameter, SIZE_T ParamSize, PINJECTION_CTX ctx );
 
 #endif

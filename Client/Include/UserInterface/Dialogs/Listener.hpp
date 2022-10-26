@@ -63,8 +63,20 @@ public:
     QStackedWidget* StackWidgetConfigPages;
 
     // Page HTTP
+
     QLabel*         LabelHosts;
-    QLineEdit*      InputHost;
+    QGroupBox*      HostsGroup;
+    QPushButton*    ButtonHostsGroupAdd;
+    QPushButton*    ButtonHostsGroupClear;
+    std::vector<QLineEdit*> HostsData;
+    QSpacerItem*    verticalSpacer;
+    QFormLayout*    formLayout_Hosts;
+
+    QLabel*         LabelHostRotation;
+    QComboBox*      ComboHostRotation;
+
+    QLabel*         LabelHostBind;
+    QComboBox*      ComboHostBind;
 
     QLabel*         LabelPort;
     QLineEdit*      InputPort;

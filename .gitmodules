@@ -1,0 +1,3 @@
+[submodule "Client/Modules"]
+	path = Client/Modules
+	url = https://github.com/HavocFramework/Modules

@@ -47,6 +47,7 @@
 typedef uint32_t            u32;
 typedef uint64_t            u64;
 
+// Bad habit lol.
 typedef char*               PCHAR;
 typedef char                BYTE;
 typedef void*               PVOID;
@@ -100,8 +101,18 @@ namespace HavocNamespace
             std::string     Usage;
             std::string     Example;
             void*           Function;
-            // PyThreadState*  PythonState;
+
+            std::string     Path;
         } RegisteredCommand ;
+
+        typedef struct RegisteredModule
+        {
+            std::string Name;
+            std::string Description;
+            std::string Behavior;
+            std::string Usage;
+            std::string Example;
+        } RegisteredModule;
 
         typedef struct ListenerItem
         {
@@ -163,7 +174,9 @@ namespace HavocNamespace
 
             typedef struct
             {
-                QString     Host;
+                QStringList Hosts;
+                QString     HostBind;
+                QString     HostRotation;
                 QString     Port;
                 QString     UserAgent;
                 QStringList Headers;
@@ -252,14 +265,17 @@ namespace HavocNamespace
             QString User;
             QString Password;
 
-            std::vector<ListenerItem>       Listeners;
-            std::vector<SessionItem>        Sessions;
-            std::vector<CredentialsItem>    Credentials;
-            std::vector<RegisteredCommand>  RegisteredCommands;
-            std::vector<ServiceAgent>       ServiceAgents;
-            PyThreadState*                  PythonState;
-            QStringList                     AddedCommands;
-            QJsonDocument                   DemonConfig;
+            std::vector<ListenerItem>      Listeners;
+            std::vector<SessionItem>       Sessions;
+            std::vector<CredentialsItem>   Credentials;
+            std::vector<RegisteredCommand> RegisteredCommands;
+            std::vector<RegisteredModule>  RegisteredModules;
+            std::vector<ServiceAgent>      ServiceAgents;
+
+            QStringList   AddedCommands;
+            QJsonDocument DemonConfig;
+            QStringList   IpAddresses;
+            std::string   LoadingScript;
 
             UserInterface::Widgets::TeamserverTabSession* TabSession;
         } ConnectionInfo;
@@ -269,6 +285,7 @@ namespace HavocNamespace
 // Global Instance
 namespace HavocX
 {
+    extern bool DebugMode;
     extern HavocNamespace::Util::ConnectionInfo Teamserver;
     extern HavocNamespace::Connector*           Connector;
 }

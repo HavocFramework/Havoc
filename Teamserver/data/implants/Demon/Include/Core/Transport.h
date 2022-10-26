@@ -6,6 +6,9 @@
 #include <Core/Package.h>
 #include <winhttp.h>
 
+#define TRANSPORT_HTTP_ROTATION_ROUND_ROBIN  0
+#define TRANSPORT_HTTP_ROTATION_RANDOM       1
+
 /*!
  * Initialize HTTP/HTTPS Connection to C2 Server + using AES encryption
  * and send the collected user/computer info about the compromised Computer
