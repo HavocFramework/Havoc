@@ -397,6 +397,9 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             }
             TaskID = CONSOLE_INFO( "Tasked demon to sleep for " + InputCommands[ 1 ] + " seconds" );
             CommandInputList[ TaskID ] = commandline;
+            if(InputCommands[ 1 ].toInt() < 0)
+                InputCommands[ 1 ] = "0";
+                
             SEND( Execute.Sleep( TaskID, InputCommands[ 1 ] ) )
         }
         else if ( InputCommands[ 0 ].compare( "checkin" ) == 0 )
