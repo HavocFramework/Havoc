@@ -1611,7 +1611,14 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
         else if ( InputCommands[ 0 ].compare( "" ) == 0 ) { /* do nothing */ }
         else
         {
-            CheckRegisteredCommands:
+            if ( ! Send )
+            {
+                DemonConsole->AppendRaw();
+                DemonConsole->AppendRaw( Prompt );
+                DemonConsole->AppendRaw( Util::ColorText::Cyan( "[*]" ) + " " + Util::ColorText::Comment( "[" + TaskID + "]") + " " + Util::ColorText::Cyan( CommandTaskInfo[ TaskID ] ) );
+            }
+
+        CheckRegisteredCommands:
             spdlog::debug( "Check if one of the registered commands it is lol." );
 
             auto FoundCommand = false;
@@ -1622,8 +1629,21 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 if ( InputCommands[ 0 ].isEmpty() )
                     break;
 
+                /* Check if module is matching */
                 if ( InputCommands[ 0 ].compare( Command.Module.c_str() ) == 0 )
                 {
+                    if ( InputCommands.size() <= 1 )
+                    {
+                        if ( Send )
+                        {
+                            CONSOLE_ERROR( "Specify a sub command for the given module." );
+                        }
+
+                        return false;
+                        break;
+                    }
+
+                    /* Check if command is matching */
                     if ( InputCommands[ 1 ].compare( Command.Command.c_str() ) == 0 )
                     {
                         spdlog::debug( "Found module command: {}", commandline.toStdString() );
@@ -1634,16 +1654,6 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
 
                         if ( Send )
                         {
-                            NewPackageCommand( Teamserver, Util::Packager::Body_t {
-                                    .SubEvent = Util::Packager::Session::SendCommand,
-                                    .Info     = {
-                                            { "TaskID",      TaskID.toStdString() },
-                                            { "DemonID",     DemonConsole->SessionInfo.Name.toStdString() },
-                                            { "CommandID",   "Python Plugin" },
-                                            { "CommandLine", commandline.toStdString() },
-                                    },
-                            } );
-
                             if ( ! PyCallable_Check( ( PyObject* ) Command.Function ) )
                             {
                                 PyErr_SetString( PyExc_TypeError, "a callable is required" );
@@ -1656,9 +1666,6 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                                 spdlog::debug( "Set current path to {}", Command.Path );
                                 std::filesystem::current_path( Command.Path );
                             }
-
-                            DemonConsole->AppendRaw();
-                            DemonConsole->AppendRaw( Prompt );
 
                             // First arg is the DemonID
                             PyTuple_SetItem( FuncArgs, 0, PyUnicode_FromString( this->DemonID.toStdString().c_str() ) );
@@ -1686,15 +1693,47 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                                 PyErr_Clear();
                             }
 
-                            if ( ! Return )
+                            if ( Py_IsNone( Return ) )
+                            {
+                                if ( Send )
+                                {
+                                    DemonConsole->Console->append( "" );
+                                    DemonConsole->Console->append( this->Prompt );
+
+                                    /* display any messages that the script made */
+                                    for ( auto& message : DemonConsole->DemonCommands->BufferedMessages )
+                                        DemonConsole->Console->append( message );
+
+                                    DemonConsole->TaskError( "Failed to execute " + InputCommands[ 1 ] + ". Script return is None" );
+                                }
+                                Py_CLEAR( Return );
+                                Py_CLEAR( FuncArgs );
                                 return false;
+                            }
+
+                            auto ReturnTaskID = PyUnicode_AsUTF8( Return );
+
+                            TaskID = QString( ReturnTaskID );
+
+                            NewPackageCommand( Teamserver, Util::Packager::Body_t {
+                                    .SubEvent = Util::Packager::Session::SendCommand,
+                                    .Info     = {
+                                            { "TaskID",      TaskID.toStdString() },
+                                            { "TaskMessage", CommandTaskInfo[ TaskID ].toStdString() },
+                                            { "DemonID",     DemonConsole->SessionInfo.Name.toStdString() },
+                                            { "CommandID",   "Python Plugin" },
+                                            { "CommandLine", commandline.toStdString() },
+                                    },
+                            } );
 
                             Py_CLEAR( Return );
+                            Py_CLEAR( FuncArgs );
                         }
 
                         return true;
                     }
                 }
+                /* Alright it's a command i hope ? Check if command is matching */
                 else if ( InputCommands[ 0 ].compare( Command.Command.c_str() ) == 0 )
                 {
                     PyObject* FuncArgs = PyTuple_New( InputCommands.size() );
@@ -1703,16 +1742,6 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
 
                     if ( Send )
                     {
-                        NewPackageCommand( Teamserver, Util::Packager::Body_t {
-                                .SubEvent = Util::Packager::Session::SendCommand,
-                                .Info     = {
-                                        { "TaskID",      TaskID.toStdString() },
-                                        { "DemonID",     DemonConsole->SessionInfo.Name.toStdString() },
-                                        { "CommandID",   "Python Plugin" },
-                                        { "CommandLine", commandline.toStdString() },
-                                },
-                        } );
-
                         if ( ! PyCallable_Check( ( PyObject* ) Command.Function ) )
                         {
                             PyErr_SetString( PyExc_TypeError, "a callable is required" );
@@ -1752,11 +1781,41 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                             PyErr_Clear();
                         }
 
-                        if ( ! Return )
+                        if ( Py_IsNone( Return ) )
+                        {
+                            if ( Send )
+                            {
+                                DemonConsole->Console->append( "" );
+                                DemonConsole->Console->append( this->Prompt );
+
+                                /* display any messages that the script made */
+                                for ( auto& message : DemonConsole->DemonCommands->BufferedMessages )
+                                    DemonConsole->Console->append( message );
+
+                                DemonConsole->TaskError( "Failed to execute " + InputCommands[ 1 ] + ". Script return is None" );
+                            }
+                            Py_CLEAR( Return );
+                            Py_CLEAR( FuncArgs );
                             return false;
+                        }
+
+                        auto ReturnTaskID = PyUnicode_AsUTF8( Return );
+
+                        TaskID = QString( ReturnTaskID );
+
+                        NewPackageCommand( Teamserver, Util::Packager::Body_t {
+                                .SubEvent = Util::Packager::Session::SendCommand,
+                                .Info     = {
+                                        { "TaskID",      TaskID.toStdString() },
+                                        { "TaskMessage", CommandTaskInfo[ TaskID ].toStdString() },
+                                        { "DemonID",     DemonConsole->SessionInfo.Name.toStdString() },
+                                        { "CommandID",   "Python Plugin" },
+                                        { "CommandLine", commandline.toStdString() },
+                                },
+                        } );
 
                         Py_CLEAR( Return );
-
+                        Py_CLEAR( FuncArgs );
                     }
 
                     return true;

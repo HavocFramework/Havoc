@@ -430,12 +430,15 @@ DWORD DllSpawnReflective( LPVOID DllBuffer, DWORD DllLength, PVOID Parameter, SI
 
     PROCESS_INFORMATION ProcessInfo = { 0 };
     PCHAR               SpawnProc   = NULL;
-    DWORD               Result      = NULL;
+    DWORD               Result      = 0;
 
     if ( GetPeArch( DllBuffer ) == PROCESS_ARCH_X86 ) // check if dll is x64
         SpawnProc = Instance->Config.Process.Spawn86;
     else
         SpawnProc = Instance->Config.Process.Spawn64;
+
+    /* Meh this is the default */
+    Result = ERROR_INJECT_FAILED_TO_SPAWN_TARGET_PROCESS;
 
     if ( ProcessCreate( TRUE, NULL, SpawnProc, CREATE_NO_WINDOW | CREATE_SUSPENDED, &ProcessInfo, TRUE, NULL ) )
     {

@@ -77,10 +77,44 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
                         }
 
                         if val, ok := pk.Body.Info["CommandID"]; ok {
+
                             if pk.Body.Info["CommandID"] == "Python Plugin" {
+
                                 logr.LogrInstance.AddAgentInput("Demon", pk.Body.Info["DemonID"].(string), pk.Head.User, pk.Body.Info["TaskID"].(string), pk.Body.Info["CommandLine"].(string), time.Now().UTC().Format("02/01/2006 15:04:05"))
+
+                                if pk.Head.OneTime == "true" {
+                                    return
+                                }
+
+                                var backups = map[string]interface{}{
+                                    "TaskID":      pk.Body.Info["TaskID"].(string),
+                                    "DemonID":     DemonID,
+                                    "CommandID":   "",
+                                    "CommandLine": pk.Body.Info["CommandLine"].(string),
+                                    "AgentType":   AgentType,
+                                }
+
+                                if _, ok := pk.Body.Info["CommandID"].(string); ok {
+                                    backups["CommandID"] = pk.Body.Info["CommandID"]
+                                }
+
+                                if _, ok := pk.Body.Info["TaskMessage"].(string); ok {
+                                    backups["TaskMessage"] = pk.Body.Info["TaskMessage"]
+                                }
+
+                                for k := range pk.Body.Info {
+                                    delete(pk.Body.Info, k)
+                                }
+
+                                pk.Body.Info = backups
+
+                                t.EventAppend(pk)
+                                t.EventBroadcast(pk.Head.User, pk)
+
                                 return
+
                             } else if pk.Body.Info["CommandID"] == "Teamserver" {
+
                                 logr.LogrInstance.AddAgentInput("Demon", pk.Body.Info["DemonID"].(string), pk.Head.User, pk.Body.Info["TaskID"].(string), pk.Body.Info["CommandLine"].(string), time.Now().UTC().Format("02/01/2006 15:04:05"))
 
                                 var Command = pk.Body.Info["Command"].(string)

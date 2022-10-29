@@ -1,7 +1,6 @@
 # Havoc Framework Roadmap
 
 - Lateral Movement commands.
-  - psexec
   - wmiexec
 - Switch between injection techniques via config module (example: `config inject.technique 0`). There is already code for it just gotta make it switchable rn. 
 - Add all demon commands to the Havoc client python api.

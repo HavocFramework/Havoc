@@ -48,7 +48,7 @@ namespace HavocNamespace::UserInterface::Widgets
         void AutoCompleteClear();
 
     private slots:
-                void AppendFromInput();
+        void AppendFromInput();
 
     };
 }

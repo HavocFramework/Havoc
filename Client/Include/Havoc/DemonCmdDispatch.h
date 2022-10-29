@@ -94,13 +94,16 @@ class HavocSpace::DemonCommands
 
 public:
     UserInterface::Widgets::DemonInteracted* DemonConsole = nullptr;
-    QString Teamserver;
-    QString DemonID;
-    u64     MagicValue;
-    QString AgentTypeName;
-    DispatchOutput OutputDispatch;
-    CommandExecute Execute;
-    QString Prompt;
+
+    QString         Teamserver;
+    QString         DemonID;
+    u64             MagicValue;
+    QString         AgentTypeName;
+    DispatchOutput  OutputDispatch;
+    CommandExecute  Execute;
+    QString         Prompt;
+    /* Something the command scripts can write to */
+    QStringList     BufferedMessages;
 
     typedef struct SubCommand
     {
@@ -130,6 +133,7 @@ public:
 
     static std::vector<Command_t>   DemonCommandList;
     QMap<QString, QString>          CommandInputList;
+    QMap<QString, QString>          CommandTaskInfo;
 
     explicit DemonCommands();
 

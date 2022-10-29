@@ -402,12 +402,14 @@ func (t *Teamserver) SendEvent(id string, pk packager.Package) error {
 	if t.Clients[id] != nil {
 
 		t.Clients[id].Mutex.Lock()
-		defer t.Clients[id].Mutex.Unlock()
 
 		err = t.Clients[id].Connection.WriteMessage(websocket.BinaryMessage, buffer.Bytes())
 		if err != nil {
+			t.Clients[id].Mutex.Unlock()
 			return err
 		}
+
+		t.Clients[id].Mutex.Unlock()
 
 	} else {
 		return errors.New(fmt.Sprintf("client (%v) doesn't exist anymore", colors.Red(id)))

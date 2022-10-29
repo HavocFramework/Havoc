@@ -8,6 +8,7 @@
 #include <QKeyEvent>
 #include <QEvent>
 #include <QStringListModel>
+#include <QScrollBar>
 
 using namespace HavocNamespace::UserInterface::Widgets;
 using namespace HavocNamespace::Util;
@@ -212,15 +213,6 @@ void DemonInteracted::AppendText( const QString& text )
         lineEdit->CommandHistory << text;
         lineEdit->CommandHistoryIndex = lineEdit->CommandHistory.size();
 
-        for ( auto& Command: HavocX::Teamserver.RegisteredCommands )
-        {
-            if ( text.split(" ")[ 0 ].compare( Command.Command.c_str() ) == 0  )
-            {
-                AppendRaw();
-                AppendRaw( DemonCommands->Prompt );
-            }
-        }
-
         if ( text.split( " " )[ 0 ].compare( "help" ) == 0 )
         {
             AppendRaw();
@@ -228,6 +220,8 @@ void DemonInteracted::AppendText( const QString& text )
         }
 
         DemonCommands->DispatchCommand( true, "", text );
+
+        Console->verticalScrollBar()->setValue( Console->verticalScrollBar()->maximum() );
     }
 
     this->lineEdit->clear();

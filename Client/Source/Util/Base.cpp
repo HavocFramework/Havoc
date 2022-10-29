@@ -39,7 +39,7 @@ auto MessageBox( QString Title, QString Text, QMessageBox::Icon Icon ) -> void
 
 auto WinVersionIcon( QString OSVersion, bool High ) -> QIcon
 {
-    if ( OSVersion.startsWith( "Windows 10" )  )
+    if ( OSVersion.startsWith( "Windows 10" ) || OSVersion.startsWith( "Windows Server 2019" ) )
     {
         spdlog::debug( "OSVersion is Windows 10" );
 
@@ -57,7 +57,7 @@ auto WinVersionIcon( QString OSVersion, bool High ) -> QIcon
         else
             return QIcon( ":/images/winxp" );
     }
-    if ( OSVersion.startsWith( "Windows 8" )  )
+    if ( OSVersion.startsWith( "Windows 8" ) || OSVersion.startsWith( "Windows Server 2012" ) )
     {
         spdlog::debug( "OSVersion is Windows 8" );
 

@@ -383,22 +383,21 @@ PyObject* DemonClass_ConsoleWrite( PPyDemonClass self, PyObject *args )
     {
         if ( d.Name.compare( self->DemonID ) == 0 )
         {
-
             if ( Type == self->CONSOLE_INFO )
             {
-                d.InteractedWidget->Console->append( Util::ColorText::Green( "[+]" ) + " " + QString( Message ) );
+                d.InteractedWidget->DemonCommands->BufferedMessages << Util::ColorText::Green( "[+]" ) + " " + QString( Message );
                 break;
             }
             else if ( Type == self->CONSOLE_ERROR )
             {
-                d.InteractedWidget->Console->append( Util::ColorText::Red( "[-]" ) + " " + QString( Message ) );
+                d.InteractedWidget->DemonCommands->BufferedMessages << Util::ColorText::Red( "[!]" ) + " " + QString( Message );
                 break;
             }
             else if ( Type == self->CONSOLE_TASK )
             {
-                QString TaskID = Util::gen_random( 8 ).c_str();
+                auto TaskID = QString( Util::gen_random( 8 ).c_str() );
 
-                d.InteractedWidget->Console->append( Util::ColorText::Cyan( "[*]" ) + " " + Util::ColorText::Comment( "[" + TaskID + "]") + " " + Util::ColorText::Cyan( QString( Message ).toHtmlEscaped() ) );
+                d.InteractedWidget->DemonCommands->CommandTaskInfo[ TaskID ] = Message;
 
                 return PyUnicode_FromString( TaskID.toStdString().c_str() );
             }

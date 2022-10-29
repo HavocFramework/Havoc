@@ -597,6 +597,8 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
 
                     if ( ! Package->Body.Info[ "CommandLine" ].empty() )
                     {
+                        auto TaskID = QString( Package->Body.Info[ "TaskID" ].c_str() );
+
                         if ( AgentType.isEmpty() )
                             AgentType = "Demon";
 
@@ -606,9 +608,17 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                                 Util::ColorText::Cyan(" » ") + QString( Package->Body.Info[ "CommandLine" ].c_str() )
                         );
 
-                        Session.InteractedWidget->AppendRaw();
-                        Session.InteractedWidget->AppendRaw( Session.InteractedWidget->DemonCommands->Prompt );
-                        Session.InteractedWidget->DemonCommands->DispatchCommand( false, Package->Body.Info[ "TaskID" ].c_str(), Package->Body.Info[ "CommandLine" ].c_str() );
+                        if ( ! Package->Body.Info[ "TaskMessage" ].empty() )
+                        {
+                            Session.InteractedWidget->DemonCommands->CommandTaskInfo[ TaskID ] = Package->Body.Info[ "TaskMessage" ].c_str();
+                        }
+                        else
+                        {
+                            Session.InteractedWidget->AppendRaw();
+                            Session.InteractedWidget->AppendRaw( Session.InteractedWidget->DemonCommands->Prompt );
+                        }
+
+                        Session.InteractedWidget->DemonCommands->DispatchCommand( false, TaskID, Package->Body.Info[ "CommandLine" ].c_str() );
                     }
                 }
             }
