@@ -4,6 +4,6 @@
 
 #include <windows.h>
 
-VOID DxSleep( UINT32 Timeout );
+VOID SleepObf( UINT32 Timeout );
 
 #endif

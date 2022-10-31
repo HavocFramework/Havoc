@@ -13,8 +13,8 @@
 
 #include <Loader/ObjectApi.h>
 
-#define intAlloc( size )    Instance->Win32.LocalAlloc( LPTR, size )
-#define intFree( addr )     Instance->Win32.LocalFree( addr )
+#define intAlloc( size )    Instance.Win32.LocalAlloc( LPTR, size )
+#define intFree( addr )     Instance.Win32.LocalFree( addr )
 
 #ifndef bufsize
 #define bufsize 8192
@@ -24,7 +24,7 @@
 PVOID LdrModulePebString( PCHAR ModuleString )
 {
     PRINTF( "ModuleString: %s : %lx\n", ModuleString, HashEx( ModuleString, 0, TRUE ) )
-    return Instance->Win32.GetModuleHandleA( ModuleString );
+    return Instance.Win32.GetModuleHandleA( ModuleString );
 }
 
 PVOID LdrFunctionAddrString( PVOID Module, PCHAR Function )
@@ -165,10 +165,10 @@ VOID BeaconPrintf( INT Type, PCHAR fmt, ... )
 
     va_start( VaListArg, fmt );
 
-    CallbackSize    = Instance->Win32.vsnprintf( NULL, 0, fmt, VaListArg );
-    CallbackOutput  = Instance->Win32.LocalAlloc( LPTR, CallbackSize );
+    CallbackSize    = Instance.Win32.vsnprintf( NULL, 0, fmt, VaListArg );
+    CallbackOutput  = Instance.Win32.LocalAlloc( LPTR, CallbackSize );
 
-    Instance->Win32.vsnprintf( CallbackOutput, CallbackSize, fmt, VaListArg );
+    Instance.Win32.vsnprintf( CallbackOutput, CallbackSize, fmt, VaListArg );
 
     va_end( VaListArg );
 
@@ -179,7 +179,7 @@ VOID BeaconPrintf( INT Type, PCHAR fmt, ... )
     PackageTransmit( package, NULL, NULL );
 
     MemSet( CallbackOutput, 0, CallbackSize );
-    Instance->Win32.LocalFree( CallbackOutput );
+    Instance.Win32.LocalFree( CallbackOutput );
 }
 
 // TODO: use type for output or error
@@ -201,19 +201,19 @@ BOOL BeaconIsAdmin()
     DWORD           cbSize    = sizeof( TOKEN_ELEVATION );
     NTSTATUS        NtStatus  = STATUS_SUCCESS;
 
-    if ( NT_SUCCESS( NtStatus = Instance->Syscall.NtOpenProcessToken( NtCurrentProcess(), TOKEN_QUERY, &hToken ) ) )
+    if ( NT_SUCCESS( NtStatus = Instance.Syscall.NtOpenProcessToken( NtCurrentProcess(), TOKEN_QUERY, &hToken ) ) )
     {
-        if ( Instance->Win32.GetTokenInformation( hToken, TokenElevation, &Elevation, sizeof( Elevation ), &cbSize ) )
+        if ( Instance.Win32.GetTokenInformation( hToken, TokenElevation, &Elevation, sizeof( Elevation ), &cbSize ) )
         {
-            Instance->Win32.NtClose( hToken );
+            Instance.Win32.NtClose( hToken );
             return ( BOOL ) Elevation.TokenIsElevated;
         }
         else PRINTF( "GetTokenInformation: Failed [%d]\n", NtGetLastError() );
     }
-    else PRINTF( "NtOpenProcessToken: Failed [%d]\n", Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
+    else PRINTF( "NtOpenProcessToken: Failed [%d]\n", Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
 
     if ( hToken )
-        Instance->Win32.NtClose( hToken );
+        Instance.Win32.NtClose( hToken );
 
     return FALSE;
 }
@@ -223,7 +223,7 @@ VOID BeaconFormatAlloc( PFORMAT format, int maxsz )
     if ( format == NULL )
         return;
 
-    format->original = Instance->Win32.LocalAlloc(maxsz, 1);
+    format->original = Instance.Win32.LocalAlloc(maxsz, 1);
     format->buffer = format->original;
     format->length = 0;
     format->size = maxsz;
@@ -243,7 +243,7 @@ VOID BeaconFormatFree( PFORMAT format )
 
     if ( format->original )
     {
-        Instance->Win32.LocalFree( format->original );
+        Instance.Win32.LocalFree( format->original );
         format->original = NULL;
     }
 
@@ -265,7 +265,7 @@ VOID BeaconFormatPrintf( PFORMAT format, char* fmt, ... )
     int     length = 0;
 
     va_start( args, fmt );
-    length = Instance->Win32.vsnprintf( NULL, 0, fmt, args );
+    length = Instance.Win32.vsnprintf( NULL, 0, fmt, args );
     va_end( args );
     if ( format->length + length > format->size )
     {
@@ -273,7 +273,7 @@ VOID BeaconFormatPrintf( PFORMAT format, char* fmt, ... )
     }
 
     va_start( args, fmt );
-    Instance->Win32.vsnprintf( format->buffer, length, fmt, args );
+    Instance.Win32.vsnprintf( format->buffer, length, fmt, args );
     va_end( args );
 
     format->length += length;
@@ -320,9 +320,9 @@ VOID BeaconGetSpawnTo( BOOL x86, char* buffer, int length )
         return;
 
     if ( x86 )
-        Path = Instance->Config.Process.Spawn86;
+        Path = Instance.Config.Process.Spawn86;
     else
-        Path = Instance->Config.Process.Spawn64;
+        Path = Instance.Config.Process.Spawn64;
 
     Size = StringLengthA( Path );
 

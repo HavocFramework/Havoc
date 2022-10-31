@@ -13,6 +13,7 @@
 #include <Core/Pivot.h>
 #include <Core/Spoof.h>
 #include <Core/Jobs.h>
+#include <Core/Package.h>
 
 #include <Loader/CoffeeLdr.h>
 
@@ -45,24 +46,27 @@
 // TODO: remove all variables that are not switched/changed after some time
 typedef struct
 {
+    /* MetaData */
+    PPACKAGE MetaData;
+
     struct {
-        UINT32              DemonID;
-        BOOL                Connected;
+        UINT32  AgentID;
+        BOOL    Connected;
 
         // Module Info
-        LPVOID              ModuleBase;
+        LPVOID  ModuleBase;
 
         // Process Info
-        DWORD               PID;
-        DWORD               PPID;
-        WORD                ProcessArch;
+        DWORD   PID;
+        DWORD   PPID;
+        WORD    ProcessArch;
 
         // Computer Info
-        WORD                OS_Arch;
+        WORD    OS_Arch;
 
         // Token Information
-        DWORD               Integrity; // TODO: get this info and send it back
-        DWORD               OSVersion;
+        DWORD   Integrity; // TODO: get this info and send it back
+        DWORD   OSVersion;
     } Session;
 
     struct {
@@ -96,41 +100,42 @@ typedef struct
             LPSTR   Name;
             HANDLE  Handle;
 #endif
+
         } Transport;
 
         struct
         {
-            DWORD           SleepMaskTechnique;
-            BOOL            Verbose;
-            PVOID           ThreadStartAddr;
-            BOOL            CoffeeThreaded;
-            BOOL            CoffeeVeh;
+            DWORD   SleepMaskTechnique;
+            BOOL    Verbose;
+            PVOID   ThreadStartAddr;
+            BOOL    CoffeeThreaded;
+            BOOL    CoffeeVeh;
         } Implant;
 
         struct
         {
-            UINT32          Alloc;
-            UINT32          Execute;
+            UINT32  Alloc;
+            UINT32  Execute;
         } Memory;
 
         // Process Config
         struct
         {
-            PCHAR           Spawn64;
-            PCHAR           Spawn86;
+            PCHAR   Spawn64;
+            PCHAR   Spawn86;
         } Process;
 
         struct
         {
-            DWORD           Technique;
-            PVOID           SpoofAddr;
+            DWORD   Technique;
+            PVOID   SpoofAddr;
         } Inject;
 
         // Encryption / Decryption
         struct
         {
-            PBYTE           Key;
-            PBYTE           IV;
+            PBYTE   Key;
+            PBYTE   IV;
         } AES;
 
         PVOID PowershellImport;
@@ -254,7 +259,7 @@ typedef struct
                 HANDLE  EventHandle,
                 PLONG   PreviousState
         );
-        NTSTATUS NTAPI ( NTAPI* NtCreateEvent )(
+        NTSTATUS ( NTAPI* NtCreateEvent )(
             PHANDLE            EventHandle,
             ACCESS_MASK        DesiredAccess,
             POBJECT_ATTRIBUTES ObjectAttributes,
@@ -646,10 +651,13 @@ typedef struct
 
 } INSTANCE, *PINSTANCE ;
 
-extern PINSTANCE Instance;
+extern INSTANCE Instance;
 
-VOID DxInitialization( VOID );
-VOID Int32ToBuffer( PUCHAR, UINT32 );
 VOID DemonMain( PVOID ModuleInst );
+
+_Noreturn VOID DemonRoutine( );
+VOID DemonInit( VOID );
+VOID DemonMetaData( PPACKAGE* Package, BOOL Header );
+VOID DemonConfig();
 
 #endif

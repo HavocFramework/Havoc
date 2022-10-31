@@ -1,7 +1,6 @@
 #ifndef CALLBACK_PACKAGE_H
 #define CALLBACK_PACKAGE_H
 
-#include <Demon.h>
 #include <Core/Command.h>
 
 typedef struct {
@@ -12,8 +11,9 @@ typedef struct {
     BOOL    Encrypt;
 } PACKAGE, *PPACKAGE;
 
+/* Package generator */
 PPACKAGE PackageCreate( UINT32 CommandID );
-PPACKAGE PackageNew( VOID );
+PPACKAGE PackageNew();
 
 /* PackageAddInt32
  * package => pointer to package response struct
@@ -56,17 +56,10 @@ BOOL PackageTransmit(
         PSIZE_T  Size
 );
 
-VOID PackageGen( PPACKAGE Package );
-
 // PackageTransmitError
 VOID PackageTransmitError(
         UINT32 CommandID,
         UINT32 ErrorCode
-);
-
-VOID PackageTransmitInfo(
-        UINT32 CommandID,
-        UINT32 InfoCode
 );
 
 #endif

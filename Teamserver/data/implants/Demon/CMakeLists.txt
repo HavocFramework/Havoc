@@ -25,7 +25,6 @@ set( COMMON_SOURCE Source/Core/Core.c
         Source/Core/Transport.c
         Source/Core/Parser.c
         Source/Core/Pivot.c
-        Source/Core/Config.c
         Source/Core/Jobs.c
 
         Source/Extra/KaynLdr.c
@@ -44,7 +43,7 @@ set( LOADER_SOURCE
 
 set( MAIN_SOURCE
         # Demon Main entrypoint
-        Source/Main/Main.c
+        Source/Demon.c
 
         # windows exe
         Source/Main/MainExe.c

