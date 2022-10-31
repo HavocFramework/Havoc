@@ -272,8 +272,6 @@ void LootWidget::AddScreenshot( const QString& DemonID, const QString& Name, con
 
 void LootWidget::AddDownload( const QString &DemonID, const QString &Name, const QString& Size, const QString &Date, const QByteArray &Data )
 {
-    spdlog::info( "Add Download" );
-
     auto Item = LootData{
         .Type       = LOOT_FILE,
         .AgentID    = DemonID,
@@ -294,7 +292,7 @@ void LootWidget::AddDownload( const QString &DemonID, const QString &Name, const
 void LootWidget::Reload()
 {
     ComboAgentID->clear();
-    ComboAgentID->addItem( "( All )" );
+    ComboAgentID->addItem( "[ All ]" );
 
     for ( auto& Session : HavocX::Teamserver.Sessions )
         ComboAgentID->addItem( Session.Name );

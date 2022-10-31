@@ -73,6 +73,21 @@ void HavocNamespace::UserInterface::Dialogs::Connect::setupUi( QDialog* Form )
     listContextMenu = new QMenu( this );
     listContextMenu->addAction( "Remove", this, &Connect::itemRemove );
     listContextMenu->addAction( "Clear",  this, &Connect::itemsClear );
+    listContextMenu->setStyleSheet( "QMenu {"
+                                    "    background-color: #282a36;"
+                                    "    color: #f8f8f2;"
+                                    "    border: 1px solid #44475a;"
+                                    "}"
+                                    "QMenu::separator {"
+                                    "    background: #44475a;"
+                                    "}"
+                                    "QMenu::item:selected {"
+                                    "    background: #44475a;"
+                                    "}"
+                                    "QAction {"
+                                    "    background-color: #282a36;"
+                                    "    color: #f8f8f2;"
+                                    "}" );
 
     listWidget = new QListWidget( Form );
     listWidget->setObjectName( QString::fromUtf8( "listWidget" ) );

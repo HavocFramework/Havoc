@@ -6,7 +6,7 @@
 #define BEHAVIOR_API_ONLY           "API Only"
 #define BEHAVIOR_TEAMSERVER         "Teamserver side"
 
-#define NO_SUBCOMMANDS  .SubCommands = { { nullptr } },
+#define NO_SUBCOMMANDS  .Module = false,
 
 using namespace HavocNamespace::HavocSpace;
 
@@ -16,6 +16,7 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
             .Description    = "Shows help message of specified command",
             .Usage          = "[command]",
             .Example        = "inline-execute",
+            NO_SUBCOMMANDS
         },
         {
             .CommandString  = "sleep",
@@ -23,10 +24,12 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
             .MitreTechniques= { "T1029" },
             .Usage          = "[delay]",
             .Example        = "10",
+            NO_SUBCOMMANDS
         },
         {
             .CommandString  = "checkin",
             .Description    = "request a checkin request",
+            NO_SUBCOMMANDS
         },
         {
             .CommandString  = "job",

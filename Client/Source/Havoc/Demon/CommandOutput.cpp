@@ -50,13 +50,11 @@ void DispatchOutput::MessageOutput( QString JsonString, const QString& Date = ""
         }
         else if ( Type.compare( "download" ) == 0 )
         {
-            auto DecodedData  = QByteArray::fromBase64( Data.toLocal8Bit() );
-            auto MiscDataInfo = JsonDocument[ "MiscData2" ].toString().split(";");
+            auto MiscDataInfo = JsonDocument[ "MiscData2" ].toString().split( ";" );
+            auto Name         = QByteArray::fromBase64( MiscDataInfo[ 0 ].toLocal8Bit() );
+            auto Size         = ( MiscDataInfo[ 1 ] );
 
-            auto Name = QByteArray::fromBase64( MiscDataInfo[ 0 ].toLocal8Bit() );
-            auto Size = ( MiscDataInfo[ 1 ] );
-
-            HavocX::Teamserver.TabSession->LootWidget->AddDownload( DemonCommandInstance->DemonID, Name, Size, Date, DecodedData );
+            HavocX::Teamserver.TabSession->LootWidget->AddDownload( DemonCommandInstance->DemonID, Name, Size, Date, nullptr );
         }
         else if ( Type.compare( "ProcessUI" ) == 0 )
         {
