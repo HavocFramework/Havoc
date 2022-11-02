@@ -181,7 +181,7 @@ BOOL PackageTransmit( PPACKAGE Package, PVOID* Response, PSIZE_T Size )
         if ( TransportSend( Package->Buffer, Package->Length, Response, Size ) )
             Success = TRUE;
 
-        PackageDestroy( Package );
+        //PackageDestroy( Package );
     }
     else
     {
