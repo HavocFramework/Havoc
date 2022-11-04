@@ -379,27 +379,29 @@ func ParseResponse(AgentID int, Parser *parser.Parser) *Agent {
 	}
 
 	// update this
-	if OsVersion[0] == 10 && OsVersion[1] >= 0 && OsVersion[2] != 0x0000001 && OsVersion[4] == 21996 {
-		Session.Info.OSVersion = "Windows 11 Server"
-	} else if OsVersion[0] == 10 && OsVersion[1] >= 0 && OsVersion[2] == 0x0000001 && OsVersion[4] == 21996 {
+	if OsVersion[0] == 10 && OsVersion[1] == 0 && OsVersion[2] != 0x0000001 && OsVersion[4] == 20348 {
+		Session.Info.OSVersion = "Windows 2022 Server 22H2"
+	} else if OsVersion[0] == 10 && OsVersion[1] == 0 && OsVersion[2] != 0x0000001 && OsVersion[4] == 17763 {
+		Session.Info.OSVersion = "Windows 2019 Server"
+	} else if OsVersion[0] == 10 && OsVersion[1] == 0 && OsVersion[2] == 0x0000001 && (OsVersion[4] >= 22000 && OsVersion[4] <= 22621) {
 		Session.Info.OSVersion = "Windows 11"
-	} else if OsVersion[0] == 10 && OsVersion[1] >= 0 && OsVersion[2] != 0x0000001 {
-		Session.Info.OSVersion = "Windows 10 Server"
-	} else if OsVersion[0] == 10 && OsVersion[1] >= 0 && OsVersion[2] == 0x0000001 {
+	} else if OsVersion[0] == 10 && OsVersion[1] == 0 && OsVersion[2] != 0x0000001 {
+		Session.Info.OSVersion = "Windows 2016 Server"
+	} else if OsVersion[0] == 10 && OsVersion[1] == 0 && OsVersion[2] == 0x0000001 {
 		Session.Info.OSVersion = "Windows 10"
-	} else if OsVersion[0] == 6 && OsVersion[1] >= 3 && OsVersion[2] != 0x0000001 {
+	} else if OsVersion[0] == 6 && OsVersion[1] == 3 && OsVersion[2] != 0x0000001 {
 		Session.Info.OSVersion = "Windows Server 2012 R2"
-	} else if OsVersion[0] == 6 && OsVersion[1] >= 3 && OsVersion[2] == 0x0000001 {
+	} else if OsVersion[0] == 6 && OsVersion[1] == 3 && OsVersion[2] == 0x0000001 {
 		Session.Info.OSVersion = "Windows 8.1"
-	} else if OsVersion[0] == 6 && OsVersion[1] >= 2 && OsVersion[2] != 0x0000001 {
+	} else if OsVersion[0] == 6 && OsVersion[1] == 2 && OsVersion[2] != 0x0000001 {
 		Session.Info.OSVersion = "Windows Server 2012"
-	} else if OsVersion[0] == 6 && OsVersion[1] >= 2 && OsVersion[2] == 0x0000001 {
+	} else if OsVersion[0] == 6 && OsVersion[1] == 2 && OsVersion[2] == 0x0000001 {
 		Session.Info.OSVersion = "Windows 8"
-	} else if OsVersion[0] == 6 && OsVersion[1] >= 1 && OsVersion[2] != 0x0000001 {
+	} else if OsVersion[0] == 6 && OsVersion[1] == 1 && OsVersion[2] != 0x0000001 {
 		Session.Info.OSVersion = "Windows Server 2008 R2"
-	} else if OsVersion[0] == 6 && OsVersion[1] >= 1 && OsVersion[2] == 0x0000001 {
+	} else if OsVersion[0] == 6 && OsVersion[1] == 1 && OsVersion[2] == 0x0000001 {
 		Session.Info.OSVersion = "Windows 7"
-	} else if OsVersion[0] < 5 {
+	} else if OsVersion[0] <= 5 {
 		Session.Info.OSVersion = "unknown"
 	}
 
