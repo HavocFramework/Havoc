@@ -143,6 +143,44 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
             },
         },
         {
+            .CommandString  = "transfer",
+            .Description    = "download transfer module",
+            .Behavior       = BEHAVIOR_API_ONLY,
+            .Usage          = "<subcommand>",
+            .Example        = "list",
+            .SubCommands    =
+            {
+                {
+                    .CommandString  = "list",
+                    .Description    = "list current downloads",
+                    .Behavior       = BEHAVIOR_API_ONLY,
+                    .Usage          = "",
+                    .Example        = "",
+                },
+                {
+                    .CommandString  = "stop",
+                    .Description    = "stops a download",
+                    .Behavior       = BEHAVIOR_API_ONLY,
+                    .Usage          = "<FileID>",
+                    .Example        = "ffff",
+                },
+                {
+                    .CommandString  = "resume",
+                    .Description    = "resumes a download",
+                    .Behavior       = BEHAVIOR_API_ONLY,
+                    .Usage          = "<FileID>",
+                    .Example        = "ffff",
+                },
+                {
+                    .CommandString  = "remove",
+                    .Description    = "stops and removes a download",
+                    .Behavior       = BEHAVIOR_API_ONLY,
+                    .Usage          = "<FileID>",
+                    .Example        = "ffff",
+                },
+            }
+        },
+        {
             .CommandString  = "dir",
             .Description    = "list specified directory",
             .Behavior       = BEHAVIOR_API_ONLY,
@@ -363,12 +401,6 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                     .MitreTechniques = {"T1134.003"},
                     .Usage          = "[Domain] [Username] [Password] ",
                     .Example        = "domain.local Administrator Passw0rd@1234",
-                },
-                {
-                    .CommandString  = "privs-get",
-                    .Description    = "try to enable all/specified privileges from current token",
-                    .Behavior       = BEHAVIOR_API_ONLY,
-                    .MitreTechniques = { "T1134" },
                 },
                 {
                     .CommandString  = "privs-list",
@@ -609,10 +641,37 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                 },
             },
         },
-        /*{
-            .CommandString  = "jump-exec",
-            .Description    = "lateral movement module",
-            .Usage          = "[exploit] (args)",
-            .Module         = true,
-        },*/
+        {
+            .CommandString  = "rportfwd",
+            .Description    = "reverse port forwarding",
+            .Usage          = "[sub command] (args)",
+            .Example        = "add 0.0.0.0 8080 192.157.0.1 4444",
+            .SubCommands    =
+            {
+                {
+                    .CommandString  = "add",
+                    .Description    = "add an reverse port forward",
+                    .Behavior       = BEHAVIOR_API_ONLY,
+                    .Usage          = "[bind host] [bind port] [forward host] [forward port]",
+                    .Example        = "0.0.0.0 8080 192.157.0.1 4444",
+                },
+                {
+                    .CommandString  = "list",
+                    .Description    = "list all reverse port forwards",
+                    .Behavior       = BEHAVIOR_API_ONLY,
+                },
+                {
+                    .CommandString  = "remove",
+                    .Description    = "close and remove a reverse port forward",
+                    .Behavior       = BEHAVIOR_API_ONLY,
+                    .Usage          = "[Socket ID]",
+                    .Example        = R"(b4bbb42)",
+                },
+                {
+                    .CommandString  = "clear",
+                    .Description    = "close and clear all reverse port forwards",
+                    .Behavior       = BEHAVIOR_API_ONLY,
+                },
+            },
+        },
 };

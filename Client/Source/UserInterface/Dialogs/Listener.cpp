@@ -520,10 +520,13 @@ map<string, string> HavocNamespace::UserInterface::Dialogs::NewListener::Start( 
 
         if ( ( Item.Protocol == Listener::PayloadHTTP.toStdString() ) || ( Item.Protocol == Listener::PayloadHTTPS.toStdString() ) )
         {
-            if ( Item.Protocol == Listener::PayloadHTTP.toStdString() )
+            if ( Item.Protocol == Listener::PayloadHTTPS.toStdString() ) {
                 ComboPayload->setCurrentIndex( 0 );
-            else
+            }
+            else {
                 ComboPayload->setCurrentIndex( 1 );
+            }
+
             ComboPayload->setDisabled( true );
 
             auto Info = any_cast<Listener::HTTP>( Item.Info );

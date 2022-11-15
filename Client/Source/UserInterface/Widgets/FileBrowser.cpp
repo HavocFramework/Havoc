@@ -119,17 +119,17 @@ void FileBrowser::setupUi( QWidget* FileBrowser )
 
     MenuFileBrowserTable = new QMenu( this );
     MenuFileBrowserTable->setStyleSheet( MenuStyle );
-    MenuFileBrowserTable->addAction( "Remove", this, &FileBrowser::onTableMenuRemove );
-    MenuFileBrowserTable->addAction( "Reload", this, &FileBrowser::onTableMenuReload );
-    MenuFileBrowserTable->addAction( "Mkdir",  this, &FileBrowser::onTableMenuMkdir );
+    // MenuFileBrowserTable->addAction( "Remove", this, &FileBrowser::onTableMenuRemove );
+    // MenuFileBrowserTable->addAction( "Reload", this, &FileBrowser::onTableMenuReload );
+    // MenuFileBrowserTable->addAction( "Mkdir",  this, &FileBrowser::onTableMenuMkdir );
     TableFileBrowser->addAction( MenuFileBrowserTable->menuAction() );
 
     MenuFileBrowserTree  = new QMenu( this );
     MenuFileBrowserTree->setStyleSheet( MenuStyle );
-    MenuFileBrowserTree->addAction( "List Drives", this, &FileBrowser::onTreeMenuListDrives );
-    MenuFileBrowserTree->addAction( "Remove",      this, &FileBrowser::onTreeMenuRemove );
-    MenuFileBrowserTree->addAction( "Reload",      this, &FileBrowser::onTreeMenuReload );
-    MenuFileBrowserTree->addAction( "Mkdir",       this, &FileBrowser::onTreeMenuMkdir  );
+    // MenuFileBrowserTree->addAction( "List Drives", this, &FileBrowser::onTreeMenuListDrives );
+    // MenuFileBrowserTree->addAction( "Remove",      this, &FileBrowser::onTreeMenuRemove );
+    // MenuFileBrowserTree->addAction( "Reload",      this, &FileBrowser::onTreeMenuReload );
+    // MenuFileBrowserTree->addAction( "Mkdir",       this, &FileBrowser::onTreeMenuMkdir  );
     FileBrowserTree->addAction( MenuFileBrowserTree->menuAction() );
 
     retranslateUi( );

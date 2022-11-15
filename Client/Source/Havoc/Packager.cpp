@@ -618,6 +618,7 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                             Session.InteractedWidget->AppendRaw( Session.InteractedWidget->DemonCommands->Prompt );
                         }
 
+                        Session.InteractedWidget->lineEdit->AddCommand( QString( Package->Body.Info[ "CommandLine" ].c_str() ) );
                         Session.InteractedWidget->DemonCommands->DispatchCommand( false, TaskID, Package->Body.Info[ "CommandLine" ].c_str() );
                     }
                 }

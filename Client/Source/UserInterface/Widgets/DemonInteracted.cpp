@@ -18,6 +18,7 @@ DemonInteracted::DemonInput::DemonInput( QWidget* parent ) : QLineEdit( parent )
     CommandHistoryIndex = 0;
 }
 
+/* TODO: refactor this */
 bool DemonInteracted::DemonInput::event( QEvent *e )
 {
     if ( e->type() == e->KeyPress )
@@ -68,6 +69,11 @@ bool DemonInteracted::DemonInput::event( QEvent *e )
     }
 
     return QLineEdit::event( e );
+}
+
+void DemonInteracted::DemonInput::AddCommand( const QString &Command )
+{
+    CommandHistory << Command;
 }
 
 void DemonInteracted::setupUi( QWidget *Form )

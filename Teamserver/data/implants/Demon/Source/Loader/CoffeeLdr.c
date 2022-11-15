@@ -304,10 +304,11 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
                     if ( ( ( Coffee->FunMap + ( FuncCount * 8 ) ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + 4 ) ) > 0xffffffff )
                         return FALSE;
 
-                    MemCopy( Coffee->FunMap + ( FuncCount * 8 ), &FuncPtr, sizeof( UINT64 ) );
-                    Offset = ( UINT32 ) ( ( Coffee->FunMap + ( FuncCount * 8 ) ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + 4 ) );
+                    MemCopy( Coffee->FunMap + ( FuncCount * sizeof( UINT64 ) ), &FuncPtr, sizeof( UINT64 ) );
 
+                    Offset = ( UINT32 ) ( ( Coffee->FunMap + ( FuncCount * sizeof( UINT64 ) ) ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + 4 ) );
                     MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
+
                     FuncCount++;
                 }
                 else if ( Coffee->Reloc->Type == IMAGE_REL_AMD64_REL32 )
@@ -351,11 +352,16 @@ DWORD CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSiz
     Coffee.SecMap = Instance.Win32.LocalAlloc( LPTR, Coffee.Header->NumberOfSections * sizeof( SECTION_MAP ) );
     Coffee.FunMap = Instance.Win32.LocalAlloc( LPTR, 2048 );
 
+    PRINTF( "Coffee.SecMap => %p\n", Coffee.SecMap )
+    PRINTF( "Coffee.FunMap => %p\n", Coffee.FunMap )
+
     for ( DWORD SecCnt = 0 ; SecCnt < Coffee.Header->NumberOfSections; SecCnt++ )
     {
         Coffee.Section               = U_PTR( Coffee.Data ) + sizeof( COFF_FILE_HEADER ) + U_PTR( sizeof( COFF_SECTION ) * SecCnt );
         Coffee.SecMap[ SecCnt ].Size = Coffee.Section->SizeOfRawData;
         Coffee.SecMap[ SecCnt ].Ptr  = MemoryAlloc( DX_MEM_DEFAULT, NtCurrentProcess(), Coffee.SecMap[ SecCnt ].Size, PAGE_READWRITE );
+
+        PRINTF( "Coffee.SecMap[ %d ].Ptr => %p\n", SecCnt, Coffee.SecMap[ SecCnt ].Ptr )
 
         MemCopy( Coffee.SecMap[ SecCnt ].Ptr, U_PTR( CoffeeData ) + Coffee.Section->PointerToRawData, Coffee.Section->SizeOfRawData );
     }
@@ -418,7 +424,7 @@ ExitThread:
         Param = NULL;
     }
 
-    JobRemove( NtCurrentTEB()->ClientId.UniqueThread );
+    JobRemove( NtCurrentTeb()->ClientId.UniqueThread );
     Instance.Threads--;
 
     Instance.Win32.RtlExitUserThread( 0 );

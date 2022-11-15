@@ -192,7 +192,7 @@ BOOL JobSuspend( DWORD JobID )
                     }
                     else
                     {
-                        PUTS( "Handle is emtpy" )
+                        PUTS( "Handle is empty" )
                         return FALSE;
                     }
                 }
@@ -246,7 +246,7 @@ BOOL JobResume( DWORD JobID )
                     }
                     else
                     {
-                        PUTS( "Handle is emtpy" )
+                        PUTS( "Handle is empty" )
                         return FALSE;
                     }
                 }
@@ -306,7 +306,7 @@ BOOL JobKill( DWORD JobID )
                         }
                         else
                         {
-                            PUTS( "Handle is emtpy" )
+                            PUTS( "Handle is empty" )
                             Success = FALSE;
                         }
                     }

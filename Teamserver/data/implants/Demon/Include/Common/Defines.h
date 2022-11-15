@@ -32,8 +32,7 @@
 #define FuncHash_InitializeProcThreadAttributeList 6595998938373999155
 #define FuncHash_UpdateProcThreadAttribute  6332977549253614184
 
-// TODO: finish COFF api
-// Demon API
+// Beacon API
 #define COFFAPI_BEACONDATAPARSER                0xe2494ba2
 #define COFFAPI_BEACONDATAINT                   0xaf1afdd2
 #define COFFAPI_BEACONDATASHORT                 0xe2835ef7

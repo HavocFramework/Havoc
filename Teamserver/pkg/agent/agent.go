@@ -1,16 +1,22 @@
 package agent
 
 import (
+	"Havoc/pkg/common"
 	"Havoc/pkg/common/crypt"
 	"Havoc/pkg/common/packer"
 	"Havoc/pkg/common/parser"
 	"Havoc/pkg/logger"
+	"Havoc/pkg/logr"
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -83,7 +89,7 @@ func BuildPayloadMessage(Jobs []Job, AesKey []byte, AesIv []byte) []byte {
 		}
 	}
 
-	logger.Debug("PayloadPackage: \n", hex.Dump(PayloadPackage))
+	logger.Debug("PayloadPackage:\n", hex.Dump(PayloadPackage))
 
 	return PayloadPackage
 }
@@ -378,34 +384,7 @@ func ParseResponse(AgentID int, Parser *parser.Parser) *Agent {
 
 	}
 
-	// update this
-	if OsVersion[0] == 10 && OsVersion[1] >= 0 && OsVersion[2] != 0x0000001 && OsVersion[4] == 21996 {
-		Session.Info.OSVersion = "Windows 11 Server"
-	} else if OsVersion[0] == 10 && OsVersion[1] >= 0 && OsVersion[2] == 0x0000001 && OsVersion[4] == 21996 {
-		Session.Info.OSVersion = "Windows 11"
-	} else if OsVersion[0] == 10 && OsVersion[1] >= 0 && OsVersion[2] != 0x0000001 {
-		Session.Info.OSVersion = "Windows 10 Server"
-	} else if OsVersion[0] == 10 && OsVersion[1] >= 0 && OsVersion[2] == 0x0000001 {
-		Session.Info.OSVersion = "Windows 10"
-	} else if OsVersion[0] == 6 && OsVersion[1] >= 3 && OsVersion[2] != 0x0000001 {
-		Session.Info.OSVersion = "Windows Server 2012 R2"
-	} else if OsVersion[0] == 6 && OsVersion[1] >= 3 && OsVersion[2] == 0x0000001 {
-		Session.Info.OSVersion = "Windows 8.1"
-	} else if OsVersion[0] == 6 && OsVersion[1] >= 2 && OsVersion[2] != 0x0000001 {
-		Session.Info.OSVersion = "Windows Server 2012"
-	} else if OsVersion[0] == 6 && OsVersion[1] >= 2 && OsVersion[2] == 0x0000001 {
-		Session.Info.OSVersion = "Windows 8"
-	} else if OsVersion[0] == 6 && OsVersion[1] >= 1 && OsVersion[2] != 0x0000001 {
-		Session.Info.OSVersion = "Windows Server 2008 R2"
-	} else if OsVersion[0] == 6 && OsVersion[1] >= 1 && OsVersion[2] == 0x0000001 {
-		Session.Info.OSVersion = "Windows 7"
-	} else if OsVersion[0] < 5 {
-		Session.Info.OSVersion = "unknown"
-	}
-
-	if OsVersion[3] != 0 {
-		Session.Info.OSVersion = Session.Info.OSVersion + " Service Pack " + strconv.Itoa(OsVersion[3])
-	}
+	Session.Info.OSVersion = getWindowsVersionString(OsVersion)
 
 	switch OsArch {
 	case 0:
@@ -620,6 +599,265 @@ func (a *Agent) PivotAddJob(job Job) {
 	pivots.Parent.AddJobToQueue(PivotJob)
 }
 
+func (a *Agent) DownloadAdd(FileID int, FilePath string, FileSize int) error {
+	var (
+		err      error
+		download = &Download{
+			FileID:    FileID,
+			FilePath:  FilePath,
+			TotalSize: FileSize,
+			Progress:  FileSize,
+			State:     DOWNLOAD_STATE_RUNNING,
+		}
+
+		DemonPath        = logr.LogrInstance.AgentPath + "/" + a.NameID
+		DemonDownloadDir = DemonPath + "/Download"
+		DownloadFilePath = strings.Join(strings.Split(FilePath, "\\"), "/")
+		FileSplit        = strings.Split(DownloadFilePath, "/")
+		DownloadFile     = FileSplit[len(FileSplit)-1]
+		DemonDownload    = DemonDownloadDir + "/" + strings.Join(FileSplit[:len(FileSplit)-1], "/")
+	)
+
+	/* check if we don't have a path traversal */
+	path := filepath.Clean(DemonDownload)
+	if !strings.HasPrefix(path, DemonDownloadDir) {
+		logger.Error("File didn't started with agent download path. abort")
+		return errors.New("File didn't started with agent download path. abort")
+	}
+
+	if _, err := os.Stat(DemonDownload); os.IsNotExist(err) {
+		if err = os.MkdirAll(DemonDownload, os.ModePerm); err != nil {
+			logger.Error("Failed to create Logr demon download path" + a.NameID + ": " + err.Error())
+			return errors.New("Failed to create Logr demon download path" + a.NameID + ": " + err.Error())
+		}
+	}
+
+	/* remove null terminator. goland doesn't like it. */
+	DownloadFile = common.StripNull(DownloadFile)
+
+	download.File, err = os.Create(DemonDownload + "/" + DownloadFile)
+	if err != nil {
+		logger.Error("Failed to create file: " + err.Error())
+		return errors.New("Failed to create file: " + err.Error())
+	}
+
+	download.LocalFile = DemonDownload + "/" + DownloadFile
+
+	a.Downloads = append(a.Downloads, download)
+
+	return nil
+}
+
+func (a *Agent) DownloadWrite(FileID int, data []byte) {
+	for i := range a.Downloads {
+		if a.Downloads[i].FileID == FileID {
+			_, err := a.Downloads[i].File.Write(data)
+			if err != nil {
+				a.Downloads[i].File, err = os.Create(a.Downloads[i].LocalFile)
+				if err != nil {
+					logger.Error("Failed to create file: " + err.Error())
+					return
+				}
+
+				_, err = a.Downloads[i].File.Write(data)
+				if err != nil {
+					logger.Error("Failed to write to file [" + a.Downloads[i].LocalFile + "]: " + err.Error())
+				}
+
+				a.Downloads[i].Progress += len(data)
+
+				break
+			}
+			break
+		}
+	}
+}
+
+func (a *Agent) DownloadClose(FileID int) {
+	for i := range a.Downloads {
+		if a.Downloads[i].FileID == FileID {
+			err := a.Downloads[i].File.Close()
+			if err != nil {
+				logger.Error(fmt.Sprintf("Failed to close download (%x) file: %v", a.Downloads[i].FileID, err))
+			}
+
+			a.Downloads = append(a.Downloads[:i], a.Downloads[i+1:]...)
+			break
+		}
+	}
+}
+
+func (a *Agent) DownloadGet(FileID int) *Download {
+	for _, download := range a.Downloads {
+		if download.FileID == FileID {
+			return download
+		}
+	}
+	return nil
+}
+
+func (a *Agent) PortFwdNew(SocketID, LclAddr, LclPort, FwdAddr, FwdPort int, Target string) {
+	var portfwd = &PortFwd{
+		Conn:    nil,
+		SocktID: SocketID,
+		LclAddr: LclAddr,
+		LclPort: LclPort,
+		FwdAddr: FwdAddr,
+		FwdPort: FwdPort,
+		Target:  Target,
+	}
+
+	a.PortFwds = append(a.PortFwds, portfwd)
+}
+
+func (a *Agent) PortFwdGet(SocketID int) *PortFwd {
+
+	for i := range a.PortFwds {
+
+		/* check if it's our rportfwd connection */
+		if a.PortFwds[i].SocktID == SocketID {
+
+			/* return the found PortFwd object */
+			return a.PortFwds[i]
+
+		}
+
+	}
+
+	return nil
+}
+
+func (a *Agent) PortFwdOpen(SocketID int) error {
+	var (
+		err   error
+		found bool
+	)
+
+	for i := range a.PortFwds {
+
+		/* check if it's our rportfwd connection */
+		if a.PortFwds[i].SocktID == SocketID {
+
+			/* alright we found our socket */
+			found = true
+
+			/* open the connection to the target */
+			a.PortFwds[i].Conn, err = net.Dial("tcp", a.PortFwds[i].Target)
+			if err != nil {
+				return err
+			}
+
+		}
+
+	}
+
+	if !found {
+		return fmt.Errorf("rportfwd socket id %x not found", SocketID)
+	}
+
+	return nil
+}
+
+func (a *Agent) PortFwdWrite(SocketID int, data []byte) error {
+	var found bool
+
+	for i := range a.PortFwds {
+
+		/* check if it's our rportfwd connection */
+		if a.PortFwds[i].SocktID == SocketID {
+
+			/* alright we found our socket */
+			found = true
+
+			if a.PortFwds[i].Conn != nil {
+
+				/* write to the connection */
+				_, err := a.PortFwds[i].Conn.Write(data)
+				if err != nil {
+					return err
+				}
+
+				break
+
+			} else {
+				return errors.New("portfwd connection is empty")
+			}
+
+		}
+
+	}
+
+	if !found {
+		return fmt.Errorf("rportfwd socket id %x not found", SocketID)
+	}
+
+	return nil
+}
+
+func (a *Agent) PortFwdRead(SocketID int) ([]byte, error) {
+	var (
+		found = false
+		data  = bytes.Buffer{}
+	)
+
+	for i := range a.PortFwds {
+
+		/* check if it's our rportfwd connection */
+		if a.PortFwds[i].SocktID == SocketID {
+
+			/* alright we found our socket */
+			found = true
+
+			if a.PortFwds[i].Conn != nil {
+
+				/* read from our socket to the data buffer or return error */
+				_, err := io.Copy(&data, a.PortFwds[i].Conn)
+				if err != nil {
+					return nil, err
+				}
+
+				break
+
+			} else {
+				return nil, errors.New("portfwd connection is empty")
+			}
+
+		}
+
+	}
+
+	if !found {
+		return nil, fmt.Errorf("rportfwd socket id %x not found", SocketID)
+	}
+
+	/* return the read data */
+	return data.Bytes(), nil
+}
+
+func (a *Agent) PortFwdClose(SocketID int) {
+
+	for i := range a.PortFwds {
+
+		/* check if it's our rportfwd connection */
+		if a.PortFwds[i].SocktID == SocketID {
+
+			/* is there a socket? if not the not try anything or else we get an exception */
+			if a.PortFwds[i].Conn != nil {
+
+				/* close our connection */
+				a.PortFwds[i].Conn.Close()
+
+			}
+
+			/* remove the socket from the array */
+			a.PortFwds = append(a.PortFwds[:i], a.PortFwds[i+1:]...)
+
+		}
+
+	}
+
+}
+
 func (a *Agent) ToMap() map[string]interface{} {
 	var TempParent = a.Pivots.Parent
 	var InfoMap = structs.Map(a)
@@ -630,7 +868,6 @@ func (a *Agent) ToMap() map[string]interface{} {
 
 	delete(InfoMap, "Connection")
 	delete(InfoMap, "SessionDir")
-	delete(InfoMap, "Info")
 	delete(InfoMap, "JobQueue")
 	delete(InfoMap, "Parent")
 
@@ -662,4 +899,38 @@ func (a *Agent) ToJson() string {
 func (agents *Agents) AppendAgent(demon *Agent) []*Agent {
 	agents.Agents = append(agents.Agents, demon)
 	return agents.Agents
+}
+
+func getWindowsVersionString(OsVersion []int) string {
+	var WinVersion = "Unknown"
+
+	if OsVersion[0] == 10 && OsVersion[1] == 0 && OsVersion[2] != 0x0000001 && OsVersion[4] == 20348 {
+		WinVersion = "Windows 2022 Server 22H2"
+	} else if OsVersion[0] == 10 && OsVersion[1] == 0 && OsVersion[2] != 0x0000001 && OsVersion[4] == 17763 {
+		WinVersion = "Windows 2019 Server"
+	} else if OsVersion[0] == 10 && OsVersion[1] == 0 && OsVersion[2] == 0x0000001 && (OsVersion[4] >= 22000 && OsVersion[4] <= 22621) {
+		WinVersion = "Windows 11"
+	} else if OsVersion[0] == 10 && OsVersion[1] == 0 && OsVersion[2] != 0x0000001 {
+		WinVersion = "Windows 2016 Server"
+	} else if OsVersion[0] == 10 && OsVersion[1] == 0 && OsVersion[2] == 0x0000001 {
+		WinVersion = "Windows 10"
+	} else if OsVersion[0] == 6 && OsVersion[1] == 3 && OsVersion[2] != 0x0000001 {
+		WinVersion = "Windows Server 2012 R2"
+	} else if OsVersion[0] == 6 && OsVersion[1] == 3 && OsVersion[2] == 0x0000001 {
+		WinVersion = "Windows 8.1"
+	} else if OsVersion[0] == 6 && OsVersion[1] == 2 && OsVersion[2] != 0x0000001 {
+		WinVersion = "Windows Server 2012"
+	} else if OsVersion[0] == 6 && OsVersion[1] == 2 && OsVersion[2] == 0x0000001 {
+		WinVersion = "Windows 8"
+	} else if OsVersion[0] == 6 && OsVersion[1] == 1 && OsVersion[2] != 0x0000001 {
+		WinVersion = "Windows Server 2008 R2"
+	} else if OsVersion[0] == 6 && OsVersion[1] == 1 && OsVersion[2] == 0x0000001 {
+		WinVersion = "Windows 7"
+	}
+
+	if OsVersion[3] != 0 {
+		WinVersion += " Service Pack " + strconv.Itoa(OsVersion[3])
+	}
+
+	return WinVersion
 }

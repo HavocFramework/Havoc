@@ -266,7 +266,7 @@ void LootWidget::AddScreenshot( const QString& DemonID, const QString& Name, con
 
     LootItems.push_back( Item );
 
-    if ( ComboAgentID->currentText().compare( DemonID ) == 0 || ComboAgentID->currentText().compare( "( All )" ) == 0 )
+    if ( ComboAgentID->currentText().compare( DemonID ) == 0 || ComboAgentID->currentText().compare( "[ All ]" ) == 0 )
         ScreenshotTableAdd( Name, Date );
 }
 
@@ -285,7 +285,7 @@ void LootWidget::AddDownload( const QString &DemonID, const QString &Name, const
 
     LootItems.push_back( Item );
 
-    if ( ComboAgentID->currentText().compare( DemonID ) == 0 || ComboAgentID->currentText().compare( "( All )" ) == 0 )
+    if ( ComboAgentID->currentText().compare( DemonID ) == 0 || ComboAgentID->currentText().compare( "[ All ]" ) == 0 )
         DownloadTableAdd( Name, Size, Date );
 }
 
@@ -309,7 +309,7 @@ void LootWidget::onScreenshotTableClick( const QModelIndex &index )
 
     for ( auto& item : LootItems )
     {
-        if ( DemonID.compare( "( All )" ) == 0 || DemonID.compare( item.AgentID ) == 0 )
+        if ( DemonID.compare( "[ All ]" ) == 0 || DemonID.compare( item.AgentID ) == 0 )
         {
             if ( item.Type == LOOT_IMAGE )
             {
@@ -341,7 +341,7 @@ void LootWidget::onAgentChange( const QString& text )
 
     for ( auto& item : LootItems )
     {
-        if ( item.AgentID.compare( text ) == 0 || text.compare( "( All )" ) == 0 )
+        if ( item.AgentID.compare( text ) == 0 || text.compare( "[ All ]" ) == 0 )
         {
             switch ( item.Type )
             {

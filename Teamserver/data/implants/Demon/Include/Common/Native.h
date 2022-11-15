@@ -16781,6 +16781,20 @@ NtCreateThread (
     IN BOOLEAN CreateSuspended
     );
 
+NTSTATUS
+NTAPI NtCreateThreadEx (
+    PHANDLE     hThread,
+    ACCESS_MASK DesiredAccess,
+    PVOID       ObjectAttributes,
+    HANDLE      ProcessHandle,
+    PVOID       lpStartAddress,
+    PVOID       lpParameter,
+    ULONG       Flags,
+    SIZE_T      StackZeroBits,
+    SIZE_T      SizeOfStackCommit,
+    SIZE_T      SizeOfStackReserve,
+    PVOID       lpBytesBuffer
+);
 
 NTSTATUS
 NTAPI
@@ -22388,15 +22402,6 @@ LdrQueryProcessModuleInformation(
 //
 //please do not change swprintf stuff otherwise win32 mode is always trashed
 #if !defined(_NO_NTDLL_CRT_)
-int __cdecl vsprintf( char *, const char *, va_list );
-int __cdecl _vsnprintf( char *, size_t, const char *, va_list );
-int __cdecl sprintf( char *, const char *, ... );
-int __cdecl _snprintf( char *, size_t, const char *, ... );
-int __cdecl _snwprintf( wchar_t *, size_t, const wchar_t *, ... );
-int __cdecl swprintf( wchar_t *, const wchar_t *, ... );
-int __cdecl sscanf( const char *, const char *, ... );
-int __cdecl _vscwprintf( const wchar_t *, va_list );
-int __cdecl _vsnwprintf( wchar_t *, size_t, const wchar_t *, va_list );
 
 //readded 4 jan 2012
 //win64 mode does not need this

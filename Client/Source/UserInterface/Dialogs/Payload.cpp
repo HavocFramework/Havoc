@@ -290,6 +290,10 @@ auto Payload::addConsoleLog( QString MsgType, QString Message ) -> void
     {
         ConsoleText->append( Util::ColorText::Red( "[-] " ) + Message );
     }
+    else if ( MsgType.compare( "Warning" ) == 0 || MsgType.compare( "Warn" ) == 0 )
+    {
+        ConsoleText->append( Util::ColorText::Yellow( "[!] " ) + Message );
+    }
     else
     {
         ConsoleText->append( Util::ColorText::Yellow( "[^] " ) + Message );

@@ -6,6 +6,8 @@
 
 #include <ntstatus.h>
 
+/* Move this to Token.c
+ * New name is going to be TokenDuplicate*/
 BOOL Win32_DuplicateTokenEx(
         HANDLE                       ExistingTokenHandle,
         DWORD                        dwDesiredAccess,

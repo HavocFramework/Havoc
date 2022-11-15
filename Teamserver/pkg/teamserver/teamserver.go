@@ -2,6 +2,7 @@ package teamserver
 
 import "C"
 import (
+	"Havoc/pkg/webhook"
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
@@ -117,7 +118,7 @@ func (t *Teamserver) Start() {
 		os.Exit(0)
 	}(t.Flags.Server.Host + ":" + t.Flags.Server.Port)
 
-	// -------
+	t.WebHooks = webhook.NewWebHook()
 	t.Service = service.NewService(t.Server.Engine)
 	t.Service.Events = t
 	t.Service.TeamAgents = &t.Agents
@@ -127,6 +128,29 @@ func (t *Teamserver) Start() {
 	t.Service.Data.ServerAgents = &t.Agents
 
 	logger.Info("Starting Teamserver on " + colors.BlueUnderline(TeamserverWs))
+
+	/* if we specified a webhook then lets use it. */
+	if t.Profile.Config.WebHook != nil {
+		if t.Profile.Config.WebHook.Discord != nil {
+
+			var (
+				AvatarUrl string
+				UserName  string
+			)
+
+			if len(t.Profile.Config.WebHook.Discord.AvatarUrl) > 0 {
+				AvatarUrl = t.Profile.Config.WebHook.Discord.AvatarUrl
+			}
+
+			if len(t.Profile.Config.WebHook.Discord.UserName) > 0 {
+				UserName = t.Profile.Config.WebHook.Discord.UserName
+			}
+
+			if len(t.Profile.Config.WebHook.Discord.WebHook) > 0 {
+				t.WebHooks.SetDiscord(AvatarUrl, UserName, t.Profile.Config.WebHook.Discord.WebHook)
+			}
+		}
+	}
 
 	// start teamserver service
 	if t.Profile.Config.Service != nil {
@@ -474,7 +498,7 @@ func (t *Teamserver) FindSystemPackages() bool {
 		if len(t.Profile.Config.Server.Build.Compiler64) > 0 {
 			if _, err := os.Stat(t.Profile.Config.Server.Build.Compiler64); os.IsNotExist(err) {
 				logger.SetStdOut(os.Stderr)
-				logger.Error("Compiler x64 path doesn't exists: " + t.Profile.Config.Server.Build.Compiler64)
+				logger.Error("Compiler x64 path doesn't exist: " + t.Profile.Config.Server.Build.Compiler64)
 				return false
 			}
 
@@ -491,7 +515,7 @@ func (t *Teamserver) FindSystemPackages() bool {
 		if len(t.Profile.Config.Server.Build.Compiler86) > 0 {
 			if _, err := os.Stat(t.Profile.Config.Server.Build.Compiler86); os.IsNotExist(err) {
 				logger.SetStdOut(os.Stderr)
-				logger.Error("Compiler x86 path doesn't exists: " + t.Profile.Config.Server.Build.Compiler86)
+				logger.Error("Compiler x86 path doesn't exist: " + t.Profile.Config.Server.Build.Compiler86)
 				return false
 			}
 
@@ -508,7 +532,7 @@ func (t *Teamserver) FindSystemPackages() bool {
 		if len(t.Profile.Config.Server.Build.Nasm) > 0 {
 			if _, err := os.Stat(t.Profile.Config.Server.Build.Nasm); os.IsNotExist(err) {
 				logger.SetStdOut(os.Stderr)
-				logger.Error("Nasm path doesn't exists: " + t.Profile.Config.Server.Build.Nasm)
+				logger.Error("Nasm path doesn't exist: " + t.Profile.Config.Server.Build.Nasm)
 				return false
 			}
 

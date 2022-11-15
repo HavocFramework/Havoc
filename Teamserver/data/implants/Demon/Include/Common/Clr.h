@@ -3,6 +3,8 @@
 
 #include <windows.h>
 
+#include <Core/WinUtils.h>
+
 extern GUID xCLSID_CLRMetaHost;
 extern GUID xIID_ICLRMetaHost;
 extern GUID xIID_ICLRRuntimeInfo;
@@ -10,18 +12,20 @@ extern GUID xCLSID_CorRuntimeHost;
 extern GUID xIID_ICorRuntimeHost;
 extern GUID xIID_AppDomain;
 
-typedef struct _ICLRMetaHost            ICLRMetaHost;
-typedef struct _ICLRRuntimeInfo         ICLRRuntimeInfo;
-typedef struct _AppDomain               IAppDomain;
-typedef struct _Assembly                IAssembly;
-typedef struct _Type                    IType;
-typedef struct _Binder                  IBinder;
-typedef struct _MethodInfo              IMethodInfo;
+typedef struct _ICLRMetaHost    ICLRMetaHost;
+typedef struct _ICLRRuntimeInfo ICLRRuntimeInfo;
+typedef struct _AppDomain       IAppDomain;
+typedef struct _Assembly        IAssembly;
+typedef struct _Type            IType;
+typedef struct _Binder          IBinder;
+typedef struct _MethodInfo      IMethodInfo;
 
-typedef ICLRMetaHost*       PICLRMetaHost;
-typedef ICLRRuntimeInfo*    PICLRRuntimeInfo;
-typedef IEnumUnknown*       PIEnumUnknown;
-typedef IUnknown*           PIUnknown;
+typedef ICLRMetaHost    *PICLRMetaHost;
+typedef ICLRRuntimeInfo *PICLRRuntimeInfo;
+typedef IAssembly       *PIAssembly;
+typedef IEnumUnknown    *PIEnumUnknown;
+typedef IUnknown        *PIUnknown;
+typedef ICorRuntimeHost *PICorRuntimeHost;
 
 typedef void* HDOMAINENUM;
 
@@ -176,7 +180,7 @@ typedef struct _AppDomainVtbl {
 
 typedef struct _AppDomain {
     AppDomainVtbl* lpVtbl;
-} AppDomain;
+} AppDomain, *PAppDomain;
 
 #undef DUMMY_METHOD
 #define DUMMY_METHOD(x) HRESULT ( STDMETHODCALLTYPE *dummy_##x )(IAssembly *This)
@@ -281,7 +285,7 @@ typedef enum _BindingFlags {
 
 typedef struct _Assembly {
     AssemblyVtbl* lpVtbl;
-} Assembly;
+} Assembly, *PAssembly;
 
 #undef DUMMY_METHOD
 #define DUMMY_METHOD(x) HRESULT ( STDMETHODCALLTYPE *dummy_##x )(IType *This)
@@ -651,6 +655,57 @@ typedef struct _MethodInfoVtbl {
 
 typedef struct _MethodInfo {
     MethodInfoVtbl* lpVtbl;
-} MethodInfo;
+} MethodInfo, *PMethodInfo;
+
+typedef struct _DOTNET_ARGS
+{
+    /* Buffers */
+    BUFFER PipeName;
+    BUFFER AppDomainName;
+    BUFFER NetVersion;
+    BUFFER Output;
+
+    /* Handles */
+    HANDLE Pipe;
+    HANDLE File;
+    HANDLE StdOut;
+    HANDLE Thread;
+    HANDLE Event;
+    HANDLE Exit;
+
+    /* Argument Array */
+    UNICODE_STRING ArgumentArray;
+
+    /* Some Assembly Variables. */
+    SAFEARRAY* SafeArray;
+    SAFEARRAY* MethodArgs;
+
+    /* Clr variables */
+    PICLRMetaHost    MetaHost;
+    PICLRRuntimeInfo ClrRuntimeInfo;
+    PICorRuntimeHost ICorRuntimeHost;
+    PAssembly        Assembly;
+    PIUnknown        AppDomainThunk;
+    PAppDomain       AppDomain;
+    PMethodInfo      MethodInfo;
+
+    /* Variants */
+    VARIANT vtPsa;
+    VARIANT Return;
+
+    /* Successful invoked ? */
+    BOOL Invoked;
+
+    /* Contexts */
+    PCONTEXT RopInit;
+    PCONTEXT RopInvk;
+    PCONTEXT RopEvnt;
+    PCONTEXT RopExit;
+} DOTNET_ARGS, *PDOTNET_ARGS;
+
+#define DEMOn_CLR_ERROR_REFUSE_VERSION 0x1
+
+DWORD ClrCreateInstance( LPCWSTR dotNetVersion, PICLRMetaHost* ppClrMetaHost, PICLRRuntimeInfo* ppClrRuntimeInfo, ICorRuntimeHost** ppICorRuntimeHost );
+BOOL  FindVersion( PVOID Assembly, DWORD length );
 
 #endif

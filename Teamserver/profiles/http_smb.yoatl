@@ -21,9 +21,11 @@ Operators {
 Listeners {
     Http {
         Name         = "Agent Listener - HTTP/s"
-        Hosts        = ["192.168.0.148"] # optional
+        Hosts        = [
+            "192.168.0.148", # our callback host.
+        ]
         HostBind     = "192.168.0.148" # the address where the listener should bind to. 
-        HostRotation = "random"
+        HostRotation = "round-robin"
         Port         = 443
         Secure       = true
         UserAgent    = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"

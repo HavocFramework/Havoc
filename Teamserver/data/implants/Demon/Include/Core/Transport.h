@@ -1,13 +1,9 @@
-#ifndef ICECUBE_INTERNET_H
-#define ICECUBE_INTERNET_H
-
-#include <Demon.h>
+#ifndef DEMON_INTERNET_H
+#define DEMON_INTERNET_H
 
 #include <Core/Package.h>
-#include <winhttp.h>
-
-#define TRANSPORT_HTTP_ROTATION_ROUND_ROBIN  0
-#define TRANSPORT_HTTP_ROTATION_RANDOM       1
+#include <Core/TransportHttp.h>
+#include <Core/TransportSmb.h>
 
 /*!
  * Initialize HTTP/HTTPS Connection to C2 Server + using AES encryption or
@@ -24,15 +20,5 @@ BOOL TransportInit();
  * @return Return if functions ran successful
  */
 BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T RecvSize );
-
-#ifdef TRANSPORT_SMB
-/*!
- * Receive data from our connected parent agent.
- * @param Data Data buffer to save our data received from the server
- * @param Size Size of received data
- * @return Return if functions ran successful
- */
-PVOID TransportRecv( PSIZE_T Size );
-#endif
 
 #endif

@@ -33,6 +33,11 @@ PVOID LdrFunctionAddrString( PVOID Module, PCHAR Function )
     return LdrFunctionAddr( Module, HashStringA( Function ) );
 }
 
+BOOL LdrFreeLibrary( HMODULE hLibModule )
+{
+    return TRUE;
+}
+
 COFFAPIFUNC BeaconApi[] = {
         { .NameHash = COFFAPI_BEACONDATAPARSER,             .Pointer = BeaconDataParse                  },
         { .NameHash = COFFAPI_BEACONDATAINT,                .Pointer = BeaconDataInt                    },
@@ -61,13 +66,11 @@ COFFAPIFUNC BeaconApi[] = {
         { .NameHash = COFFAPI_LOADLIBRARYA,                 .Pointer = LdrModuleLoad                    },
         { .NameHash = COFFAPI_GETMODULEHANDLE,              .Pointer = LdrModulePebString               },
         { .NameHash = COFFAPI_GETPROCADDRESS,               .Pointer = LdrFunctionAddrString            },
-        { .NameHash = COFFAPI_FREELIBRARY,                  .Pointer = NULL                             }, // TODO: add this
+        { .NameHash = COFFAPI_FREELIBRARY,                  .Pointer = LdrFreeLibrary                   }, // TODO: add this
 
         // End of array
         { .NameHash = NULL, .Pointer = NULL },
 };
-
-DWORD BeaconApiCounter = 25;
 
 uint32_t swap_endianess(uint32_t indata) {
     uint32_t testint = 0xaabbccdd;

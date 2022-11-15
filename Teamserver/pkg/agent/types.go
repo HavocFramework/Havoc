@@ -3,6 +3,8 @@ package agent
 import (
 	"Havoc/pkg/common/parser"
 	"Havoc/pkg/packager"
+	"net"
+	"os"
 )
 
 const (
@@ -74,6 +76,29 @@ type Pivots struct {
 	Links  []*Agent
 }
 
+type Download struct {
+	File      *os.File
+	FileID    int
+	FilePath  string
+	LocalFile string
+	TotalSize int
+	Progress  int
+	State     int
+}
+
+type PortFwd struct {
+	Conn    net.Conn
+	SocktID int
+	Type    int
+
+	LclAddr int
+	LclPort int
+
+	FwdAddr int
+	FwdPort int
+	Target  string
+}
+
 type Agent struct {
 	NameID     string
 	JobQueue   []Job
@@ -81,16 +106,21 @@ type Agent struct {
 	Active     bool
 	Reason     string
 
+	Info   *AgentInfo
+	Pivots Pivots
+
+	/* TODO: make a map called Optional where to put demon/3rd party specific data.
+	 * 		 to avoid having some unnecessary data for 3rd party agent */
+	Downloads  []*Download
+	PortFwds   []*PortFwd
 	Encryption struct {
 		AESKey []byte
 		AESIv  []byte
 	}
+	TaskedOnce bool
 
-	Info   *AgentInfo
-	Pivots Pivots
-
+	/* general value. leave it... */
 	BackgroundCheck bool
-	TaskedOnce      bool
 }
 
 type AgentInfo struct {
@@ -134,6 +164,12 @@ var InjectErrors = map[int]string{
 	0x1002: "trying to inject a x86 payload into a x64 process",
 	0x1003: "failed to spawn target process",
 }
+
+const (
+	DOWNLOAD_STATE_RUNNING = 0x1
+	DOWNLOAD_STATE_STOPPED = 0x2
+	DOWNLOAD_STATE_REMOVE  = 0x3
+)
 
 var Win32ErrorCodes = map[int]string{
 	1:    "ERROR_INVALID_FUNCTION",

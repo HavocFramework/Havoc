@@ -323,14 +323,14 @@ auto CommandExecute::Config( const QString& TaskID, const QString& Key, const QS
     auto Body = Util::Packager::Body_t {
             .SubEvent = Util::Packager::Session::SendCommand,
             .Info = {
-                    { "TaskID",      TaskID.toStdString() },
-                    { "DemonID",     this->DemonCommandInstance->DemonConsole->SessionInfo.Name.toStdString() },
+                { "TaskID",      TaskID.toStdString() },
+                { "DemonID",     this->DemonCommandInstance->DemonConsole->SessionInfo.Name.toStdString() },
 
-                    { "CommandID",   to_string( (int)Commands::CONFIG ).c_str() },
-                    { "CommandLine", DemonCommandInstance->CommandInputList[ TaskID ].toStdString() },
+                { "CommandID",   to_string( (int)Commands::CONFIG ).c_str() },
+                { "CommandLine", DemonCommandInstance->CommandInputList[ TaskID ].toStdString() },
 
-                    { "ConfigKey",  Key.toStdString() },
-                    { "ConfigVal",  Value.toStdString() },
+                { "ConfigKey",  Key.toStdString() },
+                { "ConfigVal",  Value.toStdString() },
             },
     };
 
@@ -342,11 +342,11 @@ auto CommandExecute::Screenshot( const QString &TaskID ) -> void
     auto Body = Util::Packager::Body_t {
             .SubEvent = Util::Packager::Session::SendCommand,
             .Info = {
-                    { "TaskID",      TaskID.toStdString() },
-                    { "DemonID",     this->DemonCommandInstance->DemonConsole->SessionInfo.Name.toStdString() },
+                { "TaskID",      TaskID.toStdString() },
+                { "DemonID",     this->DemonCommandInstance->DemonConsole->SessionInfo.Name.toStdString() },
 
-                    { "CommandID",   to_string( ( int ) Commands::SCREENSHOT ).c_str() },
-                    { "CommandLine", DemonCommandInstance->CommandInputList[ TaskID ].toStdString() },
+                { "CommandID",   to_string( ( int ) Commands::SCREENSHOT ).c_str() },
+                { "CommandLine", DemonCommandInstance->CommandInputList[ TaskID ].toStdString() },
             },
     };
 
@@ -358,14 +358,14 @@ auto CommandExecute::Net( QString TaskID, QString Command, QString Param ) -> vo
     auto Body = Util::Packager::Body_t {
             .SubEvent = Util::Packager::Session::SendCommand,
             .Info = {
-                    { "TaskID",      TaskID.toStdString() },
-                    { "DemonID",     this->DemonCommandInstance->DemonConsole->SessionInfo.Name.toStdString() },
+                { "TaskID",      TaskID.toStdString() },
+                { "DemonID",     this->DemonCommandInstance->DemonConsole->SessionInfo.Name.toStdString() },
 
-                    { "CommandID",   to_string( ( int ) Commands::NET ).c_str() },
-                    { "CommandLine", DemonCommandInstance->CommandInputList[ TaskID ].toStdString() },
+                { "CommandID",   to_string( ( int ) Commands::NET ).c_str() },
+                { "CommandLine", DemonCommandInstance->CommandInputList[ TaskID ].toStdString() },
 
-                    { "NetCommand",  Command.toStdString() },
-                    { "Param",       Param.toStdString() },
+                { "NetCommand",  Command.toStdString() },
+                { "Param",       Param.toStdString() },
             },
     };
 
@@ -377,14 +377,14 @@ auto CommandExecute::Pivot( QString TaskID, QString Command, QString Param ) -> 
     auto Body = Util::Packager::Body_t {
             .SubEvent = Util::Packager::Session::SendCommand,
             .Info = {
-                    { "TaskID",      TaskID.toStdString() },
-                    { "DemonID",     this->DemonCommandInstance->DemonConsole->SessionInfo.Name.toStdString() },
+                { "TaskID",      TaskID.toStdString() },
+                { "DemonID",     this->DemonCommandInstance->DemonConsole->SessionInfo.Name.toStdString() },
 
-                    { "CommandID",   to_string( ( int ) Commands::PIVOT ).c_str() },
-                    { "CommandLine", DemonCommandInstance->CommandInputList[ TaskID ].toStdString() },
+                { "CommandID",   to_string( ( int ) Commands::PIVOT ).c_str() },
+                { "CommandLine", DemonCommandInstance->CommandInputList[ TaskID ].toStdString() },
 
-                    { "Command",     Command.toStdString() },
-                    { "Param",       Param.toStdString() },
+                { "Command",     Command.toStdString() },
+                { "Param",       Param.toStdString() },
             },
     };
 
@@ -406,14 +406,14 @@ auto CommandExecute::Job( QString TaskID, QString SubCommand, QString Argument )
     auto Body = Util::Packager::Body_t {
             .SubEvent = Util::Packager::Session::SendCommand,
             .Info = {
-                    { "TaskID",      TaskID.toStdString() },
-                    { "DemonID",     this->DemonCommandInstance->DemonConsole->SessionInfo.Name.toStdString() },
+                { "TaskID",      TaskID.toStdString() },
+                { "DemonID",     this->DemonCommandInstance->DemonConsole->SessionInfo.Name.toStdString() },
 
-                    { "CommandID",   to_string( ( int ) Commands::JOB ).c_str() },
-                    { "CommandLine", DemonCommandInstance->CommandInputList[ TaskID ].toStdString() },
+                { "CommandID",   to_string( ( int ) Commands::JOB ).c_str() },
+                { "CommandLine", DemonCommandInstance->CommandInputList[ TaskID ].toStdString() },
 
-                    { "Command",     SubCommand.toStdString() },
-                    { "Param",       Argument.toStdString() },
+                { "Command",     SubCommand.toStdString() },
+                { "Param",       Argument.toStdString() },
             },
     };
 
@@ -425,13 +425,51 @@ auto CommandExecute::Task( const QString& TaskID, const QString& Command ) -> vo
     auto Body = Util::Packager::Body_t {
             .SubEvent = Util::Packager::Session::SendCommand,
             .Info = {
-                    { "TaskID",      TaskID.toStdString() },
-                    { "DemonID",     this->DemonCommandInstance->DemonConsole->SessionInfo.Name.toStdString() },
-                    { "CommandID",   "Teamserver" },
-                    { "CommandLine", DemonCommandInstance->CommandInputList[ TaskID ].toStdString() },
-                    { "Command",     Command.toStdString() },
+                { "TaskID",      TaskID.toStdString() },
+                { "DemonID",     this->DemonCommandInstance->DemonConsole->SessionInfo.Name.toStdString() },
+                { "CommandID",   "Teamserver" },
+                { "CommandLine", DemonCommandInstance->CommandInputList[ TaskID ].toStdString() },
+                { "Command",     Command.toStdString() },
             },
     };
 
     NewPackageCommand( this->DemonCommandInstance->Teamserver, Body );
+}
+
+auto CommandExecute::Transfer( const QString &TaskID, QString SubCommand, QString Arguments ) -> void
+{
+    auto Body = Util::Packager::Body_t {
+            .SubEvent = Util::Packager::Session::SendCommand,
+            .Info = {
+                { "TaskID",      TaskID.toStdString() },
+                { "DemonID",     this->DemonCommandInstance->DemonConsole->SessionInfo.Name.toStdString() },
+
+                { "CommandID",   to_string( ( int ) Commands::TRANSFER ).c_str() },
+                { "CommandLine", DemonCommandInstance->CommandInputList[ TaskID ].toStdString() },
+
+                { "Command",     SubCommand.toStdString() },
+                { "FileID",      Arguments.toStdString() },
+            },
+    };
+
+    NewPackageCommand( DemonCommandInstance->Teamserver, Body );
+}
+
+auto CommandExecute::Socket( const QString &TaskID, QString SubCommand, QString Arguments ) -> void
+{
+    auto Body = Util::Packager::Body_t {
+            .SubEvent = Util::Packager::Session::SendCommand,
+            .Info = {
+                    { "TaskID",      TaskID.toStdString() },
+                    { "DemonID",     this->DemonCommandInstance->DemonConsole->SessionInfo.Name.toStdString() },
+
+                    { "CommandID",   to_string( ( int ) Commands::SOCKET ).c_str() },
+                    { "CommandLine", DemonCommandInstance->CommandInputList[ TaskID ].toStdString() },
+
+                    { "Command",     SubCommand.toStdString() },
+                    { "Params",      Arguments.toStdString() },
+            },
+    };
+
+    NewPackageCommand( DemonCommandInstance->Teamserver, Body );
 }

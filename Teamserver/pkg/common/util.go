@@ -8,6 +8,8 @@ import (
 	"image/png"
 	"io"
 	"math/rand"
+	"net"
+	"strconv"
 	"unicode/utf16"
 	"unicode/utf8"
 
@@ -111,4 +113,28 @@ func Int32ToLittle(x uint32) uint32 {
 
 func StripNull(s string) string {
 	return string(bytes.Trim([]byte(s), "\x00"))
+}
+
+func PercentageChange(part int, total int) float64 {
+	return (float64(part) * float64(100)) / float64(total)
+}
+
+func IpStringToInt32(ip string) (int, error) {
+	var long uint32
+	err := binary.Read(bytes.NewBuffer(net.ParseIP(ip).To4()), binary.BigEndian, &long)
+	if err != nil {
+		return 0, err
+	}
+	return int(long), nil
+}
+
+func Int32ToIpString(ipInt int64) string {
+
+	// need to do two bit shifting and “0xff” masking
+	b0 := strconv.FormatInt((ipInt>>24)&0xff, 10)
+	b1 := strconv.FormatInt((ipInt>>16)&0xff, 10)
+	b2 := strconv.FormatInt((ipInt>>8)&0xff, 10)
+	b3 := strconv.FormatInt(ipInt&0xff, 10)
+
+	return b0 + "." + b1 + "." + b2 + "." + b3
 }

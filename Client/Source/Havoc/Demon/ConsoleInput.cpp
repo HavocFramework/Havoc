@@ -395,6 +395,13 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 CONSOLE_ERROR( "Not enough arguments" );
                 return false;
             }
+
+            if ( InputCommands[ 1 ].at( 0 ) == '-' )
+            {
+                CONSOLE_ERROR( "\"sleep\" doesn't support negative delays" );
+                return false;
+            }
+
             TaskID = CONSOLE_INFO( "Tasked demon to sleep for " + InputCommands[ 1 ] + " seconds" );
             CommandInputList[ TaskID ] = commandline;
             SEND( Execute.Sleep( TaskID, InputCommands[ 1 ] ) )
@@ -495,7 +502,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 CONSOLE_ERROR( "Sub command not found: " + InputCommands[ 1 ] )
             }
         }
-        else if (InputCommands[0].compare( "dir" ) == 0)
+        else if ( InputCommands[ 0 ].compare( "dir" ) == 0 )
         {
             auto Path = QString( "" );
 
@@ -523,7 +530,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
         }
         else if (InputCommands[0].compare( "cd" ) == 0)
         {
-            if ( InputCommands.size() < 1 )
+            if ( InputCommands.size() < 2 )
             {
                 CONSOLE_ERROR( "Not enough arguments" );
                 return false;
@@ -537,7 +544,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
         }
         else if ( InputCommands[ 0 ].compare( "cp" ) == 0)
         {
-            if ( InputCommands.size() < 2 )
+            if ( InputCommands.size() < 3 )
             {
                 CONSOLE_ERROR( "Not enough arguments" );
                 return false;
@@ -553,7 +560,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
         }
         else if ( InputCommands[ 0 ].compare( "remove" ) == 0 )
         {
-            if ( InputCommands.size() < 1 )
+            if ( InputCommands.size() < 2 )
             {
                 CONSOLE_ERROR( "Not enough arguments" );
                 return false;
@@ -1070,12 +1077,6 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
 
                 SEND( Execute.Token( TaskID, "getuid", "" ) )
             }
-            else if ( InputCommands[ 1 ].compare( "privs-add" ) == 0 )
-            {
-                TaskID                     = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to enable all token privileges" );
-                CommandInputList[ TaskID ] = commandline;
-                SEND( Execute.Token( TaskID, "privs-get", "" ) );
-            }
             else if ( InputCommands[ 1 ].compare( "privs-list" ) == 0 )
             {
                 TaskID                     = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to list current token privileges" );
@@ -1157,6 +1158,121 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             else
             {
                 goto CheckRegisteredCommands;
+            }
+        }
+        else if ( InputCommands[ 0 ].compare( "rportfwd" ) == 0 )
+        {
+            if ( InputCommands.size() <= 1 )
+            {
+                CONSOLE_ERROR( "Not enough arguments for \"rportfwd\"" )
+                return false;
+            }
+
+            if ( InputCommands[ 1 ].compare( "add" ) == 0 )
+            {
+                auto LclAddr = QString();
+                auto LclPort = QString();
+                auto FwdAddr = QString();
+                auto FwdPort = QString();
+
+                if ( InputCommands.size() < 6 )
+                {
+                    CONSOLE_ERROR( "Not enough arguments for \"rportfwd add\"" )
+                    return false;
+                }
+
+                LclAddr = InputCommands[ 2 ];
+                LclPort = InputCommands[ 3 ];
+                FwdAddr = InputCommands[ 4 ];
+                FwdPort = InputCommands[ 5 ];
+
+                TaskID                     = CONSOLE_INFO( "Tasked demon to start a reverse port forward " + LclAddr + ":" + LclPort + " to " + FwdAddr + ":" + FwdPort )
+                CommandInputList[ TaskID ] = commandline;
+
+                SEND( Execute.Socket( TaskID, "rportfwd add", LclAddr + ";" + LclPort + ";" + FwdAddr + ";" + FwdPort ) )
+            }
+            else if ( InputCommands[ 1 ].compare( "list" ) == 0 )
+            {
+                TaskID                     = CONSOLE_INFO( "Tasked demon to list all reverse port forwards" )
+                CommandInputList[ TaskID ] = commandline;
+
+                SEND( Execute.Socket( TaskID, "rportfwd list", "" ) )
+            }
+            else if ( InputCommands[ 1 ].compare( "remove" ) == 0 )
+            {
+                if ( InputCommands.size() < 3 )
+                {
+                    CONSOLE_ERROR( "Not enough arguments for \"rportfwd remove\"" )
+                    return false;
+                }
+
+                TaskID                     = CONSOLE_INFO( "Tasked demon to close and remove a reverse port forward " + InputCommands[ 2 ] )
+                CommandInputList[ TaskID ] = commandline;
+
+                SEND( Execute.Socket( TaskID, "rportfwd remove", InputCommands[ 2 ] ) )
+            }
+            else if ( InputCommands[ 1 ].compare( "clear" ) == 0 )
+            {
+                TaskID                     = CONSOLE_INFO( "Tasked demon to close and clear all reverse port forwards" )
+                CommandInputList[ TaskID ] = commandline;
+
+                SEND( Execute.Socket( TaskID, "rportfwd clear", "" ) )
+            }
+
+        }
+        else if ( InputCommands[ 0 ].compare( "transfer" ) == 0 )
+        {
+            if ( InputCommands.size() == 1 )
+            {
+                CONSOLE_ERROR( "Not enough arguments for \"transfer\"" )
+                return false;
+            }
+
+            if ( InputCommands[ 1 ].compare( "list" ) == 0 )
+            {
+                TaskID                     = CONSOLE_INFO( "Tasked demon to list current downloads" )
+                CommandInputList[ TaskID ] = commandline;
+
+                SEND( Execute.Transfer( TaskID, "list", "" ) )
+            }
+            else if ( InputCommands[ 1 ].compare( "stop" ) == 0 )
+            {
+                if ( InputCommands.size() <= 2 )
+                {
+                    CONSOLE_ERROR( "Not enough arguments" )
+                    return false;
+                }
+
+                TaskID                     = CONSOLE_INFO( "Tasked demon to stop a download" )
+                CommandInputList[ TaskID ] = commandline;
+
+                SEND( Execute.Transfer( TaskID, "stop", InputCommands[ 2 ] ) )
+            }
+            else if ( InputCommands[ 1 ].compare( "resume" ) == 0 )
+            {
+                if ( InputCommands.size() <= 2 )
+                {
+                    CONSOLE_ERROR( "Not enough arguments" )
+                    return false;
+                }
+
+                TaskID                     = CONSOLE_INFO( "Tasked demon to resume a download" )
+                CommandInputList[ TaskID ] = commandline;
+
+                SEND( Execute.Transfer( TaskID, "resume", InputCommands[ 2 ] ) )
+            }
+            else if ( InputCommands[ 1 ].compare( "remove" ) == 0 )
+            {
+                if ( InputCommands.size() <= 2 )
+                {
+                    CONSOLE_ERROR( "Not enough arguments" )
+                    return false;
+                }
+
+                TaskID                     = CONSOLE_INFO( "Tasked demon to stop and remove a download" )
+                CommandInputList[ TaskID ] = commandline;
+
+                SEND( Execute.Transfer( TaskID, "remove", InputCommands[ 2 ] ) )
             }
         }
         else if ( InputCommands[ 0 ].compare( "download" ) == 0 )

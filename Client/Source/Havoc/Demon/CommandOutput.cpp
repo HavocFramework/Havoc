@@ -12,7 +12,7 @@
 
 using namespace HavocNamespace::HavocSpace;
 
-void DispatchOutput::MessageOutput( QString JsonString, const QString& Date = "" )
+void DispatchOutput::MessageOutput( QString JsonString, const QString& Date = "" ) const
 {
     auto JsonDocument = QJsonDocument::fromJson( QByteArray::fromBase64( JsonString.toLocal8Bit( ) ) );
     auto MessageType  = JsonDocument[ "Type" ].toString();
@@ -21,14 +21,16 @@ void DispatchOutput::MessageOutput( QString JsonString, const QString& Date = ""
 
     if ( Message.length() > 0 )
     {
-        if ( MessageType == "Error" )
+        if ( MessageType == "Error" || MessageType == "Erro" )
             this->DemonCommandInstance->DemonConsole->TaskError( Message );
         else if ( MessageType == "Good" )
-            this->DemonCommandInstance->DemonConsole->AppendRaw( Util::ColorText::Green( "[+]" ) + " " + Message.toHtmlEscaped() );
+            this->DemonCommandInstance->DemonConsole->AppendRaw( Util::ColorText::Green( "[+]" ) + " " + Message );
         else if ( MessageType == "Info" )
-            this->DemonCommandInstance->DemonConsole->AppendRaw( Util::ColorText::Cyan( "[*]" ) + " " + Message.toHtmlEscaped() );
+            this->DemonCommandInstance->DemonConsole->AppendRaw( Util::ColorText::Cyan( "[*]" ) + " " + Message );
+        else if ( MessageType == "Warning" || MessageType == "Warn" )
+            this->DemonCommandInstance->DemonConsole->AppendRaw( Util::ColorText::Yellow( "[!]" ) + " " + Message );
         else
-            this->DemonCommandInstance->DemonConsole->AppendRaw( Util::ColorText::Purple( "[^]" ) + " " + Message.toHtmlEscaped() );
+            this->DemonCommandInstance->DemonConsole->AppendRaw( Util::ColorText::Purple( "[^]" ) + " " + Message );
     }
 
     if ( ! Output.isEmpty() )

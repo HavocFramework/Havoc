@@ -40,6 +40,8 @@ enum class Commands {
     CONFIG                  = 2500,
     SCREENSHOT              = 2510,
     PIVOT                   = 2520,
+    TRANSFER                = 2530,
+    SOCKET                  = 2540,
 
     OUTPUT  = 90,
     ERROR   = 91,
@@ -51,7 +53,7 @@ class DispatchOutput
 public:
     HavocSpace::DemonCommands* DemonCommandInstance;
 
-    auto MessageOutput( QString JsonString, const QString& Date ) -> void;
+    auto MessageOutput( QString JsonString, const QString& Date ) const -> void;
 };
 
 class CommandExecute
@@ -64,6 +66,8 @@ public:
     auto Checkin( QString TaskID ) -> void;
     auto Job( QString TaskID, QString SubCommand, QString Argument ) -> void;
     auto FS( const QString& TaskID, QString SubCommand, QString Arguments ) -> void;
+    auto Transfer( const QString& TaskID, QString SubCommand, QString FileID ) -> void;
+    auto Socket( const QString& TaskID, QString SubCommand, QString Params ) -> void;
 
     auto ProcModule( QString TaskID, int SubCommand, QString Args ) -> void;
     auto ProcList( QString TaskID, bool FromProcessManager ) -> void;

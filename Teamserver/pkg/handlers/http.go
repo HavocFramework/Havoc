@@ -192,6 +192,10 @@ func (h *HTTP) request(ctx *gin.Context) {
 											}
 										}
 
+									} else if job[j].Command == agent.COMMAND_SOCKET && job[j].Data[0] == agent.SOCKET_COMMAND_READ_WRITE {
+										/* just send it to the agent and don't let the operator know or else this can be spamming the console lol */
+										payload = agent.BuildPayloadMessage([]agent.Job{job[j]}, AgentInstance.Encryption.AESKey, AgentInstance.Encryption.AESIv)
+
 									} else {
 										payload = agent.BuildPayloadMessage([]agent.Job{job[j]}, AgentInstance.Encryption.AESKey, AgentInstance.Encryption.AESIv)
 										CallbackSizes[int64(AgentHeader.AgentID)] = append(CallbackSizes[int64(AgentHeader.AgentID)], payload...)

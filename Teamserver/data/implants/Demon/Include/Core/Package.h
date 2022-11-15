@@ -9,6 +9,7 @@ typedef struct {
     size_t  Length;
     size_t  Size;
     BOOL    Encrypt;
+    BOOL    Destroy; /* destroy this package after Transmit */
 } PACKAGE, *PPACKAGE;
 
 /* Package generator */

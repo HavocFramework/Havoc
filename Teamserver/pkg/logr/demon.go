@@ -154,7 +154,7 @@ func (l Logr) DemonAddDownloadedFile(DemonID, FileName string, FileBytes []byte)
 
 	if _, err := os.Stat(DemonDownloadDir); os.IsNotExist(err) {
 		if err = os.Mkdir(DemonDownloadDir, os.ModePerm); err != nil {
-			logger.Error("Failed to create Logr demon " + DemonID + " screenshot folder: " + err.Error())
+			logger.Error("Failed to create Logr demon " + DemonID + " download folder: " + err.Error())
 			return
 		}
 	}

