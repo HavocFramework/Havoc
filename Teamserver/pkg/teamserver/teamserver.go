@@ -179,6 +179,8 @@ func (t *Teamserver) Start() {
 				Headers:      listener.Headers,
 				Uris:         listener.Uris,
 				Secure:       listener.Secure,
+				CertPath:     listener.CertPath,
+				KeyPath:      listener.KeyPath,
 			}
 
 			if listener.Response != nil {

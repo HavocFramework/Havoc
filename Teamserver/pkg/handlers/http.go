@@ -60,7 +60,12 @@ func (h *HTTP) generateCertFiles() bool {
 	h.TLS.CertPath = ListenerPath + "server.crt"
 	h.TLS.KeyPath = ListenerPath + "server.key"
 
-	h.TLS.Cert, h.TLS.Key, err = certs.HTTPSGenerateRSACertificate(h.Config.HostBind)
+	if h.Config.CertPath == "" || h.Config.KeyPath == "" {
+		h.TLS.Cert, h.TLS.Key, err = certs.HTTPSGenerateRSACertificate(h.Config.HostBind)
+	} else {
+		h.TLS.Cert, err = os.ReadFile(h.Config.CertPath)
+		h.TLS.Key, err = os.ReadFile(h.Config.KeyPath)
+	}
 
 	err = os.WriteFile(h.TLS.CertPath, h.TLS.Cert, 0644)
 	if err != nil {

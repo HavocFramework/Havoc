@@ -18,6 +18,8 @@ type (
         Uris         []string
         HostHeader   string
         Secure       bool
+        CertPath     string
+        KeyPath      string
 
         Proxy struct {
             Enabled  bool
