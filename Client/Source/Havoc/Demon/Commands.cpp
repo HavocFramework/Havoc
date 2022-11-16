@@ -646,6 +646,8 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
             .Description    = "reverse port forwarding",
             .Usage          = "[sub command] (args)",
             .Example        = "add 0.0.0.0 8080 192.157.0.1 4444",
+            .Module         = true,
+            
             .SubCommands    =
             {
                 {
