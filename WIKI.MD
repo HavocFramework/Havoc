@@ -182,7 +182,7 @@ Create data volume for persistence (optional):
 `sudo docker volume create havoc-c2-client`
 
 Run the container:
-`sudo docker run -p 443:443 -p 40056:40056-it -d -v havoc-c2-client:/data havoc-client`
+`sudo docker run -p 443:443 -p 40056:40056 -it -d -v havoc-c2-client:/data havoc-client`
 
 Enter the container and run the Client:
 - NOT COMPLETE
