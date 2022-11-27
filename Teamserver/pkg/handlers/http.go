@@ -4,7 +4,7 @@ import (
     "context"
     "encoding/hex"
     "fmt"
-    "io/ioutil"
+    "io"
     "log"
     "math/bits"
     "net/http"
@@ -80,7 +80,7 @@ func (h *HTTP) generateCertFiles() bool {
 func (h *HTTP) request(ctx *gin.Context) {
     var AgentInstance *agent.Agent
 
-    Body, err := ioutil.ReadAll(ctx.Request.Body)
+    Body, err := io.ReadAll(ctx.Request.Body)
     if err != nil {
         logger.Debug("Error while reading request: " + err.Error())
     }
@@ -90,7 +90,9 @@ func (h *HTTP) request(ctx *gin.Context) {
 
     for _, Header := range h.Config.Response.Headers {
         var hdr = strings.Split(Header, ":")
-        ctx.Header(hdr[0], hdr[1])
+        if len(hdr) > 1 {
+            ctx.Header(hdr[0], hdr[1])
+        }
     }
 
     AgentHeader, err := agent.AgentParseHeader(Body)
