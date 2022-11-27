@@ -6,6 +6,7 @@ require (
 	github.com/agext/levenshtein v1.2.3
 	github.com/apparentlymart/go-dump v0.0.0-20190214190832-042adf3cf4a0
 	github.com/apparentlymart/go-textseg/v13 v13.0.0
+	github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5
 	github.com/davecgh/go-spew v1.1.1
 	github.com/fatih/color v1.12.0
 	github.com/fatih/structs v1.1.0
@@ -14,6 +15,7 @@ require (
 	github.com/google/go-cmp v0.5.6
 	github.com/gorilla/websocket v1.5.0
 	github.com/kylelemons/godebug v1.1.0
+	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/sergi/go-diff v1.2.0
@@ -21,6 +23,7 @@ require (
 	github.com/zclconf/go-cty v1.9.0
 	golang.org/x/crypto v0.0.0-20210813211128-0a44fdfbc16e
 	golang.org/x/image v0.0.0-20190802002840-cff245a6509b
+	golang.org/x/text v0.3.7
 )
 
 require (
@@ -39,9 +42,8 @@ require (
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/ugorji/go/codec v1.1.7 // indirect
+	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4 // indirect
 	golang.org/x/sys v0.0.0-20210816174021-fcbd12d029cd // indirect
-	golang.org/x/text v0.3.7 // indirect
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.26.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

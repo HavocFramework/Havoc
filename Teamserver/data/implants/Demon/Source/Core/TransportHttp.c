@@ -133,7 +133,7 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
 
         if ( Instance.Config.Transport.Proxy.Password )
         {
-            if ( ! Instance.Win32.WinHttpSetOption( hRequest, WINHTTP_OPTION_PROXY_USERNAME, Instance.Config.Transport.Proxy.Password, StringLengthW( Instance.Config.Transport.Proxy.Password ) ) )
+            if ( ! Instance.Win32.WinHttpSetOption( hRequest, WINHTTP_OPTION_PROXY_PASSWORD, Instance.Config.Transport.Proxy.Password, StringLengthW( Instance.Config.Transport.Proxy.Password ) ) )
             {
                 PRINTF( "Failed to set proxy password %u", NtGetLastError() );
             }
@@ -293,6 +293,9 @@ PHOST_DATA HostRandom()
     for ( ;; )
     {
         if ( Count == Index )
+            break;
+
+        if ( ! Host )
             break;
 
         /* if we are the end and still didn't found the random index quit. */

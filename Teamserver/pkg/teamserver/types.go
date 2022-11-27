@@ -2,6 +2,7 @@ package teamserver
 
 import (
 	"Havoc/pkg/agent"
+	"Havoc/pkg/db"
 	"Havoc/pkg/packager"
 	"Havoc/pkg/profile"
 	"Havoc/pkg/service"
@@ -69,14 +70,14 @@ type Endpoint struct {
 }
 
 type Teamserver struct {
-	Flags       TeamserverFlags
-	Profile     *profile.Profile
-	Clients     map[string]*Client
-	Fingerprint string
-	Users       []Users
-	EventsList  []packager.Package
-	Service     *service.Service
-	WebHooks    *webhook.WebHook
+	Flags      TeamserverFlags
+	Profile    *profile.Profile
+	Clients    map[string]*Client
+	Users      []Users
+	EventsList []packager.Package
+	Service    *service.Service
+	WebHooks   *webhook.WebHook
+	DB         *db.DB
 
 	Server struct {
 		Path   string

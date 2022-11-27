@@ -844,6 +844,8 @@ func (a *Agent) PortFwdClose(SocketID int) {
 			/* is there a socket? if not the not try anything or else we get an exception */
 			if a.PortFwds[i].Conn != nil {
 
+				logger.Info("Portfwd close")
+
 				/* close our connection */
 				a.PortFwds[i].Conn.Close()
 
@@ -851,6 +853,125 @@ func (a *Agent) PortFwdClose(SocketID int) {
 
 			/* remove the socket from the array */
 			a.PortFwds = append(a.PortFwds[:i], a.PortFwds[i+1:]...)
+
+		}
+
+	}
+
+}
+
+func (a *Agent) SocksClientAdd(SocketID int32, conn net.Conn) *SocksClient {
+
+	var client = new(SocksClient)
+
+	client.SocketID = SocketID
+	client.Conn = conn
+	client.Connected = false
+
+	a.SocksCli = append(a.SocksCli, client)
+
+	return client
+}
+
+func (a *Agent) SocksClientGet(SocketID int) *SocksClient {
+
+	for i := range a.SocksCli {
+
+		if a.SocksCli[i].SocketID == int32(SocketID) {
+
+			return a.SocksCli[i]
+
+		}
+
+	}
+
+	return nil
+}
+
+func (a *Agent) SocksClientRead(SocketID int) ([]byte, error) {
+	var (
+		found = false
+		data  = make([]byte, 0x10000)
+		read  []byte
+	)
+
+	for i := range a.SocksCli {
+
+		/* check if it's our rportfwd connection */
+		if a.SocksCli[i].SocketID == int32(SocketID) {
+
+			/* alright we found our socket */
+			found = true
+
+			if a.SocksCli[i].Conn != nil {
+
+				/* read from our socket to the data buffer or return error */
+				length, err := a.SocksCli[i].Conn.Read(data)
+				if err != nil {
+					return nil, err
+				}
+
+				read = make([]byte, length)
+				copy(read, data)
+
+				break
+
+			} else {
+				return nil, errors.New("socks proxy connection is empty")
+			}
+
+		}
+
+	}
+
+	if !found {
+		return nil, fmt.Errorf("socks proxy socket id %x not found", SocketID)
+	}
+
+	/* return the read data */
+	return read, nil
+}
+
+func (a *Agent) SocksClientClose(SocketID int) {
+
+	for i := range a.SocksCli {
+
+		/* check if it's our rportfwd connection */
+		if a.SocksCli[i].SocketID == int32(SocketID) {
+
+			/* is there a socket? if not the not try anything or else we get an exception */
+			if a.SocksCli[i].Conn != nil {
+
+				/* close our connection */
+				a.SocksCli[i].Conn.Close()
+
+			}
+
+			/* remove the socks server from the array */
+			a.SocksCli = append(a.SocksCli[:i], a.SocksCli[i+1:]...)
+
+		}
+
+	}
+
+}
+
+func (a *Agent) SocksServerRemove(Addr string) {
+
+	for i := range a.SocksSvr {
+
+		if a.SocksSvr[i].Addr == Addr {
+
+			/* is there a socket? if not the not try anything or else we get an exception */
+			if a.SocksSvr[i].Server != nil {
+
+				/* close our connection */
+				a.SocksSvr[i].Server.Close()
+
+			}
+
+			/* remove the socket from the array */
+			a.SocksSvr = append(a.SocksSvr[:i], a.SocksSvr[i+1:]...)
 
 		}
 

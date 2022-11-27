@@ -23,16 +23,16 @@ typedef enum {
 typedef struct _DOWNLOAD_DATA
 {
     /* Some random ID so both teamserver and agent knows what file it is */
-    DWORD  FileID;
+    DWORD FileID;
 
     /* file handle opened/created using CreateFile */
     HANDLE hFile;
 
     /* What we have left to read. */
-    DWORD  Size;
+    DWORD Size;
 
     /* What we already read. */
-    DWORD  ReadSize;
+    DWORD ReadSize;
 
     /* Current state of file transfer */
     DownloadState State;

@@ -49,7 +49,6 @@ type UsersBlock struct {
 	Hashed   bool   `yaotl:"Hashed,optional"`
 }
 
-// Listeners
 type Listeners struct {
 	ListenerHTTP     []*ListenerHTTP     `yaotl:"Http,block"`
 	ListenerSMB      []*ListenerSMB      `yaotl:"Smb,block"`

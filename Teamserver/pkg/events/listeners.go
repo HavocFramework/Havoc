@@ -31,11 +31,12 @@ func (listeners) ListenerAdd(FromUser string, Type int, Config any) packager.Pac
 		Package.Body.Info["Headers"] = strings.Join(Config.(*handlers.HTTP).Config.Headers, ", ")
 		Package.Body.Info["Uris"] = strings.Join(Config.(*handlers.HTTP).Config.Uris, ", ")
 
-		// Proxy settings
+		/* proxy settings */
 		Package.Body.Info["Proxy Enabled"] = "false"
 		if Config.(*handlers.HTTP).Config.Proxy.Enabled {
 			Package.Body.Info["Proxy Enabled"] = "true"
 		}
+
 		Package.Body.Info["Proxy Type"] = Config.(*handlers.HTTP).Config.Proxy.Type
 		Package.Body.Info["Proxy Host"] = Config.(*handlers.HTTP).Config.Proxy.Host
 		Package.Body.Info["Proxy Port"] = Config.(*handlers.HTTP).Config.Proxy.Port
@@ -126,6 +127,9 @@ func (listeners) ListenerEdit(Type int, Config any) packager.Package {
 		if Config.(*handlers.HTTPConfig).Secure {
 			Package.Body.Info["Secure"] = "true"
 		}
+
+		/* response */
+		Package.Body.Info["Response Headers"] = strings.Join(Config.(*handlers.HTTPConfig).Response.Headers, ", ")
 
 		delete(Package.Body.Info, "Proxy")
 		delete(Package.Body.Info, "Response")

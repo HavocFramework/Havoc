@@ -3,6 +3,7 @@ package agent
 import (
 	"Havoc/pkg/common/parser"
 	"Havoc/pkg/packager"
+	"Havoc/pkg/socks"
 	"net"
 	"os"
 )
@@ -56,6 +57,10 @@ type RoutineFunc struct {
 	ServiceAgentGet   func(MagicValue int) ServiceAgentInterface
 }
 
+/* use this struct to store PortFwds, SocksCon, Downloads etc. */
+type DemonData struct {
+}
+
 type Job struct {
 	Command uint32
 	Data    []interface{}
@@ -99,6 +104,17 @@ type PortFwd struct {
 	Target  string
 }
 
+type SocksClient struct {
+	SocketID  int32
+	Conn      net.Conn
+	Connected bool
+}
+
+type SocksServer struct {
+	Server *socks.Socks
+	Addr   string
+}
+
 type Agent struct {
 	NameID     string
 	JobQueue   []Job
@@ -109,10 +125,13 @@ type Agent struct {
 	Info   *AgentInfo
 	Pivots Pivots
 
-	/* TODO: make a map called Optional where to put demon/3rd party specific data.
+	/* TODO: make a map called "Optional" where to put demon/3rd party
+	 * 		 specific data (either use type "any" or map lets see).
 	 * 		 to avoid having some unnecessary data for 3rd party agent */
 	Downloads  []*Download
 	PortFwds   []*PortFwd
+	SocksCli   []*SocksClient
+	SocksSvr   []*SocksServer
 	Encryption struct {
 		AESKey []byte
 		AESIv  []byte

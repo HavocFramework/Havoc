@@ -1220,6 +1220,60 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             }
 
         }
+        else if ( InputCommands[ 0 ].compare( "socks" ) == 0 )
+        {
+            if ( InputCommands.size() <= 1 )
+            {
+                CONSOLE_ERROR( "Not enough arguments for \"socks\"" )
+                return false;
+            }
+
+            if ( InputCommands[ 1 ].compare( "add" ) == 0 )
+            {
+                auto Port = QString();
+
+                if ( InputCommands.size() < 3 )
+                {
+                    CONSOLE_ERROR( "Not enough arguments for \"socks add\"" )
+                    return false;
+                }
+
+                Port   = InputCommands[ 2 ];
+                TaskID = Util::gen_random( 8 ).c_str();
+
+                CommandInputList[ TaskID ] = commandline;
+
+                SEND( Execute.Socket( TaskID, "socks add", Port ) )
+            }
+            else if ( InputCommands[ 1 ].compare( "list" ) == 0 )
+            {
+                TaskID = Util::gen_random( 8 ).c_str();
+                CommandInputList[ TaskID ] = commandline;
+
+                SEND( Execute.Socket( TaskID, "socks list", "" ) )
+            }
+            else if ( InputCommands[ 1 ].compare( "kill" ) == 0 )
+            {
+                if ( InputCommands.size() < 3 )
+                {
+                    CONSOLE_ERROR( "Not enough arguments for \"socks kill\"" )
+                    return false;
+                }
+
+                TaskID                     = Util::gen_random( 8 ).c_str();
+                CommandInputList[ TaskID ] = commandline;
+
+                SEND( Execute.Socket( TaskID, "socks kill", InputCommands[ 2 ] ) )
+            }
+            else if ( InputCommands[ 1 ].compare( "clear" ) == 0 )
+            {
+                TaskID                     = Util::gen_random( 8 ).c_str();
+                CommandInputList[ TaskID ] = commandline;
+
+                SEND( Execute.Socket( TaskID, "socks clear", "" ) )
+            }
+
+        }
         else if ( InputCommands[ 0 ].compare( "transfer" ) == 0 )
         {
             if ( InputCommands.size() == 1 )
