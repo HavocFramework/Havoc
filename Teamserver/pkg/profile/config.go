@@ -56,22 +56,24 @@ type Listeners struct {
 }
 
 type ListenerHTTP struct {
-	Name     string `yaotl:"Name"`
-	KillDate string `yaotl:"KillDate,optional"` // TODO: finish this.
+	Name string `yaotl:"Name"`
+	/* KillDate string `yaotl:"KillDate,optional"` // TODO: finish this. */
 
 	Hosts        []string `yaotl:"Hosts"`
 	HostBind     string   `yaotl:"HostBind"`
 	HostRotation string   `yaotl:"HostRotation"`
 	Port         int      `yaotl:"Port"`
 
-	Methode string `yaotl:"Method,optional"`
+	/* Methode string `yaotl:"Method,optional"` */
 
-	// Custom config
+	/* optional fields */
 	UserAgent string   `yaotl:"UserAgent,optional"`
 	Headers   []string `yaotl:"Headers,optional"`
 	Uris      []string `yaotl:"Uris,optional"`
 	Secure    bool     `yaotl:"Secure,optional"`
 
+	/* optional sub blocks */
+	Cert     *ListenerHttpCerts    `yaotl:"Cert,block"`
 	Response *ListenerHttpResponse `yaotl:"Response,block"`
 	Proxy    *ListenerHttpProxy    `yaotl:"Proxy,block"`
 }
@@ -97,8 +99,12 @@ type ListenerHttpProxy struct {
 	Pass string `yaotl:"Password"`
 }
 
-// --- Demon ---
+type ListenerHttpCerts struct {
+	Cert string `yaotl:"Cert"`
+	Key  string `yaotl:"Key"`
+}
 
+/* TODO: remove */
 type HeaderBlock struct {
 	MagicMzX64  string `yaotl:"MagicMz-x64,optional"` // max 2 bytes
 	MagicMzX86  string `yaotl:"MagicMz-x86,optional"` // max 2 bytes
@@ -119,7 +125,6 @@ type ProcessInjectionBlock struct {
 
 type Demon struct {
 	Sleep            int                    `yaotl:"Sleep,optional"`
-	Jitter           int                    `yaotl:"Jitter,optional"`
 	Binary           *Binary                `yaotl:"Binary,block"`
 	ProcessInjection *ProcessInjectionBlock `yaotl:"Injection,block"`
 }

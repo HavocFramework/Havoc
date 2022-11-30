@@ -19,6 +19,11 @@ type (
         HostHeader   string
         Secure       bool
 
+        Cert struct {
+            Cert string
+            Key  string
+        }
+
         Proxy struct {
             Enabled  bool
             Type     string

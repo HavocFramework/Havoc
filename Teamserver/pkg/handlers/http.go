@@ -32,8 +32,8 @@ func NewConfigHttp() *HTTP {
     return config
 }
 
-// Server functions
 func (h *HTTP) generateCertFiles() bool {
+
     var (
         err          error
         ListenerName string
@@ -73,7 +73,9 @@ func (h *HTTP) generateCertFiles() bool {
         logger.Error("Couldn't save server key file: " + err.Error())
         return false
     }
+
     logger.Debug("Successful generated tls certifications")
+
     return true
 }
 
@@ -184,8 +186,11 @@ func (h *HTTP) request(ctx *gin.Context) {
 
                                                             TaskBuffer = Parser.ParseBytes()
                                                             continue
+
                                                         } else {
+
                                                             CallbackSizes[int64(PivotAgentID)] = append(CallbackSizes[job[j].Data[1].(int64)], TaskBuffer...)
+
                                                             break
                                                         }
                                                     }
@@ -371,12 +376,22 @@ func (h *HTTP) Start() {
             h.RoutineFunc.EventBroadcast("", pk)
 
             go func() {
+                var (
+                    CertPath = h.TLS.CertPath
+                    KeyPath  = h.TLS.KeyPath
+                )
+
                 h.Server = &http.Server{
                     Addr:    h.Config.HostBind + ":" + h.Config.Port,
                     Handler: h.GinEngine,
                 }
 
-                err := h.Server.ListenAndServeTLS(h.TLS.CertPath, h.TLS.KeyPath)
+                if h.Config.Cert.Cert != "" && h.Config.Cert.Key != "" {
+                    CertPath = h.Config.Cert.Cert
+                    KeyPath = h.Config.Cert.Key
+                }
+
+                err := h.Server.ListenAndServeTLS(CertPath, KeyPath)
                 if err != nil {
                     logger.Error("Couldn't start HTTPs handler: " + err.Error())
                     h.Active = false

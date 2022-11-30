@@ -206,6 +206,26 @@ func (t *Teamserver) Start() {
 				Secure:       listener.Secure,
 			}
 
+			if listener.Cert != nil {
+				var Found = true
+
+				if _, err = os.Stat(listener.Cert.Cert); !os.IsNotExist(err) {
+					HandlerData.Cert.Cert = listener.Cert.Cert
+				} else {
+					Found = false
+				}
+
+				if _, err = os.Stat(listener.Cert.Key); !os.IsNotExist(err) {
+					HandlerData.Cert.Key = listener.Cert.Key
+				} else {
+					Found = false
+				}
+
+				if !Found {
+					logger.Error("Failed to find Cert/Key Path for listener '" + listener.Name + "'. Using randomly generated certs")
+				}
+			}
+
 			if listener.Response != nil {
 				HandlerData.Response.Headers = listener.Response.Headers
 			}
