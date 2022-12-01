@@ -29,6 +29,7 @@
 
 #define U_PTR( x )                      ( ( UINT_PTR ) x )
 #define C_PTR( x )                      ( ( LPVOID ) x )
+#define SEC_DATA                        __attribute__( ( section( ".data" ) ) )
 
 #define HTONS32( x )                    __builtin_bswap32( x )
 #define HTONS16( x )                    __builtin_bswap16( x )

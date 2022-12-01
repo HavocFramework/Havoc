@@ -44,6 +44,7 @@ VOID DownloadFree( PDOWNLOAD_DATA Download )
         Instance.Win32.NtClose( Download->hFile );
 
     PUTS( "Free download object" )
+
     /* Now free the struct */
     MemSet( Download, 0, sizeof( DOWNLOAD_DATA ) );
     NtHeapFree( Download );

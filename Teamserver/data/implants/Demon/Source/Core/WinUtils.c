@@ -59,7 +59,7 @@ PVOID LdrModulePeb( DWORD Hash )
         Ldr = C_PTR( Ent );
 
         /* Compare the DLL Name! */
-        if ( HashEx( Ldr->BaseDllName.Buffer, Ldr->BaseDllName.Length, TRUE ) == Hash )
+        if ( ( HashEx( Ldr->BaseDllName.Buffer, Ldr->BaseDllName.Length, TRUE ) == Hash ) || Hash == NULL )
             return Ldr->DllBase;
     }
 

