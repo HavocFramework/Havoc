@@ -94,6 +94,10 @@ namespace HavocNamespace
 
         typedef struct RegisteredCommand
         {
+
+            /* for what agent is it this command */
+            std::string     Agent;
+
             std::string     Module;
             std::string     Command;
             std::string     Help;
@@ -101,17 +105,21 @@ namespace HavocNamespace
             std::string     Usage;
             std::string     Example;
             void*           Function;
-
             std::string     Path;
+
         } RegisteredCommand ;
 
         typedef struct RegisteredModule
         {
+            /* for what agent is it this command */
+            std::string Agent;
+
             std::string Name;
             std::string Description;
             std::string Behavior;
             std::string Usage;
             std::string Example;
+
         } RegisteredModule;
 
         typedef struct ListenerItem

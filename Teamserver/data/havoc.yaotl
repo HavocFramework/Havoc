@@ -3,8 +3,8 @@ Teamserver {
 	Port = 40056
 
 	Build {
-		Compiler64 = "data/x86_64-w64-mingw32-cross/bin/x86_64-w64-mingw32-gcc"
-		Nasm = "/usr/bin/nasm"
+	    Compiler64 = "data/x86_64-w64-mingw32-cross/bin/x86_64-w64-mingw32-gcc"
+	    Nasm = "/usr/bin/nasm"
 	}
 }
 
@@ -18,14 +18,14 @@ Operators {
 	}
 }
 
+# this is optional. if you dont use it you can remove it.
 Service {
     Endpoint = "service-endpoint"
     Password = "service-password"
 }
 
 Demon {
-    Sleep   = 2
-    Jitter  = 20
+    Sleep = 2
 
     Injection {
         Spawn64 = "C:\\Windows\\System32\\notepad.exe"

@@ -8,7 +8,8 @@
 #include <Python.h>
 #pragma pop_macro("slots")
 
-#define PY_FUNCTION( x ) PyObject* x( PyObject *self, PyObject *args );
+#define PY_FUNCTION( x )    PyObject* x( PyObject *self, PyObject *args );
+#define PY_FUNCTION_KW( x ) PyObject* x( PyObject *self, PyObject *args, PyObject* kwargs );
 
 namespace PythonAPI
 {
@@ -20,13 +21,9 @@ namespace PythonAPI
         {
             PY_FUNCTION( Load )
             PY_FUNCTION( GetDemons )
-            PY_FUNCTION( RegisterCommand )
             PY_FUNCTION( RegisterModule )
-        }
 
-        namespace Types
-        {
-
+            PY_FUNCTION_KW( RegisterCommand )
         }
 
         namespace PyModule

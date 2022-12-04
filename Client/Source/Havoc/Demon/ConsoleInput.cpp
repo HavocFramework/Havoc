@@ -1778,7 +1778,10 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
 
             return true;
         }
-        else if ( InputCommands[ 0 ].compare( "" ) == 0 ) { /* do nothing */ }
+        else if ( InputCommands[ 0 ].compare( "" ) == 0 )
+        {
+            /* do nothing */
+        }
         else
         {
             if ( ! Send )
@@ -1798,6 +1801,9 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             {
                 if ( InputCommands[ 0 ].isEmpty() )
                     break;
+
+                if ( Command.Agent != "Demon" )
+                    continue;
 
                 /* Check if module is matching */
                 if ( InputCommands[ 0 ].compare( Command.Module.c_str() ) == 0 )
@@ -1840,6 +1846,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                             // First arg is the DemonID
                             PyTuple_SetItem( FuncArgs, 0, PyUnicode_FromString( this->DemonID.toStdString().c_str() ) );
 
+                            spdlog::debug( "execute script command:{}", Command.Command );
                             if ( InputCommands.size() > 1 )
                             {
                                 // Set arguments of the functions
@@ -1928,6 +1935,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                         // First arg is the DemonID
                         PyTuple_SetItem( FuncArgs, 0, PyUnicode_FromString( this->DemonID.toStdString().c_str() ) );
 
+                        spdlog::debug( "execute script command: {}", Command.Command );
                         if ( InputCommands.size() > 1 )
                         {
                             // Set arguments of the functions
@@ -2010,16 +2018,32 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             }
             else
             {
-                int TotalSize = 24;
+                int TotalSize = 18;
 
                 DemonConsole->Console->append( "" );
-                DemonConsole->Console->append( "  Command                 Type         Description" );
-                DemonConsole->Console->append( "  ---------               -------      -----------" );
+                DemonConsole->Console->append( "  Command           Type         Description" );
+                DemonConsole->Console->append( "  ---------         -------      -----------" );
 
                 for ( auto & command : AgentData.Commands )
                 {
-                    auto Spaces = std::string( ( TotalSize - command.Name.size() ), ' ' );
-                    DemonConsole->Console->append( "  " + command.Name + QString( std::string( ( TotalSize - command.Name.size() ), ' ' ).c_str() ) + "Command" + "      "  + command.Description );
+                    if ( ! command.Anonymous )
+                    {
+                        auto Spaces = std::string( ( TotalSize - command.Name.size() ), ' ' );
+                        DemonConsole->Console->append( "  " + command.Name + QString( std::string( ( TotalSize - command.Name.size() ), ' ' ).c_str() ) + "Command" + "      "  + command.Description );
+                    }
+                    else
+                    {
+                        spdlog::debug( "Anonymous command: {}", command.Name.toStdString() );
+                    }
+                }
+
+                for ( auto & command : HavocX::Teamserver.RegisteredCommands )
+                {
+                    if ( command.Agent == AgentTypeName.toStdString() )
+                    {
+                        auto Spaces = std::string( ( TotalSize - command.Command.size() ), ' ' );
+                        DemonConsole->Console->append( "  " + QString( command.Command.c_str() ) + QString( std::string( ( TotalSize - command.Command.size() ), ' ' ).c_str() ) + "Command" + "      "  + QString( command.Help.c_str() ) );
+                    }
                 }
             }
         }
@@ -2057,19 +2081,31 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
         {
             auto CommandInput = QMap<string, string>();
             auto ParamArray   = commandline.split( " " );
+            auto CommandFound = false;
 
             ParamArray.erase( ParamArray.begin() );
+
+            if ( ! Send )
+            {
+                if ( ! CommandTaskInfo[ TaskID ].isEmpty() )
+                {
+                    DemonConsole->AppendRaw();
+                    DemonConsole->AppendRaw( Prompt );
+                    DemonConsole->AppendRaw( Util::ColorText::Cyan( "[*]" ) + " " + CommandTaskInfo[ TaskID ] );
+                }
+            }
 
             for ( auto & command : AgentData.Commands )
             {
                 if ( InputCommands[ 0 ].compare( command.Name ) == 0 )
                 {
-                    TaskID = CONSOLE_INFO( "Tasked " + DemonConsole->SessionInfo.Name + " to execute task" );
+                    TaskID       = Util::gen_random( 8 ).c_str();
+                    CommandFound = true;
 
-                    CommandInput.insert( "TaskID", TaskID.toStdString() );
+                    CommandInput.insert( "TaskID",      TaskID.toStdString() );
                     CommandInput.insert( "CommandLine", commandline.toStdString() );
-                    CommandInput.insert( "DemonID", DemonConsole->SessionInfo.Name.toStdString() );
-                    CommandInput.insert( "Command", command.Name.toStdString() );
+                    CommandInput.insert( "DemonID",     DemonConsole->SessionInfo.Name.toStdString() );
+                    CommandInput.insert( "Command",     command.Name.toStdString() );
 
                     ParamArray.push_back("");
                     for ( u32 i = 0; i < command.Params.size(); i++ )
@@ -2078,7 +2114,6 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
 
                         if ( command.Params[ i ].IsFilePath )
                         {
-                            spdlog::info( "Is FilePath" );
                             Value = FileRead( ParamArray[ i ] ).toBase64();
                         }
                         else
@@ -2094,21 +2129,109 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 }
             }
 
-            SEND( Execute.AgentCommand( CommandInput ) )
-
-            /*if ( InputCommands.size() == 1 )
+            if ( CommandFound )
             {
-                DemonConsole->Console->append( "" );
-                DemonConsole->Console->append( Prompt );
-                DemonConsole->TaskError( "Specify a cmd command !!" );
-                return false;
+                /* send command to agent handler */
+                SEND( Execute.AgentCommand( CommandInput ) );
+            }
+            else
+            {
+                for ( auto & Command : HavocX::Teamserver.RegisteredCommands )
+                {
+                    if ( InputCommands[ 0 ].isEmpty() )
+                        break;
+
+                    if ( Command.Agent == AgentTypeName.toStdString() )
+                    {
+                        if ( InputCommands[ 0 ].compare( Command.Command.c_str() ) == 0 )
+                        {
+                            PyObject* FuncArgs = PyTuple_New( InputCommands.size() );
+                            PyObject* Return   = nullptr;
+                            auto      Path     = std::string();
+
+                            if ( Send )
+                            {
+                                if ( ! PyCallable_Check( ( PyObject* ) Command.Function ) )
+                                {
+                                    PyErr_SetString( PyExc_TypeError, "a callable is required" );
+                                    return false;
+                                }
+
+                                if ( ! Command.Path.empty() )
+                                {
+                                    Path = std::filesystem::current_path();
+                                    spdlog::debug( "Set current path to {}", Command.Path );
+                                    std::filesystem::current_path( Command.Path );
+                                }
+
+                                // First arg is the DemonID
+                                PyTuple_SetItem( FuncArgs, 0, PyUnicode_FromString( this->DemonID.toStdString().c_str() ) );
+
+                                if ( InputCommands.size() > 1 )
+                                {
+                                    // Set arguments of the functions
+                                    for ( u32 i = 1; i < InputCommands.size(); i++ )
+                                        PyTuple_SetItem( FuncArgs, i, PyUnicode_FromString( InputCommands[ i ].toStdString().c_str() ) );
+
+                                    Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
+                                }
+                                else
+                                    Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
+
+                                if ( ! Path.empty() )
+                                {
+                                    spdlog::debug( "Set path back to {}", Path );
+                                    std::filesystem::current_path( Path );
+                                }
+
+                                if ( PyErr_Occurred() )
+                                {
+                                    PyErr_PrintEx( 0 );
+                                    PyErr_Clear();
+                                }
+
+                                if ( Py_IsNone( Return ) )
+                                {
+                                    if ( Send )
+                                    {
+                                        DemonConsole->Console->append( "" );
+                                        DemonConsole->Console->append( this->Prompt );
+
+                                        for ( auto& message : DemonConsole->DemonCommands->BufferedMessages )
+                                            DemonConsole->Console->append( message );
+                                    }
+
+                                    DemonConsole->TaskError( "Failed to execute " + InputCommands[ 0 ] );
+
+                                    Py_CLEAR( Return );
+                                    Py_CLEAR( FuncArgs );
+
+                                    return false;
+                                }
+
+                                TaskID = QString( PyUnicode_AsUTF8( Return ) );
+
+                                NewPackageCommand( Teamserver, Util::Packager::Body_t {
+                                    .SubEvent = Util::Packager::Session::SendCommand,
+                                    .Info     = {
+                                        { "TaskID",      TaskID.toStdString() },
+                                        { "TaskMessage", CommandTaskInfo[ TaskID ].toStdString() },
+                                        { "DemonID",     DemonConsole->SessionInfo.Name.toStdString() },
+                                        { "CommandID",   "Python Plugin" },
+                                        { "CommandLine", commandline.toStdString() },
+                                    },
+                                } );
+
+                                Py_CLEAR( Return );
+                                Py_CLEAR( FuncArgs );
+                            }
+
+                            return true;
+                        }
+                    }
+                }
             }
 
-            TaskID                      = DemonConsole->TaskInfo( Send, TaskID, "Tasked demon to execute a shell command" );
-            InputCommands[ 0 ]          = "";
-            CommandInputList[ TaskID ]  = commandline;
-
-            SEND( Execute.Spawn( TaskID, R"(c:\windows\system32\cmd.exe /c)" + InputCommands.join(" ") ) );*/
         }
 
     }

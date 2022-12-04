@@ -823,6 +823,7 @@ bool Packager::DispatchService( Util::Packager::PPackage Package )
                     .NeedAdmin   = command.toObject()[ "NeedAdmin" ].toBool(),
                     .Mitr        = Mitr,
                     .Params      = Params,
+                    .Anonymous   = command.toObject()[ "Anonymous" ].toBool(),
                 } );
             }
 

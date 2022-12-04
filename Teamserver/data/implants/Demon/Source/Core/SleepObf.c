@@ -40,7 +40,7 @@ VOID WINAPI CfgAddressAdd( LPVOID ImageBase, LPVOID Function )
     Cfg.Offset = Function - ImageBase;
 
     Instance.Win32.SetProcessValidCallTargets( NtCurrentProcess(), ImageBase, Len, 1, &Cfg );
-};
+}
 
 // Foliage Sleep obfuscation
 VOID FoliageObf( PSLEEP_PARAM Param )

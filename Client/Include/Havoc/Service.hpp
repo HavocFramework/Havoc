@@ -28,6 +28,7 @@ typedef struct
     bool                      NeedAdmin;
     QStringList               Mitr;
     std::vector<CommandParam> Params;
+    bool                      Anonymous;
 } AgentCommands;
 
 typedef struct

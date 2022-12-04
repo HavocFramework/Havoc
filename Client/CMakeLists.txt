@@ -116,7 +116,6 @@ set(
 
         Source/Util/ColorText.cpp
         Source/Util/Base64.cpp
-        Source/Util/StructPack/struct.cpp
         Source/Util/Base.cpp
 )
 
@@ -152,7 +151,7 @@ set(
         Source/Havoc/Havoc.cpp
 
         ${HAVOC_UI}
-)
+        Include/Havoc/PythonApi/PyAgentClass.hpp Source/Havoc/PythonApi/PyAgentClass.cpp)
 
 add_executable( ${PROJECT_NAME} ${HAVOC_INCLUDE} ${HAVOC_SOURCE} ${HAVOC_UTIL} ${APP_ICON_RESOURCE_WINDOWS} Data/Havoc.rc )
 add_definitions( -DQT_NO_DEBUG_OUTPUT )
