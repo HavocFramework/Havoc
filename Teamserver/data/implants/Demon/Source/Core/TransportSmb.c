@@ -194,13 +194,13 @@ VOID SmbSecurityAttrFree( PSMB_PIPE_SEC_ATTR SmbSecAttr )
 {
     if ( SmbSecAttr->Sid )
     {
-        FreeSid( SmbSecAttr->Sid );
+        Instance.Win32.FreeSid( SmbSecAttr->Sid );
         SmbSecAttr->Sid = NULL;
     }
 
     if ( SmbSecAttr->SidLow )
     {
-        FreeSid( SmbSecAttr->SidLow );
+        Instance.Win32.FreeSid( SmbSecAttr->SidLow );
         SmbSecAttr->SidLow = NULL;
     }
 
