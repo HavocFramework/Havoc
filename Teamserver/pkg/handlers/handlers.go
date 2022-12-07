@@ -17,14 +17,15 @@ import (
 // return 2 types.
 // Response is the data/bytes once this function finished parsing the request.
 // Success is if the function was successful while parsing the agent request.
-//	Response byte.Buffer
-//  Success	 bool
+//
+//		Response byte.Buffer
+//	 Success	 bool
 func parseAgentRequest(Teamserver agent.TeamServer, Body []byte) (bytes.Buffer, bool) {
 
 	var (
-		Header	 agent.Header
+		Header   agent.Header
 		Response bytes.Buffer
-		err 	 error
+		err      error
 	)
 
 	Header, err = agent.AgentParseHeader(Body)
@@ -46,13 +47,13 @@ func parseAgentRequest(Teamserver agent.TeamServer, Body []byte) (bytes.Buffer, 
 	return handleServiceAgent(Teamserver, Header)
 }
 
-func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.Buffer, bool){
+func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.Buffer, bool) {
 
 	var (
 		Agent    *agent.Agent
 		Response bytes.Buffer
 		Command  = 0
-		err 	 error
+		err      error
 	)
 
 	/* check if the agent exists. */
@@ -117,7 +118,7 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.B
 
 					case agent.COMMAND_PIVOT:
 
-						if job[j].Data[0] == agent.DEMON_PIVOT_SMB_COMMAND {
+						if job[j].Data[0] == agent.AGENT_PIVOT_SMB_COMMAND {
 
 							var (
 								TaskBuffer    = job[j].Data[2].([]byte)
@@ -161,7 +162,7 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.B
 									SubCommandID = Parser.ParseInt32()
 									SubCommandID = int(bits.ReverseBytes32(uint32(SubCommandID)))
 
-									if SubCommandID == agent.DEMON_PIVOT_SMB_COMMAND {
+									if SubCommandID == agent.AGENT_PIVOT_SMB_COMMAND {
 										PivotAgentID = Parser.ParseInt32()
 										PivotAgentID = int(bits.ReverseBytes32(uint32(PivotAgentID)))
 
@@ -220,7 +221,7 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.B
 		var (
 			Command = Header.Data.ParseInt32()
 			Packer  *packer.Packer
-			Build 	[]byte
+			Build   []byte
 		)
 
 		/* TODO: rework this. */
@@ -267,9 +268,9 @@ func handleServiceAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes
 	var (
 		Response  bytes.Buffer
 		AgentData any
-		Agent 	  *agent.Agent
+		Agent     *agent.Agent
 		Task      []byte
-		err    	  error
+		err       error
 	)
 
 	/* search if a service 3rd party agent was registered with this MagicValue */

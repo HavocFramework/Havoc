@@ -42,255 +42,254 @@ func (t *Teamserver) ListenerStart(ListenerType int, info any) error {
 		}
 	}
 
-
 	/*
-	Functions.EventAppend = t.EventAppend
+		Functions.EventAppend = t.EventAppend
 
-	Functions.EventBroadcast = t.EventBroadcast
+		Functions.EventBroadcast = t.EventBroadcast
 
-	Functions.EventNewDemon = events.Demons.NewDemon
+		Functions.EventNewDemon = events.Demons.NewDemon
 
-	Functions.EventAgentMark = func(AgentID, Mark string) {
-		var pk = events.Demons.MarkAs(AgentID, Mark)
+		Functions.EventAgentMark = func(AgentID, Mark string) {
+			var pk = events.Demons.MarkAs(AgentID, Mark)
 
-		t.EventAppend(pk)
-		t.EventBroadcast("", pk)
-	}
+			t.EventAppend(pk)
+			t.EventBroadcast("", pk)
+		}
 
-	Functions.EventListenerError = func(ListenerName string, Error error) {
+		Functions.EventListenerError = func(ListenerName string, Error error) {
 
-		var pk = events.Listener.ListenerError("", ListenerName, Error)
+			var pk = events.Listener.ListenerError("", ListenerName, Error)
 
-		t.EventAppend(pk)
-		t.EventBroadcast("", pk)
+			t.EventAppend(pk)
+			t.EventBroadcast("", pk)
 
-		// also remove the listener from the init packages.
-		for EventID := range t.EventsList {
-			if t.EventsList[EventID].Head.Event == packager.Type.Listener.Type {
-				if t.EventsList[EventID].Body.SubEvent == packager.Type.Listener.Add {
-					if name, ok := t.EventsList[EventID].Body.Info["Name"]; ok {
-						if name == ListenerName {
-							t.EventsList[EventID].Body.Info["Status"] = "Offline"
-							t.EventsList[EventID].Body.Info["Error"] = Error.Error()
+			// also remove the listener from the init packages.
+			for EventID := range t.EventsList {
+				if t.EventsList[EventID].Head.Event == packager.Type.Listener.Type {
+					if t.EventsList[EventID].Body.SubEvent == packager.Type.Listener.Add {
+						if name, ok := t.EventsList[EventID].Body.Info["Name"]; ok {
+							if name == ListenerName {
+								t.EventsList[EventID].Body.Info["Status"] = "Offline"
+								t.EventsList[EventID].Body.Info["Error"] = Error.Error()
+							}
 						}
 					}
 				}
 			}
+
 		}
 
-	}
+		Functions.AppendDemon = func(demon *agent.Agent) []*agent.Agent {
 
-	Functions.AppendDemon = func(demon *agent.Agent) []*agent.Agent {
+			if t.WebHooks != nil {
+				t.WebHooks.NewAgent(demon.ToMap())
+			}
 
-		if t.WebHooks != nil {
-			t.WebHooks.NewAgent(demon.ToMap())
+			return t.Agents.AppendAgent(demon)
 		}
 
-		return t.Agents.AppendAgent(demon)
-	}
-
-	Functions.AppendListener = func(FromUser string, Type int, Config any) packager.Package {
-
-		var (
-			Name       string
-			Protocol   string
-			ConfigJson []byte
-		)
-
-		switch Type {
-
-		case handlers.LISTENER_HTTP:
+		Functions.AppendListener = func(FromUser string, Type int, Config any) packager.Package {
 
 			var (
-				Info = structs.Map(Config.(*handlers.HTTP).Config)
-				Host string
+				Name       string
+				Protocol   string
+				ConfigJson []byte
 			)
 
-			Protocol = handlers.DEMON_HTTP
-			Name = Info["Name"].(string)
+			switch Type {
 
-			// Now set the config/info
-			Info["Hosts"] = strings.Join(Config.(*handlers.HTTP).Config.Hosts, ", ")
-			Info["Headers"] = strings.Join(Config.(*handlers.HTTP).Config.Headers, ", ")
-			Info["Uris"] = strings.Join(Config.(*handlers.HTTP).Config.Uris, ", ")
+			case handlers.LISTENER_HTTP:
 
-			// proxy settings
-			Info["Proxy Enabled"] = Config.(*handlers.HTTP).Config.Proxy.Enabled
-			Info["Proxy Type"] = Config.(*handlers.HTTP).Config.Proxy.Type
-			Info["Proxy Host"] = Config.(*handlers.HTTP).Config.Proxy.Host
-			Info["Proxy Port"] = Config.(*handlers.HTTP).Config.Proxy.Port
-			Info["Proxy Username"] = Config.(*handlers.HTTP).Config.Proxy.Username
-			Info["Proxy Password"] = Config.(*handlers.HTTP).Config.Proxy.Password
+				var (
+					Info = structs.Map(Config.(*handlers.HTTP).Config)
+					Host string
+				)
 
-			Info["Secure"] = Config.(*handlers.HTTP).Config.Secure
-			Info["Status"] = Config.(*handlers.HTTP).Active
+				Protocol = handlers.AGENT_HTTP
+				Name = Info["Name"].(string)
 
-			Info["Response Headers"] = strings.Join(Config.(*handlers.HTTP).Config.Response.Headers, ", ")
+				// Now set the config/info
+				Info["Hosts"] = strings.Join(Config.(*handlers.HTTP).Config.Hosts, ", ")
+				Info["Headers"] = strings.Join(Config.(*handlers.HTTP).Config.Headers, ", ")
+				Info["Uris"] = strings.Join(Config.(*handlers.HTTP).Config.Uris, ", ")
 
-			Info["Secure"] = "false"
-			if Config.(*handlers.HTTP).Config.Secure {
-				Info["Secure"] = "true"
-			}
+				// proxy settings
+				Info["Proxy Enabled"] = Config.(*handlers.HTTP).Config.Proxy.Enabled
+				Info["Proxy Type"] = Config.(*handlers.HTTP).Config.Proxy.Type
+				Info["Proxy Host"] = Config.(*handlers.HTTP).Config.Proxy.Host
+				Info["Proxy Port"] = Config.(*handlers.HTTP).Config.Proxy.Port
+				Info["Proxy Username"] = Config.(*handlers.HTTP).Config.Proxy.Username
+				Info["Proxy Password"] = Config.(*handlers.HTTP).Config.Proxy.Password
 
-			if Config.(*handlers.HTTP).Active {
-				Info["Status"] = "Online"
-			} else {
-				Info["Status"] = "Offline"
-			}
+				Info["Secure"] = Config.(*handlers.HTTP).Config.Secure
+				Info["Status"] = Config.(*handlers.HTTP).Active
 
-			delete(Info, "Proxy")
-			delete(Info, "Name")
-			delete(Info, "Response")
+				Info["Response Headers"] = strings.Join(Config.(*handlers.HTTP).Config.Response.Headers, ", ")
 
-			delete(Info, "Hosts")
-			delete(Info, "Name")
+				Info["Secure"] = "false"
+				if Config.(*handlers.HTTP).Config.Secure {
+					Info["Secure"] = "true"
+				}
 
-			for _, host := range Config.(*handlers.HTTP).Config.Hosts {
-				if len(Host) == 0 {
-					Host = host
+				if Config.(*handlers.HTTP).Active {
+					Info["Status"] = "Online"
 				} else {
-					Host += ", " + host
+					Info["Status"] = "Offline"
+				}
+
+				delete(Info, "Proxy")
+				delete(Info, "Name")
+				delete(Info, "Response")
+
+				delete(Info, "Hosts")
+				delete(Info, "Name")
+
+				for _, host := range Config.(*handlers.HTTP).Config.Hosts {
+					if len(Host) == 0 {
+						Host = host
+					} else {
+						Host += ", " + host
+					}
+				}
+				Info["Hosts"] = Host
+
+				// we get an error just do nothing
+				ConfigJson, _ = json.Marshal(Info)
+
+				break
+
+			case handlers.LISTENER_PIVOT_SMB:
+
+				Info := structs.Map(Config.(*handlers.SMB).Config)
+
+				Protocol = handlers.AGENT_PIVOT_SMB
+				Name = Info["Name"].(string)
+
+				Info["Status"] = "Online"
+
+				delete(Info, "Name")
+
+				// we get an error just do nothing
+				ConfigJson, _ = json.Marshal(Info)
+
+				break
+
+			case handlers.LISTENER_EXTERNAL:
+
+				Info := structs.Map(Config.(*handlers.External).Config)
+
+				Protocol = handlers.AGENT_EXTERNAL
+				Name = Info["Name"].(string)
+
+				Info["Status"] = "Online"
+
+				delete(Info, "Name")
+
+				// we get an error just do nothing
+				ConfigJson, _ = json.Marshal(Info)
+
+				break
+
+			}
+
+			// just add the listener to the sqlite db if we got any config provided
+			if len(ConfigJson) > 0 {
+				err := t.DB.ListenerAdd(Name, Protocol, string(ConfigJson))
+				if err != nil {
+					logger.Error(fmt.Sprintf("Failed to add Listener \"%s\": %v", Name, err))
 				}
 			}
-			Info["Hosts"] = Host
 
-			// we get an error just do nothing
-			ConfigJson, _ = json.Marshal(Info)
-
-			break
-
-		case handlers.LISTENER_PIVOT_SMB:
-
-			Info := structs.Map(Config.(*handlers.SMB).Config)
-
-			Protocol = handlers.DEMON_PIVOT_SMB
-			Name = Info["Name"].(string)
-
-			Info["Status"] = "Online"
-
-			delete(Info, "Name")
-
-			// we get an error just do nothing
-			ConfigJson, _ = json.Marshal(Info)
-
-			break
-
-		case handlers.LISTENER_EXTERNAL:
-
-			Info := structs.Map(Config.(*handlers.External).Config)
-
-			Protocol = handlers.DEMON_EXTERNAL
-			Name = Info["Name"].(string)
-
-			Info["Status"] = "Online"
-
-			delete(Info, "Name")
-
-			// we get an error just do nothing
-			ConfigJson, _ = json.Marshal(Info)
-
-			break
-
+			return events.Listener.ListenerAdd(FromUser, Type, Config)
 		}
 
-		// just add the listener to the sqlite db if we got any config provided
-		if len(ConfigJson) > 0 {
-			err := t.DB.ListenerAdd(Name, Protocol, string(ConfigJson))
-			if err != nil {
-				logger.Error(fmt.Sprintf("Failed to add Listener \"%s\": %v", Name, err))
+		Functions.ServiceAgentGet = func(MagicValue int) agent.ServiceAgentInterface {
+			for _, agentService := range t.Service.Agents {
+				if agentService.MagicValue == fmt.Sprintf("0x%x", MagicValue) {
+					return agentService
+				}
 			}
+
+			logger.Debug("Service agent not found")
+			return nil
 		}
 
-		return events.Listener.ListenerAdd(FromUser, Type, Config)
-	}
-
-	Functions.ServiceAgentGet = func(MagicValue int) agent.ServiceAgentInterface {
-		for _, agentService := range t.Service.Agents {
-			if agentService.MagicValue == fmt.Sprintf("0x%x", MagicValue) {
-				return agentService
+		Functions.ServiceAgentExits = func(MagicValue int) bool {
+			for _, agentService := range t.Service.Agents {
+				if agentService.MagicValue == fmt.Sprintf("0x%x", MagicValue) {
+					return true
+				}
 			}
+
+			logger.Debug("Service agent not found")
+			return false
 		}
 
-		logger.Debug("Service agent not found")
-		return nil
-	}
+		Functions.CallbackSize = func(DemonInstance *agent.Agent, i int) {
+			var (
+				Message = make(map[string]string)
+				pk      packager.Package
+			)
 
-	Functions.ServiceAgentExits = func(MagicValue int) bool {
-		for _, agentService := range t.Service.Agents {
-			if agentService.MagicValue == fmt.Sprintf("0x%x", MagicValue) {
-				return true
-			}
+			Message["Type"] = "Good"
+			Message["Message"] = fmt.Sprintf("Send Task to Agent [%v bytes]", i)
+
+			OutputJson, _ := json.Marshal(Message)
+
+			pk = events.Demons.DemonOutput(DemonInstance.NameID, agent.HAVOC_CONSOLE_MESSAGE, string(OutputJson))
+
+			t.EventAppend(pk)
+			t.EventBroadcast("", pk)
 		}
 
-		logger.Debug("Service agent not found")
-		return false
-	}
+		Functions.AgentExists = func(DemonID int) bool {
+			for _, demon := range t.Agents.Agents {
+				var NameID, err = strconv.ParseInt(demon.NameID, 16, 64)
+				if err != nil {
+					logger.Debug("Failed to convert demon.NameID to int: " + err.Error())
+					return false
+				}
 
-	Functions.CallbackSize = func(DemonInstance *agent.Agent, i int) {
-		var (
-			Message = make(map[string]string)
-			pk      packager.Package
-		)
-
-		Message["Type"] = "Good"
-		Message["Message"] = fmt.Sprintf("Send Task to Agent [%v bytes]", i)
-
-		OutputJson, _ := json.Marshal(Message)
-
-		pk = events.Demons.DemonOutput(DemonInstance.NameID, agent.HAVOC_CONSOLE_MESSAGE, string(OutputJson))
-
-		t.EventAppend(pk)
-		t.EventBroadcast("", pk)
-	}
-
-	Functions.AgentExists = func(DemonID int) bool {
-		for _, demon := range t.Agents.Agents {
-			var NameID, err = strconv.ParseInt(demon.NameID, 16, 64)
-			if err != nil {
-				logger.Debug("Failed to convert demon.NameID to int: " + err.Error())
-				return false
+				if DemonID == int(NameID) {
+					return true
+				}
 			}
-
-			if DemonID == int(NameID) {
-				return true
-			}
+			return false
 		}
-		return false
-	}
 
-	Functions.DemonOutput = func(DemonID string, CommandID int, Output map[string]string) {
-		var (
-			out, _ = json.Marshal(Output)
-			pk     = events.Demons.DemonOutput(DemonID, CommandID, string(out))
-		)
+		Functions.DemonOutput = func(DemonID string, CommandID int, Output map[string]string) {
+			var (
+				out, _ = json.Marshal(Output)
+				pk     = events.Demons.DemonOutput(DemonID, CommandID, string(out))
+			)
 
-		t.EventAppend(pk)
-		t.EventBroadcast("", pk)
-	}
-
-	Functions.AgentCallback = func(DemonID string, Time string) {
-		var (
-			Output = map[string]string{
-				"Output": Time,
-			}
-
-			out, _ = json.Marshal(Output)
-			pk     = events.Demons.DemonOutput(DemonID, agent.COMMAND_NOJOB, string(out))
-		)
-
-		t.EventBroadcast("", pk)
-	}
-
-	Functions.AgentGetInstance = func(DemonID int) *agent.Agent {
-		for _, demon := range t.Agents.Agents {
-			var NameID, _ = strconv.ParseInt(demon.NameID, 16, 64)
-
-			if DemonID == int(NameID) {
-				return demon
-			}
+			t.EventAppend(pk)
+			t.EventBroadcast("", pk)
 		}
-		return nil
-	} */
+
+		Functions.AgentCallback = func(DemonID string, Time string) {
+			var (
+				Output = map[string]string{
+					"Output": Time,
+				}
+
+				out, _ = json.Marshal(Output)
+				pk     = events.Demons.DemonOutput(DemonID, agent.COMMAND_NOJOB, string(out))
+			)
+
+			t.EventBroadcast("", pk)
+		}
+
+		Functions.AgentGetInstance = func(DemonID int) *agent.Agent {
+			for _, demon := range t.Agents.Agents {
+				var NameID, _ = strconv.ParseInt(demon.NameID, 16, 64)
+
+				if DemonID == int(NameID) {
+					return demon
+				}
+			}
+			return nil
+		} */
 
 	switch ListenerType {
 
@@ -435,7 +434,7 @@ func (t *Teamserver) ListenerEdit(Type int, Config any) {
 
 }
 
-func (t* Teamserver) ListenerAdd(FromUser string, Type int, Config any) packager.Package {
+func (t *Teamserver) ListenerAdd(FromUser string, Type int, Config any) packager.Package {
 
 	var (
 		Name       string
@@ -452,7 +451,7 @@ func (t* Teamserver) ListenerAdd(FromUser string, Type int, Config any) packager
 			Host string
 		)
 
-		Protocol = handlers.DEMON_HTTP
+		Protocol = handlers.AGENT_HTTP
 		Name = Info["Name"].(string)
 
 		/* Now set the config/info */
@@ -509,7 +508,7 @@ func (t* Teamserver) ListenerAdd(FromUser string, Type int, Config any) packager
 
 		Info := structs.Map(Config.(*handlers.SMB).Config)
 
-		Protocol = handlers.DEMON_PIVOT_SMB
+		Protocol = handlers.AGENT_PIVOT_SMB
 		Name = Info["Name"].(string)
 
 		Info["Status"] = "Online"
@@ -525,7 +524,7 @@ func (t* Teamserver) ListenerAdd(FromUser string, Type int, Config any) packager
 
 		Info := structs.Map(Config.(*handlers.External).Config)
 
-		Protocol = handlers.DEMON_EXTERNAL
+		Protocol = handlers.AGENT_EXTERNAL
 		Name = Info["Name"].(string)
 
 		Info["Status"] = "Online"

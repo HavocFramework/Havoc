@@ -35,8 +35,6 @@ import (
 
 // maybe move this to cmd
 
-var HavocTeamserver *Teamserver
-
 func NewTeamserver() *Teamserver {
 	return new(Teamserver)
 }
@@ -297,7 +295,7 @@ func (t *Teamserver) Start() {
 
 		switch listener["Protocol"] {
 
-		case handlers.DEMON_HTTP, handlers.DEMON_HTTPS:
+		case handlers.AGENT_HTTP, handlers.AGENT_HTTPS:
 
 			var (
 				Data        = make(map[string]any)
@@ -351,7 +349,7 @@ func (t *Teamserver) Start() {
 
 			break
 
-		case handlers.DEMON_EXTERNAL:
+		case handlers.AGENT_EXTERNAL:
 
 			var (
 				Data        = make(map[string]any)
@@ -376,7 +374,7 @@ func (t *Teamserver) Start() {
 
 			break
 
-		case handlers.DEMON_PIVOT_SMB:
+		case handlers.AGENT_PIVOT_SMB:
 
 			var (
 				Data        = make(map[string]any)
@@ -598,18 +596,18 @@ func (t *Teamserver) EventBroadcast(ExceptClient string, pk packager.Package) {
 	}
 }
 
-func (t* Teamserver) EventNewDemon(DemonAgent *agent.Agent) packager.Package {
+func (t *Teamserver) EventNewDemon(DemonAgent *agent.Agent) packager.Package {
 	return events.Demons.NewDemon(DemonAgent)
 }
 
-func (t* Teamserver) EventAgentMark(AgentID, Mark string) {
+func (t *Teamserver) EventAgentMark(AgentID, Mark string) {
 	var pk = events.Demons.MarkAs(AgentID, Mark)
 
 	t.EventAppend(pk)
 	t.EventBroadcast("", pk)
 }
 
-func (t* Teamserver) EventListenerError(ListenerName string, Error error) {
+func (t *Teamserver) EventListenerError(ListenerName string, Error error) {
 	var pk = events.Listener.ListenerError("", ListenerName, Error)
 
 	t.EventAppend(pk)
@@ -629,8 +627,6 @@ func (t* Teamserver) EventListenerError(ListenerName string, Error error) {
 		}
 	}
 }
-
-
 
 func (t *Teamserver) SendEvent(id string, pk packager.Package) error {
 	var (

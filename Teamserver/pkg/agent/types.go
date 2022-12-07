@@ -38,7 +38,7 @@ type ServiceAgentInterface interface {
 // interface that allows us to interact with the core teamserver
 type TeamServer interface {
 	AgentAdd(agent *Agent) []*Agent
-	AgentSendNotify(agent* Agent)
+	AgentSendNotify(agent *Agent)
 	AgentCallbackSize(DemonInstance *Agent, i int)
 	AgentInstance(AgentID int) *Agent
 	AgentLastTimeCalled(AgentID string, Time string)
@@ -55,29 +55,6 @@ type TeamServer interface {
 
 	ServiceAgent(MagicValue int) ServiceAgentInterface
 	ServiceAgentExist(MagicValue int) bool
-}
-
-type RoutineFunc struct {
-	CallbackSize func(DemonInstance *Agent, i int)
-
-	AgentGetInstance func(DemonID int) *Agent
-
-	EventAppend        func(event packager.Package) []packager.Package
-	EventBroadcast     func(ExceptClient string, pk packager.Package)
-	EventNewDemon      func(DemonAgent *Agent) packager.Package
-	EventAgentMark     func(AgentID, Mark string)
-	EventListenerError func(ListenerName string, Error error)
-
-	AppendListener func(FromUser string, Type int, Config any) packager.Package
-
-	DemonCallback func(Command int, data []byte)
-	AppendDemon   func(demon *Agent) []*Agent
-	AgentExists   func(DemonID int) bool
-	DemonOutput   func(DemonID string, CommandID int, Output map[string]string)
-	AgentCallback func(DemonID string, Time string)
-
-	ServiceAgentExits func(MagicValue int) bool
-	ServiceAgentGet   func(MagicValue int) ServiceAgentInterface
 }
 
 type Job struct {

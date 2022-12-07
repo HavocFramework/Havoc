@@ -340,7 +340,7 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 			var Protocol = pk.Body.Info["Protocol"].(string)
 			switch Protocol {
 
-			case handlers.DEMON_HTTP, handlers.DEMON_HTTPS:
+			case handlers.AGENT_HTTP, handlers.AGENT_HTTPS:
 				var (
 					HostBind string
 					Hosts    []string
@@ -473,7 +473,7 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 
 				break
 
-			case handlers.DEMON_PIVOT_SMB:
+			case handlers.AGENT_PIVOT_SMB:
 				var (
 					SmdConfig handlers.SMBConfig
 					found     bool
@@ -502,7 +502,7 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 
 				break
 
-			case handlers.DEMON_EXTERNAL:
+			case handlers.AGENT_EXTERNAL:
 				var (
 					ExtConfig handlers.ExternalConfig
 					found     bool
@@ -557,7 +557,7 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 			var Protocol = pk.Body.Info["Protocol"].(string)
 			switch Protocol {
 
-			case handlers.DEMON_HTTP, handlers.DEMON_HTTPS:
+			case handlers.AGENT_HTTP, handlers.AGENT_HTTPS:
 				var (
 					HostBind string
 					Hosts    []string

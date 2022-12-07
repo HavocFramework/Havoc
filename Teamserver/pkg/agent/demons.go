@@ -1231,7 +1231,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 				PivotCommand,
 			}
 
-		case DEMON_PIVOT_SMB_CONNECT:
+		case AGENT_PIVOT_SMB_CONNECT:
 			job.Data = []interface{}{
 				PivotCommand,
 				common.EncodeUTF16(Param),
@@ -1239,7 +1239,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 
 			break
 
-		case DEMON_PIVOT_SMB_DISCONNECT:
+		case AGENT_PIVOT_SMB_DISCONNECT:
 			var AgentID, err = strconv.ParseInt(Param, 16, 32)
 			if err != nil {
 				return nil, err
@@ -1251,7 +1251,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 			}
 			break
 
-		case DEMON_PIVOT_SMB_COMMAND:
+		case AGENT_PIVOT_SMB_COMMAND:
 			job.Data = []interface{}{
 				PivotCommand,
 			}
@@ -3695,7 +3695,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				Message["Message"] = fmt.Sprintf("No pivots connected")
 			}
 
-		case DEMON_PIVOT_SMB_CONNECT:
+		case AGENT_PIVOT_SMB_CONNECT:
 			var Success = Parser.ParseInt32()
 
 			if Success == 1 {
@@ -3762,7 +3762,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 					Message["Message"] = "[SMB] Failed to connect: Invalid response"
 				}
 			} else {
-				logger.Debug("DEMON_PIVOT_SMB_CONNECT: Failed")
+				logger.Debug("AGENT_PIVOT_SMB_CONNECT: Failed")
 				var (
 					ErrorCode          = Parser.ParseInt32()
 					ErrorString, found = Win32ErrorCodes[ErrorCode]
@@ -3780,7 +3780,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 			break
 
-		case DEMON_PIVOT_SMB_DISCONNECT:
+		case AGENT_PIVOT_SMB_DISCONNECT:
 
 			if Parser.Length() > 0 {
 				var (
@@ -3815,7 +3815,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 			break
 
-		case DEMON_PIVOT_SMB_COMMAND:
+		case AGENT_PIVOT_SMB_COMMAND:
 
 			if Parser.Length() > 0 {
 				var (

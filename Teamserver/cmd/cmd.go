@@ -18,7 +18,7 @@ var (
         RunE:         teamserverFunc,
     }
 
-    teamserverFlags teamserver.TeamserverFlags
+    flags teamserver.TeamserverFlags
 )
 
 func init() {

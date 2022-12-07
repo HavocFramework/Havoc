@@ -66,8 +66,7 @@ type (
 			KeyPath  string
 		}
 
-		// RoutineFunc agent.RoutineFunc
-		Teamserver	agent.TeamServer
+		Teamserver agent.TeamServer
 
 		Active bool
 	}
@@ -75,8 +74,7 @@ type (
 	SMB struct {
 		Config SMBConfig
 
-		// RoutineFunc agent.RoutineFunc
-		Teamserver agent.TeamServer
+		Teamserver  agent.TeamServer
 		ParentChild []struct {
 			Parent any
 			Child  any
@@ -86,10 +84,8 @@ type (
 	External struct {
 		Config ExternalConfig
 
-		// teamserver websocket engine
-		engine      *gin.Engine
-		// RoutineFunc agent.RoutineFunc
-		Teamserver 	agent.TeamServer
+		engine     *gin.Engine
+		Teamserver agent.TeamServer
 	}
 )
 
@@ -98,9 +94,8 @@ const (
 	LISTENER_PIVOT_SMB = 2
 	LISTENER_EXTERNAL  = 3
 
-	DEMON_HTTPS     = "Https"
-	DEMON_HTTP      = "Http"
-	DEMON_EXTERNAL  = "External"
-	DEMON_PIVOT_SMB = "Smb"
+	AGENT_HTTPS     = "Https"
+	AGENT_HTTP      = "Http"
+	AGENT_EXTERNAL  = "External"
+	AGENT_PIVOT_SMB = "Smb"
 )
-

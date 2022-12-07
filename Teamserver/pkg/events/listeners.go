@@ -27,7 +27,7 @@ func (listeners) ListenerAdd(FromUser string, Type int, Config any) packager.Pac
 		Package.Body.Info = make(map[string]interface{})
 		Package.Body.Info = structs.Map(Config.(*handlers.HTTP).Config)
 
-		Package.Body.Info["Protocol"] = handlers.DEMON_HTTP
+		Package.Body.Info["Protocol"] = handlers.AGENT_HTTP
 		Package.Body.Info["Headers"] = strings.Join(Config.(*handlers.HTTP).Config.Headers, ", ")
 		Package.Body.Info["Uris"] = strings.Join(Config.(*handlers.HTTP).Config.Uris, ", ")
 
@@ -75,7 +75,7 @@ func (listeners) ListenerAdd(FromUser string, Type int, Config any) packager.Pac
 		Package.Body.Info = make(map[string]interface{})
 		Package.Body.Info = structs.Map(Config.(*handlers.External).Config)
 
-		Package.Body.Info["Protocol"] = handlers.DEMON_EXTERNAL
+		Package.Body.Info["Protocol"] = handlers.AGENT_EXTERNAL
 		Package.Body.Info["Status"] = "Online"
 
 		break
@@ -85,7 +85,7 @@ func (listeners) ListenerAdd(FromUser string, Type int, Config any) packager.Pac
 		Package.Body.Info = make(map[string]interface{})
 		Package.Body.Info = structs.Map(Config.(*handlers.SMB).Config)
 
-		Package.Body.Info["Protocol"] = handlers.DEMON_PIVOT_SMB
+		Package.Body.Info["Protocol"] = handlers.AGENT_PIVOT_SMB
 		Package.Body.Info["Status"] = "Online"
 
 		break
@@ -108,7 +108,7 @@ func (listeners) ListenerEdit(Type int, Config any) packager.Package {
 		Package.Body.Info = make(map[string]interface{})
 		Package.Body.Info = structs.Map(Config.(*handlers.HTTPConfig))
 
-		Package.Body.Info["Protocol"] = handlers.DEMON_HTTP
+		Package.Body.Info["Protocol"] = handlers.AGENT_HTTP
 		Package.Body.Info["Headers"] = strings.Join(Config.(*handlers.HTTPConfig).Headers, ", ")
 		Package.Body.Info["Uris"] = strings.Join(Config.(*handlers.HTTPConfig).Uris, ", ")
 
