@@ -280,7 +280,7 @@ func (s *Service) dispatch(response map[string]map[string]any, client *ClientSer
                 Size          int
                 MagicValue    string
                 AgentID       string
-                Header        = agent.AgentHeader{}
+                Header        = agent.Header{}
                 RegisterInfo  = response["Body"]["RegisterInfo"].(map[string]any)
                 AgentInstance *agent.Agent
                 err           error

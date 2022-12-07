@@ -7,7 +7,7 @@ import (
     "strconv"
     "time"
 
-    d "Havoc/pkg/agent"
+    "Havoc/pkg/agent"
     "Havoc/pkg/handlers"
     "Havoc/pkg/logr"
     "Havoc/pkg/packager"
@@ -15,12 +15,14 @@ import (
     "github.com/fatih/structs"
 )
 
+/* TODO: rename everything here from 'Demon' to 'Agent' */
+
 var Demons demons
 
-func (demons) NewDemon(DemonAgent *d.Agent) packager.Package {
+func (demons) NewDemon(DemonAgent *agent.Agent) packager.Package {
     var (
         Package    packager.Package
-        TempParent *d.Agent
+        TempParent *agent.Agent
         TempMagic  string
     )
 
@@ -98,7 +100,7 @@ func (demons) DemonOutput(DemonID string, CommandID int, Output string) packager
     var LogrOut map[string]string
 
     err := json.Unmarshal([]byte(Output), &LogrOut)
-    if err == nil && CommandID != d.COMMAND_NOJOB {
+    if err == nil && CommandID != agent.COMMAND_NOJOB {
         logr.LogrInstance.DemonAddOutput(DemonID, LogrOut, time.Now().UTC().Format("02/01/2006 15:04:05"))
     }
 

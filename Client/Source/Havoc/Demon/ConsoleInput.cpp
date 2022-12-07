@@ -2136,6 +2136,8 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             }
             else
             {
+                CommandFound = false;
+                
                 for ( auto & Command : HavocX::Teamserver.RegisteredCommands )
                 {
                     if ( InputCommands[ 0 ].isEmpty() )
@@ -2148,6 +2150,8 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                             PyObject* FuncArgs = PyTuple_New( InputCommands.size() );
                             PyObject* Return   = nullptr;
                             auto      Path     = std::string();
+
+                            CommandFound = true;
 
                             if ( Send )
                             {
@@ -2212,14 +2216,14 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                                 TaskID = QString( PyUnicode_AsUTF8( Return ) );
 
                                 NewPackageCommand( Teamserver, Util::Packager::Body_t {
-                                    .SubEvent = Util::Packager::Session::SendCommand,
-                                    .Info     = {
-                                        { "TaskID",      TaskID.toStdString() },
-                                        { "TaskMessage", CommandTaskInfo[ TaskID ].toStdString() },
-                                        { "DemonID",     DemonConsole->SessionInfo.Name.toStdString() },
-                                        { "CommandID",   "Python Plugin" },
-                                        { "CommandLine", commandline.toStdString() },
-                                    },
+                                        .SubEvent = Util::Packager::Session::SendCommand,
+                                        .Info     = {
+                                                { "TaskID",      TaskID.toStdString() },
+                                                { "TaskMessage", CommandTaskInfo[ TaskID ].toStdString() },
+                                                { "DemonID",     DemonConsole->SessionInfo.Name.toStdString() },
+                                                { "CommandID",   "Python Plugin" },
+                                                { "CommandLine", commandline.toStdString() },
+                                        },
                                 } );
 
                                 Py_CLEAR( Return );
@@ -2230,6 +2234,11 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                         }
                     }
                 }
+            }
+
+            if ( ! CommandFound )
+            {
+                CONSOLE_ERROR( "Command/Module not found: " + commandline )
             }
 
         }

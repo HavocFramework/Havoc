@@ -14,7 +14,7 @@ func NewPivotSmb() *SMB {
 func (s *SMB) Start() {
     logger.Info("Started \"" + colors.Green(s.Config.Name) + "\" listener")
 
-    pk := s.RoutineFunc.AppendListener("", LISTENER_PIVOT_SMB, s)
-    s.RoutineFunc.EventAppend(pk)
-    s.RoutineFunc.EventBroadcast("", pk)
+    pk := s.Teamserver.ListenerAdd("", LISTENER_PIVOT_SMB, s)
+    s.Teamserver.EventAppend(pk)
+    s.Teamserver.EventBroadcast("", pk)
 }

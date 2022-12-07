@@ -219,10 +219,38 @@ void DemonInteracted::AppendText( const QString& text )
         lineEdit->CommandHistory << text;
         lineEdit->CommandHistoryIndex = lineEdit->CommandHistory.size();
 
-        if ( text.split( " " )[ 0 ].compare( "help" ) == 0 )
+        /* check if registered a command called help. if yes then exclude this. */
+        auto AgentData   = ServiceAgent();
+        auto HelpCommand = false;
+
+        if ( DemonCommands->MagicValue != DemonMagicValue )
         {
-            AppendRaw();
-            AppendRaw( DemonCommands->Prompt );
+            for ( auto& agent : HavocX::Teamserver.ServiceAgents )
+            {
+                if ( DemonCommands->MagicValue == agent.MagicValue )
+                {
+                    AgentData = agent;
+                    AgentTypeName = agent.Name;
+                }
+            }
+        }
+
+        for ( auto & command : AgentData.Commands )
+        {
+            if ( command.Name == "help" )
+            {
+                HelpCommand = true;
+                break;
+            }
+        }
+
+        if ( ! HelpCommand )
+        {
+            if ( text.split( " " )[ 0 ].compare( "help" ) == 0 )
+            {
+                AppendRaw();
+                AppendRaw( DemonCommands->Prompt );
+            }
         }
 
         DemonCommands->DispatchCommand( true, "", text );

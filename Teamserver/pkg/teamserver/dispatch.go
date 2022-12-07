@@ -234,8 +234,6 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 							}
 						}
 					} else {
-						logger.Debug("Is not Demon")
-
 						for _, a := range t.Service.Agents {
 							if a.MagicValue == fmt.Sprintf("0x%x", t.Agents.Agents[i].Info.MagicValue) {
 

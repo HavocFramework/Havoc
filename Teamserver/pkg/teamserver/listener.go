@@ -1,7 +1,6 @@
 package teamserver
 
 import (
-	"Havoc/pkg/agent"
 	"Havoc/pkg/events"
 	"Havoc/pkg/handlers"
 	"Havoc/pkg/logger"
@@ -9,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/fatih/structs"
@@ -17,7 +15,7 @@ import (
 
 func (t *Teamserver) ListenerStart(ListenerType int, info any) error {
 	var (
-		Functions      agent.RoutineFunc
+		// Functions      agent.RoutineFunc
 		ListenerConfig any
 		ListenerName   string
 	)
@@ -44,6 +42,8 @@ func (t *Teamserver) ListenerStart(ListenerType int, info any) error {
 		}
 	}
 
+
+	/*
 	Functions.EventAppend = t.EventAppend
 
 	Functions.EventBroadcast = t.EventBroadcast
@@ -97,7 +97,6 @@ func (t *Teamserver) ListenerStart(ListenerType int, info any) error {
 			ConfigJson []byte
 		)
 
-		/* TODO: turn this switch/case into a function */
 		switch Type {
 
 		case handlers.LISTENER_HTTP:
@@ -110,12 +109,12 @@ func (t *Teamserver) ListenerStart(ListenerType int, info any) error {
 			Protocol = handlers.DEMON_HTTP
 			Name = Info["Name"].(string)
 
-			/* Now set the config/info */
+			// Now set the config/info
 			Info["Hosts"] = strings.Join(Config.(*handlers.HTTP).Config.Hosts, ", ")
 			Info["Headers"] = strings.Join(Config.(*handlers.HTTP).Config.Headers, ", ")
 			Info["Uris"] = strings.Join(Config.(*handlers.HTTP).Config.Uris, ", ")
 
-			/* proxy settings */
+			// proxy settings
 			Info["Proxy Enabled"] = Config.(*handlers.HTTP).Config.Proxy.Enabled
 			Info["Proxy Type"] = Config.(*handlers.HTTP).Config.Proxy.Type
 			Info["Proxy Host"] = Config.(*handlers.HTTP).Config.Proxy.Host
@@ -155,7 +154,7 @@ func (t *Teamserver) ListenerStart(ListenerType int, info any) error {
 			}
 			Info["Hosts"] = Host
 
-			/* we get an error just do nothing */
+			// we get an error just do nothing
 			ConfigJson, _ = json.Marshal(Info)
 
 			break
@@ -171,7 +170,7 @@ func (t *Teamserver) ListenerStart(ListenerType int, info any) error {
 
 			delete(Info, "Name")
 
-			/* we get an error just do nothing */
+			// we get an error just do nothing
 			ConfigJson, _ = json.Marshal(Info)
 
 			break
@@ -187,14 +186,14 @@ func (t *Teamserver) ListenerStart(ListenerType int, info any) error {
 
 			delete(Info, "Name")
 
-			/* we get an error just do nothing */
+			// we get an error just do nothing
 			ConfigJson, _ = json.Marshal(Info)
 
 			break
 
 		}
 
-		/* just add the listener to the sqlite db if we got any config provided */
+		// just add the listener to the sqlite db if we got any config provided
 		if len(ConfigJson) > 0 {
 			err := t.DB.ListenerAdd(Name, Protocol, string(ConfigJson))
 			if err != nil {
@@ -291,7 +290,7 @@ func (t *Teamserver) ListenerStart(ListenerType int, info any) error {
 			}
 		}
 		return nil
-	}
+	} */
 
 	switch ListenerType {
 
@@ -302,7 +301,8 @@ func (t *Teamserver) ListenerStart(ListenerType int, info any) error {
 		HTTPConfig.Config = config
 
 		HTTPConfig.Config.Secure = config.Secure
-		HTTPConfig.RoutineFunc = Functions
+		// HTTPConfig.RoutineFunc = Functions
+		HTTPConfig.Teamserver = t
 
 		HTTPConfig.Start()
 
@@ -315,7 +315,8 @@ func (t *Teamserver) ListenerStart(ListenerType int, info any) error {
 		var SmbConfig = handlers.NewPivotSmb()
 
 		SmbConfig.Config = info.(handlers.SMBConfig)
-		SmbConfig.RoutineFunc = Functions
+		// SmbConfig.RoutineFunc = Functions
+		SmbConfig.Teamserver = t
 
 		// this only prints a message and lets the client now that it is ready to use
 		SmbConfig.Start()
@@ -331,7 +332,8 @@ func (t *Teamserver) ListenerStart(ListenerType int, info any) error {
 			endpoint  = new(Endpoint)
 		)
 
-		ExtConfig.RoutineFunc = Functions
+		// ExtConfig.RoutineFunc = Functions
+		ExtConfig.Teamserver = t
 
 		ExtConfig.Start()
 
@@ -431,4 +433,119 @@ func (t *Teamserver) ListenerEdit(Type int, Config any) {
 
 	}
 
+}
+
+func (t* Teamserver) ListenerAdd(FromUser string, Type int, Config any) packager.Package {
+
+	var (
+		Name       string
+		Protocol   string
+		ConfigJson []byte
+	)
+
+	switch Type {
+
+	case handlers.LISTENER_HTTP:
+
+		var (
+			Info = structs.Map(Config.(*handlers.HTTP).Config)
+			Host string
+		)
+
+		Protocol = handlers.DEMON_HTTP
+		Name = Info["Name"].(string)
+
+		/* Now set the config/info */
+		Info["Hosts"] = strings.Join(Config.(*handlers.HTTP).Config.Hosts, ", ")
+		Info["Headers"] = strings.Join(Config.(*handlers.HTTP).Config.Headers, ", ")
+		Info["Uris"] = strings.Join(Config.(*handlers.HTTP).Config.Uris, ", ")
+
+		/* proxy settings */
+		Info["Proxy Enabled"] = Config.(*handlers.HTTP).Config.Proxy.Enabled
+		Info["Proxy Type"] = Config.(*handlers.HTTP).Config.Proxy.Type
+		Info["Proxy Host"] = Config.(*handlers.HTTP).Config.Proxy.Host
+		Info["Proxy Port"] = Config.(*handlers.HTTP).Config.Proxy.Port
+		Info["Proxy Username"] = Config.(*handlers.HTTP).Config.Proxy.Username
+		Info["Proxy Password"] = Config.(*handlers.HTTP).Config.Proxy.Password
+
+		Info["Secure"] = Config.(*handlers.HTTP).Config.Secure
+		Info["Status"] = Config.(*handlers.HTTP).Active
+
+		Info["Response Headers"] = strings.Join(Config.(*handlers.HTTP).Config.Response.Headers, ", ")
+
+		Info["Secure"] = "false"
+		if Config.(*handlers.HTTP).Config.Secure {
+			Info["Secure"] = "true"
+		}
+
+		if Config.(*handlers.HTTP).Active {
+			Info["Status"] = "Online"
+		} else {
+			Info["Status"] = "Offline"
+		}
+
+		delete(Info, "Proxy")
+		delete(Info, "Name")
+		delete(Info, "Response")
+
+		delete(Info, "Hosts")
+		delete(Info, "Name")
+
+		for _, host := range Config.(*handlers.HTTP).Config.Hosts {
+			if len(Host) == 0 {
+				Host = host
+			} else {
+				Host += ", " + host
+			}
+		}
+		Info["Hosts"] = Host
+
+		/* we get an error just do nothing */
+		ConfigJson, _ = json.Marshal(Info)
+
+		break
+
+	case handlers.LISTENER_PIVOT_SMB:
+
+		Info := structs.Map(Config.(*handlers.SMB).Config)
+
+		Protocol = handlers.DEMON_PIVOT_SMB
+		Name = Info["Name"].(string)
+
+		Info["Status"] = "Online"
+
+		delete(Info, "Name")
+
+		/* we get an error just do nothing */
+		ConfigJson, _ = json.Marshal(Info)
+
+		break
+
+	case handlers.LISTENER_EXTERNAL:
+
+		Info := structs.Map(Config.(*handlers.External).Config)
+
+		Protocol = handlers.DEMON_EXTERNAL
+		Name = Info["Name"].(string)
+
+		Info["Status"] = "Online"
+
+		delete(Info, "Name")
+
+		/* we get an error just do nothing */
+		ConfigJson, _ = json.Marshal(Info)
+
+		break
+
+	}
+
+	/* just add the listener to the sqlite db if we got any config provided */
+	if len(ConfigJson) > 0 {
+		err := t.DB.ListenerAdd(Name, Protocol, string(ConfigJson))
+		if err != nil {
+			logger.Error(fmt.Sprintf("Failed to add Listener \"%s\": %v", Name, err))
+		}
+	}
+
+	return events.Listener.ListenerAdd(FromUser, Type, Config)
 }

@@ -2,6 +2,7 @@ package teamserver
 
 import "C"
 import (
+	"Havoc/pkg/agent"
 	"Havoc/pkg/db"
 	"Havoc/pkg/webhook"
 	"bytes"
@@ -596,6 +597,40 @@ func (t *Teamserver) EventBroadcast(ExceptClient string, pk packager.Package) {
 		}
 	}
 }
+
+func (t* Teamserver) EventNewDemon(DemonAgent *agent.Agent) packager.Package {
+	return events.Demons.NewDemon(DemonAgent)
+}
+
+func (t* Teamserver) EventAgentMark(AgentID, Mark string) {
+	var pk = events.Demons.MarkAs(AgentID, Mark)
+
+	t.EventAppend(pk)
+	t.EventBroadcast("", pk)
+}
+
+func (t* Teamserver) EventListenerError(ListenerName string, Error error) {
+	var pk = events.Listener.ListenerError("", ListenerName, Error)
+
+	t.EventAppend(pk)
+	t.EventBroadcast("", pk)
+
+	// also remove the listener from the init packages.
+	for EventID := range t.EventsList {
+		if t.EventsList[EventID].Head.Event == packager.Type.Listener.Type {
+			if t.EventsList[EventID].Body.SubEvent == packager.Type.Listener.Add {
+				if name, ok := t.EventsList[EventID].Body.Info["Name"]; ok {
+					if name == ListenerName {
+						t.EventsList[EventID].Body.Info["Status"] = "Offline"
+						t.EventsList[EventID].Body.Info["Error"] = Error.Error()
+					}
+				}
+			}
+		}
+	}
+}
+
+
 
 func (t *Teamserver) SendEvent(id string, pk packager.Package) error {
 	var (

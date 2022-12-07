@@ -1,11 +1,12 @@
 package agent
 
 import (
+	"net"
+	"os"
+
 	"Havoc/pkg/common/parser"
 	"Havoc/pkg/packager"
 	"Havoc/pkg/socks"
-	"net"
-	"os"
 )
 
 const (
@@ -21,7 +22,7 @@ type DemonInterface interface {
 type EventInterface interface {
 }
 
-type AgentHeader struct {
+type Header struct {
 	Size       int
 	MagicValue int
 	AgentID    int
@@ -29,13 +30,35 @@ type AgentHeader struct {
 }
 
 type ServiceAgentInterface interface {
-	SendResponse(AgentInfo any, Header AgentHeader) []byte
+	SendResponse(AgentInfo any, Header Header) []byte
 	SendAgentBuildRequest(ClientID string, Config map[string]any, Listener map[string]any)
+}
+
+// TeamServer
+// interface that allows us to interact with the core teamserver
+type TeamServer interface {
+	AgentAdd(agent *Agent) []*Agent
+	AgentSendNotify(agent* Agent)
+	AgentCallbackSize(DemonInstance *Agent, i int)
+	AgentInstance(AgentID int) *Agent
+	AgentLastTimeCalled(AgentID string, Time string)
+	AgentExist(AgentID int) bool
+	AgentConsole(DemonID string, CommandID int, Output map[string]string)
+
+	EventAppend(event packager.Package) []packager.Package
+	EventBroadcast(ExceptClient string, pk packager.Package)
+	EventNewDemon(DemonAgent *Agent) packager.Package
+	EventAgentMark(AgentID, Mark string)
+	EventListenerError(ListenerName string, Error error)
+
+	ListenerAdd(FromUser string, Type int, Config any) packager.Package
+
+	ServiceAgent(MagicValue int) ServiceAgentInterface
+	ServiceAgentExist(MagicValue int) bool
 }
 
 type RoutineFunc struct {
 	CallbackSize func(DemonInstance *Agent, i int)
-	CallbackTime func(DemonInstance *Agent)
 
 	AgentGetInstance func(DemonID int) *Agent
 
@@ -55,10 +78,6 @@ type RoutineFunc struct {
 
 	ServiceAgentExits func(MagicValue int) bool
 	ServiceAgentGet   func(MagicValue int) ServiceAgentInterface
-}
-
-/* use this struct to store PortFwds, SocksCon, Downloads etc. */
-type DemonData struct {
 }
 
 type Job struct {

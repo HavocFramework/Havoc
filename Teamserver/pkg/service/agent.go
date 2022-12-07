@@ -88,7 +88,7 @@ func (a *AgentService) SendTask(Command map[string]interface{}, AgentInfo any) {
     }
 }
 
-func (a *AgentService) SendResponse(AgentInfo any, Header agent.AgentHeader) []byte {
+func (a *AgentService) SendResponse(AgentInfo any, Header agent.Header) []byte {
 
     var (
         randID = utils.GenerateID(6)

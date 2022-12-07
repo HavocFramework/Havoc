@@ -1,12 +1,6 @@
 package agent
 
 import (
-	"Havoc/pkg/common"
-	"Havoc/pkg/common/crypt"
-	"Havoc/pkg/common/packer"
-	"Havoc/pkg/common/parser"
-	"Havoc/pkg/logger"
-	"Havoc/pkg/logr"
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
@@ -20,6 +14,13 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"Havoc/pkg/common"
+	"Havoc/pkg/common/crypt"
+	"Havoc/pkg/common/packer"
+	"Havoc/pkg/common/parser"
+	"Havoc/pkg/logger"
+	"Havoc/pkg/logr"
 
 	"github.com/fatih/structs"
 )
@@ -94,8 +95,8 @@ func BuildPayloadMessage(Jobs []Job, AesKey []byte, AesIv []byte) []byte {
 	return PayloadPackage
 }
 
-func AgentParseHeader(data []byte) (AgentHeader, error) {
-	var Header = AgentHeader{}
+func AgentParseHeader(data []byte) (Header, error) {
+	var Header = Header{}
 	var Parser = parser.NewParser(data)
 
 	if Parser.Length() > 4 {
@@ -126,7 +127,7 @@ func AgentParseHeader(data []byte) (AgentHeader, error) {
 	return Header, nil
 }
 
-func AgentRegisterInfoToInstance(Header AgentHeader, RegisterInfo map[string]any) *Agent {
+func AgentRegisterInfoToInstance(Header Header, RegisterInfo map[string]any) *Agent {
 	var agent = &Agent{
 		Active:     false,
 		SessionDir: "",
@@ -490,7 +491,7 @@ func (a *Agent) GetQueuedJobs() []Job {
 	return Jobs
 }
 
-func (a *Agent) UpdateLastCallback(routineFunc RoutineFunc) {
+func (a *Agent) UpdateLastCallback(Teamserver TeamServer) {
 	var (
 		OldLastCallIn, _ = time.Parse("02-01-2006 15:04:05", a.Info.LastCallIn)
 		NewLastCallIn, _ = time.Parse("02-01-2006 15:04:05", time.Now().Format("02-01-2006 15:04:05"))
@@ -500,10 +501,10 @@ func (a *Agent) UpdateLastCallback(routineFunc RoutineFunc) {
 
 	diff := NewLastCallIn.Sub(OldLastCallIn)
 
-	routineFunc.AgentCallback(a.NameID, diff.String())
+	Teamserver.AgentLastTimeCalled(a.NameID, diff.String())
 }
 
-func (a *Agent) BackgroundUpdateLastCallbackUI(routineFunc RoutineFunc) {
+func (a *Agent) BackgroundUpdateLastCallbackUI(teamserver TeamServer) {
 	if !a.BackgroundCheck {
 		a.BackgroundCheck = true
 	} else {
@@ -517,7 +518,7 @@ func (a *Agent) BackgroundUpdateLastCallbackUI(routineFunc RoutineFunc) {
 			}
 
 			Callback := map[string]string{"Output": a.Reason}
-			routineFunc.DemonOutput(a.NameID, COMMAND_NOJOB, Callback)
+			teamserver.AgentConsole(a.NameID, COMMAND_NOJOB, Callback)
 			return
 		}
 
@@ -528,7 +529,7 @@ func (a *Agent) BackgroundUpdateLastCallbackUI(routineFunc RoutineFunc) {
 
 		diff := NewLastCallIn.Sub(OldLastCallIn)
 
-		routineFunc.AgentCallback(a.NameID, diff.String())
+		teamserver.AgentLastTimeCalled(a.NameID, diff.String())
 
 		time.Sleep(time.Second * 1)
 	}

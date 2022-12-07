@@ -1,13 +1,6 @@
 package agent
 
 import (
-	"Havoc/pkg/common"
-	"Havoc/pkg/common/parser"
-	"Havoc/pkg/logger"
-	"Havoc/pkg/logr"
-	"Havoc/pkg/socks"
-	"Havoc/pkg/utils"
-	"Havoc/pkg/win32"
 	"bytes"
 	"encoding/base64"
 	"encoding/hex"
@@ -20,6 +13,14 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"Havoc/pkg/common"
+	"Havoc/pkg/common/parser"
+	"Havoc/pkg/logger"
+	"Havoc/pkg/logr"
+	"Havoc/pkg/socks"
+	"Havoc/pkg/utils"
+	"Havoc/pkg/win32"
 
 	"github.com/olekukonko/tablewriter"
 )
@@ -1711,12 +1712,12 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 	return job, nil
 }
 
-func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs RoutineFunc) {
+func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver TeamServer) {
 	Parser.DecryptBuffer(a.Encryption.AESKey, a.Encryption.AESIv)
 
 	logger.Debug("Task Output: \n" + hex.Dump(Parser.Buffer()))
 
-	a.UpdateLastCallback(Funcs)
+	a.UpdateLastCallback(teamserver)
 
 	switch CommandID {
 
@@ -1740,9 +1741,9 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 			}
 
 			a.Active = false
-			Funcs.EventAgentMark(a.NameID, "Dead")
+			teamserver.EventAgentMark(a.NameID, "Dead")
 
-			Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 		}
 
 	case COMMAND_CHECKIN:
@@ -1968,7 +1969,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 		}
 
 	SendMessage:
-		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 		break
 
@@ -2041,7 +2042,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 			break
 		}
 
-		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
+		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
 		break
 
 	case COMMAND_SLEEP:
@@ -2052,7 +2053,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 		Output["Type"] = "Good"
 		Output["Message"] = fmt.Sprintf("Set sleep interval to %v seconds", a.Info.SleepDelay)
 
-		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
+		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
 
 		break
 
@@ -2167,7 +2168,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 				break
 			}
 
-			Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 			break
 		}
 
@@ -2465,7 +2466,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 			}
 		}
 
-		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
+		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
 
 		break
 
@@ -2549,7 +2550,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 			Output["MiscData"] = base64.StdEncoding.EncodeToString(ProcessListJson)
 		}
 
-		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
+		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
 
 	case COMMAND_OUTPUT:
 		var Output = make(map[string]string)
@@ -2558,7 +2559,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 		Output["Output"] = string(Parser.ParseBytes())
 		Output["Message"] = fmt.Sprintf("Received Output [%v bytes]:", len(Output["Output"]))
 
-		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
+		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
 
 	case CALLBACK_OUTPUT_OEM:
 		var Output = make(map[string]string)
@@ -2567,7 +2568,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 		Output["Output"] = common.DecodeUTF16(Parser.ParseBytes())
 		Output["Message"] = fmt.Sprintf("Received Output [%v bytes]:", len(Output["Output"]))
 
-		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
+		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
 
 	case COMMAND_INJECT_DLL:
 		var (
@@ -2588,7 +2589,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 			Message["Message"] = "Failed to inject reflective dll: " + String
 		}
 
-		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 		break
 
@@ -2611,7 +2612,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 			Message["Message"] = "Failed to spawned reflective dll: " + String
 		}
 
-		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 		break
 
@@ -2629,7 +2630,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 			Message["Message"] = "Failed to inject shellcode"
 		}
 
-		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 		break
 
@@ -2861,7 +2862,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 
 		}
 
-		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 		break
 
@@ -2874,7 +2875,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 		switch Type {
 		case 0x0:
 			OutputMap["Output"] = string(Parser.ParseBytes())
-			Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
+			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
 
 			break
 
@@ -2884,7 +2885,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 			OutputMap["Type"] = "Good"
 			OutputMap["Message"] = string(String)
 
-			Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
+			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
 			break
 
 		case 0x91:
@@ -2893,7 +2894,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 			OutputMap["Type"] = "Info"
 			OutputMap["Message"] = string(String)
 
-			Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
+			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
 			break
 
 		case 0x92:
@@ -2902,7 +2903,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 			OutputMap["Type"] = "Error"
 			OutputMap["Message"] = string(String)
 
-			Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
+			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
 			break
 
 		case 0x98:
@@ -2914,7 +2915,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 			OutputMap["Type"] = "Error"
 			OutputMap["Message"] = fmt.Sprintf("Exception %v [%x] accured while executing BOF at address %x", win32.StatusToString(int64(Exception)), Exception, Address)
 
-			Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
+			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
 			break
 
 		case 0x99:
@@ -2924,7 +2925,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 			OutputMap["Type"] = "Error"
 			OutputMap["Message"] = "Symbol not found: " + LibAndFunc
 
-			Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
+			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
 
 			break
 
@@ -2973,7 +2974,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 			}
 		}
 
-		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 	case COMMAND_ASSEMBLY_INLINE_EXECUTE:
 		var (
@@ -3044,7 +3045,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 
 		}
 
-		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 		break
 
@@ -3060,7 +3061,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 		Message["Message"] = "List available assembly versions:"
 		Message["Output"] = Output
 
-		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 		break
 
@@ -3073,7 +3074,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 		Message["Type"] = typeGood
 		Message["Message"] = "Changed parent pid to spoof: " + strconv.Itoa(Ppid)
 
-		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 		break
 
@@ -3294,7 +3295,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 				break
 			}
 
-			Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
+			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
 		}
 		break
 
@@ -3394,7 +3395,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 			Message["Message"] = "Error while setting certain config"
 		}
 
-		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 		break
 
@@ -3431,7 +3432,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 			Message["Message"] = "Failed to take a screenshot"
 		}
 
-		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 		break
 
@@ -3647,7 +3648,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 			break
 		}
 
-		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 		break
 
@@ -3709,8 +3710,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 
 							var DemonInfo *Agent
 
-							if Funcs.AgentExists(AgentHdr.AgentID) {
-								DemonInfo = Funcs.AgentGetInstance(AgentHdr.AgentID)
+							if teamserver.AgentExist(AgentHdr.AgentID) {
+								DemonInfo = teamserver.AgentInstance(AgentHdr.AgentID)
 								Message["MiscType"] = "reconnect"
 								Message["MiscData"] = fmt.Sprintf("%v;%x", a.NameID, AgentHdr.AgentID)
 
@@ -3728,16 +3729,15 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 							} else {
 								DemonInfo = ParseResponse(AgentHdr.AgentID, AgentHdr.Data)
 								DemonInfo.Pivots.Parent = a
+
 								a.Pivots.Links = append(a.Pivots.Links, DemonInfo)
+
 								DemonInfo.Info.MagicValue = AgentHdr.MagicValue
 
-								// LogDemonCallback(DemonInfo)
-								Funcs.AppendDemon(DemonInfo)
-								pk := Funcs.EventNewDemon(DemonInfo)
-								Funcs.EventAppend(pk)
-								Funcs.EventBroadcast("", pk)
+								teamserver.AgentAdd(DemonInfo)
+								teamserver.AgentSendNotify(DemonInfo)
 
-								go DemonInfo.BackgroundUpdateLastCallbackUI(Funcs)
+								go DemonInfo.BackgroundUpdateLastCallbackUI(teamserver)
 							}
 
 							if DemonInfo != nil {
@@ -3795,7 +3795,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 					Message["MiscType"] = "disconnect"
 					Message["MiscData"] = fmt.Sprintf("%x", AgentID)
 
-					AgentInstance := Funcs.AgentGetInstance(AgentID)
+					AgentInstance := teamserver.AgentInstance(AgentID)
 					if AgentInstance != nil {
 						AgentInstance.Active = false
 						AgentInstance.Reason = "Disconnected"
@@ -3831,7 +3831,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 						found := false
 						for i := range a.Pivots.Links {
 							if a.Pivots.Links[i].NameID == utils.IntToHexString(AgentHdr.AgentID) {
-								a.Pivots.Links[i].TaskDispatch(Command, AgentHdr.Data, Funcs)
+								a.Pivots.Links[i].TaskDispatch(Command, AgentHdr.Data, teamserver)
 								found = true
 								break
 							}
@@ -3858,7 +3858,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 			logger.Debug(fmt.Sprintf("CommandID not found: %x", CommandID))
 		}
 
-		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 		break
 
@@ -4025,7 +4025,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 			break
 		}
 
-		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 		break
 
@@ -4066,12 +4066,12 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 					FwdString = common.Int32ToIpString(int64(FwdAddr))
 
 					if Success == win32.TRUE {
-						a.Console(Funcs.DemonOutput, "Info", fmt.Sprintf("Started reverse port forward on %s:%d to %s:%d [Id: %x]", LclString, LclPort, FwdString, FwdPort, SocktID), "")
-						a.Console(Funcs.DemonOutput, "Warn", "Dont forget to go interactive to make it usable", "")
+						a.Console(teamserver.AgentConsole, "Info", fmt.Sprintf("Started reverse port forward on %s:%d to %s:%d [Id: %x]", LclString, LclPort, FwdString, FwdPort, SocktID), "")
+						a.Console(teamserver.AgentConsole, "Warn", "Dont forget to go interactive to make it usable", "")
 
 						return
 					} else {
-						a.Console(Funcs.DemonOutput, "Erro", fmt.Sprintf("Failed to start reverse port forward on %s:%d to %s:%d", LclString, LclPort, FwdString, FwdPort), "")
+						a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to start reverse port forward on %s:%d to %s:%d", LclString, LclPort, FwdString, FwdPort), "")
 						return
 					}
 
@@ -4120,7 +4120,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 					FwdCount++
 				}
 
-				a.Console(Funcs.DemonOutput, "Info", fmt.Sprintf("reverse port forwards [%d active]:", FwdCount), FwdList)
+				a.Console(teamserver.AgentConsole, "Info", fmt.Sprintf("reverse port forwards [%d active]:", FwdCount), FwdList)
 				return
 
 			case SOCKET_COMMAND_RPORTFWD_REMOVE:
@@ -4226,7 +4226,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 
 					err := a.PortFwdOpen(SocktID)
 					if err != nil {
-						a.Console(Funcs.DemonOutput, "Erro", fmt.Sprintf("Failed to open reverse port forward host %s: %v", FwdString, err), "")
+						a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to open reverse port forward host %s: %v", FwdString, err), "")
 						return
 					}
 
@@ -4297,7 +4297,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 							/* write the data to the forwarded host */
 							err := a.PortFwdWrite(Id, Data)
 							if err != nil {
-								a.Console(Funcs.DemonOutput, "Erro", fmt.Sprintf("Failed to write to reverse port forward host %s: %v", Socket.Target, err), "")
+								a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to write to reverse port forward host %s: %v", Socket.Target, err), "")
 								return
 							}
 
@@ -4315,7 +4315,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 							/* write the data to socks proxy */
 							_, err := Socket.Conn.Write(Data)
 							if err != nil {
-								a.Console(Funcs.DemonOutput, "Erro", fmt.Sprintf("Failed to write to socks proxy %v: %v", Id, err), "")
+								a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to write to socks proxy %v: %v", Id, err), "")
 
 								/* TODO: remove socks proxy client */
 								a.SocksClientClose(SOCKET_TYPE_CLIENT)
@@ -4355,7 +4355,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 							 * But if it's a SOCKET_TYPE_REVERSE_PORTFWD then let the operator know. */
 							if Type == SOCKET_TYPE_REVERSE_PORTFWD {
 								var LclString = common.Int32ToIpString(int64(Socket.LclAddr))
-								a.Console(Funcs.DemonOutput, "Info", fmt.Sprintf("Closed reverse port forward [Id: %x] [Bind %s:%d] [Forward: %s]", Socket.SocktID, LclString, Socket.LclPort, Socket.Target), "")
+								a.Console(teamserver.AgentConsole, "Info", fmt.Sprintf("Closed reverse port forward [Id: %x] [Bind %s:%d] [Forward: %s]", Socket.SocktID, LclString, Socket.LclPort, Socket.Target), "")
 							}
 
 							/* finally close our port forwarder */
@@ -4419,7 +4419,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, Funcs Routine
 			}
 		}
 
-		Funcs.DemonOutput(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 		break
 

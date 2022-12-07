@@ -1,8 +1,9 @@
 package events
 
 import (
-	"Havoc/pkg/packager"
 	"time"
+
+	"Havoc/pkg/packager"
 )
 
 var Teamserver teamserver
