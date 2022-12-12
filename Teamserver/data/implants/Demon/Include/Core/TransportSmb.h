@@ -3,6 +3,9 @@
 
 #include <Core/WinUtils.h>
 
+PipeSend(HANDLE pipeHandle, PBUFFER Send);
+PipeRead(HANDLE pipeHandle, PBUFFER Receive);
+
 #ifdef TRANSPORT_SMB
 
 /* Objects we allocated and need to free */
