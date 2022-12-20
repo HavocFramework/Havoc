@@ -1,0 +1,75 @@
+Teamserver {
+	Host = "0.0.0.0"
+	Port = 40056
+
+	Build {
+	    Compiler64 = "/usr/bin/x86_64-w64-mingw32-gcc"
+	    Nasm = "/usr/bin/nasm"
+	}
+}
+
+Operators {
+	user "5pider" {
+		Password = "password1234"
+	}
+
+	user "Neo" {
+		Password = "password1234"
+	}
+}
+
+Listeners {
+    Http {
+        Name         = "Agent Listener - HTTP/s"
+        Hosts        = [
+            "192.168.0.148", # our callback host.
+        ]
+        HostBind     = "192.168.0.148" # the address where the listener should bind to. 
+        HostRotation = "round-robin"
+        Port         = 443
+        Secure       = true
+        UserAgent    = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
+
+        Uris = [
+            "/funny_cat.gif",
+            "/index.php",
+            "/test.txt",
+            "/helloworld.js"
+        ]
+
+        Headers = [
+            "Content-type: text/plain",
+            "X-Havoc: true",
+            "X-Havoc-Agent: Demon",
+        ]
+
+        Response {
+            Headers = [
+                "Content-type: text/plain",
+                "X-IsHavocFramework: true",
+            ]
+        }
+
+    }
+
+    Smb {
+        Name     = "Pivot - Smb"
+        PipeName = "demon_pipe"
+    }
+}
+
+# this is optional. if you dont use it you can remove it.
+Service {
+    Endpoint = "service-endpoint"
+    Password = "service-password"
+}
+
+Demon {
+    Sleep = 2
+
+    Injection {
+        Spawn64 = "C:\\Windows\\System32\\Werfault.exe"
+        Spawn32 = "C:\\Windows\\SysWOW64\\Werfault.exe"
+    }
+}
+

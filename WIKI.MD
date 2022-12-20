@@ -123,6 +123,7 @@ brew install --cask cmake
 brew install python@3.10 qt@5 spdlog golang
 brew link --overwrite qt@5
 ```
+
 ### <a name="bclient"></a>Building the Client
 
 > If you are using a debian-based distro, you can use the bundled installation script at `/Havoc/Client/Install.sh`. 
@@ -141,9 +142,6 @@ make
 ```
 
 > On macOS, run `brew unlink qt && brew link qt` after cmake build is done.
-
-
-
 
 ### <a name="bteam"></a>Building the Teamserver
 
@@ -196,7 +194,7 @@ Run the container:
 `sudo docker run -p8080:8080 -it -d -v havoc-c2-data:/data havoc-client`
 
 Visit Jenkins at `localhost:8080` and create a pipeline to build the Havoc Teamserver.
-- See `Havoc-Teamserver.groovy` in the `Assets` folder.
+- See `Havoc-Teamserver.groovy` in the `assets` folder.
 
 
 ### <a name="aquick"></a> Creating a Listener, and Spawning an Agent
@@ -204,25 +202,25 @@ This part assumes you have a Teamserver running, with a Teamserver-client connec
 - Creating a Listener:
 	1. To create a new listener, we must first open the `Listeners` subwindow.
 		* To do this, in the upper left hand corner, click on the `View` button, and then on the `Listeners` button in the drop down menu.
-		* ![Listeners-select](./Assets/Screenshots/Listeners-select.png)	
+		* ![Listeners-select](./assets/Screenshots/Listeners-select.png)	
 	2. You should see a new sub window in the bottom of the server window, with the title of `Listeners` on the header tab.
 	3. You should also now see three(3) buttons on the bottom of the server window, `Add`, `Remove` and `Edit`.
-		* ![Listeners-Add-select](./Assets/Screenshots/Listeners-Add-select.png)
+		* ![Listeners-Add-select](./assets/Screenshots/Listeners-Add-select.png)
 	4. We want to click the `Add` button.
 	5. Once we click the `Add` button, you should see a new window come up, with the title of `Create Listener`.
-		* ![Listeners-New](./Assets/Screenshots/Listeners-new.png)
+		* ![Listeners-New](./assets/Screenshots/Listeners-new.png)
 	6. We will want to fill out the appropriate information for each field in the `Create Listener` window.
 	7. After entering the appropriate information into each field, then click the `Save` button.
 	8. The window will close, and you will now see a new line in the `Listeners` sub-window.
-		* ![Listener-created](./Assets/Screenshots/Listener-created)
+		* ![Listener-created](./assets/Screenshots/Listener-created)
 	9. We now have an active Listener, and are ready to receive an incoming agent's communications!
 - Spawning an Agent:
 	1. To create an Agent Payload, we must first open the `Payload` window.
 		* We can do so by going up to the upper left hand corner, and clicking on the `Attack` button. 
 	2. Doing so, we see the `Payload` button appear in the drop down menu. We want to then click on it.
-		* ![Agent-select](./Assets/Screenshots/Agent-select.png)
+		* ![Agent-select](./assets/Screenshots/Agent-select.png)
 	3. This will open the `Payload` window, where we may then configure the various options for generating our payload.
-		* ![Agent-creation](./Assets/Screenshots/Agent-create.png)
+		* ![Agent-creation](./assets/Screenshots/Agent-create.png)
 	4. Once we have selected the appropriate options, we then click on the `Generate` button.
 	5. It might take a little bit for the compilation to take place. Once it has completed, it will prompt you as to where to save the resulting file output.
 	6. After selecting where to save the file, you will now have a generated agent ready for execution or injection!
@@ -387,12 +385,12 @@ Running `./Havoc` will start the Client.
 
 When the client opens, you will be presented with a profile window similar to that in other C2 frameworks like Cobalt Strike. 
 
-![teamserver-client](./Assets/Screenshots/Teamserver-Client-Fresh.png)
+![teamserver-client](./assets/Screenshots/Teamserver-Client-Fresh.png)
 
 Enter the profile name, teamserver bind address (`Host`) and `Port`, along with your defined username/password in the teamserver profile. 
 Then hit 'Connect' to connect your configured teamserver.
 
-![teamserver-and-client](./Assets/Screenshots/Teamserver-LoggedIn.png)
+![teamserver-and-client](./assets/Screenshots/Teamserver-LoggedIn.png)
 
 
 

@@ -1,13 +1,13 @@
 <div align="center">
-  <img width="125px" src="Assets/Havoc.png" />
+  <img width="125px" src="assets/Havoc.png" />
   <h1>Havoc</h1>
   <br/>
 
   <p><i>Havoc is a modern and malleable post-exploitation command and control framework, created by <a href="https://twitter.com/C5pider">@C5pider</a>.</i></p>
   <br />
 
-  <img src="Assets/Screenshots/FullSessionGraph.jpeg" width="90%" /><br />
-  <img src="Assets/Screenshots/MultiUserAgentControl.png" width="90%" /><br />
+  <img src="assets/Screenshots/FullSessionGraph.jpeg" width="90%" /><br />
+  <img src="assets/Screenshots/MultiUserAgentControl.png" width="90%" /><br />
   
 </div>
 
@@ -58,7 +58,7 @@ See the [Installation](https://github.com/HavocFramework/Havoc/wiki#installation
 - Variety of built-in post-exploitation commands
 
 <div align="center">
-  <img src="Assets/Screenshots/SessionConsoleHelp.png" width="90%" /><br />
+  <img src="assets/Screenshots/SessionConsoleHelp.png" width="90%" /><br />
 </div>
 
 #### Extensibility
@@ -78,3 +78,9 @@ You can join the official [Havoc Discord](https://discord.gg/z3PF3NRDE5) to chat
 ### Contributing
 
 To contribute to the Havoc Framework, please review the guidelines in [Contributing.md](https://github.com/HavocFramework/Havoc/blob/main/CONTRIBUTING.MD) and then open a pull-request! 
+
+### Note
+
+Please do not open any issues regarding detection. 
+
+The Havoc Framework hasn't been developed to be evasive. Rather it has been designed to be as malleable & modular as possible. Giving the operator the capability to add custom features or modules that evades their targets detection system. 
