@@ -32,7 +32,7 @@ BOOL SmbSend( PBUFFER Send )
         SmbSecurityAttrFree( &SmbSecAttr );
 
         if ( ! Instance.Config.Transport.Handle )
-            return NULL;
+            return FALSE;
 
         if ( ! Instance.Win32.ConnectNamedPipe( Instance.Config.Transport.Handle, NULL ) )
         {
@@ -41,14 +41,14 @@ BOOL SmbSend( PBUFFER Send )
         }
 
         /* Send the message/package we want to send to the new client... */
-        return Instance.Win32.WriteFile( Instance.Config.Transport.Handle, Send->Buffer, Send->Length, &Send->Length, NULL );
+        return PipeWrite( Instance.Config.Transport.Handle, Send );
     }
 
-    if ( ! Instance.Win32.WriteFile( Instance.Config.Transport.Handle, Send->Buffer, Send->Length, &Send->Length, NULL ) )
+    if ( ! PipeWrite( Instance.Config.Transport.Handle, Send ) )
     {
         PRINTF( "WriteFile Failed:[%d]\n", NtGetLastError() );
 
-        // Means that the client disconnected/the pipe is closing.
+        /* Means that the client disconnected/the pipe is closing. */
         if ( NtGetLastError() == ERROR_NO_DATA )
         {
             if ( Instance.Config.Transport.Handle )
@@ -88,10 +88,11 @@ BOOL SmbRecv( PBUFFER Resp )
             Instance.Win32.ReadFile( Instance.Config.Transport.Handle, &PackageSize, sizeof( UINT32 ), &BytesSize, NULL );
 
             Resp->Buffer = Instance.Win32.LocalAlloc( LPTR, PackageSize );
-            if ( ! Instance.Win32.ReadFile( Instance.Config.Transport.Handle, Resp->Buffer, PackageSize, &Resp->Length, NULL ) )
+            Resp->Length = PackageSize;
+
+            if ( ! PipeRead( Instance.Config.Transport.Handle, Resp ) )
             {
                 /* We failed to read from the pipe. cleanup. */
-
                 if ( Resp->Buffer )
                 {
                     Instance.Win32.LocalFree( Resp->Buffer );

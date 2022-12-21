@@ -35,6 +35,10 @@ typedef struct _ANONPIPE
 #define DEREF_32( name )    *( DWORD* )    ( name )
 #define DEREF_16( name )    *( WORD* )     ( name )
 
+#define PIPE_BUFFER_MAX 0x10000 - 1
+#define MAX( a, b ) ( ( a ) > ( b ) ? ( a ) : ( b ) )
+#define MIN( a, b ) ( ( a ) < ( b ) ? ( a ) : ( b ) )
+
 DWORD    HashStringA( PCHAR String );
 
 PVOID    LdrFunctionAddr( HMODULE DllModuleBase, DWORD FunctionHash );
@@ -65,6 +69,9 @@ BOOL     WinScreenshot( PVOID* ImagePointer, PSIZE_T ImageSize );
 BOOL     AnonPipesInit( PANONPIPE AnonPipes );
 VOID     AnonPipesRead( PANONPIPE AnonPipes );
 VOID     AnonPipesClose( PANONPIPE AnonPipes );
+
+BOOL     PipeWrite( HANDLE Handle, PBUFFER Buffer );
+BOOL     PipeRead(  HANDLE Handle, PBUFFER Buffer );
 
 BOOL     BypassPatchAMSI( );
 ULONG    RandomNumber32( VOID );

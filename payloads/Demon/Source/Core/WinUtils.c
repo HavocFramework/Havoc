@@ -680,6 +680,55 @@ BOOL WinScreenshot( PVOID* ImagePointer, PSIZE_T ImageSize )
     return TRUE;
 }
 
+/*!
+ * Read from the pipe and writes it to the specified buffer
+ * @param Handle handle to the pipe
+ * @param Buffer buffer to save the read bytes from the pipe
+ * @return pipe read successful or not
+ */
+BOOL PipeRead( HANDLE Handle, PBUFFER Buffer )
+{
+    DWORD Read  = 0;
+    DWORD Total = 0;
+
+    do
+    {
+        if ( ! Instance.Win32.ReadFile( Handle, Buffer->Buffer + Total, MIN( ( Buffer->Length - Total ), PIPE_BUFFER_MAX ), &Read, NULL ) )
+        {
+            if ( NtGetLastError() != ERROR_MORE_DATA )
+            {
+                return FALSE;
+            }
+        }
+
+        Total += Read;
+    } while ( Total < Buffer->Length );
+
+    return TRUE;
+}
+
+/*!
+ * Write the specified buffer to the specified pipe
+ * @param Handle handle to the pipe
+ * @param Buffer buffer to write
+ * @return pipe write successful or not
+ */
+BOOL PipeWrite( HANDLE Handle, PBUFFER Buffer )
+{
+    DWORD Written = 0;
+    DWORD Total   = 0;
+
+    do
+    {
+        if ( ! Instance.Win32.WriteFile( Handle, Buffer->Buffer + Total, MIN( ( Buffer->Length - Total ), PIPE_BUFFER_MAX ), &Written , NULL ) )
+            return FALSE;
+
+        Total += Written;
+    } while ( Total < Buffer->Length );
+
+    return TRUE;
+}
+
 ULONG RandomNumber32( VOID )
 {
     ULONG Seed = 0;
