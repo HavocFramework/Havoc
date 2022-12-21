@@ -47,6 +47,12 @@ func parseAgentRequest(Teamserver agent.TeamServer, Body []byte) (bytes.Buffer, 
 	return handleServiceAgent(Teamserver, Header)
 }
 
+// handleDemonAgent
+// parse the demon agent request
+// return 2 types:
+//
+// 		Response bytes.Buffer
+// 		Success  bool
 func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.Buffer, bool) {
 
 	var (
@@ -265,6 +271,12 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.B
 	return Response, true
 }
 
+// handleServiceAgent
+// handles and parses a service agent request
+// return 2 types:
+//
+// 		Response bytes.Buffer
+// 		Success  bool
 func handleServiceAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.Buffer, bool) {
 
 	var (

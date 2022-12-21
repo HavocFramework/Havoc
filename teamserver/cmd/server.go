@@ -38,6 +38,11 @@ var CobraServer = &cobra.Command{
 		Server.SetServerFlags(flags)
 
 		logr.LogrInstance = logr.NewLogr(DirPath, LogrPath)
+		if logr.LogrInstance == nil {
+			logger.Error("failed to create logr loot folder")
+			return nil
+		}
+
 		logr.LogrInstance.LogrSendText = func(text string) {
 			var pk = events.Teamserver.Logger(text)
 
