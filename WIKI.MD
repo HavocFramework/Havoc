@@ -115,6 +115,13 @@ echo 'deb http://ftp.de.debian.org/debian bookworm main' >> /etc/apt/sources.lis
 sudo apt update
 sudo apt install python3-dev python3.10-dev libpython3.10 libpython3.10-dev python3.10
 ```
+
+#### Arch-based Distros
+
+```
+sudo pacman -S spdlog qt5
+```
+
 #### MacOS
 
 > You must have [`homebrew`](https://brew.sh) installed.
