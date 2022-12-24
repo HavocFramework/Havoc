@@ -3728,13 +3728,13 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 							} else {
 								DemonInfo = ParseResponse(AgentHdr.AgentID, AgentHdr.Data)
-								DemonInfo.Pivots.Parent = a
-
-								a.Pivots.Links = append(a.Pivots.Links, DemonInfo)
-
 								DemonInfo.Info.MagicValue = AgentHdr.MagicValue
 
 								teamserver.AgentAdd(DemonInfo)
+
+								DemonInfo.Pivots.Parent = a
+								a.Pivots.Links = append(a.Pivots.Links, DemonInfo)
+
 								teamserver.AgentSendNotify(DemonInfo)
 
 								go DemonInfo.BackgroundUpdateLastCallbackUI(teamserver)
