@@ -41,3 +41,4 @@ client-cleanup:
 # cleanup target 
 clean: ts-cleanup client-cleanup
 	@ rm -rf ./data/*.db
+	@ rm -rf payloads/Demon/.idea
