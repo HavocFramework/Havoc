@@ -140,10 +140,10 @@ func ParseHeader(data []byte) (Header, error) {
 
 	Header.Data = Parser
 
-	logger.Debug(fmt.Sprintf("Header Size       : %d", Header.Size))
-	logger.Debug(fmt.Sprintf("Header MagicValue : %x", Header.MagicValue))
-	logger.Debug(fmt.Sprintf("Header AgentID    : %x", Header.AgentID))
-	logger.Debug(fmt.Sprintf("Header Data       : \n%v", hex.Dump(Header.Data.Buffer())))
+	// logger.Debug(fmt.Sprintf("Header Size       : %d", Header.Size))
+	// logger.Debug(fmt.Sprintf("Header MagicValue : %x", Header.MagicValue))
+	// logger.Debug(fmt.Sprintf("Header AgentID    : %x", Header.AgentID))
+	// logger.Debug(fmt.Sprintf("Header Data       : \n%v", hex.Dump(Header.Data.Buffer())))
 
 	return Header, nil
 }
@@ -573,6 +573,11 @@ func (a *Agent) PivotAddJob(job Job) {
 
 	Packer.AddInt32(int32(AgentID))
 	Packer.AddBytes(Payload)
+
+	// add this job to pivot queue.
+	// tho it's not going to be used besides for the task size calculator
+	// which is going to be displayed to the operator.
+	a.AddJobToQueue(job)
 
 	PivotJob = Job{
 		Command: COMMAND_PIVOT,

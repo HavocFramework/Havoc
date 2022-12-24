@@ -16,7 +16,7 @@ ts-cleanup:
 	@ rm -rf ./data/loot
 	@ rm -rf ./data/x86_64-w64-mingw32-cross 
 	@ rm -rf ./data/havoc.db
-	@ rm -rf ./teamserver/idea
+	@ rm -rf ./teamserver/.idea
 	@ rm -rf ./havoc
 
 
@@ -32,7 +32,7 @@ client-cleanup:
 	@ rm -rf ./client/Build
 	@ rm -rf ./client/Bin/*
 	@ rm -rf ./client/Data/database.db
-	@ rm -rf ./client/idea
+	@ rm -rf ./client/.idea
 	@ rm -rf ./client/cmake-build-debug
 	@ rm -rf ./client/Havoc
 	@ rm -rf ./client/Modules

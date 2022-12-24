@@ -61,26 +61,31 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 			}
 
 			for i := range t.Agents.Agents {
+
 				if t.Agents.Agents[i].NameID == DemonID {
 
+					// handle demon session input
+					// TODO: maybe move to own function ?
 					if t.Agents.Agents[i].Info.MagicValue == agent.DEMON_MAGIC_VALUE {
-						logger.Debug("Is Demon")
 
-						var Message = new(map[string]string)
-						var Console = func(AgentID string, Message map[string]string) {
-							var (
-								out, _ = json.Marshal(Message)
-								pk     = events.Demons.DemonOutput(DemonID, agent.HAVOC_CONSOLE_MESSAGE, string(out))
-							)
+						var (
+							Message = new(map[string]string)
+							Console = func(AgentID string, Message map[string]string) {
+								var (
+									out, _ = json.Marshal(Message)
+									pk     = events.Demons.DemonOutput(DemonID, agent.HAVOC_CONSOLE_MESSAGE, string(out))
+								)
 
-							t.EventAppend(pk)
-							t.EventBroadcast("", pk)
-						}
+								t.EventAppend(pk)
+								t.EventBroadcast("", pk)
+							}
+						)
 
 						if val, ok := pk.Body.Info["CommandID"]; ok {
 
 							if pk.Body.Info["CommandID"] == "Python Plugin" {
 
+								// TODO: move to own function.
 								logr.LogrInstance.AddAgentInput("Demon", pk.Body.Info["DemonID"].(string), pk.Head.User, pk.Body.Info["TaskID"].(string), pk.Body.Info["CommandLine"].(string), time.Now().UTC().Format("02/01/2006 15:04:05"))
 
 								if pk.Head.OneTime == "true" {
@@ -116,6 +121,7 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 
 							} else if pk.Body.Info["CommandID"] == "Teamserver" {
 
+								// TODO: move to own function.
 								logr.LogrInstance.AddAgentInput("Demon", pk.Body.Info["DemonID"].(string), pk.Head.User, pk.Body.Info["TaskID"].(string), pk.Body.Info["CommandLine"].(string), time.Now().UTC().Format("02/01/2006 15:04:05"))
 
 								var Command = pk.Body.Info["Command"].(string)
@@ -145,19 +151,19 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 								t.EventAppend(pk)
 								t.EventBroadcast(pk.Head.User, pk)
 
-								err := t.Agents.Agents[i].TeamserverTaskPrepare(Command, Console)
-								if err != nil {
-									var Output = map[string]string{
+								if err = t.Agents.Agents[i].TeamserverTaskPrepare(Command, Console); err != nil {
+									Console(t.Agents.Agents[i].NameID, map[string]string{
 										"Type":    "Error",
 										"Message": "Failed to create Task: " + err.Error(),
-									}
-									Console(t.Agents.Agents[i].NameID, Output)
+									})
 									return
 								}
 
 								return
+
 							} else {
 
+								// TODO: move to own function.
 								command, err = strconv.Atoi(val.(string))
 								if err != nil {
 
@@ -165,22 +171,19 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 									command = 0
 
 								} else {
-
 									*Message = make(map[string]string)
 
 									job, err = t.Agents.Agents[i].TaskPrepare(command, pk.Body.Info, Message)
 									if err != nil {
-										var Output = map[string]string{
+										Console(t.Agents.Agents[i].NameID, map[string]string{
 											"Type":    "Error",
 											"Message": "Failed to create Task: " + err.Error(),
-										}
-
-										Console(t.Agents.Agents[i].NameID, Output)
-
+										})
 										return
 									}
 
 									if t.Agents.Agents[i].Pivots.Parent != nil {
+										// if it's a pivot agent then add the job to the
 
 										logger.Debug("Prepare command for pivot demon: " + t.Agents.Agents[i].NameID)
 
@@ -191,7 +194,7 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 										logr.LogrInstance.AddAgentInput("Demon", t.Agents.Agents[i].NameID, pk.Head.User, pk.Body.Info["TaskID"].(string), pk.Body.Info["CommandLine"].(string), time.Now().UTC().Format("02/01/2006 15:04:05"))
 
 									} else {
-
+										// if it's a direct agent add the job to the direct agent.
 										if job != nil {
 											t.Agents.Agents[i].AddJobToQueue(*job)
 										}
@@ -233,7 +236,9 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 								}
 							}
 						}
+
 					} else {
+
 						for _, a := range t.Service.Agents {
 							if a.MagicValue == fmt.Sprintf("0x%x", t.Agents.Agents[i].Info.MagicValue) {
 

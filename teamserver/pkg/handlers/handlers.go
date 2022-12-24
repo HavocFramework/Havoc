@@ -51,8 +51,8 @@ func parseAgentRequest(Teamserver agent.TeamServer, Body []byte) (bytes.Buffer, 
 // parse the demon agent request
 // return 2 types:
 //
-// 		Response bytes.Buffer
-// 		Success  bool
+//	Response bytes.Buffer
+//	Success  bool
 func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.Buffer, bool) {
 
 	var (
@@ -118,98 +118,102 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.B
 				for j := range job {
 
 					if len(job[j].Data) >= 1 {
-						CallbackSizes[int64(Header.AgentID)] = append(CallbackSizes[int64(Header.AgentID)], payload...)
-						continue
-					}
 
-					switch job[j].Command {
+						switch job[j].Command {
 
-					case agent.COMMAND_PIVOT:
+						case agent.COMMAND_PIVOT:
 
-						if job[j].Data[0] == agent.DEMON_PIVOT_SMB_COMMAND {
+							if job[j].Data[0] == agent.DEMON_PIVOT_SMB_COMMAND {
 
-							var (
-								TaskBuffer    = job[j].Data[2].([]byte)
-								PivotAgentID  = int(job[j].Data[1].(int64))
-								PivotInstance *agent.Agent
-							)
-
-							for {
 								var (
-									Parser       = parser.NewParser(TaskBuffer)
-									CommandID    = 0
-									SubCommandID = 0
+									TaskBuffer    = job[j].Data[2].([]byte)
+									PivotAgentID  = int(job[j].Data[1].(int64))
+									PivotInstance *agent.Agent
 								)
 
-								Parser.SetBigEndian(false)
+								for {
+									var (
+										Parser       = parser.NewParser(TaskBuffer)
+										CommandID    = 0
+										SubCommandID = 0
+									)
 
-								Parser.ParseInt32()
-								Parser.ParseInt32()
+									Parser.SetBigEndian(false)
 
-								CommandID = Parser.ParseInt32()
+									Parser.ParseInt32()
+									Parser.ParseInt32()
 
-								if CommandID != agent.COMMAND_PIVOT {
-									CallbackSizes[int64(PivotAgentID)] = append(CallbackSizes[job[j].Data[1].(int64)], TaskBuffer...)
-									break
-								}
+									CommandID = Parser.ParseInt32()
 
-								/* get an instance of the pivot */
-								PivotInstance = Teamserver.AgentInstance(PivotAgentID)
-								if PivotInstance != nil {
-									break
-								}
-
-								/* parse the task from the parser */
-								TaskBuffer = Parser.ParseBytes()
-
-								/* create a new parse for the parsed task */
-								Parser = parser.NewParser(TaskBuffer)
-								Parser.DecryptBuffer(PivotInstance.Encryption.AESKey, PivotInstance.Encryption.AESIv)
-
-								if Parser.Length() >= 4 {
-									SubCommandID = Parser.ParseInt32()
-									SubCommandID = int(bits.ReverseBytes32(uint32(SubCommandID)))
-
-									if SubCommandID == agent.DEMON_PIVOT_SMB_COMMAND {
-										PivotAgentID = Parser.ParseInt32()
-										PivotAgentID = int(bits.ReverseBytes32(uint32(PivotAgentID)))
-
-										TaskBuffer = Parser.ParseBytes()
-										continue
-
-									} else {
-
+									if CommandID != agent.COMMAND_PIVOT {
 										CallbackSizes[int64(PivotAgentID)] = append(CallbackSizes[job[j].Data[1].(int64)], TaskBuffer...)
-
 										break
 									}
+
+									/* get an instance of the pivot */
+									PivotInstance = Teamserver.AgentInstance(PivotAgentID)
+									if PivotInstance != nil {
+										break
+									}
+
+									/* parse the task from the parser */
+									TaskBuffer = Parser.ParseBytes()
+
+									/* create a new parse for the parsed task */
+									Parser = parser.NewParser(TaskBuffer)
+									Parser.DecryptBuffer(PivotInstance.Encryption.AESKey, PivotInstance.Encryption.AESIv)
+
+									if Parser.Length() >= 4 {
+
+										SubCommandID = Parser.ParseInt32()
+										SubCommandID = int(bits.ReverseBytes32(uint32(SubCommandID)))
+
+										if SubCommandID == agent.DEMON_PIVOT_SMB_COMMAND {
+											PivotAgentID = Parser.ParseInt32()
+											PivotAgentID = int(bits.ReverseBytes32(uint32(PivotAgentID)))
+
+											TaskBuffer = Parser.ParseBytes()
+											continue
+
+										} else {
+											CallbackSizes[int64(PivotAgentID)] = append(CallbackSizes[job[j].Data[1].(int64)], TaskBuffer...)
+
+											break
+										}
+
+									}
+
 								}
 
 							}
 
-						}
-						break
+							break
 
-					case agent.COMMAND_SOCKET:
+						case agent.COMMAND_SOCKET:
+							logger.Debug("agent.COMMAND_SOCKET")
+							/* just send it to the agent and don't let the operator know or else this can be spamming the console lol */
+							if job[j].Data[0] == agent.SOCKET_COMMAND_CLOSE || job[j].Data[0] == agent.SOCKET_COMMAND_READ_WRITE || job[j].Data[0] == agent.SOCKET_COMMAND_CONNECT {
+								payload = agent.BuildPayloadMessage([]agent.Job{job[j]}, Agent.Encryption.AESKey, Agent.Encryption.AESIv)
+							}
 
-						/* just send it to the agent and don't let the operator know or else this can be spamming the console lol */
-						if job[j].Data[0] == agent.SOCKET_COMMAND_CLOSE || job[j].Data[0] == agent.SOCKET_COMMAND_READ_WRITE || job[j].Data[0] == agent.SOCKET_COMMAND_CONNECT {
+							break
+
+						default:
+							logger.Debug("Default")
+							/* build the task payload */
 							payload = agent.BuildPayloadMessage([]agent.Job{job[j]}, Agent.Encryption.AESKey, Agent.Encryption.AESIv)
+
+							/* add the size of the task to the callback size */
+							CallbackSizes[int64(Header.AgentID)] = append(CallbackSizes[int64(Header.AgentID)], payload...)
+
+							break
+
 						}
 
-						break
-
-					default:
-
-						/* build the task payload */
-						payload = agent.BuildPayloadMessage([]agent.Job{job[j]}, Agent.Encryption.AESKey, Agent.Encryption.AESIv)
-
-						/* add the size of the task to the callback size */
+					} else {
 						CallbackSizes[int64(Header.AgentID)] = append(CallbackSizes[int64(Header.AgentID)], payload...)
-
-						break
-
 					}
+
 				}
 
 				for agentID, buffer := range CallbackSizes {
@@ -275,8 +279,8 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.B
 // handles and parses a service agent request
 // return 2 types:
 //
-// 		Response bytes.Buffer
-// 		Success  bool
+//	Response bytes.Buffer
+//	Success  bool
 func handleServiceAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.Buffer, bool) {
 
 	var (
@@ -307,4 +311,10 @@ func handleServiceAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes
 	}
 
 	return Response, true
+}
+
+// notifyTaskSize
+// notifies every connected operator client how much we send to agent.
+func notifyTaskSize(teamserver agent.TeamServer) {
+
 }
