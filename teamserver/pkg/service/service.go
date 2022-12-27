@@ -38,7 +38,7 @@ func (s *Service) Start() {
 		upgrade := websocket.Upgrader{}
 		WebSocket, err := upgrade.Upgrade(context.Writer, context.Request, nil)
 		if err != nil {
-			logger.Error("Failed upgrading request")
+			logger.Error("Failed upgrading request: " + err.Error())
 			return
 		}
 
