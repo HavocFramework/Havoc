@@ -6,82 +6,51 @@
 
 Connector::Connector( Util::ConnectionInfo* ConnectionInfo )
 {
-    Teamserver              = ConnectionInfo;
-    Socket                  = new QWebSocket();
-    const QString& Server   = "ws://" + Teamserver->Host + ":" + this->Teamserver->Port + "/havoc/";
+    Teamserver   = ConnectionInfo;
+    Socket       = new QWebSocket();
+    auto Server  = "wss://" + Teamserver->Host + ":" + this->Teamserver->Port + "/havoc/";
+    auto SslConf = Socket->sslConfiguration();
 
-    QObject::connect( Socket, &QWebSocket::connected,     this, &Connector::OnConnect );
-    QObject::connect( Socket, &QWebSocket::disconnected,  this, &Connector::OnClosed );
+    /* ignore annoying SSL errors */
+    SslConf.setPeerVerifyMode( QSslSocket::VerifyNone );
+    Socket->setSslConfiguration( SslConf );
+    Socket->ignoreSslErrors();
 
-    // QObject::connect( Socket, &QWebSocket::errorOccurred, this, &Connector::socketError );
-
-    Socket->open( QUrl( Server ) );
-
-    /*this->ConnectionSocket->connectToHost( this->Teamserver->Host, this->Teamserver->Port.toInt() );
-
-    if ( !this->ConnectionSocket->waitForConnected(5000) && this->ErrorString == nullptr )
+    QObject::connect( Socket, &QWebSocket::binaryMessageReceived, this, [&]( const QByteArray& Message )
     {
-        spdlog::critical("Teamserver Error: {}", this->ConnectionSocket->errorString().toStdString());
+        auto Package = HavocSpace::Packager::DecodePackage( Message );
 
-        QFile messageBoxStyleSheets(":/stylesheets/MessageBox");
-        QMessageBox messageBox;
+        if ( Package != nullptr )
+        {
+            if ( ! Packager )
+                return;
 
-        messageBoxStyleSheets.open(QIODevice::ReadOnly);
+            Packager->DispatchPackage( Package );
 
-        messageBox.setWindowTitle("Teamserver Error");
-        messageBox.setText(this->ConnectionSocket->errorString());
-        messageBox.setIcon(QMessageBox::Critical);
-        messageBox.setStyleSheet(messageBoxStyleSheets.readAll());
+            return;
+        }
 
-        messageBox.exec();
+        spdlog::critical( "Got Invalid json" );
+    } );
+
+    QObject::connect( Socket, &QWebSocket::connected, this, [&]()
+    {
+        this->Packager = new HavocSpace::Packager;
+        this->Packager->setTeamserver( this->Teamserver->Name );
+
+        SendLogin();
+    } );
+
+    QObject::connect( Socket, &QWebSocket::disconnected, this, [&]()
+    {
+        MessageBox( "Teamserver error", Socket->errorString(), QMessageBox::Critical );
+
+        Socket->close();
 
         Havoc::Exit();
-    }*/
-}
+    } );
 
-bool Connector::Connect()
-{
-    this->Packager = new HavocSpace::Packager;
-    this->Packager->setTeamserver( this->Teamserver->Name );
-
-    SendLogin();
-
-    return true;
-}
-
-void Connector::OnConnect()
-{
-    QObject::connect( Socket, &QWebSocket::binaryMessageReceived, this, &Connector::OnReceive );
-
-    Connect();
-}
-
-auto Connector::OnClosed() -> void
-{
-    auto MessageBox = QMessageBox();
-
-    spdlog::error( "Server disconnected => {}", Socket->errorString().toStdString() );
-
-    MessageBox.setWindowTitle("Teamserver Error");
-    MessageBox.setText( Socket->errorString() );
-    MessageBox.setIcon( QMessageBox::Critical );
-    MessageBox.setStyleSheet( FileRead( ":/stylesheets/MessageBox" ) );
-
-    MessageBox.exec();
-
-    Socket->close();
-
-    Havoc::Exit();
-}
-
-void Connector::OnReceive( const QByteArray& Message )
-{
-    auto Package = HavocSpace::Packager::DecodePackage( Message );
-
-    if ( Package != nullptr )
-        Packager->DispatchPackage( Package );
-    else
-        spdlog::critical( "Got Invalid json" );
+    Socket->open( QUrl( Server ) );
 }
 
 bool Connector::Disconnect()
@@ -99,6 +68,7 @@ Connector::~Connector() noexcept
 {
     delete this->Socket;
 }
+
 void Connector::SendLogin()
 {
     Util::Packager::Package Package;

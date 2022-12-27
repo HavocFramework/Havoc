@@ -28,13 +28,6 @@ namespace HavocNamespace
 
         void SendLogin();
         void SendPackage( Util::Packager::PPackage package );
-
-    public Q_SLOTS:
-        bool Connect();
-
-        void OnConnect();
-        void OnClosed();
-        void OnReceive( const QByteArray& Message );
     };
 }
 
