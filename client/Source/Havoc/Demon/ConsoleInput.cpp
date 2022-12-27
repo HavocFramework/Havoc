@@ -1767,7 +1767,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             }
 
             AgentMessageInfo =
-                    Util::ColorText::Comment( "[" + DemonConsole->SessionInfo.First + "]" ) + " Agent "+ Util::ColorText::Red( DemonConsole->SessionInfo.Name.toUpper() ) + " authenticated as "+ Util::ColorText::Purple( DemonConsole->SessionInfo.Computer + "\\" + DemonConsole->SessionInfo.User ) +
+                    Util::ColorText::Comment( DemonConsole->SessionInfo.First ) + " Agent "+ Util::ColorText::Red( DemonConsole->SessionInfo.Name.toUpper() ) + " authenticated as "+ Util::ColorText::Purple( DemonConsole->SessionInfo.Computer + "\\" + DemonConsole->SessionInfo.User ) +
                     " :: [Internal: "+Util::ColorText::Cyan( DemonConsole->SessionInfo.Internal ) + "] [Process: " + Util::ColorText::Red( DemonConsole->SessionInfo.Process +"\\"+ DemonConsole->SessionInfo.PID ) + "] [Arch: " +Util::ColorText::Pink( DemonConsole->SessionInfo.Arch ) + "] " + PivotStream;
 
             prev_cursor = DemonConsole->Console->textCursor();
@@ -2065,7 +2065,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             }
 
             AgentMessageInfo =
-                    Util::ColorText::Comment(  "[" +  DemonConsole->SessionInfo.First + "]" ) + " Agent "+ Util::ColorText::Red( DemonConsole->SessionInfo.Name.toUpper() ) + " authenticated as "+ Util::ColorText::Purple( DemonConsole->SessionInfo.Computer + "\\" + DemonConsole->SessionInfo.User ) +
+                    Util::ColorText::Comment( DemonConsole->SessionInfo.First ) + " Agent "+ Util::ColorText::Red( DemonConsole->SessionInfo.Name.toUpper() ) + " authenticated as "+ Util::ColorText::Purple( DemonConsole->SessionInfo.Computer + "\\" + DemonConsole->SessionInfo.User ) +
                     " :: [Internal: "+Util::ColorText::Cyan( DemonConsole->SessionInfo.Internal ) + "] [Process: " + Util::ColorText::Red( DemonConsole->SessionInfo.Process +"\\"+ DemonConsole->SessionInfo.PID ) + "] [Arch: " +Util::ColorText::Pink( DemonConsole->SessionInfo.Arch ) + "] " + PivotStream;
 
             prev_cursor = DemonConsole->Console->textCursor();

@@ -191,7 +191,7 @@ void HavocNamespace::UserInterface::Widgets::SessionTable::NewSessionItem( Util:
             }
 
             AgentMessageInfo =
-                    Util::ColorText::Comment( "[" + item.First + "]" ) + " Agent " + Util::ColorText::Red( item.Name.toUpper() ) + " authenticated as "+ Util::ColorText::Purple( item.Computer + "\\" + item.User ) +
+                    Util::ColorText::Comment( item.First ) + " Agent " + Util::ColorText::Red( item.Name.toUpper() ) + " authenticated as "+ Util::ColorText::Purple( item.Computer + "\\" + item.User ) +
                     " :: [Internal: " + Util::ColorText::Cyan( item.Internal ) + "] [Process: " + Util::ColorText::Red( item.Process + "\\" + item.PID ) + "] [Arch: " + Util::ColorText::Pink( item.Arch ) + "] " + PivotStream;
 
             prev_cursor = Session.InteractedWidget->Console->textCursor();
