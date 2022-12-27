@@ -16,6 +16,7 @@ ts-cleanup:
 	@ rm -rf ./data/loot
 	@ rm -rf ./data/x86_64-w64-mingw32-cross 
 	@ rm -rf ./data/havoc.db
+	@ rm -rf ./data/server.*
 	@ rm -rf ./teamserver/.idea
 	@ rm -rf ./havoc
 
