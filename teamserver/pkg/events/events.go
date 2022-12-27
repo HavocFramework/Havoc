@@ -1,6 +1,7 @@
 package events
 
 import (
+	"Havoc/pkg/logger"
 	"encoding/json"
 	"net"
 	"time"
@@ -19,85 +20,115 @@ type (
 )
 
 func Authenticated(authed bool) packager.Package {
-	var Package packager.Package
 
-	Package.Head.Event = packager.Type.InitConnection.Type
-	Package.Head.Time = time.Now().Format("02/01/2006 15:04:05")
-
-	Package.Body.Info = make(map[string]interface{})
 	if authed {
-		Package.Body.SubEvent = packager.Type.InitConnection.Success
-		Package.Body.Info["Message"] = "Successful Authenticated"
+		return packager.Package{
+			Head: packager.Head{
+				Event: packager.Type.InitConnection.Type,
+				Time:  time.Now().Format("02/01/2006 15:04:05"),
+			},
+
+			Body: packager.Body{
+				SubEvent: packager.Type.InitConnection.Success,
+				Info: map[string]any{
+					"Message": "Successful Authenticated",
+				},
+			},
+		}
 	} else {
-		Package.Body.SubEvent = packager.Type.InitConnection.Error
-		Package.Body.Info["Message"] = "Wrong Password"
+		return packager.Package{
+			Head: packager.Head{
+				Event: packager.Type.InitConnection.Type,
+				Time:  time.Now().Format("02/01/2006 15:04:05"),
+			},
+
+			Body: packager.Body{
+				SubEvent: packager.Type.InitConnection.Error,
+				Info: map[string]any{
+					"Message": "Wrong Password",
+				},
+			},
+		}
 	}
 
-	return Package
 }
 
 func UserAlreadyExits() packager.Package {
-	var Package packager.Package
+	return packager.Package{
+		Head: packager.Head{
+			Event: packager.Type.InitConnection.Type,
+			Time:  time.Now().Format("02/01/2006 15:04:05"),
+		},
 
-	Package.Head.Event = packager.Type.InitConnection.Type
-	Package.Head.Time = time.Now().Format("02/01/2006 15:04:05")
-
-	Package.Body.Info = make(map[string]interface{})
-	Package.Body.SubEvent = packager.Type.InitConnection.Error
-	Package.Body.Info["Message"] = "User already exits"
-
-	return Package
+		Body: packager.Body{
+			SubEvent: packager.Type.InitConnection.Error,
+			Info: map[string]any{
+				"Message": "User already exits",
+			},
+		},
+	}
 }
 
 func UserDoNotExists() packager.Package {
-	var Package packager.Package
+	return packager.Package{
+		Head: packager.Head{
+			Event: packager.Type.InitConnection.Type,
+			Time:  time.Now().Format("02/01/2006 15:04:05"),
+		},
 
-	Package.Head.Event = packager.Type.InitConnection.Type
-	Package.Head.Time = time.Now().Format("02/01/2006 15:04:05")
-
-	Package.Body.Info = make(map[string]interface{})
-	Package.Body.SubEvent = packager.Type.InitConnection.Error
-	Package.Body.Info["Message"] = "User doesn't exits"
-
-	return Package
+		Body: packager.Body{
+			SubEvent: packager.Type.InitConnection.Error,
+			Info: map[string]any{
+				"Message": "User doesn't exits",
+			},
+		},
+	}
 }
 
 func SendProfile(profile *profile.Profile) packager.Package {
 	var (
-		Package   packager.Package
 		JsonBytes []byte
 		Addresses string
+		addrs     []net.Addr
+		err       error
 	)
 
-	Package.Head.Event = packager.Type.InitConnection.Type
-	Package.Head.Time = time.Now().Format("02/01/2006 15:04:05")
-
-	Package.Body.SubEvent = packager.Type.InitConnection.Profile
-	Package.Body.Info = make(map[string]interface{})
-
-	JsonBytes, err := json.Marshal(*profile.Config.Demon)
+	JsonBytes, err = json.Marshal(*profile.Config.Demon)
 	if err != nil {
+		logger.DebugError("json.Marshal Error: " + err.Error())
 		return packager.Package{}
 	}
-	Package.Body.Info["Demon"] = string(JsonBytes)
 
-	addrs, err := net.InterfaceAddrs()
+	addrs, err = net.InterfaceAddrs()
 	if err != nil {
+		logger.DebugError("net.InterfaceAddrs Error: " + err.Error())
 		return packager.Package{}
 	}
+
 	for _, address := range addrs {
-		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-			if ipnet.IP.To4() != nil {
+		if aspnet, ok := address.(*net.IPNet); ok && !aspnet.IP.IsLoopback() {
+			if aspnet.IP.To4() != nil {
 				if len(Addresses) == 0 {
-					Addresses = ipnet.IP.String()
+					Addresses = aspnet.IP.String()
 				} else {
-					Addresses += ", " + ipnet.IP.String()
+					Addresses += ", " + aspnet.IP.String()
 				}
 			}
 		}
 	}
 
-	Package.Body.Info["TeamserverIPs"] = Addresses
+	return packager.Package{
+		Head: packager.Head{
+			Event: packager.Type.InitConnection.Type,
+			Time:  time.Now().Format("02/01/2006 15:04:05"),
+		},
 
-	return Package
+		Body: packager.Body{
+			SubEvent: packager.Type.InitConnection.Profile,
+			Info: map[string]any{
+				"Demon":         string(JsonBytes),
+				"TeamserverIPs": Addresses,
+			},
+		},
+	}
 }

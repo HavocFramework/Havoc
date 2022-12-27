@@ -1,36 +1,41 @@
 package events
 
 import (
-    "time"
+	"time"
 
-    "Havoc/pkg/packager"
+	"Havoc/pkg/packager"
 )
 
 var ChatLog chatLog
 
 func (chatLog) NewUserConnected(User string) packager.Package {
-    var Package packager.Package
+	return packager.Package{
+		Head: packager.Head{
+			Event: packager.Type.Chat.Type,
+			Time:  time.Now().Format("02/01/2006 15:04:05"),
+		},
 
-    Package.Head.Event = packager.Type.Chat.Type
-    Package.Head.Time = time.Now().Format("02/01/2006 15:04:05")
-
-    Package.Body.Info = make(map[string]interface{})
-    Package.Body.SubEvent = packager.Type.Chat.NewUser
-    Package.Body.Info["User"] = User
-
-    return Package
+		Body: packager.Body{
+			SubEvent: packager.Type.Chat.NewUser,
+			Info: map[string]any{
+				"User": User,
+			},
+		},
+	}
 }
 
 func (chatLog) UserDisconnected(User string) packager.Package {
-    var Package packager.Package
+	return packager.Package{
+		Head: packager.Head{
+			Event: packager.Type.Chat.Type,
+			Time:  time.Now().Format("02/01/2006 15:04:05"),
+		},
 
-    Package.Head.Event = packager.Type.Chat.Type
-    // Time Day Month Year
-    Package.Head.Time = time.Now().Format("02/01/2006 15:04:05")
-
-    Package.Body.Info = make(map[string]interface{})
-    Package.Body.SubEvent = packager.Type.Chat.UserDisconnected
-    Package.Body.Info["User"] = User
-
-    return Package
+		Body: packager.Body{
+			SubEvent: packager.Type.Chat.UserDisconnected,
+			Info: map[string]any{
+				"User": User,
+			},
+		},
+	}
 }

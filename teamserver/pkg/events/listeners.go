@@ -156,6 +156,7 @@ func (listeners) ListenerError(FromUser string, ListenerName string, err error) 
 		Package     packager.Package
 		listenerErr = strings.Split(err.Error(), ":")
 	)
+
 	Package.Head.Event = packager.Type.Listener.Type
 	Package.Head.Time = time.Now().Format("02/01/2006 15:04:05")
 	Package.Head.User = FromUser
