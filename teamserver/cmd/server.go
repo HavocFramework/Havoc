@@ -16,7 +16,7 @@ import (
 
 var CobraServer = &cobra.Command{
 	Use:          "server",
-	Short:        "server command",
+	Short:        "teamserver command",
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var (
@@ -64,7 +64,7 @@ var CobraServer = &cobra.Command{
 		logger.Info(fmt.Sprintf("Havoc Framework [Version: %v] [CodeName: %v]", VersionNumber, VersionName))
 
 		if flags.Server.Default {
-			Server.SetProfile(DirPath + "/" + DatabasePath)
+			Server.SetProfile(DirPath + "/data/havoc.yaotl")
 		} else if flags.Server.Profile != "" {
 			Server.SetProfile(flags.Server.Profile)
 		} else {
@@ -80,7 +80,10 @@ var CobraServer = &cobra.Command{
 		logger.Info("Time: " + colors.Yellow(ServerTimer.Format("02/01/2006 15:04:05")))
 		logger.Info("Teamserver logs saved under: " + colors.Blue(LogrPath))
 
+		// start teamserver
 		Server.Start()
+
+		os.Exit(0)
 
 		return nil
 	},

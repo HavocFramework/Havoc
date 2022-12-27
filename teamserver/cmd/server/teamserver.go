@@ -3,6 +3,7 @@ package server
 import "C"
 import (
 	"Havoc/pkg/agent"
+	"Havoc/pkg/common/certs"
 	"Havoc/pkg/db"
 	"Havoc/pkg/service"
 	"Havoc/pkg/webhook"
@@ -78,17 +79,16 @@ func (t *Teamserver) Start() {
 
 	// Catch me if you can
 	t.Server.Engine.GET("/havoc/", func(context *gin.Context) {
-		upgrade := websocket.Upgrader{}
-		WebSocket, err := upgrade.Upgrade(context.Writer, context.Request, nil)
-		if err != nil {
-			logger.Error("Failed upgrading request")
-			return
-		}
 
-		var ClientID = utils.GenerateID(6)
-		if err != nil {
-			fmt.Println("Error accepting: ", err.Error())
-			os.Exit(1)
+		var (
+			upgrade   websocket.Upgrader
+			WebSocket *websocket.Conn
+			ClientID  = utils.GenerateID(6)
+		)
+
+		if WebSocket, err = upgrade.Upgrade(context.Writer, context.Request, nil); err != nil {
+			logger.Error("Failed upgrading request: " + err.Error())
+			return
 		}
 
 		t.Clients[ClientID] = &Client{
@@ -119,20 +119,47 @@ func (t *Teamserver) Start() {
 		}
 	})
 
-	go func(Server string) {
-		err := t.Server.Engine.Run(Server)
+	go func(Host, Port string) {
+		var (
+			certPath = TeamserverPath + "/data/server.cert"
+			keyPath  = TeamserverPath + "/data/server.key"
+
+			Cert []byte
+			Key  []byte
+		)
+
+		Cert, Key, err = certs.HTTPSGenerateRSACertificate(Host)
 		if err != nil {
+			logger.Error("Failed to generate server certificates: " + err.Error())
+			os.Exit(0)
+		}
+
+		err = os.WriteFile(certPath, Cert, 0644)
+		if err != nil {
+			logger.Error("Couldn't save server cert file: " + err.Error())
+			os.Exit(0)
+		}
+
+		err = os.WriteFile(keyPath, Key, 0644)
+		if err != nil {
+			logger.Error("Couldn't save server cert file: " + err.Error())
+			os.Exit(0)
+		}
+
+		// start the teamserver
+		if err = t.Server.Engine.RunTLS(Host+":"+Port, certPath, keyPath); err != nil {
 			logger.Error("Failed to start websocket: " + err.Error())
 		}
+
 		ServerFinished <- true
 		os.Exit(0)
-	}(t.Flags.Server.Host + ":" + t.Flags.Server.Port)
+	}(t.Flags.Server.Host, t.Flags.Server.Port)
 
 	t.WebHooks = webhook.NewWebHook()
 	t.Clients = make(map[string]*Client)
 	t.Listeners = []*Listener{}
 
-	TeamserverWs = "ws://" + t.Flags.Server.Host + ":" + t.Flags.Server.Port
+	TeamserverWs = "wss://" + t.Flags.Server.Host + ":" + t.Flags.Server.Port
 
 	logger.Info("Starting Teamserver on " + colors.BlueUnderline(TeamserverWs))
 
