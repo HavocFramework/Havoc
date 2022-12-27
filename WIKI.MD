@@ -67,7 +67,6 @@ _You will experience formatting issues in the Havoc client if you are not using 
 If you get an error that `Python.h` isn't found when building, you need to make sure Python 3.10 is installed and you have the Python 3.10 development files. If you are using Ubuntu LTS you may need to leverage a PPA such as `deadsnakes` to get a newer version of Python.
 
 ```
-sudo apt install build-essential
 sudo add-apt-repository ppa:deadsnakes/ppa
 sudo apt update
 sudo apt install python3.10 python3.10-dev
@@ -100,7 +99,6 @@ sudo apt install -y git build-essential apt-utils cmake libfontconfig1 libglu1-m
 > You must enable Python 3.10 in your APT repositories before you can run the Client successfully.
 
 ```
-sudo apt install build-essential
 sudo add-apt-repository ppa:deadsnakes/ppa
 sudo apt update
 sudo apt install python3.10 python3.10-dev
