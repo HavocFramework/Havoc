@@ -270,7 +270,7 @@ func ParseResponse(AgentID int, Parser *parser.Parser) *Agent {
 		Info: new(AgentInfo),
 	}
 
-	logger.Debug("AES KEY\n" + hex.Dump(Session.Encryption.AESKey))
+	logger.Debug("AES KEY:\n" + hex.Dump(Session.Encryption.AESKey))
 	logger.Debug("AES IV :\n" + hex.Dump(Session.Encryption.AESIv))
 
 	logger.Debug("Buffer:\n" + hex.Dump(Parser.Buffer()))
