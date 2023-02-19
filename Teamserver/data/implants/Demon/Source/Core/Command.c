@@ -62,7 +62,7 @@ VOID CommandDispatcher( VOID )
     do
     {
         if ( ! Instance.Session.Connected )
-            return;
+            break;
 
         SleepObf( Instance.Config.Sleeping * 1000 );
 
@@ -146,6 +146,8 @@ VOID CommandDispatcher( VOID )
     } while ( TRUE );
 
     Instance.Session.Connected = FALSE;
+
+    PackageDestroy( Package );
 
     PUTS( "Out of while loop" )
 }

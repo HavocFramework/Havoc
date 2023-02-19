@@ -3,6 +3,7 @@ package utils
 import (
     "encoding/base64"
     "encoding/binary"
+    "unicode/utf16"
     "fmt"
     "math/rand"
     "os"
@@ -20,6 +21,15 @@ const (
     letterIdxMask = 1<<letterIdxBits - 1
     letterIdxMax  = 63 / letterIdxBits
 )
+
+func UTF16BytesToString(b []byte) string {
+    size := (len(b) - 2) / 2
+    utf := make([]uint16, size)
+    for i := 0; i < size; i += 1 {
+        utf[i] = binary.LittleEndian.Uint16(b[i*2:])
+    }
+    return string(utf16.Decode(utf))
+}
 
 func GenerateID(n int) string {
     var src = rand.NewSource(time.Now().UnixNano())
