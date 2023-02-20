@@ -52,6 +52,8 @@ typedef struct
     /* MetaData */
     PPACKAGE MetaData;
 
+    BOOL IsMetadataEncrypted;
+
     struct {
         UINT32  AgentID;
         BOOL    Connected;

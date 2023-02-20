@@ -24,3 +24,14 @@ Teamserver/teamserver
 
 # ignore MUSL C Compiler stuff
 Teamserver/data/x86_64-w64-mingw32-cross/
+
+# ignore havoc binary
+havoc
+
+# ignore data directory
+data/
+
+# ignore client directories
+client/Build/
+client/Havoc
+client/Modules/

