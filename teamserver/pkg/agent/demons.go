@@ -1419,7 +1419,10 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 			break
 
 		case "socks add":
-
+			if Param == "" {
+				return nil, fmt.Errorf("socks add requieres a port")
+			}
+	
 			var Socks *socks.Socks
 
 			Socks = socks.NewSocks("0.0.0.0:" + Param)
@@ -2384,7 +2387,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				)
 
 				Output["Type"] = "Info"
-				Output["Message"] = fmt.Sprintf("Uploaded file: %v (%v)", string(FileName), FileSize)
+				Output["Message"] = fmt.Sprintf("Uploaded file: %v (%v)", utils.UTF16BytesToString(FileName), FileSize)
 			} else {
 				Output["Type"] = "Error"
 				Output["Message"] = "Failed to parse FS::Upload response"
@@ -3006,7 +3009,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 		case DOTNET_INFO_NET_VERSION:
 			Message["Type"] = "Info"
-			Message["Message"] = "Using CLR Version: " + string(Parser.ParseBytes())
+			Message["Message"] = "Using CLR Version: " + utils.UTF16BytesToString(Parser.ParseBytes())
 			break
 
 		case DOTNET_INFO_ENTRYPOINT:

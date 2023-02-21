@@ -1870,7 +1870,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                                 PyErr_Clear();
                             }
 
-                            if ( Py_IsNone( Return ) )
+                            if ( Py_IsNone( Return ) || Py_IsTrue( Return ) )
                             {
                                 if ( Send )
                                 {
@@ -1881,7 +1881,8 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                                     for ( auto& message : DemonConsole->DemonCommands->BufferedMessages )
                                         DemonConsole->Console->append( message );
 
-                                    DemonConsole->TaskError( "Failed to execute " + InputCommands[ 1 ] + ". Script return is None" );
+                                    if ( Py_IsNone( Return ) )
+                                        DemonConsole->TaskError( "Failed to execute " + InputCommands[ 0 ] + ". Script return is None" );
                                 }
                                 Py_CLEAR( Return );
                                 Py_CLEAR( FuncArgs );
@@ -1959,7 +1960,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                             PyErr_Clear();
                         }
 
-                        if ( Py_IsNone( Return ) )
+                        if ( Py_IsNone( Return ) || Py_IsTrue( Return ) )
                         {
                             if ( Send )
                             {
@@ -1970,7 +1971,8 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                                 for ( auto& message : DemonConsole->DemonCommands->BufferedMessages )
                                     DemonConsole->Console->append( message );
 
-                                DemonConsole->TaskError( "Failed to execute " + InputCommands[ 1 ] + ". Script return is None" );
+                                if ( Py_IsNone( Return ) )
+                                    DemonConsole->TaskError( "Failed to execute " + InputCommands[ 0 ] + ". Script return is None" );
                             }
                             Py_CLEAR( Return );
                             Py_CLEAR( FuncArgs );

