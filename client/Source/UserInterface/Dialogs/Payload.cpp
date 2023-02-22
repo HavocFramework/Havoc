@@ -143,7 +143,10 @@ auto Payload::retranslateUi() -> void
     {
         ComboListener->setDisabled( false );
         for ( auto& Listener : HavocX::Teamserver.Listeners )
-            ComboListener->addItem( Listener.Name.c_str() );
+        {
+            if ( Listener.Status.compare( "Offline" ) != 0 )
+                ComboListener->addItem( Listener.Name.c_str() );
+        }
     }
     else
     {
@@ -284,6 +287,8 @@ auto Payload::ReceivedImplantAndSave( QString FileName, QByteArray ImplantArray 
             messageBox.setStyleSheet( FileRead( ":/stylesheets/MessageBox" ) );
             messageBox.setMaximumSize( QSize(500, 500 ) );
             messageBox.exec();
+
+            PayloadDialog->done( 0 );
         }
     }
 }
