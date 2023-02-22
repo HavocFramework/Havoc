@@ -2876,13 +2876,20 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 		)
 
 		switch Type {
-		case 0x0:
+		case CALLBACK_OUTPUT:
 			OutputMap["Output"] = string(Parser.ParseBytes())
 			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
 
 			break
 
-		case 0x90:
+		case CALLBACK_ERROR:
+			OutputMap["Type"] = "Error"
+			OutputMap["Output"] = string(Parser.ParseBytes())
+			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
+
+			break
+
+		case CALLBACK_MSG_GOOD:
 			var String = Parser.ParseBytes()
 
 			OutputMap["Type"] = "Good"
@@ -2891,7 +2898,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
 			break
 
-		case 0x91:
+		case CALLBACK_MSG_INFO:
 			var String = Parser.ParseBytes()
 
 			OutputMap["Type"] = "Info"
@@ -2900,7 +2907,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
 			break
 
-		case 0x92:
+		case CALLBACK_MSG_ERROR:
 			var String = Parser.ParseBytes()
 
 			OutputMap["Type"] = "Error"
@@ -2909,7 +2916,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
 			break
 
-		case 0x98:
+		case COMMAND_EXCEPTION:
 			var (
 				Exception = Parser.ParseInt32()
 				Address   = Parser.ParseInt64()
@@ -2921,7 +2928,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
 			break
 
-		case 0x99:
+		case COMMAND_SYMBOL_NOT_FOUND:
 			var LibAndFunc = string(Parser.ParseBytes())
 			logger.Debug(hex.Dump(Parser.Buffer()))
 

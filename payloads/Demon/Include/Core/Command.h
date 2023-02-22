@@ -33,6 +33,9 @@
 #define DEMON_EXIT                      92
 #define DEMON_INITIALIZE                99
 
+#define DEMON_EXCEPTION                 0x98
+#define DEMON_SYMBOL_NOT_FOUND          0x99
+
 #define DOTNET_INFO_AMSI_PATCHED        0x1
 #define DOTNET_INFO_NET_VERSION         0x2
 #define DOTNET_INFO_ENTRYPOINT_EXECUTED 0x3

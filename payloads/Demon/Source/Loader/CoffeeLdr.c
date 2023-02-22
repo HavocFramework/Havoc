@@ -31,7 +31,7 @@ LONG WINAPI VehDebugger( PEXCEPTION_POINTERS Exception )
     Exception->ContextRecord->Rip = CoffeeFunctionReturn;
 
     PPACKAGE Package = PackageCreate( DEMON_COMMAND_INLINE_EXECUTE );
-    PackageAddInt32( Package, 0x98 );
+    PackageAddInt32( Package, DEMON_EXCEPTION );
     PackageAddInt32( Package, Exception->ExceptionRecord->ExceptionCode );
     PackageAddInt64( Package, Exception->ExceptionRecord->ExceptionAddress );
     PackageTransmit( Package, NULL, NULL );
@@ -116,7 +116,7 @@ PVOID CoffeeProcessSymbol( LPSTR Symbol )
 
 SymbolNotFound:
     Package = PackageCreate( DEMON_COMMAND_INLINE_EXECUTE );
-    PackageAddInt32( Package, 0x99 );
+    PackageAddInt32( Package, DEMON_SYMBOL_NOT_FOUND );
     PackageAddBytes( Package, Symbol, StringLengthA( Symbol ) );
     PackageTransmit( Package, NULL, NULL );
 
@@ -178,7 +178,7 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
 
         PPACKAGE Package = PackageCreate( DEMON_COMMAND_INLINE_EXECUTE );
 
-        PackageAddInt32( Package, 0x99 );
+        PackageAddInt32( Package, DEMON_SYMBOL_NOT_FOUND );
         PackageAddBytes( Package, Function, StringLengthA( Function ) );
         PackageTransmit( Package, NULL, NULL );
     }
