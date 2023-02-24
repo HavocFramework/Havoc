@@ -307,9 +307,9 @@ func (b *Builder) Build() bool {
 			b.SendConsoleMessage("Info", fmt.Sprintf("Compiled core dll [%v bytes]", len(DllPayloadBytes)))
 
 			if b.config.Arch == ARCHITECTURE_X64 {
-				ShellcodePath = utils.GetTeamserverPath() + "/" + PayloadDir + " /Shellcode.x64.bin"
+				ShellcodePath = utils.GetTeamserverPath() + "/" + PayloadDir + "/Shellcode.x64.bin"
 			} else {
-				ShellcodePath = utils.GetTeamserverPath() + "/" + PayloadDir + " /Shellcode.x86.bin"
+				ShellcodePath = utils.GetTeamserverPath() + "/" + PayloadDir + "/Shellcode.x86.bin"
 			}
 
 			ShellcodeTemplate, err := os.ReadFile(ShellcodePath)

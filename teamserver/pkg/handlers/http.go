@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"context"
-	"encoding/hex"
+	//"encoding/hex"
 	"io"
 	"log"
 	"net/http"
@@ -80,8 +80,8 @@ func (h *HTTP) request(ctx *gin.Context) {
 		logger.Debug("Error while reading request: " + err.Error())
 	}
 
-	logger.Debug(" - HTTP Host : " + ctx.Request.Host)
-	logger.Debug(" - HTTP Body : \n" + hex.Dump(Body))
+	//logger.Debug(" - HTTP Host : " + ctx.Request.Host)
+	//logger.Debug(" - HTTP Body : \n" + hex.Dump(Body))
 
 	for _, Header := range h.Config.Response.Headers {
 		var hdr = strings.Split(Header, ":")

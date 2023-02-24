@@ -3,7 +3,7 @@ package agent
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/hex"
+	//"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -109,7 +109,7 @@ func BuildPayloadMessage(Jobs []Job, AesKey []byte, AesIv []byte) []byte {
 		}
 	}
 
-	logger.Debug("PayloadPackage:\n", hex.Dump(PayloadPackage))
+	//logger.Debug("PayloadPackage:\n", hex.Dump(PayloadPackage))
 
 	return PayloadPackage
 }
@@ -234,7 +234,7 @@ func RegisterInfoToInstance(Header Header, RegisterInfo map[string]any) *Agent {
 }
 
 func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser) *Agent {
-	logger.Debug("Response:\n" + hex.Dump(Parser.Buffer()))
+	//logger.Debug("Response:\n" + hex.Dump(Parser.Buffer()))
 
 	var (
 		MagicValue  int

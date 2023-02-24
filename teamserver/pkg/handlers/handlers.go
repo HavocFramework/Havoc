@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"bytes"
-	"encoding/hex"
+	//"encoding/hex"
 	"fmt"
 	"math/bits"
 
@@ -79,6 +79,7 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.B
 
 		/* check if this is a 'reconnect' request */
 		if Command == agent.DEMON_INIT {
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: DEMON_INIT", Header.AgentID))
 			Packer = packer.NewPacker(Agent.Encryption.AESKey, Agent.Encryption.AESIv)
 			Packer.AddUInt32(uint32(Header.AgentID))
 
@@ -94,6 +95,7 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.B
 		}
 
 		if Command == agent.COMMAND_GET_JOB {
+			//logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_GET_JOB", Header.AgentID))
 
 			if !Agent.TaskedOnce {
 				Agent.TaskedOnce = true
@@ -319,7 +321,7 @@ func handleServiceAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes
 	}
 
 	Task = Teamserver.ServiceAgent(Header.MagicValue).SendResponse(AgentData, Header)
-	logger.Debug("Response:\n", hex.Dump(Task))
+	//logger.Debug("Response:\n", hex.Dump(Task))
 
 	_, err = Response.Write(Task)
 	if err != nil {
