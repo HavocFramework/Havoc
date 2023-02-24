@@ -2091,7 +2091,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				Output += fmt.Sprintf(" %-6s  %-13s  %-5s\n", "Job ID", "Type", "State")
 				Output += fmt.Sprintf(" %-6s  %-13s  %-5s\n", "------", "----", "-----")
 
-				if Parser.Length() > 4 {
+				for Parser.Length() > 4 {
 					var (
 						JobID int
 						Type  int
@@ -2594,8 +2594,9 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 		Output["Type"] = "Good"
 		Output["Output"] = string(Parser.ParseBytes())
 		Output["Message"] = fmt.Sprintf("Received Output [%v bytes]:", len(Output["Output"]))
-
-		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
+		if len(Output["Output"]) > 0 {
+			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
+		}
 
 	case CALLBACK_OUTPUT_OEM:
 		logger.Debug(fmt.Sprintf("Agent: %x, Command: CALLBACK_OUTPUT_OEM", AgentID))
@@ -2604,8 +2605,9 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 		Output["Type"] = "Good"
 		Output["Output"] = common.DecodeUTF16(Parser.ParseBytes())
 		Output["Message"] = fmt.Sprintf("Received Output [%v bytes]:", len(Output["Output"]))
-
-		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
+		if len(Output["Output"]) > 0 {
+			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
+		}
 
 	case COMMAND_INJECT_DLL:
 		logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_INJECT_DLL", AgentID))

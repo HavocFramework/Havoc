@@ -113,8 +113,25 @@ VOID JobCheckList()
                         JobList->State = JOB_STATE_DEAD;
                         AnonPipesRead( ( ( PANONPIPE ) JobList->Data ) );
 
+                        // free resources
                         Instance.Win32.NtClose( JobList->Handle );
+                        JobList->Handle = NULL;
+                        if ( ( ( PANONPIPE ) JobList->Data )->StdOutWrite )
+                        {
+                            Instance.Win32.NtClose( ( ( PANONPIPE ) JobList->Data )->StdOutWrite );
+                            (( PANONPIPE ) JobList->Data )->StdOutWrite = NULL;
+                        }
+
+                        if ( ( ( PANONPIPE ) JobList->Data )->StdOutRead )
+                        {
+                            Instance.Win32.NtClose( ( ( PANONPIPE ) JobList->Data )->StdOutRead );
+                            ( ( PANONPIPE ) JobList->Data )->StdOutRead = NULL;
+                        }
                         DATA_FREE( JobList->Data, sizeof( ANONPIPE ) )
+                        JobList->Data = NULL;
+
+                        // remove the job entry
+                        JobRemove( JobList->JobID );
                     }
                     else
                     {
@@ -163,48 +180,41 @@ BOOL JobSuspend( DWORD JobID )
 {
     PJOB_DATA JobList = Instance.Jobs;
 
-    do
+    while ( JobList )
     {
-        if ( JobList )
+        if ( JobList->JobID == JobID )
         {
-            if ( JobList->JobID == JobID )
+            PRINTF( "Found Job ID: %d", JobID )
+
+            if ( JobList->Type == JOB_TYPE_THREAD )
             {
-                PRINTF( "Found Job ID: %d", JobID )
+                PUTS( "Suspending Thread" )
+                HANDLE   Handle   = JobList->Handle;
+                NTSTATUS NtStatus = STATUS_SUCCESS;
 
-                if ( JobList->Type == JOB_TYPE_THREAD )
+                if ( Handle )
                 {
-                    PUTS( "Suspending Thread" )
-                    HANDLE   Handle   = JobList->Handle;
-                    NTSTATUS NtStatus = STATUS_SUCCESS;
-
-                    if ( Handle )
+                    NtStatus = Instance.Syscall.NtSuspendThread( JobList->Handle, NULL );
+                    if ( NT_SUCCESS( NtStatus ) )
                     {
-                        NtStatus = Instance.Syscall.NtSuspendThread( JobList->Handle, NULL );
-                        if ( NT_SUCCESS( NtStatus ) )
-                        {
-                            JobList->State = JOB_STATE_SUSPENDED;
-                            return TRUE;
-                        }
-                        else
-                        {
-                            return FALSE;
-                        }
+                        JobList->State = JOB_STATE_SUSPENDED;
+                        return TRUE;
                     }
                     else
                     {
-                        PUTS( "Handle is empty" )
                         return FALSE;
                     }
                 }
-            }
-            else
-            {
-                JobList = JobList->Next;
+                else
+                {
+                    PUTS( "Handle is empty" )
+                    return FALSE;
+                }
             }
         }
-        else
-            break;
-    } while ( TRUE );
+
+        JobList = JobList->Next;
+    }
 
     return FALSE;
 }
@@ -219,42 +229,39 @@ BOOL JobResume( DWORD JobID )
 {
     PJOB_DATA JobList = Instance.Jobs;
 
-    do
+    while ( JobList )
     {
-        if ( JobList )
+        if ( JobList->JobID == JobID )
         {
-            if ( JobList->JobID == JobID )
+            PRINTF( "Found Job ID: %d", JobID )
+
+            if ( JobList->Type == JOB_TYPE_THREAD )
             {
-                PRINTF( "Found Job ID: %d", JobID )
+                PUTS( "Resume Thread" )
+                HANDLE   Handle   = JobList->Handle;
+                NTSTATUS NtStatus = STATUS_SUCCESS;
 
-                if ( JobList->Type == JOB_TYPE_THREAD )
+                if ( Handle )
                 {
-                    PUTS( "Resume Thread" )
-                    HANDLE   Handle   = JobList->Handle;
-                    NTSTATUS NtStatus = STATUS_SUCCESS;
-
-                    if ( Handle )
+                    NtStatus = Instance.Syscall.NtResumeThread( JobList->Handle, NULL );
+                    if ( NT_SUCCESS( NtStatus ) )
                     {
-                        NtStatus = Instance.Syscall.NtResumeThread( JobList->Handle, NULL );
-                        if ( NT_SUCCESS( NtStatus ) )
-                        {
-                            JobList->State = JOB_STATE_RUNNING;
-                            return TRUE;
-                        }
-                        else
-                            return FALSE;
+                        JobList->State = JOB_STATE_RUNNING;
+                        return TRUE;
                     }
                     else
-                    {
-                        PUTS( "Handle is empty" )
                         return FALSE;
-                    }
+                }
+                else
+                {
+                    PUTS( "Handle is empty" )
+                    return FALSE;
                 }
             }
-            else break;
         }
-        else break;
-    } while ( TRUE );
+
+        JobList = JobList->Next;
+    }
 
     return FALSE;
 }
@@ -267,15 +274,14 @@ BOOL JobResume( DWORD JobID )
  */
 BOOL JobKill( DWORD JobID )
 {
-    BOOL      Success = TRUE;
+    BOOL      Success = FALSE;
     PJOB_DATA JobList = Instance.Jobs;
 
-    do {
-        if ( ! JobList )
-            break;
-
+    while ( JobList )
+    {
         if ( JobList->JobID == JobID )
         {
+            Success = TRUE;
             PRINTF( "Found Job ID: %d\n", JobID )
 
             switch ( JobList->Type )
@@ -359,8 +365,9 @@ BOOL JobKill( DWORD JobID )
 
             JobRemove( JobID );
         }
-        else break;
-    } while ( TRUE );
+
+        JobList = JobList->Next;
+    }
 
     return Success;
 }
@@ -376,45 +383,47 @@ VOID JobRemove( DWORD JobID )
     // Iterate over Job list and replace/remove job
     PRINTF( "Remove JobID: %d\n", JobID );
     PUTS( "Iterate over Job list and replace/remove job" )
-    PJOB_DATA JobList    = Instance.Jobs;
-    PJOB_DATA JobListTmp = NULL;
+    PJOB_DATA JobList     = NULL;
+    PJOB_DATA JobToRemove = NULL;
 
-    if ( Instance.Jobs->JobID == JobID )
+    if ( Instance.Jobs && Instance.Jobs->JobID == JobID )
     {
-        Instance.Jobs = JobList->Next;
+        JobToRemove = Instance.Jobs;
+        Instance.Jobs = JobToRemove->Next;
     }
     else
     {
-        JobListTmp = JobList;
+        JobList = Instance.Jobs;
 
-        while ( TRUE )
+        while ( JobList )
         {
-            PRINTF( "JobListTmp => %p == %p\n", JobListTmp, JobList )
-            if ( JobListTmp )
+            if ( JobList->Next && JobList->Next->JobID == JobID )
             {
-                if ( JobListTmp->Next == JobList )
-                {
-                    PUTS( "Found Job. Replace/Remove it from list" )
-                    JobListTmp->Next = JobList->Next;
-                    break;
-                }
-                else
-                {
-                    JobListTmp = JobListTmp->Next;
-                }
+                JobToRemove = JobList->Next;
+                JobList->Next = JobToRemove->Next;
+            }
+            else
+            {
+                JobList = JobList->Next;
             }
         }
     }
 
-    if ( JobList->Handle )
-        Instance.Win32.NtClose( JobList->Handle );
-
-    if ( ( JobList->Type == JOB_TYPE_TRACK_PROCESS ) && JobList->Data )
+    if ( ! JobToRemove )
     {
-        DATA_FREE( JobList->Data, sizeof( ANONPIPE ) )
+        PRINTF( "JobID %d not found\n", JobID );
+        return;
     }
 
-    MemSet( JobList, 0, sizeof( JOB_DATA ) );
-    Instance.Win32.LocalFree( JobList );
-    JobList = NULL;
+    if ( JobToRemove->Handle )
+        Instance.Win32.NtClose( JobToRemove->Handle );
+
+    if ( ( JobToRemove->Type == JOB_TYPE_TRACK_PROCESS ) && JobToRemove->Data )
+    {
+        DATA_FREE( JobToRemove->Data, sizeof( ANONPIPE ) )
+    }
+
+    MemSet( JobToRemove, 0, sizeof( JOB_DATA ) );
+    Instance.Win32.LocalFree( JobToRemove );
+    JobToRemove = NULL;
 }

