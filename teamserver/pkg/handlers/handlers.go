@@ -219,7 +219,7 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.B
 							break
 
 						default:
-							logger.Debug("Default")
+							//logger.Debug("Default")
 							/* build the task payload */
 							payload = agent.BuildPayloadMessage([]agent.Job{job[j]}, Agent.Encryption.AESKey, Agent.Encryption.AESIv)
 
