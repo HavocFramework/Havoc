@@ -2767,7 +2767,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			break
 
 		case DEMON_COMMAND_PROC_CREATE:
-			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PROC - DEMON_COMMAND_PROC_GREP", AgentID))
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PROC - DEMON_COMMAND_PROC_CREATE", AgentID))
 
 			if Parser.Length() >= 4 {
 				var ProcessID = Parser.ParseInt32()
