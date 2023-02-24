@@ -2939,6 +2939,13 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 			break
 
+		case COMMAND_TOO_MANY_FUNCS:
+			OutputMap["Type"] = "Error"
+			OutputMap["Message"] = "The BOF has too many functions"
+
+			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
+
+			break
 		}
 
 	case COMMAND_ERROR:
