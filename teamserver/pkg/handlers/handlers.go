@@ -71,12 +71,6 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.B
 		Agent = Teamserver.AgentInstance(Header.AgentID)
 		Command = Header.Data.ParseInt32()
 
-		/* check if we received a response and if we tasked once.
-		 * if not then this is weird... really weird so better reject it. */
-		if Command != agent.COMMAND_GET_JOB && Agent.TaskedOnce {
-			Agent.TaskDispatch(Command, Header.Data, Teamserver)
-		}
-
 		/* check if this is a 'reconnect' request */
 		if Command == agent.DEMON_INIT {
 			logger.Debug(fmt.Sprintf("Agent: %x, Command: DEMON_INIT", Header.AgentID))
@@ -92,6 +86,12 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.B
 			}
 			logger.Debug(fmt.Sprintf("reconnected %x", Build))
 			return Response, true
+		}
+
+		/* check if we received a response and if we tasked once.
+		 * if not then this is weird... really weird so better reject it. */
+		if Command != agent.COMMAND_GET_JOB && Agent.TaskedOnce {
+			Agent.TaskDispatch(Command, Header.Data, Teamserver)
 		}
 
 		if Command == agent.COMMAND_GET_JOB {
