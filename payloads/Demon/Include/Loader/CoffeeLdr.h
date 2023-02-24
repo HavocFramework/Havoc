@@ -83,6 +83,7 @@ typedef struct _COFFEE
 
     PSECTION_MAP      SecMap;
     PCHAR             FunMap;
+    SIZE_T            FunMapSize;
 } COFFEE, *PCOFFEE;
 
 /*!

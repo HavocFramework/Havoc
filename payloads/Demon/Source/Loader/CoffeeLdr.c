@@ -51,12 +51,12 @@ PVOID CoffeeProcessSymbol( LPSTR Symbol )
     ANSI_STRING AnsiString  = { 0 };
     PPACKAGE    Package     = NULL;
 
-    PRINTF(
-        "Symbol:         \n"
-        " - String: %s   \n"
-        " - Hash  : %lx  \n",
-        Symbol, SymHash
-    )
+    //PRINTF(
+    //    "Symbol:         \n"
+    //    " - String: %s   \n"
+    //    " - Hash  : %lx  \n",
+    //    Symbol, SymHash
+    //)
 
     MemCopy( Bak, Symbol, StringLengthA( Symbol ) + 1 );
 
@@ -67,7 +67,7 @@ PVOID CoffeeProcessSymbol( LPSTR Symbol )
          SymHash   == COFFAPI_GETMODULEHANDLE  ||
          SymHash   == COFFAPI_FREELIBRARY      )
     {
-        PUTS( "Internal Function" )
+        //PUTS( "Internal Function" )
         SymFunction = Symbol + COFF_PREP_SYMBOL_SIZE;
 
         for ( DWORD i = 0 ;; i++ )
@@ -77,7 +77,7 @@ PVOID CoffeeProcessSymbol( LPSTR Symbol )
 
             if ( HashStringA( SymFunction ) == BeaconApi[ i ].NameHash )
             {
-                PUTS( "Found Beacon api function" )
+                //PUTS( "Found Beacon api function" )
                 return BeaconApi[ i ].Pointer;
             }
         }
@@ -86,7 +86,7 @@ PVOID CoffeeProcessSymbol( LPSTR Symbol )
     }
     else if ( HashEx( Symbol, COFF_PREP_SYMBOL_SIZE, FALSE ) == COFF_PREP_SYMBOL )
     {
-        PUTS( "External Function" )
+        //PUTS( "External Function" )
         SymLibrary  = Bak + COFF_PREP_SYMBOL_SIZE;
         SymLibrary  = StringTokenA( SymLibrary, "$" );
         SymFunction = SymLibrary + StringLengthA( SymLibrary ) + 1;
@@ -94,7 +94,7 @@ PVOID CoffeeProcessSymbol( LPSTR Symbol )
 
         if ( ! hLibrary )
         {
-            PRINTF( "Failed to load library: Lib:[%s] Err:[%d]\n", SymLibrary, GetLastError() );
+            PRINTF( "Failed to load library: Lib:[%s] Err:[%d]\n", SymLibrary, NtGetLastError() );
             goto SymbolNotFound;
         }
 
@@ -120,7 +120,7 @@ SymbolNotFound:
     PackageAddBytes( Package, Symbol, StringLengthA( Symbol ) );
     PackageTransmit( Package, NULL, NULL );
 
-    return FuncAddr;
+    return NULL;
 }
 
 // This is our function where we can control/get the return address of it to use it in case of a Veh exception
@@ -167,7 +167,8 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
             CoffeeFunction( CoffeeMain, Argument, Size );
 
             // Remove our exception handler
-            Instance.Win32.RtlRemoveVectoredExceptionHandler( VehHandle );
+            if ( VehHandle )
+                Instance.Win32.RtlRemoveVectoredExceptionHandler( VehHandle );
         }
     }
 
@@ -225,9 +226,10 @@ BOOL CoffeeCleanup( PCOFFEE Coffee )
 
     if ( Coffee->FunMap )
     {
-        MemSet( Coffee->FunMap, 0, 2048 );
+        MemSet( Coffee->FunMap, 0, Coffee->FunMapSize );
         Instance.Win32.LocalFree( Coffee->FunMap );
-        Coffee->FunMap = NULL;
+        Coffee->FunMap     = NULL;
+        Coffee->FunMapSize = 0;
     }
 }
 
@@ -241,6 +243,7 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
     DWORD  FuncCount  = 0;
     UINT64 OffsetLong = 0;
     UINT32 Offset     = 0;
+    PVOID  PrevFunMap = NULL;
 
     for ( DWORD SectionCnt = 0; SectionCnt < Coffee->Header->NumberOfSections; SectionCnt++ )
     {
@@ -301,6 +304,31 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
 
                 if ( Coffee->Reloc->Type == IMAGE_REL_AMD64_REL32 && FuncPtr != NULL )
                 {
+                    // make sure that FunMap is bug enough
+                    if ( ( FuncCount + 1 ) * sizeof( UINT64 ) > Coffee->FunMapSize )
+                    {
+                        // too many functions, try to reallocate without moving the buffer
+                        PrevFunMap = Coffee->FunMap;
+                        Coffee->FunMapSize += sizeof( UINT64 ) * 100;
+                        Coffee->FunMap = Instance.Win32.LocalReAlloc(
+                                Coffee->FunMap,
+                                Coffee->FunMapSize,
+                                0);
+                        if ( ! Coffee->FunMap )
+                        {
+                            PUTS( "The BOF has too many functions" );
+
+                            Instance.Win32.LocalFree( PrevFunMap );
+
+                            PPACKAGE Package = PackageCreate( DEMON_COMMAND_INLINE_EXECUTE );
+
+                            PackageAddInt32( Package, DEMON_TOO_MANY_FUNCS );
+                            PackageTransmit( Package, NULL, NULL );
+
+                            return FALSE;
+                        }
+                    }
+
                     if ( ( ( Coffee->FunMap + ( FuncCount * 8 ) ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + 4 ) ) > 0xffffffff )
                         return FALSE;
 
@@ -349,8 +377,9 @@ DWORD CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSiz
     Coffee.Data   = CoffeeData;
     Coffee.Header = Coffee.Data;
 
-    Coffee.SecMap = Instance.Win32.LocalAlloc( LPTR, Coffee.Header->NumberOfSections * sizeof( SECTION_MAP ) );
-    Coffee.FunMap = Instance.Win32.LocalAlloc( LPTR, 2048 );
+    Coffee.SecMap     = Instance.Win32.LocalAlloc( LPTR, Coffee.Header->NumberOfSections * sizeof( SECTION_MAP ) );
+    Coffee.FunMapSize = sizeof( UINT64 ) * 2048;
+    Coffee.FunMap     = Instance.Win32.LocalAlloc( LPTR, Coffee.FunMapSize );
 
     PRINTF( "Coffee.SecMap => %p\n", Coffee.SecMap )
     PRINTF( "Coffee.FunMap => %p\n", Coffee.FunMap )

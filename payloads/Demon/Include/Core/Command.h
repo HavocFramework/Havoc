@@ -35,6 +35,7 @@
 
 #define DEMON_EXCEPTION                 0x98
 #define DEMON_SYMBOL_NOT_FOUND          0x99
+#define DEMON_TOO_MANY_FUNCS            0x100
 
 #define DOTNET_INFO_AMSI_PATCHED        0x1
 #define DOTNET_INFO_NET_VERSION         0x2
