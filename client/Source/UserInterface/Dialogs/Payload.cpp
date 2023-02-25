@@ -188,9 +188,6 @@ auto Payload::retranslateUi() -> void
 
 void Payload::buttonGenerate()
 {
-    if ( ButtonClicked )
-        return;
-
     if ( HavocX::Teamserver.Listeners.size() == 0 )
     {
         auto messageBox = QMessageBox(  );
@@ -220,7 +217,6 @@ void Payload::buttonGenerate()
     }
 
     ConsoleText->clear();
-    ButtonClicked = true;
 
     auto Config  = GetConfigAsJson().toJson().toStdString();
     auto Package = new Util::Packager::Package;
@@ -254,8 +250,6 @@ auto Payload::ReceivedImplantAndSave( QString FileName, QByteArray ImplantArray 
     auto FileDialog = QFileDialog();
     auto Filename   = QUrl();
     auto Style      = FileRead( ":/stylesheets/Dialogs/FileDialog" ).toStdString();
-
-    ButtonClicked = false;
 
     Style.erase( std::remove( Style.begin(), Style.end(), '\n' ), Style.end() );
 
@@ -362,7 +356,6 @@ auto Payload::CtxAgentPayloadChange( const QString& AgentType ) -> void
 auto Payload::Clear() -> void
 {
     Closed = true;
-    ButtonClicked = false;
 
     ComboAgentType->setCurrentIndex( 0 );
     ComboListener->setCurrentIndex( 0 );
