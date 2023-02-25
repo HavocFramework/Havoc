@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"bytes"
-	"encoding/hex"
+	//"encoding/hex"
 	"fmt"
 	"math/bits"
 
@@ -71,14 +71,9 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.B
 		Agent = Teamserver.AgentInstance(Header.AgentID)
 		Command = Header.Data.ParseInt32()
 
-		/* check if we received a response and if we tasked once.
-		 * if not then this is weird... really weird so better reject it. */
-		if Command != agent.COMMAND_GET_JOB && Agent.TaskedOnce {
-			Agent.TaskDispatch(Command, Header.Data, Teamserver)
-		}
-
 		/* check if this is a 'reconnect' request */
 		if Command == agent.DEMON_INIT {
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: DEMON_INIT", Header.AgentID))
 			Packer = packer.NewPacker(Agent.Encryption.AESKey, Agent.Encryption.AESIv)
 			Packer.AddUInt32(uint32(Header.AgentID))
 
@@ -93,7 +88,14 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.B
 			return Response, true
 		}
 
+		/* check if we received a response and if we tasked once.
+		 * if not then this is weird... really weird so better reject it. */
+		if Command != agent.COMMAND_GET_JOB && Agent.TaskedOnce {
+			Agent.TaskDispatch(Command, Header.Data, Teamserver)
+		}
+
 		if Command == agent.COMMAND_GET_JOB {
+			//logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_GET_JOB", Header.AgentID))
 
 			if !Agent.TaskedOnce {
 				Agent.TaskedOnce = true
@@ -217,7 +219,7 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.B
 							break
 
 						default:
-							logger.Debug("Default")
+							//logger.Debug("Default")
 							/* build the task payload */
 							payload = agent.BuildPayloadMessage([]agent.Job{job[j]}, Agent.Encryption.AESKey, Agent.Encryption.AESIv)
 
@@ -319,7 +321,7 @@ func handleServiceAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes
 	}
 
 	Task = Teamserver.ServiceAgent(Header.MagicValue).SendResponse(AgentData, Header)
-	logger.Debug("Response:\n", hex.Dump(Task))
+	//logger.Debug("Response:\n", hex.Dump(Task))
 
 	_, err = Response.Write(Task)
 	if err != nil {

@@ -323,7 +323,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 		)
 
 		switch SubCommand {
-		case 2:
+		case DEMON_COMMAND_PROC_MODULES:
 			var pid, _ = strconv.Atoi(Arguments)
 			job.Data = []interface{}{
 				SubCommand,
@@ -331,14 +331,14 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 			}
 			break
 
-		case 3:
+		case DEMON_COMMAND_PROC_GREP:
 			job.Data = []interface{}{
 				SubCommand,
 				Arguments,
 			}
 			break
 
-		case 4:
+		case DEMON_COMMAND_PROC_CREATE:
 
 			var (
 				Args           = strings.Split(Arguments, ";")
@@ -387,6 +387,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 
 			break
 
+		// TODO: is this used?
 		case 5:
 			var State = 0
 			if Optional["Args"] == "on" {
@@ -400,7 +401,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 
 			break
 
-		case 6:
+		case DEMON_COMMAND_PROC_MEMORY:
 			var (
 				Args        = strings.Split(Arguments, " ")
 				QueryProtec int
@@ -448,7 +449,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 
 			break
 
-		case 7: // proc::kill
+		case DEMON_COMMAND_PROC_KILL:
 			var pid, err = strconv.Atoi(Arguments)
 			if err != nil {
 				logger.Debug("proc::kill failed to parse pid: " + err.Error())
@@ -1716,9 +1717,12 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 }
 
 func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver TeamServer) {
+	var NameID, _ = strconv.ParseInt(a.NameID, 16, 64)
+	AgentID := int(NameID)
+
 	Parser.DecryptBuffer(a.Encryption.AESKey, a.Encryption.AESIv)
 
-	logger.Debug("Task Output: \n" + hex.Dump(Parser.Buffer()))
+	//logger.Debug("Task Output: \n" + hex.Dump(Parser.Buffer()))
 
 	a.UpdateLastCallback(teamserver)
 
@@ -1726,9 +1730,11 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 	case COMMAND_GET_JOB:
 		/* this is most likely never going to reach. but just in case... */
+		logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_GET_JOB ??", AgentID))
 		break
 
 	case COMMAND_EXIT:
+		logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_EXIT", AgentID))
 		if Parser.Length() >= 4 {
 			var (
 				Status  = Parser.ParseInt32()
@@ -1750,6 +1756,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 		}
 
 	case COMMAND_CHECKIN:
+		logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CHECKIN", AgentID))
 		var Message = make(map[string]string)
 
 		Message["Type"] = "Info"
@@ -1986,6 +1993,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 		switch InfoID {
 		case DEMON_INFO_MEM_ALLOC:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: DEMON_INFO - DEMON_INFO_MEM_ALLOC", AgentID))
 			var (
 				MemPointer   = Parser.ParseInt32()
 				MemSize      = Parser.ParseInt32()
@@ -2003,6 +2011,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			break
 
 		case DEMON_INFO_MEM_EXEC:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: DEMON_INFO - DEMON_INFO_MEM_EXEC", AgentID))
 			var (
 				MemFunction = Parser.ParseInt32()
 				ThreadId    = Parser.ParseInt32()
@@ -2012,6 +2021,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			break
 
 		case DEMON_INFO_MEM_PROTECT:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: DEMON_INFO - DEMON_INFO_MEM_PROTECT", AgentID))
 			var (
 				Memory        = Parser.ParseInt32()
 				MemorySize    = Parser.ParseInt32()
@@ -2036,6 +2046,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			break
 
 		case DEMON_INFO_PROC_CREATE:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: DEMON_INFO - DEMON_INFO_PROC_CREATE", AgentID))
 			var (
 				Path = string(Parser.ParseBytes())
 				PID  = Parser.ParseInt32()
@@ -2043,12 +2054,16 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 			Output["Message"] = fmt.Sprintf("Process started: Path:[%v] ProcessID:[%v]", Path, PID)
 			break
+
+		default:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: DEMON_INFO - UNKNOWN (%d)", AgentID, InfoID))
 		}
 
 		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
 		break
 
 	case COMMAND_SLEEP:
+		logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SLEEP", AgentID))
 		var Output = make(map[string]string)
 
 		a.Info.SleepDelay = Parser.ParseInt32()
@@ -2069,7 +2084,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 			switch SubCommand {
 
-			case 0x1:
+			case DEMON_COMMAND_JOB_LIST:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_JOB - DEMON_COMMAND_JOB_LIST", AgentID))
 				var Output string
 
 				Output += fmt.Sprintf(" %-6s  %-13s  %-5s\n", "Job ID", "Type", "State")
@@ -2118,7 +2134,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 				break
 
-			case 0x2:
+			case DEMON_COMMAND_JOB_SUSPEND:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_JOB - DEMON_COMMAND_JOB_SUSPEND", AgentID))
 				if Parser.Length() > 4 {
 					var (
 						JobID   = Parser.ParseInt32()
@@ -2136,7 +2153,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				}
 				break
 
-			case 0x3:
+			case DEMON_COMMAND_JOB_RESUME:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_JOB - DEMON_COMMAND_JOB_RESUME", AgentID))
 				if Parser.Length() > 4 {
 					var (
 						JobID   = Parser.ParseInt32()
@@ -2153,7 +2171,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				}
 				break
 
-			case 0x4:
+			case DEMON_COMMAND_JOB_KILL_REMOVE:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_JOB - DEMON_COMMAND_JOB_KILL_REMOVE", AgentID))
 				if Parser.Length() > 4 {
 					var (
 						JobID   = Parser.ParseInt32()
@@ -2169,6 +2188,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 					}
 				}
 				break
+			default:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_JOB - UNKNOWN (%d)", AgentID, SubCommand))
 			}
 
 			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
@@ -2176,14 +2197,14 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 		}
 
 	case COMMAND_FS:
-		logger.Debug("COMMAND_FS")
 		var (
 			SubCommand = Parser.ParseInt32()
 			Output     = make(map[string]string)
 		)
 
 		switch SubCommand {
-		case 1:
+		case DEMON_COMMAND_FS_DIR:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_DIR", AgentID))
 			var (
 				Exp32    = Parser.ParseInt32()
 				Path     = Parser.ParseBytes()
@@ -2274,8 +2295,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 			break
 
-		/* Download */
-		case 2:
+		case DEMON_COMMAND_FS_DOWNLOAD:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_DOWNLOAD", AgentID))
 
 			/*
 			 * Download Header:
@@ -2378,7 +2399,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 			break
 
-		case 3:
+		case DEMON_COMMAND_FS_UPLOAD:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_UPLOAD", AgentID))
 
 			if Parser.Length() >= 8 {
 				var (
@@ -2395,7 +2417,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 			break
 
-		case 4:
+		case DEMON_COMMAND_FS_CD:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_CD", AgentID))
 			var Path = common.DecodeUTF16(Parser.ParseBytes())
 
 			Output["Type"] = "Info"
@@ -2403,7 +2426,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 			break
 
-		case 5:
+		case DEMON_COMMAND_FS_REMOVE:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_REMOVE", AgentID))
 			var (
 				IsDir = Parser.ParseInt32()
 				Path  = common.DecodeUTF16(Parser.ParseBytes())
@@ -2418,7 +2442,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			}
 			break
 
-		case 6:
+		case DEMON_COMMAND_FS_MKDIR:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_MKDIR", AgentID))
 			var Path = common.DecodeUTF16(Parser.ParseBytes())
 
 			Output["Type"] = "Info"
@@ -2426,7 +2451,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 			break
 
-		case 7:
+		case DEMON_COMMAND_FS_COPY:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_COPY", AgentID))
 			if Parser.Length() > 4 {
 				var (
 					Success  = Parser.ParseInt32()
@@ -2445,7 +2471,9 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 			break
 
-		case 9:
+		case DEMON_COMMAND_FS_GET_PWD:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_GET_PWD", AgentID))
+
 			var Path = common.DecodeUTF16(Parser.ParseBytes())
 
 			Output["Type"] = "Info"
@@ -2453,7 +2481,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 			break
 
-		case 10:
+		case DEMON_COMMAND_FS_CAT:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_CAT", AgentID))
 			if Parser.Length() >= 8 {
 				var (
 					FileName    = Parser.ParseBytes()
@@ -2467,6 +2496,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				Output["Type"] = "Error"
 				Output["Message"] = "Failed to parse fs::cat response"
 			}
+		default:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - UNKNOWN (%d)", AgentID, SubCommand))
 		}
 
 		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
@@ -2474,6 +2505,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 		break
 
 	case COMMAND_PROC_LIST:
+		logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PROC_LIST", AgentID))
 		type Process struct {
 			Name      string
 			ImagePath string
@@ -2556,6 +2588,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
 
 	case COMMAND_OUTPUT:
+		logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT", AgentID))
 		var Output = make(map[string]string)
 
 		Output["Type"] = "Good"
@@ -2565,6 +2598,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
 
 	case CALLBACK_OUTPUT_OEM:
+		logger.Debug(fmt.Sprintf("Agent: %x, Command: CALLBACK_OUTPUT_OEM", AgentID))
 		var Output = make(map[string]string)
 
 		Output["Type"] = "Good"
@@ -2574,6 +2608,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
 
 	case COMMAND_INJECT_DLL:
+		logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_INJECT_DLL", AgentID))
 		var (
 			Status  = Parser.ParseInt32()
 			Message = make(map[string]string)
@@ -2597,6 +2632,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 		break
 
 	case COMMAND_SPAWNDLL:
+		logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SPAWNDLL", AgentID))
 		var (
 			Status  = Parser.ParseInt32()
 			Message = make(map[string]string)
@@ -2620,6 +2656,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 		break
 
 	case COMMAND_INJECT_SHELLCODE:
+		logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_INJECT_SHELLCODE", AgentID))
 		var (
 			Status  = Parser.ParseInt32()
 			Message = make(map[string]string)
@@ -2644,10 +2681,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 		)
 
 		switch SubCommand {
-		case 1:
-			break
-
-		case 2:
+		case DEMON_COMMAND_PROC_MODULES:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PROC - DEMON_COMMAND_PROC_MODULES", AgentID))
 			if Parser.Length() > 0 {
 				var (
 					ModuleName string
@@ -2695,7 +2730,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			}
 			break
 
-		case 3:
+		case DEMON_COMMAND_PROC_GREP:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PROC - DEMON_COMMAND_PROC_GREP", AgentID))
 			if Parser.Length() > 0 {
 				var (
 					ProcName  string
@@ -2730,7 +2766,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			}
 			break
 
-		case 4: // Proc:Create
+		case DEMON_COMMAND_PROC_CREATE:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PROC - DEMON_COMMAND_PROC_CREATE", AgentID))
 
 			if Parser.Length() >= 4 {
 				var ProcessID = Parser.ParseInt32()
@@ -2742,6 +2779,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			break
 
 		case 5: // Proc:BlockDll
+			// TODO: is this used?
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PROC - 5", AgentID))
 			var (
 				BlockDll = int(Parser.ParseInt32())
 				State    = "disabled"
@@ -2755,7 +2794,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			Message["Message"] = "Successful " + State + " blockdll"
 			break
 
-		case 6: // Proc:Memory
+		case DEMON_COMMAND_PROC_MEMORY:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PROC - DEMON_COMMAND_PROC_MEMORY", AgentID))
 			var (
 				BaseAddress    string
 				RegionSize     string
@@ -2846,8 +2886,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 			break
 
-		case 7:
-
+		case DEMON_COMMAND_PROC_KILL:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PROC - DEMON_COMMAND_PROC_KILL", AgentID))
 			if Parser.Length() >= 4 {
 				var (
 					Success   = Parser.ParseInt32()
@@ -2863,6 +2903,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				}
 			}
 
+		default:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PROC - UNKNOWN (%d)", AgentID, SubCommand))
 		}
 
 		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
@@ -2877,12 +2919,14 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 		switch Type {
 		case CALLBACK_OUTPUT:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_INLINEEXECUTE - CALLBACK_OUTPUT", AgentID))
 			OutputMap["Output"] = string(Parser.ParseBytes())
 			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
 
 			break
 
 		case CALLBACK_ERROR:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_INLINEEXECUTE - CALLBACK_ERROR", AgentID))
 			OutputMap["Type"] = "Error"
 			OutputMap["Output"] = string(Parser.ParseBytes())
 			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
@@ -2890,6 +2934,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			break
 
 		case CALLBACK_MSG_GOOD:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_INLINEEXECUTE - CALLBACK_MSG_GOOD", AgentID))
 			var String = Parser.ParseBytes()
 
 			OutputMap["Type"] = "Good"
@@ -2899,6 +2944,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			break
 
 		case CALLBACK_MSG_INFO:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_INLINEEXECUTE - CALLBACK_MSG_INFO", AgentID))
 			var String = Parser.ParseBytes()
 
 			OutputMap["Type"] = "Info"
@@ -2908,6 +2954,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			break
 
 		case CALLBACK_MSG_ERROR:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_INLINEEXECUTE - CALLBACK_MSG_ERROR", AgentID))
 			var String = Parser.ParseBytes()
 
 			OutputMap["Type"] = "Error"
@@ -2917,6 +2964,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			break
 
 		case COMMAND_EXCEPTION:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_INLINEEXECUTE - COMMAND_EXCEPTION", AgentID))
 			var (
 				Exception = Parser.ParseInt32()
 				Address   = Parser.ParseInt64()
@@ -2929,6 +2977,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			break
 
 		case COMMAND_SYMBOL_NOT_FOUND:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_INLINEEXECUTE - COMMAND_SYMBOL_NOT_FOUND", AgentID))
 			var LibAndFunc = string(Parser.ParseBytes())
 			logger.Debug(hex.Dump(Parser.Buffer()))
 
@@ -2940,12 +2989,15 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			break
 
 		case COMMAND_TOO_MANY_FUNCS:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_INLINEEXECUTE - COMMAND_TOO_MANY_FUNCS", AgentID))
 			OutputMap["Type"] = "Error"
 			OutputMap["Message"] = "The BOF has too many functions"
 
 			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
-
 			break
+
+		default:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_INLINEEXECUTE - UNKNOWN (%d)", AgentID, Type))
 		}
 
 	case COMMAND_ERROR:
@@ -2956,6 +3008,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 		switch ErrorID {
 		case ERROR_WIN32_LASTERROR:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_ERROR - ERROR_WIN32_LASTERROR", AgentID))
 			var (
 				ErrorCode          = Parser.ParseInt32()
 				ErrorString, found = Win32ErrorCodes[int(ErrorCode)]
@@ -2972,6 +3025,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			break
 
 		case ERROR_COFFEXEC:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_ERROR - ERROR_COFFEXEC", AgentID))
 			var (
 				Status = Parser.ParseInt32()
 			)
@@ -2981,6 +3035,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			break
 
 		case ERROR_TOKEN:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_ERROR - ERROR_TOKEN", AgentID))
 			var Status = Parser.ParseInt32()
 
 			switch Status {
@@ -2989,6 +3044,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				Message["Message"] = "No tokens inside the token vault"
 				break
 			}
+		default:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_ERROR - UNKNOWN (%d)", AgentID, ErrorID))
 		}
 
 		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
@@ -3001,6 +3058,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 		switch InfoID {
 		case DOTNET_INFO_AMSI_PATCHED:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_ASSEMBLY_INLINE_EXECUTE - DOTNET_INFO_AMSI_PATCHED", AgentID))
 
 			switch Parser.ParseInt32() {
 			case 0:
@@ -3022,11 +3080,13 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			break
 
 		case DOTNET_INFO_NET_VERSION:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_ASSEMBLY_INLINE_EXECUTE - DOTNET_INFO_NET_VERSION", AgentID))
 			Message["Type"] = "Info"
 			Message["Message"] = "Using CLR Version: " + utils.UTF16BytesToString(Parser.ParseBytes())
 			break
 
 		case DOTNET_INFO_ENTRYPOINT:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_ASSEMBLY_INLINE_EXECUTE - DOTNET_INFO_ENTRYPOINT", AgentID))
 			var ThreadID int
 
 			if Parser.Length() >= 4 {
@@ -3043,6 +3103,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			}
 
 		case DOTNET_INFO_FINISHED:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_ASSEMBLY_INLINE_EXECUTE - DOTNET_INFO_FINISHED", AgentID))
 
 			Message = map[string]string{
 				"Type":    "Good",
@@ -3052,14 +3113,16 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			break
 
 		case DOTNET_INFO_FAILED:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_ASSEMBLY_INLINE_EXECUTE - DOTNET_INFO_FAILED", AgentID))
 
 			Message = map[string]string{
 				"Type":    "Error",
 				"Message": "Failed to execute assembly or initialize the clr",
 			}
-
 			break
 
+		default:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_ASSEMBLY_INLINE_EXECUTE - UNKNOWN (%d)", AgentID, InfoID))
 		}
 
 		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
@@ -3067,6 +3130,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 		break
 
 	case COMMAND_ASSEMBLY_LIST_VERSIONS:
+		logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_ASSEMBLY_LIST_VERSIONS", AgentID))
 		var Output string
 		var Message = make(map[string]string)
 
@@ -3083,6 +3147,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 		break
 
 	case COMMAND_PROC_PPIDSPOOF:
+		logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PROC_PPIDSPOOF", AgentID))
 		var (
 			Ppid    = int(Parser.ParseInt32())
 			Message = make(map[string]string)
@@ -3105,7 +3170,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 			switch SubCommand {
 
-			case 0x1: // impersonate
+			case DEMON_COMMAND_TOKEN_IMPERSONATE:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_IMPERSONATE", AgentID))
 				var (
 					Successful = Parser.ParseInt32()
 					User       = Parser.ParseBytes()
@@ -3121,7 +3187,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 				break
 
-			case 0x2: // steal
+			case DEMON_COMMAND_TOKEN_STEAL:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_STEAL", AgentID))
 				var (
 					User      = string(Parser.ParseBytes())
 					TokenID   = Parser.ParseInt32()
@@ -3133,7 +3200,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 				break
 
-			case 0x3: // list
+			case DEMON_COMMAND_TOKEN_LIST:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_LIST", AgentID))
 				var (
 					Buffer    string
 					FmtString string
@@ -3185,7 +3253,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 				break
 
-			case 0x4: // privs get or list
+			case DEMON_COMMAND_TOKEN_PRIVSGET_OR_LIST:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_PRIVSGET_OR_LIST", AgentID))
 				var (
 					PrivList     = Parser.ParseInt32()
 					OutputBuffer bytes.Buffer
@@ -3250,7 +3319,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				}
 				break
 
-			case 0x5: // make
+			case DEMON_COMMAND_TOKEN_MAKE:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_MAKE", AgentID))
 				if Parser.Length() > 0 {
 					Output["Type"] = "Good"
 					Output["Message"] = fmt.Sprintf("Successful created token: " + string(Parser.ParseBytes()))
@@ -3260,7 +3330,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				}
 				break
 
-			case 0x6: // getuid
+			case DEMON_COMMAND_TOKEN_GET_UID:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_GET_UID", AgentID))
 				var (
 					Elevated = Parser.ParseInt32()
 					User     = string(Parser.ParseBytes())
@@ -3275,7 +3346,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 				break
 
-			case 0x7: // revert
+			case DEMON_COMMAND_TOKEN_REVERT:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_REVERT", AgentID))
 				var Successful = Parser.ParseInt32()
 
 				if Successful == win32.TRUE {
@@ -3288,7 +3360,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 				break
 
-			case 0x8: // remove
+			case DEMON_COMMAND_TOKEN_REMOVE:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_REMOVE", AgentID))
 				var (
 					Successful = Parser.ParseInt32()
 					TokenID    = Parser.ParseInt32()
@@ -3304,12 +3377,15 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 				break
 
-			case 0x9: // clear
-
+			case DEMON_COMMAND_TOKEN_CLEAR:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_CLEAR", AgentID))
 				Output["Type"] = typeGood
 				Output["Message"] = "Token vault has been cleared"
 
 				break
+
+			default:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - UNKNOWN (%d)", AgentID, SubCommand))
 			}
 
 			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
@@ -3317,6 +3393,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 		break
 
 	case COMMAND_CONFIG:
+		logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CONFIG", AgentID))
 		var (
 			Message = make(map[string]string)
 
@@ -3417,6 +3494,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 		break
 
 	case COMMAND_SCREENSHOT:
+		logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SCREENSHOT", AgentID))
 		var (
 			Success = Parser.ParseInt32()
 			Message = make(map[string]string)
@@ -3462,12 +3540,14 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 		switch NetCommand {
 
 		case DEMON_NET_COMMAND_DOMAIN:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_NET - DEMON_NET_COMMAND_DOMAIN", AgentID))
 			var Domain = string(Parser.ParseBytes())
 			Message["Type"] = "Good"
 			Message["Message"] = "Domain for this Host: " + Domain
 			break
 
 		case DEMON_NET_COMMAND_LOGONS:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_NET - DEMON_NET_COMMAND_LOGONS", AgentID))
 			var (
 				Index  int
 				Output string
@@ -3493,6 +3573,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			break
 
 		case DEMON_NET_COMMAND_SESSIONS:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_NET - DEMON_NET_COMMAND_SESSIONS", AgentID))
 			var (
 				Index  int
 				Buffer bytes.Buffer
@@ -3538,12 +3619,15 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			break
 
 		case DEMON_NET_COMMAND_COMPUTER:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_NET - DEMON_NET_COMMAND_COMPUTER", AgentID))
 			break
 
 		case DEMON_NET_COMMAND_DCLIST:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_NET - DEMON_NET_COMMAND_DCLIST", AgentID))
 			break
 
 		case DEMON_NET_COMMAND_SHARE:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_NET - DEMON_NET_COMMAND_SHARE", AgentID))
 			var (
 				Index  int
 				Buffer bytes.Buffer
@@ -3590,6 +3674,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			break
 
 		case DEMON_NET_COMMAND_LOCALGROUP:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_NET - DEMON_NET_COMMAND_LOCALGROUP", AgentID))
 			var Data string
 
 			if Parser.Length() > 0 {
@@ -3614,6 +3699,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			break
 
 		case DEMON_NET_COMMAND_GROUP:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_NET - DEMON_NET_COMMAND_GROUP", AgentID))
 			var Data string
 
 			if Parser.Length() > 0 {
@@ -3640,6 +3726,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			break
 
 		case DEMON_NET_COMMAND_USERS:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_NET - DEMON_NET_COMMAND_USERS", AgentID))
 			var Data string
 
 			if Parser.Length() > 0 {
@@ -3663,6 +3750,9 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				Message["Output"] = "\n" + Data
 			}
 			break
+
+		default:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_NET - UNKNOWN (%d)", AgentID, NetCommand))
 		}
 
 		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
@@ -3677,6 +3767,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 		switch PivotCommand {
 		case DEMON_PIVOT_LIST:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PIVOT - DEMON_PIVOT_LIST", AgentID))
 			var (
 				Data  string
 				Count int
@@ -3713,6 +3804,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			}
 
 		case DEMON_PIVOT_SMB_CONNECT:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PIVOT - DEMON_PIVOT_SMB_CONNECT", AgentID))
 			var Success = Parser.ParseInt32()
 
 			// if we successfully connected to the SMB named pipe
@@ -3810,6 +3902,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			break
 
 		case DEMON_PIVOT_SMB_DISCONNECT:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PIVOT - DEMON_PIVOT_SMB_DISCONNECT", AgentID))
 
 			if Parser.Length() > 0 {
 				var (
@@ -3845,6 +3938,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			break
 
 		case DEMON_PIVOT_SMB_COMMAND:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PIVOT - DEMON_PIVOT_SMB_COMMAND", AgentID))
 
 			if Parser.Length() > 0 {
 				var (
@@ -3884,7 +3978,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			break
 
 		default:
-			logger.Debug(fmt.Sprintf("CommandID not found: %x", CommandID))
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PIVOT - UNKNOWN (%d)", AgentID, PivotCommand))
 		}
 
 		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
@@ -3900,7 +3994,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 		switch SubCommand {
 
-		case 0x0: /* transfer list */
+		case DEMON_COMMAND_TRANSFER_LIST:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TRANSFER - DEMON_COMMAND_TRANSFER_LIST", AgentID))
 			var (
 				Data  string
 				Count int
@@ -3945,7 +4040,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 			break
 
-		case 0x1: /* transfer stop */
+		case DEMON_COMMAND_TRANSFER_STOP:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TRANSFER - DEMON_COMMAND_TRANSFER_STOP", AgentID))
 
 			if Parser.Length() >= 8 {
 				var (
@@ -3981,7 +4077,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 			break
 
-		case 0x2: /* transfer resume */
+		case DEMON_COMMAND_TRANSFER_RESUME:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TRANSFER - DEMON_COMMAND_TRANSFER_RESUME", AgentID))
 
 			if Parser.Length() >= 8 {
 				var (
@@ -4017,7 +4114,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 			break
 
-		case 0x3: /* transfer remove */
+		case DEMON_COMMAND_TRANSFER_REMOVE:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TRANSFER - DEMON_COMMAND_TRANSFER_REMOVE", AgentID))
 
 			if Parser.Length() >= 8 {
 				var (
@@ -4050,8 +4148,11 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 					"Message": fmt.Sprintf("Callback output is smaller than expected. Callback type COMMAND_TRANSFER with subcommand 0x3 (remove). Expected at least 8 bytes but received %v bytes", Parser.Length()),
 				}
 			}
-
 			break
+
+		default:
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TRANSFER - UNKNOWN (%d)", AgentID, SubCommand))
+
 		}
 
 		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
@@ -4069,6 +4170,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 			switch SubCommand {
 			case SOCKET_COMMAND_RPORTFWD_ADD:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_RPORTFWD_ADD", AgentID))
 
 				if Parser.Length() >= 16 {
 
@@ -4114,6 +4216,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				break
 
 			case SOCKET_COMMAND_RPORTFWD_LIST:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_RPORTFWD_LIST", AgentID))
 
 				var (
 					FwdList  string
@@ -4153,6 +4256,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				return
 
 			case SOCKET_COMMAND_RPORTFWD_REMOVE:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_RPORTFWD_REMOVE", AgentID))
 
 				if Parser.Length() >= 20 {
 
@@ -4194,6 +4298,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				break
 
 			case SOCKET_COMMAND_RPORTFWD_CLEAR:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_RPORTFWD_CLEAR", AgentID))
 
 				if Parser.Length() >= 4 {
 
@@ -4220,9 +4325,11 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				break
 
 			case SOCKET_COMMAND_SOCKSPROXY_ADD:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_SOCKSPROXY_ADD", AgentID))
 				break
 
 			case SOCKET_COMMAND_OPEN:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_OPEN", AgentID))
 
 				if Parser.Length() >= 16 {
 
@@ -4308,6 +4415,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				break
 
 			case SOCKET_COMMAND_READ_WRITE:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ_WRITE", AgentID))
 				/* if we receive the SOCKET_COMMAND_READ_WRITE command
 				 * that means that we should read the callback and send it to the forwared host/socks proxy */
 
@@ -4365,6 +4473,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				break
 
 			case SOCKET_COMMAND_CLOSE:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CLOSE", AgentID))
 
 				if Parser.Length() >= 8 {
 					var (
@@ -4406,6 +4515,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				break
 
 			case SOCKET_COMMAND_CONNECT:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CONNECT", AgentID))
 
 				if Parser.Length() >= 4 {
 
@@ -4439,6 +4549,9 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				}
 
 				break
+
+			default:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - UNKNOWN (%d)", AgentID, SubCommand))
 			}
 
 		} else {
@@ -4453,6 +4566,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 		break
 
 	default:
+		logger.Debug(fmt.Sprintf("Agent: %x, Command: UNKNOWN (%d))", AgentID, CommandID))
 		/* end of the switch case output parser */
 		break
 	}

@@ -2,7 +2,7 @@ package builder
 
 import (
 	"bytes"
-	"encoding/hex"
+	//"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -171,7 +171,7 @@ func (b *Builder) Build() bool {
 		b.SendConsoleMessage("Info", fmt.Sprintf("Config size [%v bytes]", len(Config)))
 	}
 
-	logger.Debug("len(Config) = ", len(Config))
+	//logger.Debug("len(Config) = ", len(Config))
 	array := "{"
 	for i := range Config {
 		if i == (len(Config) - 1) {
@@ -181,7 +181,7 @@ func (b *Builder) Build() bool {
 		}
 	}
 	array += "}"
-	logger.Debug("array = " + array)
+	//logger.Debug("array = " + array)
 
 	b.compilerOptions.Defines = append(b.compilerOptions.Defines, "CONFIG_BYTES="+array)
 
@@ -307,9 +307,9 @@ func (b *Builder) Build() bool {
 			b.SendConsoleMessage("Info", fmt.Sprintf("Compiled core dll [%v bytes]", len(DllPayloadBytes)))
 
 			if b.config.Arch == ARCHITECTURE_X64 {
-				ShellcodePath = utils.GetTeamserverPath() + "/" + PayloadDir + " /Shellcode.x64.bin"
+				ShellcodePath = utils.GetTeamserverPath() + "/" + PayloadDir + "/Shellcode.x64.bin"
 			} else {
-				ShellcodePath = utils.GetTeamserverPath() + "/" + PayloadDir + " /Shellcode.x86.bin"
+				ShellcodePath = utils.GetTeamserverPath() + "/" + PayloadDir + "/Shellcode.x86.bin"
 			}
 
 			ShellcodeTemplate, err := os.ReadFile(ShellcodePath)
@@ -685,7 +685,7 @@ func (b *Builder) PatchConfig() []byte {
 		break
 	}
 
-	logger.Debug("DemonConfig:\n" + hex.Dump(DemonConfig.Buffer()))
+	//logger.Debug("DemonConfig:\n" + hex.Dump(DemonConfig.Buffer()))
 
 	return DemonConfig.Buffer()
 }

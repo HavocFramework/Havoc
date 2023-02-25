@@ -89,6 +89,43 @@
 
 #define DEMON_CHECKIN_OPTION_PIVOTS          1
 
+#define DEMON_COMMAND_JOB_LIST               1
+#define DEMON_COMMAND_JOB_SUSPEND            2
+#define DEMON_COMMAND_JOB_RESUME             3
+#define DEMON_COMMAND_JOB_KILL_REMOVE        4
+
+#define DEMON_COMMAND_TRANSFER_LIST          0
+#define DEMON_COMMAND_TRANSFER_STOP          1
+#define DEMON_COMMAND_TRANSFER_RESUME        2
+#define DEMON_COMMAND_TRANSFER_REMOVE        3
+
+#define DEMON_COMMAND_PROC_MODULES           2
+#define DEMON_COMMAND_PROC_GREP              3
+#define DEMON_COMMAND_PROC_CREATE            4
+#define DEMON_COMMAND_PROC_MEMORY            6
+#define DEMON_COMMAND_PROC_KILL              7
+
+#define DEMON_COMMAND_TOKEN_IMPERSONATE      1
+#define DEMON_COMMAND_TOKEN_STEAL            2
+#define DEMON_COMMAND_TOKEN_LIST             3
+#define DEMON_COMMAND_TOKEN_PRIVSGET_OR_LIST 4
+#define DEMON_COMMAND_TOKEN_MAKE             5
+#define DEMON_COMMAND_TOKEN_GET_UID          6
+#define DEMON_COMMAND_TOKEN_REVERT           7
+#define DEMON_COMMAND_TOKEN_REMOVE           8
+#define DEMON_COMMAND_TOKEN_CLEAR            9
+
+#define DEMON_COMMAND_FS_DIR                 1
+#define DEMON_COMMAND_FS_DOWNLOAD            2
+#define DEMON_COMMAND_FS_UPLOAD              3
+#define DEMON_COMMAND_FS_CD                  4
+#define DEMON_COMMAND_FS_REMOVE              5
+#define DEMON_COMMAND_FS_MKDIR               6
+#define DEMON_COMMAND_FS_COPY                7
+#define DEMON_COMMAND_FS_GET_PWD             9
+#define DEMON_COMMAND_FS_CAT                 10
+
+
 typedef struct
 {
     INT ID;
