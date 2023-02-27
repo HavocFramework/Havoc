@@ -5,7 +5,7 @@ INCLUDE = -I Include
 OPTIONS = -w -Wall -Wextra -masm=intel -fPIC -fno-asynchronous-unwind-tables $(INCLUDE)
 
 EXECUTABLE_X64 = DllLdr.x64.o
-RAWBINARY_X64  = DllLdr.x64.bin
+RAWBINARY_X64  = ../DllLdr.x64.bin
 
 all: x64
 
