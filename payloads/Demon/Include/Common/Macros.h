@@ -6,11 +6,11 @@
 #ifdef _WIN64
 #define PPEB_PTR __readgsqword( 0x60 )
 #else
-#define PPEB_PTR __readgsqword( 0x30 )
+#define PPEB_PTR __readfsdword( 0x30 )
 #endif
 
 #define NT_SUCCESS(Status)              ( ( ( NTSTATUS ) ( Status ) ) >= 0 )
-#define NtCurrentProcess()              ( HANDLE ) ( ( HANDLE ) - 1 )
+#define NtCurrentProcess()              ( ( HANDLE ) ( LONG_PTR ) - 1 )
 #define NtCurrentThread()               ( ( HANDLE ) ( LONG_PTR ) - 2 )
 #define NtGetLastError()                Instance.Teb->LastErrorValue
 #define NtSetLastError(x)               Instance.Teb->LastErrorValue = x
