@@ -279,7 +279,7 @@ func (b *Builder) Build() bool {
 		break
 
 	case FILETYPE_WINDOWS_RAW_BINARY:
-		logger.Debug("Compiler dll and prepend shellcode to it.")
+		logger.Debug("Compile dll and prepend shellcode to it.")
 
 		DllPayload := NewBuilder(b.compilerOptions.Config)
 		DllPayload.SetSilent(true)

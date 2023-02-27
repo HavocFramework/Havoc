@@ -332,6 +332,7 @@ DWORD GetReflectiveLoaderOffset( PVOID ReflectiveLdrAddr )
     while ( FunctionCounter-- )
     {
         FunctionName = ( PCHAR )( ReflectiveLdrAddr + Rva2Offset( DEREF_32( AddrOfNames ), ReflectiveLdrAddr ) );
+        //                                  ReflectiveLoader                             KaynLoader
         if ( HashStringA( FunctionName ) == 0xa6caa1c5 || HashStringA( FunctionName ) == 0xffe885ef )
         {
             PRINTF( "FunctionName => %s\n", FunctionName );
