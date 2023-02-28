@@ -1311,11 +1311,6 @@ VOID CommandToken( PPARSER Parser )
             PackageAddInt32( Package, NewTokenID );
             PackageAddInt32( Package, TargetPid );
 
-            if ( User )
-            {
-                DATA_FREE( User, UserSize );
-            }
-
             break;
         }
 
