@@ -290,7 +290,9 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
         if ( Instance.Win32.GetCurrentDirectoryW( MAX_PATH * 2, &Path ) )
             lpCurrentDirectory = Path;
 
+        TokenImpersonate(FALSE);
         TokenSetPrivilege( SE_IMPERSONATE_NAME, TRUE );
+
         CommandLineW = Instance.Win32.LocalAlloc( LPTR, CommandLineSize * 2 );
         CharStringToWCharString( CommandLineW, CmdLine, CommandLineSize );
 
@@ -314,6 +316,7 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
                 )
             {
                 PRINTF( "CreateProcessWithTokenW: Failed [%d]\n", NtGetLastError() );
+                TokenImpersonate(TRUE);
                 PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                 Return = FALSE;
                 goto Cleanup;
@@ -339,12 +342,14 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
                 )
             {
                 PRINTF( "CreateProcessWithLogonW: Failed [%d]\n", NtGetLastError() );
+                TokenImpersonate(TRUE);
                 PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                 Return = FALSE;
                 goto Cleanup;
             }
         }
 
+        TokenImpersonate(TRUE);
         MemSet( CommandLineW, 0, CommandLineSize * 2 );
         Instance.Win32.LocalFree( CommandLineW );
         CommandLineW = NULL;
