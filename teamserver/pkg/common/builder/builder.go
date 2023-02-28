@@ -207,7 +207,7 @@ func (b *Builder) Build() bool {
 			}
 		}
 
-		b.compilerOptions.Config.Compiler64 = abs
+		b.compilerOptions.Config.Compiler64 = "\"" + abs + "\""
 
 		CompileCommand += b.compilerOptions.Config.Compiler64 + " "
 	} else {
