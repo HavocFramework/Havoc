@@ -206,10 +206,9 @@ func (b *Builder) Build() bool {
 				return false
 			}
 		}
+		b.compilerOptions.Config.Compiler64 = abs
 
-		b.compilerOptions.Config.Compiler64 = "\"" + abs + "\""
-
-		CompileCommand += b.compilerOptions.Config.Compiler64 + " "
+		CompileCommand += "\"" + b.compilerOptions.Config.Compiler64 + "\" "
 	} else {
 		abs, err := filepath.Abs(b.compilerOptions.Config.Compiler86)
 
@@ -221,7 +220,7 @@ func (b *Builder) Build() bool {
 		}
 		b.compilerOptions.Config.Compiler86 = abs
 
-		CompileCommand += b.compilerOptions.Config.Compiler86 + " "
+		CompileCommand += "\"" + b.compilerOptions.Config.Compiler86 + "\" "
 	}
 
 	// add sources
@@ -746,7 +745,7 @@ func (b *Builder) Cmd(cmd string) bool {
 	if err != nil {
 		logger.Error("Couldn't compile implant: " + err.Error())
 		if !b.silent {
-			b.SendConsoleMessage("Error", "Couldn't compile implant: "+err.Error())
+			b.SendConsoleMessage("Error", "Couldn't compile implant: " + err.Error())
 			b.SendConsoleMessage("Error", "Compile output: "+stderr.String())
 		}
 		logger.Debug(cmd)
