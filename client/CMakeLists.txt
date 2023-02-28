@@ -15,6 +15,26 @@ set( QT_VERSION 5 )
 set( REQUIRED_LIBS Core Gui Widgets Network WebSockets Sql )
 set( REQUIRED_LIBS_QUALIFIED Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Network Qt5::WebSockets Qt5::Sql )
 
+# Ensure 3.10 is used if present. If not, modules will not work within the client.
+set( Python_ADDITIONAL_VERSIONS 3.10 )
+
+if(APPLE)
+  find_package(Python 3 COMPONENTS Interpreter Development REQUIRED)
+  set(PYTHON_MAJOR $ENV{Python_VERSION_MAJOR})
+  set(PYTHON_MINOR $ENV{Python_VERSION_MINOR})
+  set(PYTHONLIBS_VERSION_STRING ${Python_VERSION})
+  set(PYTHON_INCLUDE_DIR ${Python_INCLUDE_DIRS})
+  set(PYTHON_LIBRARIES ${Python_LIBRARIES})
+  message("Apple - Using Python:${Python_VERSION_MAJOR} - Libraries:${PYTHON_LIBRARIES} - IncludeDirs: ${PYTHON_INCLUDE_DIR}")
+elseif(UNIX)
+  find_package(PythonLibs 3 REQUIRED)
+else()
+  set(PYTHONLIBS_VERSION_STRING $ENV{PY_VERSION})
+endif()
+
+find_package( spdlog REQUIRED )
+find_package( Qt${QT_VERSION} COMPONENTS ${REQUIRED_LIBS} REQUIRED )
+
 include_directories( Include )
 
 if(APPLE)
@@ -23,7 +43,7 @@ if(APPLE)
     include_directories( "${BREW_PREFIX}/bin/python3.10" )
     include_directories( "${BREW_PREFIX}/Frameworks/Python.framework/Headers" )
 elseif(UNIX)
-    include_directories( "/usr/include/python3.10" )
+    include_directories( ${PYTHON_INCLUDE_DIRS} )
 endif()
 
 set( APP_ICON_RESOURCE_WINDOWS "Data/Havoc.qrc" )
@@ -160,25 +180,6 @@ add_definitions( -DQT_NO_DEBUG_OUTPUT )
 # set(Boost_USE_STATIC_RUNTIME OFF)
 # find_package(Boost COMPONENTS program_options python)
 # include_directories(${Boost_INCLUDE_DIRS})
-
-set( Python_ADDITIONAL_VERSIONS )
-
-if(APPLE)
-  find_package(Python 3 COMPONENTS Interpreter Development REQUIRED)
-  set(PYTHON_MAJOR $ENV{Python_VERSION_MAJOR})
-  set(PYTHON_MINOR $ENV{Python_VERSION_MINOR})
-  set(PYTHONLIBS_VERSION_STRING ${Python_VERSION})
-  set(PYTHON_INCLUDE_DIR ${Python_INCLUDE_DIRS})
-  set(PYTHON_LIBRARIES ${Python_LIBRARIES})
-  message("Apple - Using Python:${Python_VERSION_MAJOR} - Libraries:${PYTHON_LIBRARIES} - IncludeDirs: ${PYTHON_INCLUDE_DIR}")
-elseif(UNIX)
-  find_package(PythonLibs 3 REQUIRED)
-else()
-  set(PYTHONLIBS_VERSION_STRING $ENV{PY_VERSION})
-endif()
-
-find_package( spdlog REQUIRED )
-find_package( Qt${QT_VERSION} COMPONENTS ${REQUIRED_LIBS} REQUIRED )
 
 target_link_libraries(
         ${PROJECT_NAME}
