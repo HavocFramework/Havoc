@@ -1,4 +1,4 @@
-echo "[*] Install libs for the teamserver..."
+#!/bin/bash
 
 sudo apt -qq --yes install golang-go nasm mingw-w64 wget >/dev/null 2>&1
 
