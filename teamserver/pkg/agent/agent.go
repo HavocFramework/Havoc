@@ -975,10 +975,9 @@ func (a *Agent) SocksClientClose(SocketID int) {
 			/* remove the socks server from the array */
 			a.SocksCli = append(a.SocksCli[:i], a.SocksCli[i+1:]...)
 
+			break
 		}
-
 	}
-
 }
 
 func (a *Agent) SocksServerRemove(Addr string) {
