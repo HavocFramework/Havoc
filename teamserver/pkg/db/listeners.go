@@ -44,7 +44,7 @@ func (db *DB) ListenerAdd(Name, Protocol, Config string) error {
 }
 
 func (db *DB) ListenerExist(Name string) bool {
-	query, err := db.db.Query("SELECT Name FROM TS_TS_Listeners")
+	query, err := db.db.Query("SELECT Name FROM TS_Listeners")
 	if err != nil {
 		return false
 	}
@@ -129,7 +129,7 @@ func (db *DB) ListenerNames() []string {
 		Names []string
 	)
 
-	query, err := db.db.Query("SELECT NAME FROM TS_Listeners")
+	query, err := db.db.Query("SELECT Name FROM TS_Listeners")
 	if err != nil {
 		return nil
 	}
@@ -149,18 +149,20 @@ func (db *DB) ListenerNames() []string {
 	return Names
 }
 
-func (db *DB) ListenerRemove(Name string) {
+func (db *DB) ListenerRemove(Name string) error {
 	// prepare some arguments to execute for the sqlite db
 	stmt, err := db.db.Prepare("DELETE FROM TS_Listeners WHERE Name = ?")
 	if err != nil {
-		return
+		return err
 	}
 
 	// execute statment
 	_, err = stmt.Exec(Name)
+	stmt.Close()
+
 	if err != nil {
-		return
+		return err
 	}
 
-	stmt.Close()
+	return nil
 }

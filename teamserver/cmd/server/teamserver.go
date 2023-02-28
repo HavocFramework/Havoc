@@ -205,16 +205,17 @@ func (t *Teamserver) Start() {
 	}
 
 	/* now load up our db or start a new one if none exist */
-	if t.DB, err = db.DatabaseNew(TeamserverPath + "/" + t.DB.Path()); err != nil {
+	DBPath := t.DB.Path()
+	if t.DB, err = db.DatabaseNew(TeamserverPath + "/" + DBPath); err != nil {
 		logger.SetStdOut(os.Stderr)
 		logger.Error("Failed to create or open a database: " + err.Error())
 		return
 	}
 
 	if t.DB.Existed() {
-		logger.Info("Opens existing database: " + colors.Blue("data/havoc.db"))
+		logger.Info("Opens existing database: " + colors.Blue(DBPath))
 	} else {
-		logger.Info("Creates new database: " + colors.Blue("data/havoc.db"))
+		logger.Info("Creates new database: " + colors.Blue(DBPath))
 	}
 
 	ListenerCount = t.DB.ListenerCount()

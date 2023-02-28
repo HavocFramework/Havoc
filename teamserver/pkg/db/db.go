@@ -48,12 +48,12 @@ func DatabaseNew(dbpath string) (*DB, error) {
 func (db *DB) init() error {
 	var err error
 
-	_, err = db.db.Exec(`CREATE TABLE "TS_Listeners" ("Name" text, "Protocol" text, "Config" text);`)
+	_, err = db.db.Exec(`CREATE TABLE "TS_Listeners" ("Name" text UNIQUE, "Protocol" text, "Config" text);`)
 	if err != nil {
 		return err
 	}
 
-	_, err = db.db.Exec(`CREATE TABLE "TS_Agents" ("AgentID" int, "Dir" text, "Listener" text, "InternalIP" text, "Hostname" text, "Username" text, "Domain" text, "Elevated" text, "ProcessArch" text, "ProcessName" text, "ProcessID" int, "ProcessPath" string, "OSVersion" text, "OSArch" text, "OSBuild" text, "FirstCallIn" text, "LastCallIn" text);`)
+	_, err = db.db.Exec(`CREATE TABLE "TS_Agents" ("AgentID" int UNIQUE, "Dir" text, "Listener" text, "InternalIP" text, "Hostname" text, "Username" text, "Domain" text, "Elevated" text, "ProcessArch" text, "ProcessName" text, "ProcessID" int, "ProcessPath" string, "OSVersion" text, "OSArch" text, "OSBuild" text, "FirstCallIn" text, "LastCallIn" text);`)
 	if err != nil {
 		return err
 	}

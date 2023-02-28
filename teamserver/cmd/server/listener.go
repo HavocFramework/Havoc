@@ -160,7 +160,11 @@ func (t *Teamserver) ListenerRemove(Name string) ([]*Listener, []packager.Packag
 			}
 
 			// remove the listener from our database
-			t.DB.ListenerRemove(Name)
+			err := t.DB.ListenerRemove(Name)
+			if err != nil {
+				logger.Error("Failed to remove listener: ", Name)
+				return t.Listeners, t.EventsList
+			}
 
 			t.Listeners = append(t.Listeners[:i], t.Listeners[i+1:]...)
 
@@ -180,6 +184,7 @@ func (t *Teamserver) ListenerRemove(Name string) ([]*Listener, []packager.Packag
 			return t.Listeners, t.EventsList
 		}
 	}
+	logger.Error("Listener not found: ", Name)
 
 	return t.Listeners, t.EventsList
 }

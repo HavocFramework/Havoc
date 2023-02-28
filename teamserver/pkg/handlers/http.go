@@ -144,9 +144,13 @@ func (h *HTTP) Start() {
 
 				err := h.Server.ListenAndServeTLS(CertPath, KeyPath)
 				if err != nil {
-					logger.Error("Couldn't start HTTPs handler: " + err.Error())
-					h.Active = false
-					h.Teamserver.EventListenerError(h.Config.Name, err)
+					if err == http.ErrServerClosed {
+						h.Active = false
+					} else {
+						logger.Error("Couldn't start HTTPs handler: " + err.Error())
+						h.Active = false
+						h.Teamserver.EventListenerError(h.Config.Name, err)
+					}
 				}
 			}()
 		} else {
