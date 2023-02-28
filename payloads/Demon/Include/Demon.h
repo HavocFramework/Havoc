@@ -291,6 +291,7 @@ typedef struct
         WIN_FUNC( OpenProcessToken )
         WIN_FUNC( OpenThreadToken )
         WIN_FUNC( LookupPrivilegeValueA )
+        WIN_FUNC( SetThreadToken )
 
         // String Formatting
         INT ( *vsnprintf ) ( PCHAR, SIZE_T, CONST PCHAR, va_list );
