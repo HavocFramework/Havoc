@@ -8,6 +8,7 @@ all: ts-build client-build
 # teamserver building target
 ts-build:
 	@ echo "[*] building teamserver"
+	@ ./teamserver/Install.sh
 	@ cd teamserver; GO111MODULE="on" go build -ldflags="-s -w -X cmd.VersionCommit=$(git rev-parse HEAD)" -o ../havoc main.go
 
 ts-cleanup: 
