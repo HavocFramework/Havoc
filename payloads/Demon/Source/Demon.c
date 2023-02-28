@@ -137,8 +137,8 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
         [ AES IV       ] 16 bytes
         [ Magic Value  ] 4 bytes
         [ Demon ID     ] 4 bytes
-        [ User Name    ] size + bytes
         [ Host Name    ] size + bytes
+        [ User Name    ] size + bytes
         [ Domain       ] size + bytes
         [ IP Address   ] 16 bytes?
         [ Process Name ] size + bytes
