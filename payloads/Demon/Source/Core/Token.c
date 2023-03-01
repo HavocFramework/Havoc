@@ -311,10 +311,14 @@ HANDLE TokenCurrentHandle( )
     if ( ! Instance.Win32.OpenThreadToken( NtCurrentThread(), TOKEN_QUERY, FALSE, &hToken ) )
     {
         PRINTF( "OpenThreadToken: Failed:[%d]\n", NtGetLastError() );
-        if ( ! Instance.Win32.OpenProcessToken( NtCurrentProcess(), TOKEN_QUERY, &hToken ) )
+        if ( ! Instance.Win32.OpenThreadToken( NtCurrentThread(), TOKEN_QUERY, TRUE, &hToken ) )
         {
-            PRINTF( "OpenProcessToken: Failed:[%d]\n", NtGetLastError() );
-            return NULL;
+            PRINTF( "OpenThreadToken: Failed:[%d]\n", NtGetLastError() );
+            if ( ! Instance.Win32.OpenProcessToken( NtCurrentProcess(), TOKEN_QUERY, &hToken ) )
+            {
+                PRINTF( "OpenProcessToken: Failed:[%d]\n", NtGetLastError() );
+                return NULL;
+            }
         }
     }
 
