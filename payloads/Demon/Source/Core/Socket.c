@@ -317,7 +317,7 @@ VOID SocketFree( PSOCKET_DATA Socket )
 
         /* socket package header */
         PackageAddInt32( Package, SOCKET_COMMAND_CLOSE );
-        PackageAddInt32( Package, Socket->ID   );
+        PackageAddInt32( Package, Socket->ID );
         PackageAddInt32( Package, SOCKET_TYPE_REVERSE_PROXY );
 
         /* Send the socket open request */

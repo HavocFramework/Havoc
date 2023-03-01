@@ -2773,16 +2773,16 @@ VOID CommandSocket( PPARSER Parser )
                                    SOCKET_TYPE_CLIENT_REMOVED :
                                    SOCKET_TYPE_SOCKS_REMOVED  ;
 
-                    /* destroy the package and exit this command function */
-                    PackageDestroy( Package );
-
-                    return;
+                    break;
                 }
 
                 Socket = Socket->Next;
             }
 
-            break;
+            /* destroy the package and exit this command function */
+            PackageDestroy( Package );
+
+            return;
         }
 
         default: break;

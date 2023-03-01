@@ -772,6 +772,7 @@ func (a *Agent) PortFwdOpen(SocketID int) error {
 				return err
 			}
 
+			break;
 		}
 
 	}
@@ -808,6 +809,7 @@ func (a *Agent) PortFwdWrite(SocketID int, data []byte) error {
 				return errors.New("portfwd connection is empty")
 			}
 
+			break;
 		}
 
 	}
@@ -847,6 +849,7 @@ func (a *Agent) PortFwdRead(SocketID int) ([]byte, error) {
 				return nil, errors.New("portfwd connection is empty")
 			}
 
+			break;
 		}
 
 	}
@@ -879,6 +882,7 @@ func (a *Agent) PortFwdClose(SocketID int) {
 			/* remove the socket from the array */
 			a.PortFwds = append(a.PortFwds[:i], a.PortFwds[i+1:]...)
 
+			break;
 		}
 
 	}
@@ -887,6 +891,8 @@ func (a *Agent) PortFwdClose(SocketID int) {
 
 func (a *Agent) SocksClientAdd(SocketID int32, conn net.Conn) *SocksClient {
 
+	a.SocksCliMtx.Lock()
+
 	var client = new(SocksClient)
 
 	client.SocketID = SocketID
@@ -894,6 +900,8 @@ func (a *Agent) SocksClientAdd(SocketID int32, conn net.Conn) *SocksClient {
 	client.Connected = false
 
 	a.SocksCli = append(a.SocksCli, client)
+
+	a.SocksCliMtx.Unlock()
 
 	return client
 }
@@ -945,6 +953,7 @@ func (a *Agent) SocksClientRead(SocketID int) ([]byte, error) {
 				return nil, errors.New("socks proxy connection is empty")
 			}
 
+			break;
 		}
 
 	}
@@ -957,7 +966,9 @@ func (a *Agent) SocksClientRead(SocketID int) ([]byte, error) {
 	return read, nil
 }
 
-func (a *Agent) SocksClientClose(SocketID int) {
+func (a *Agent) SocksClientClose(SocketID int32) {
+
+	a.SocksCliMtx.Lock()
 
 	for i := range a.SocksCli {
 
@@ -978,6 +989,8 @@ func (a *Agent) SocksClientClose(SocketID int) {
 			break
 		}
 	}
+
+	a.SocksCliMtx.Unlock()
 }
 
 func (a *Agent) SocksServerRemove(Addr string) {
@@ -997,6 +1010,7 @@ func (a *Agent) SocksServerRemove(Addr string) {
 			/* remove the socket from the array */
 			a.SocksSvr = append(a.SocksSvr[:i], a.SocksSvr[i+1:]...)
 
+			break;
 		}
 
 	}

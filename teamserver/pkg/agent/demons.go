@@ -1530,7 +1530,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 									/* we failed to read from the socks proxy */
 									logger.Error(fmt.Sprintf("Failed to read from socket %x: %v", client.SocketID, err))
 
-									a.SocksClientClose(SocketId)
+									a.SocksClientClose(int32(SocketId))
 
 									/* make a new job */
 									var job = Job{
@@ -1638,14 +1638,14 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 					for client := range a.SocksSvr[i].Server.Clients {
 
 						/* close the client connection */
-						a.SocksClientClose(client)
+						a.SocksClientClose(a.SocksSvr[i].Server.Clients[client])
 
 						/* make a new job */
 						var job = Job{
 							Command: COMMAND_SOCKET,
 							Data: []any{
 								SOCKET_COMMAND_CLOSE,
-								client,
+								a.SocksSvr[i].Server.Clients[client],
 							},
 						}
 
@@ -1697,14 +1697,14 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 				for client := range a.SocksSvr[i].Server.Clients {
 
 					/* close the client connection */
-					a.SocksClientClose(client)
+					a.SocksClientClose(a.SocksSvr[i].Server.Clients[client])
 
 					/* make a new job */
 					var job = Job{
 						Command: COMMAND_SOCKET,
 						Data: []any{
 							SOCKET_COMMAND_CLOSE,
-							client,
+							a.SocksSvr[i].Server.Clients[client],
 						},
 					}
 
@@ -4773,7 +4773,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 								a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to write to socks proxy %v: %v", Id, err), "")
 
 								/* TODO: remove socks proxy client */
-								a.SocksClientClose(SOCKET_TYPE_CLIENT)
+								//a.SocksClientClose(SOCKET_TYPE_CLIENT)
 
 								return
 							}
@@ -4826,7 +4826,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 						if Client := a.SocksClientGet(SockId); Client != nil {
 
 							/* lets remove it */
-							a.SocksClientClose(SockId)
+							a.SocksClientClose(int32(SockId))
 
 						}
 
@@ -4860,7 +4860,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 						} else {
 
-							a.SocksClientClose(SocketId)
+							a.SocksClientClose(int32(SocketId))
 
 						}
 

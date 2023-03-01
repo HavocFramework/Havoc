@@ -210,11 +210,6 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.B
 							break
 
 						case agent.COMMAND_SOCKET:
-							logger.Debug("agent.COMMAND_SOCKET")
-							/* just send it to the agent and don't let the operator know or else this can be spamming the console lol */
-							if job[j].Data[0] == agent.SOCKET_COMMAND_CLOSE || job[j].Data[0] == agent.SOCKET_COMMAND_READ_WRITE || job[j].Data[0] == agent.SOCKET_COMMAND_CONNECT {
-								payload = agent.BuildPayloadMessage([]agent.Job{job[j]}, Agent.Encryption.AESKey, Agent.Encryption.AESIv)
-							}
 
 							break
 

@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"sync"
 	"net"
 	"os"
 
@@ -125,15 +126,18 @@ type Agent struct {
 	/* TODO: make a map called "Optional" where to put demon/3rd party
 	 * 		 specific data (either use type "any" or map lets see).
 	 * 		 to avoid having some unnecessary data for 3rd party agent */
-	Downloads  []*Download
-	PortFwds   []*PortFwd
-	SocksCli   []*SocksClient
-	SocksSvr   []*SocksServer
+	Downloads   []*Download
+	PortFwds    []*PortFwd
+	SocksCli    []*SocksClient
+	SocksCliMtx sync.Mutex
+	SocksSvr    []*SocksServer
+
 	Encryption struct {
 		AESKey []byte
 		AESIv  []byte
 	}
 	TaskedOnce bool
+
 
 	/* general value. leave it... */
 	BackgroundCheck bool
