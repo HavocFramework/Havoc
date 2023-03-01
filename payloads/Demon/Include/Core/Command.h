@@ -114,6 +114,7 @@
 #define DEMON_COMMAND_TOKEN_REVERT           7
 #define DEMON_COMMAND_TOKEN_REMOVE           8
 #define DEMON_COMMAND_TOKEN_CLEAR            9
+#define DEMON_COMMAND_TOKEN_FIND_TOKENS      10
 
 #define DEMON_COMMAND_FS_DIR                 1
 #define DEMON_COMMAND_FS_DOWNLOAD            2

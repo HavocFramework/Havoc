@@ -1018,6 +1018,13 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
 
                 SEND( Execute.Token( TaskID, "list", "" ) );
             }
+            else if ( InputCommands[ 1 ].compare( "find-tokens" ) == 0 )
+            {
+                TaskID = CONSOLE_INFO( "Tasked demon to find tokens" );
+                CommandInputList[ TaskID ] = commandline;
+
+                SEND( Execute.Token( TaskID, "find-tokens", "" ) );
+            }
             else if ( InputCommands[ 1 ].compare( "make" ) == 0 )
             {
                 if ( InputCommands.size() < 5 )

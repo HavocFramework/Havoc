@@ -22,7 +22,7 @@ var CobraServer = &cobra.Command{
 		var (
 			DirPath, _  = os.Getwd()
 			ServerTimer = time.Now()
-			LogrPath    = "data/loot/" + ServerTimer.Format("02.01.2006_15:04:05")
+			LogrPath    = "data/loot/" + ServerTimer.Format("2006.02.01._15:04:05")
 			Server      *server.Teamserver
 		)
 

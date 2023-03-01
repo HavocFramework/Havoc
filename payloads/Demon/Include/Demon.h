@@ -385,6 +385,7 @@ typedef struct
         WIN_FUNC( NtQueryVirtualMemory )
         WIN_FUNC( NtQueryInformationToken )
         WIN_FUNC( NtQueryInformationThread )
+        WIN_FUNC( NtQueryObject )
     } Syscall ;
 
     struct

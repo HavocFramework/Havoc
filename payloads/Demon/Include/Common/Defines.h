@@ -121,6 +121,7 @@
 #define FuncHash_NtFreeVirtualMemory                 0x471aa7e9
 #define FuncHash_NtQueryVirtualMemory                0xe39d8e5d
 #define FuncHash_NtQueryInformationToken             0x2ce5a244
+#define FuncHash_NtQueryObject                       0x218116f4
 #define FuncHash_NtQueryInformationThread            0xc91f149b
 #define FuncHash_GetTokenInformation                 881854923972837164
 #define FuncHash_CreateProcessWithTokenW             0x94e76e4c

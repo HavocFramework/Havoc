@@ -379,6 +379,12 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                     .MitreTechniques = {"T1134"},
                 },
                 {
+                    .CommandString  = "find-tokens",
+                    .Description    = "find all tokens that can be stolen on the system",
+                    .Behavior       = BEHAVIOR_API_ONLY,
+                    .MitreTechniques = {"T1134"},
+                },
+                {
                     .CommandString  = "steal",
                     .Description    = "steal token from specified process and save it to token vault",
                     .Behavior       = BEHAVIOR_API_ONLY,
