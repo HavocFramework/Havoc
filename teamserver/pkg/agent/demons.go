@@ -838,14 +838,29 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 				SubCommand = 0x2
 
 				if val, ok := Optional["Arguments"].(string); ok {
-					Arguments, err = strconv.Atoi(val)
+
+					var (
+						PID int
+						Handle int64
+						ArrayData []string
+					)
+
+					ArrayData = strings.Split(val, ";")
+
+					PID, err = strconv.Atoi(ArrayData[0])
 					if err != nil {
-						return job, errors.New("Failed to convert TokenID to int: " + err.Error())
+						return job, errors.New("Failed to convert PID to int: " + err.Error())
+					}
+
+					Handle, err = strconv.ParseInt(ArrayData[1], 16, 64)
+					if err != nil {
+						return job, errors.New("Failed to convert Handle to int: " + err.Error())
 					}
 
 					job.Data = []interface{}{
 						SubCommand,
-						Arguments.(int),
+						PID,
+						int(Handle),
 					}
 				} else {
 					return job, errors.New("token arguments not found")

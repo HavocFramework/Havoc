@@ -389,7 +389,7 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                     .Description    = "steal token from specified process and save it to token vault",
                     .Behavior       = BEHAVIOR_API_ONLY,
                     .MitreTechniques = {"T1134.001"},
-                    .Usage          = "[process id]",
+                    .Usage          = "[process id] (handle)",
                     .Example        = "1337",
                 },
                 {

