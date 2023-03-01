@@ -7,22 +7,25 @@
 #define TOKEN_TYPE_MAKE_NETWORK 0x2
 
 #define BUF_SIZE 4096
+#define MAX_USERNAME 512
 
 typedef struct _SavedToken
 {
-    char username[256];
+    CHAR username[MAX_USERNAME];
+    DWORD dwProcessID;
+    HANDLE localHandle;
     HANDLE token;
 } SavedToken, *PSavedToken;
 
-#define MAX_USERNAME 256
-
-typedef struct
+typedef struct _UniqueUserToken
 {
     char username[MAX_USERNAME];
     int token_num;
+    DWORD dwProcessID;
+    HANDLE localHandle;
     BOOL delegation_available;
     BOOL impersonation_available;
-} unique_user_token;
+} UniqueUserToken, *PUniqueUserToken;
 
 typedef struct _TOKEN_LIST_DATA
 {
@@ -51,6 +54,6 @@ HANDLE           TokenMake( LPSTR User, LPSTR Password, LPSTR Domain );
 PTOKEN_LIST_DATA TokenGet( DWORD TokenID );
 VOID             TokenClear( );
 VOID             TokenImpersonate( BOOL Impersonate );
-BOOL             ListTokens( PSavedToken* pTokenList, PDWORD pNumTokens );
+BOOL             ListTokens( PUniqueUserToken* UniqTokens, PDWORD pNumTokens );
 
 #endif

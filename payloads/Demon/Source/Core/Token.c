@@ -409,6 +409,27 @@ LPWSTR GetObjectInfo( HANDLE hObject, OBJECT_INFORMATION_CLASS objInfoClass )
     return NULL;
 }
 
+BOOL IsDelegationToken( HANDLE token )
+{
+    HANDLE temp_token                       = NULL;
+    BOOL   ret                              = FALSE;
+    LPVOID TokenImpersonationInfo[BUF_SIZE] = { 0 };
+    DWORD  returned_tokinfo_length          = 0;
+
+    if ( Instance.Win32.GetTokenInformation( token, TokenImpersonationLevel, TokenImpersonationInfo, BUF_SIZE, &returned_tokinfo_length ) )
+    {
+        if (*((SECURITY_IMPERSONATION_LEVEL*)TokenImpersonationInfo) >= SecurityDelegation)
+            return TRUE;
+        else
+            return FALSE;
+    }
+
+    ret = Win32_DuplicateTokenEx( token, TOKEN_ALL_ACCESS, NULL, SecurityDelegation, TokenImpersonation, &temp_token );
+    Instance.Win32.NtClose( temp_token );
+
+    return ret;
+}
+
 BOOL IsImpersonationToken( HANDLE token )
 {
     HANDLE temp_token                       = NULL;
@@ -454,7 +475,40 @@ BOOL GetDomainUsernameFromToken(HANDLE token, PCHAR FullName)
     return TRUE;
 }
 
-BOOL ListTokens( PSavedToken* pTokenList, PDWORD pNumTokens )
+VOID ProcessUserToken( PSavedToken SavedToken, PUniqueUserToken UniqTokens, PDWORD NumUniqTokens )
+{
+    BOOL user_exists = FALSE;
+
+    for ( DWORD i = 0; i < *NumUniqTokens; ++i )
+    {
+        if ( ! StringCompareA( UniqTokens[i].username,  SavedToken->username) )
+        {
+            user_exists = TRUE;
+            break;
+        }
+    }
+
+    if ( ! user_exists )
+    {
+        // TODO: while unlikely, this could overflow
+
+        StringCopyA( UniqTokens[ *NumUniqTokens ].username, SavedToken->username );
+        UniqTokens[ *NumUniqTokens ].dwProcessID = SavedToken->dwProcessID;
+        UniqTokens[ *NumUniqTokens ].localHandle = SavedToken->localHandle;
+        UniqTokens[ *NumUniqTokens ].delegation_available    = FALSE;
+        UniqTokens[ *NumUniqTokens ].impersonation_available = FALSE;
+
+        if ( IsDelegationToken( SavedToken->token ) )
+            UniqTokens[ *NumUniqTokens ].delegation_available = TRUE;
+
+        if ( IsImpersonationToken( SavedToken->token ) )
+            UniqTokens[ *NumUniqTokens ].impersonation_available = TRUE;
+
+        (*NumUniqTokens)++;
+    }
+}
+
+BOOL ListTokens( PUniqueUserToken* pUniqTokens, PDWORD pNumTokens )
 {
     BOOL                        ReturnValue       = FALSE;
     DWORD                       NumTokens         = 0;
@@ -471,9 +525,15 @@ BOOL ListTokens( PSavedToken* pTokenList, PDWORD pNumTokens )
     CLIENT_ID                   ProcID            = { 0 };
     OBJECT_ATTRIBUTES           ObjAttr           = { sizeof( ObjAttr ) };
     LPWSTR                      lpwsType          = NULL;
+    PUniqueUserToken            UniqTokens        = NULL;
+    DWORD                       NumUniqTokens     = 0;
+
+    UniqTokens = Instance.Win32.LocalAlloc( LPTR, BUF_SIZE * sizeof( UniqueUserToken ) );
+    if ( ! UniqTokens )
+        goto Cleanup;
 
     TokenList = Instance.Win32.LocalAlloc( LPTR, ListSize * sizeof( SavedToken ) );
-    if (!TokenList)
+    if ( ! TokenList )
         goto Cleanup;
     
     if ( ! TokenSetPrivilege( SE_IMPERSONATE_NAME, TRUE ) )
@@ -545,15 +605,23 @@ BOOL ListTokens( PSavedToken* pTokenList, PDWORD pNumTokens )
                                 if ( GetDomainUsernameFromToken( hObject, TokenList[ NumTokens ].username ) )
                                 {
                                     TokenList[ NumTokens ].token = hObject;
+                                    TokenList[ NumTokens ].dwProcessID = pProcessInfoEntry->UniqueProcessId;
+                                    TokenList[ NumTokens ].localHandle = (i + 1) * 4;
+                                    ProcessUserToken( &TokenList[ NumTokens ], UniqTokens, &NumUniqTokens );
                                     NumTokens++;
                                 }
                             }
                             Instance.Win32.NtClose( hObject2 ); hObject2 = NULL;
                         }
                     }
+                    else
+                    {
+                        Instance.Win32.NtClose( hObject ); hObject = NULL;
+                    }
                     if ( lpwsType )
-                        Instance.Win32.LocalFree( lpwsType );
-                    Instance.Win32.NtClose( hObject ); hObject = NULL;
+                    {
+                        Instance.Win32.LocalFree( lpwsType ); lpwsType = NULL;
+                    }
                 }
             }
 
@@ -584,6 +652,9 @@ BOOL ListTokens( PSavedToken* pTokenList, PDWORD pNumTokens )
                             if ( GetDomainUsernameFromToken( hObject, TokenList[ NumTokens ].username ) )
                             {
                                 TokenList[ NumTokens ].token = hObject;
+                                TokenList[ NumTokens ].dwProcessID = pProcessInfoEntry->UniqueProcessId;
+                                TokenList[ NumTokens ].localHandle = 0;
+                                ProcessUserToken( &TokenList[ NumTokens ], UniqTokens, &NumUniqTokens );
                                 NumTokens++;
                             }
                         }
@@ -591,7 +662,10 @@ BOOL ListTokens( PSavedToken* pTokenList, PDWORD pNumTokens )
                         Instance.Win32.NtClose( hObject2 ); hObject2 = NULL;
                     }
                 }
-                Instance.Win32.NtClose( hObject ); hObject = NULL;
+                else
+                {
+                    Instance.Win32.NtClose( hObject ); hObject = NULL;
+                }
             }
 
             Instance.Win32.NtClose( hProcess ); hProcess = NULL;
@@ -600,13 +674,22 @@ BOOL ListTokens( PSavedToken* pTokenList, PDWORD pNumTokens )
         pProcessInfoEntry = (PSYSTEM_PROCESS_INFORMATION)((ULONG_PTR)pProcessInfoEntry + (ULONG_PTR)pProcessInfoEntry->NextEntryOffset);
     }
 
-    *pTokenList = TokenList;
-    *pNumTokens = NumTokens;
+    for (DWORD j = 0; j < NumTokens; ++j)
+    {
+        Instance.Win32.NtClose( TokenList[ j ].token ); TokenList[ j ].token = NULL;
+    }
+
+    Instance.Win32.LocalFree( TokenList ); TokenList = NULL;
+
+    *pUniqTokens = UniqTokens;
+    *pNumTokens = NumUniqTokens;
     ReturnValue = TRUE;
 
 Cleanup:
-    if ( ! ReturnValue && TokenList )
+    if ( TokenList )
         Instance.Win32.LocalFree( TokenList );
+    if ( ! ReturnValue && UniqTokens )
+        Instance.Win32.LocalFree( UniqTokens );
     if ( pProcessInfoList )
         Instance.Win32.LocalFree( pProcessInfoList );
 

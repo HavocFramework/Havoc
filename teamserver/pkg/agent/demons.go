@@ -3611,37 +3611,78 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				var (
 					Successful    int
 					Buffer        string
-					TokenValue    int
 					DomainAndUser string
-					//FmtString string
-					//Array     [][]any
-					//MaxString int
+					NumDelTokens  int
+					NumImpTokens  int
+					ProcessPID    int
+					localHandle   int
 				)
 
 				for Parser.Length() >= 4 {
 
 					Successful = Parser.ParseInt32()
 
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_FIND_TOKENS, Successful: %d", AgentID, Successful))
+
 					if Successful  == win32.TRUE {
 
 						Buffer += "Delegation Tokens Available\n"
 						Buffer += "========================================\n"
 
-						Buffer += "Impersonation Tokens Available\n"
-						Buffer += "========================================\n"
+						if Parser.Length() >= 4 {
 
-						for Parser.Length() >= 8 {
-							TokenValue    = Parser.ParseInt32()
-							DomainAndUser = string(Parser.ParseBytes())
-							Buffer += fmt.Sprintf("- Handle: %x, User: %s\n", TokenValue, DomainAndUser)
+							NumDelTokens = Parser.ParseInt32()
+
+							if NumDelTokens == 0 {
+								Buffer += "(No tokens found)\n"
+							} else {
+								for NumDelTokens > 0 && Parser.Length() >= 12 {
+									DomainAndUser = string(Parser.ParseBytes())
+									ProcessPID    = Parser.ParseInt32()
+									localHandle   = Parser.ParseInt32()
+									if localHandle != 0 {
+										Buffer += fmt.Sprintf("- User: %s, Process: %d, handle: %x\n", DomainAndUser, ProcessPID, localHandle )
+									} else {
+										Buffer += fmt.Sprintf("- User: %s, Process: %d\n", DomainAndUser, ProcessPID )
+									}
+									NumDelTokens--
+								}
+							}
+
+							Buffer += "\nImpersonation Tokens Available\n"
+							Buffer += "========================================\n"
+
+							if Parser.Length() >= 4 {
+
+								NumImpTokens = Parser.ParseInt32()
+
+								if NumImpTokens == 0 {
+									Buffer += "(No tokens found)\n"
+								} else {
+									for NumImpTokens > 0 && Parser.Length() >= 12 {
+										DomainAndUser = string(Parser.ParseBytes())
+										ProcessPID    = Parser.ParseInt32()
+										localHandle   = Parser.ParseInt32()
+										if localHandle != 0 {
+											Buffer += fmt.Sprintf("- User: %s, Process: %d, handle: %x\n", DomainAndUser, ProcessPID, localHandle )
+										} else {
+											Buffer += fmt.Sprintf("- User: %s, Process: %d\n", DomainAndUser, ProcessPID )
+										}
+										NumImpTokens--
+									}
+								}
+
+								Output["Type"] = "Info"
+								Output["Message"] = "Tokens available:"
+								Output["Output"] = "\n" + Buffer
+							} else {
+								logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_FIND_TOKENS, Invalid packet: %d", AgentID))
+							}
+
+						} else {
+							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_FIND_TOKENS, Invalid packet: %d", AgentID))
 						}
 
-						//FmtString = fmt.Sprintf(" %%-4v  %%-6v  %%-%vv  %%-4v  %%-4v\n", MaxString)
-
-
-						Output["Type"] = "Info"
-						Output["Message"] = "Tokens available:"
-						Output["Output"] = "\n" + Buffer
 					} else {
 						Output["Type"] = typeError
 						Output["Message"] = "Failed to list existing tokens"

