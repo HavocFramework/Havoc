@@ -483,8 +483,16 @@ VOID ProcessUserToken( PSavedToken SavedToken, PUniqueUserToken UniqTokens, PDWO
     {
         if ( ! StringCompareA( UniqTokens[i].username,  SavedToken->username) )
         {
-            user_exists = TRUE;
-            break;
+            if ( UniqTokens[i].localHandle != 0 && SavedToken->localHandle != 0 )
+            {
+                user_exists = TRUE;
+                break;
+            }
+            if ( UniqTokens[i].localHandle == 0 && SavedToken->localHandle == 0 )
+            {
+                user_exists = TRUE;
+                break;
+            }
         }
     }
 
