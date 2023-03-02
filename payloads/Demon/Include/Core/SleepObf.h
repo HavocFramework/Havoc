@@ -5,6 +5,6 @@
 #include <windows.h>
 
 VOID WINAPI CfgAddressAdd( LPVOID ImageBase, LPVOID Function );
-VOID        SleepObf( UINT32 Timeout );
+VOID        SleepObf( );
 
 #endif

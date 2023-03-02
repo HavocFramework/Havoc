@@ -396,15 +396,48 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 return false;
             }
 
+            if ( InputCommands.size() > 3 ) {
+                CONSOLE_ERROR( "Too many arguments" );
+                return false;
+            }
+
             if ( InputCommands[ 1 ].at( 0 ) == '-' )
             {
                 CONSOLE_ERROR( "\"sleep\" doesn't support negative delays" );
                 return false;
             }
 
-            TaskID = CONSOLE_INFO( "Tasked demon to sleep for " + InputCommands[ 1 ] + " seconds" );
+            auto jit = QString( "0" );
+            if ( InputCommands.size() == 3 )
+            {
+                jit = InputCommands[ 2 ];
+                bool ok;
+                double jitter = jit.toDouble(&ok);
+                if ( ok == false )
+                {
+                    CONSOLE_ERROR( "Invalid jitter" );
+                    return false;
+                }
+                if ( jitter < 0 )
+                {
+                    CONSOLE_ERROR( "\"sleep\" doesn't support negative jitters" );
+                    return false;
+                }
+                if ( jitter > 100 )
+                {
+                    CONSOLE_ERROR( "The jitter can't be larget than 100" );
+                    return false;
+                }
+                TaskID = CONSOLE_INFO( "Tasked demon to sleep for " + InputCommands[ 1 ] + " seconds with " + jit + "% jitter" );
+            }
+            else
+            {
+                TaskID = CONSOLE_INFO( "Tasked demon to sleep for " + InputCommands[ 1 ] + " seconds" );
+
+            }
+
             CommandInputList[ TaskID ] = commandline;
-            SEND( Execute.Sleep( TaskID, InputCommands[ 1 ] ) )
+            SEND( Execute.Sleep( TaskID, InputCommands[ 1 ] + ";" + jit ) )
         }
         else if ( InputCommands[ 0 ].compare( "checkin" ) == 0 )
         {

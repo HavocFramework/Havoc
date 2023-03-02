@@ -77,6 +77,7 @@ typedef struct
     struct {
         /* Sleep delay */
         DWORD Sleeping;
+        DWORD Jitter;
 
         /* Kill Date
          * TODO: add this */

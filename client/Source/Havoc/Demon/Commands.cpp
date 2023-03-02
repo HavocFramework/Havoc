@@ -22,7 +22,7 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
             .CommandString  = "sleep",
             .Description    = "sets the delay to sleep",
             .MitreTechniques= { "T1029" },
-            .Usage          = "[delay]",
+            .Usage          = "[delay] (jitter)",
             .Example        = "10",
             NO_SUBCOMMANDS
         },

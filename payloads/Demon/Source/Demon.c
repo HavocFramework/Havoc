@@ -89,7 +89,7 @@ VOID DemonRoutine()
         }
 
         /* Sleep for a while (with encryption if specified) */
-        SleepObf( Instance.Config.Sleeping * 1000 );
+        SleepObf();
     }
 }
 
@@ -241,6 +241,8 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
     PackageAddInt32( *MetaData, Instance.Session.OS_Arch );
 
     PackageAddInt32( *MetaData, Instance.Config.Sleeping );
+
+    PackageAddInt32( *MetaData, Instance.Config.Jitter );
 }
 
 VOID DemonInit( VOID )

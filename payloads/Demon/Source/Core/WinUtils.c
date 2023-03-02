@@ -744,3 +744,13 @@ ULONG RandomNumber32( VOID )
 
     return Seed % 2 == 0 ? Seed : Seed + 1;
 }
+
+BOOL RandomBool( VOID )
+{
+    ULONG Seed = 0;
+
+    Seed = Instance.Win32.GetTickCount();
+    Seed = Instance.Win32.RtlRandomEx( &Seed );
+
+    return Seed % 2 == 0 ? TRUE : FALSE;
+}

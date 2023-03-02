@@ -145,9 +145,10 @@ type Agent struct {
 
 type AgentInfo struct {
 	// Connection Info
-	Listener   any
-	MagicValue int
-	SleepDelay int
+	Listener    any
+	MagicValue  int
+	SleepDelay  int
+	SleepJitter int
 
 	// OS Info
 	OSVersion string

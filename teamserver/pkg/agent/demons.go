@@ -137,23 +137,27 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 
 	case COMMAND_SLEEP:
 		var (
-			Delay int
-			err   error
+			Delay    int
+			Jitter   int
+			err      error
+			ArgArray []string
 		)
 
-		if val, ok := Optional["Arguments"]; ok {
+		ArgArray = strings.Split(Optional["Arguments"].(string), ";")
 
-			Delay, err = strconv.Atoi(val.(string))
-			if err != nil {
-				return nil, err
-			}
+		Delay, err = strconv.Atoi(ArgArray[0])
+		if err != nil {
+			return nil, err
+		}
 
-			job.Data = []interface{}{
-				Delay,
-			}
+		Jitter, err = strconv.Atoi(ArgArray[1])
+		if err != nil {
+			return nil, err
+		}
 
-		} else {
-			return nil, fmt.Errorf("no sleep delay specified: \"Arguments\" is not specified")
+		job.Data = []interface{}{
+			Delay,
+			Jitter,
 		}
 
 	case COMMAND_FS:
@@ -1826,6 +1830,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				ProcessArch int
 				ProcessPPID int
 				SleepDelay  int
+				SleepJitter int
 				Session     = &Agent{
 					Encryption: struct {
 						AESKey []byte
@@ -1884,19 +1889,21 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			Elevated = Parser.ParseInt32()
 			OsVersion = []int{Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32()}
 			OsArch = Parser.ParseInt32()
-			SleepDelay = Parser.ParseInt32()
+			SleepDelay  = Parser.ParseInt32()
+			SleepJitter = Parser.ParseInt32()
 
 			Session.Active = true
 
-			Session.NameID = fmt.Sprintf("%x", DemonID)
-			Session.Info.MagicValue = MagicValue
+			Session.NameID           = fmt.Sprintf("%x", DemonID)
+			Session.Info.MagicValue  = MagicValue
 			Session.Info.FirstCallIn = a.Info.FirstCallIn
-			Session.Info.LastCallIn = a.Info.LastCallIn
-			Session.Info.Hostname = Hostname
-			Session.Info.DomainName = DomainName
-			Session.Info.Username = Username
-			Session.Info.InternalIP = InternalIP
-			Session.Info.SleepDelay = SleepDelay
+			Session.Info.LastCallIn  = a.Info.LastCallIn
+			Session.Info.Hostname    = Hostname
+			Session.Info.DomainName  = DomainName
+			Session.Info.Username    = Username
+			Session.Info.InternalIP  = InternalIP
+			Session.Info.SleepDelay  = SleepDelay
+			Session.Info.SleepJitter = SleepJitter
 
 			// Session.Info.ExternalIP 	= strings.Split(connection.RemoteAddr().String(), ":")[0]
 			// Session.Info.Listener 	= t.Name
@@ -1969,6 +1976,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 					"  - AES Key            : %v\n"+
 					"  - AES IV             : %v\n"+
 					"  - Sleep Delay        : %v\n"+
+					"  - Sleep Jitter       : %v\n"+
 					"\n"+
 					"Host Info:\n"+
 					"  - Host Name          : %v\n"+
@@ -2001,6 +2009,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				hex.EncodeToString(Session.Encryption.AESKey),
 				hex.EncodeToString(Session.Encryption.AESIv),
 				Session.Info.SleepDelay,
+				Session.Info.SleepJitter,
 
 				// Host info
 				Session.Info.Hostname,
@@ -2141,15 +2150,16 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 	case COMMAND_SLEEP:
 
-		if Parser.Length() >= 4 {
+		if Parser.Length() >= 8 {
 			var Output = make(map[string]string)
 
-			a.Info.SleepDelay = Parser.ParseInt32()
+			a.Info.SleepDelay  = Parser.ParseInt32()
+			a.Info.SleepJitter = Parser.ParseInt32()
 
-			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SLEEP, SleepDelay: %d", AgentID, a.Info.SleepDelay))
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SLEEP, SleepDelay: %d, SleepJitter: %d", AgentID, a.Info.SleepDelay, a.Info.SleepJitter))
 
 			Output["Type"] = "Good"
-			Output["Message"] = fmt.Sprintf("Set sleep interval to %v seconds", a.Info.SleepDelay)
+			Output["Message"] = fmt.Sprintf("Set sleep interval to %v seconds with %v%% jitter", a.Info.SleepDelay, a.Info.SleepJitter)
 
 			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
 		} else {
