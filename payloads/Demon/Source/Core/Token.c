@@ -442,22 +442,31 @@ LPWSTR GetObjectInfo( HANDLE hObject, OBJECT_INFORMATION_CLASS objInfoClass )
 BOOL IsDelegationToken( HANDLE token )
 {
     HANDLE temp_token                       = NULL;
-    BOOL   ret                              = FALSE;
-    LPVOID TokenImpersonationInfo[BUF_SIZE] = { 0 };
+    BOOL   ReturnValue                      = FALSE;
+    LPVOID TokenImpersonationInfo           = NULL;
     DWORD  returned_tokinfo_length          = 0;
+
+    TokenImpersonationInfo = Instance.Win32.LocalAlloc( LPTR, BUF_SIZE );
+    if ( ! TokenImpersonationInfo )
+        return FALSE;
 
     if ( Instance.Win32.GetTokenInformation( token, TokenImpersonationLevel, TokenImpersonationInfo, BUF_SIZE, &returned_tokinfo_length ) )
     {
         if (*((SECURITY_IMPERSONATION_LEVEL*)TokenImpersonationInfo) >= SecurityDelegation)
-            return TRUE;
+            ReturnValue = TRUE;
         else
-            return FALSE;
+            ReturnValue = FALSE;
+    }
+    else
+    {
+        ReturnValue = Win32_DuplicateTokenEx( token, TOKEN_ALL_ACCESS, NULL, SecurityDelegation, TokenImpersonation, &temp_token );
+        Instance.Win32.NtClose( temp_token );
     }
 
-    ret = Win32_DuplicateTokenEx( token, TOKEN_ALL_ACCESS, NULL, SecurityDelegation, TokenImpersonation, &temp_token );
-    Instance.Win32.NtClose( temp_token );
+    if ( TokenImpersonationInfo )
+        Instance.Win32.LocalFree( TokenImpersonationInfo );
 
-    return ret;
+    return ReturnValue;
 }
 
 BOOL IsImpersonationToken( HANDLE token )
