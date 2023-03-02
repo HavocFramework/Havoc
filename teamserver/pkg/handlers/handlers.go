@@ -213,6 +213,10 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.B
 
 							break
 
+						case agent.COMMAND_FS:
+
+							break
+
 						default:
 							//logger.Debug("Default")
 							/* build the task payload */
