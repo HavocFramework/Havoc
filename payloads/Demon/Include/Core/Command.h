@@ -31,6 +31,7 @@
 #define DEMON_OUTPUT                    90
 #define DEMON_ERROR                     91
 #define DEMON_EXIT                      92
+#define DEMON_KILL_DATE                 93
 #define DEMON_INITIALIZE                99
 
 #define DEMON_EXCEPTION                 0x98
@@ -137,6 +138,7 @@ VOID CommandDispatcher( VOID );
 
 VOID CommandCheckin( VOID );
 VOID CommandSleep( PPARSER DataArgs );
+VOID ReachedKillDate( );
 VOID CommandExit( PPARSER DataArgs );
 VOID CommandJob( PPARSER DataArgs );
 VOID CommandProc( PPARSER DataArgs );

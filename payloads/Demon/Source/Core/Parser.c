@@ -50,6 +50,27 @@ INT ParserGetInt32( PPARSER parser )
         return ( INT ) __builtin_bswap32( intBytes );
 }
 
+INT64 ParserGetInt64( PPARSER parser )
+{
+    INT64 intBytes = 0;
+
+    if ( ! parser )
+        return 0;
+
+    if ( parser->Length < 8 )
+        return 0;
+
+    MemCopy( &intBytes, parser->Buffer, 8 );
+
+    parser->Buffer += 8;
+    parser->Length -= 8;
+
+    if ( ! parser->Endian )
+        return ( INT64 ) intBytes;
+    else
+        return ( INT64 ) __builtin_bswap64( intBytes );
+}
+
 PCHAR ParserGetBytes( PPARSER parser, PINT size )
 {
     UINT32  Length  = 0;

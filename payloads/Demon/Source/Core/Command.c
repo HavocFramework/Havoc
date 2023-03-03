@@ -74,6 +74,12 @@ VOID CommandDispatcher( VOID )
             CommandExit( NULL );
         }
 
+        if ( Instance.Config.Transport.KillDate && GetSystemTimeAsUnixTime() >= Instance.Config.Transport.KillDate )
+        {
+            PackageDestroy( Package );
+            ReachedKillDate();
+        }
+
 /* SMB */
 #else
         if ( ! PackageTransmit( Package, &DataBuffer, &DataBufferSize ) )
@@ -2856,6 +2862,19 @@ VOID CommandSocket( PPARSER Parser )
     }
 
     PackageTransmit( Package, NULL, NULL );
+}
+
+VOID ReachedKillDate( )
+{
+    PUTS( "Reached KillDate"  )
+
+    /* Send our last message to our server...
+     * "They say time is the fire in which we burn.
+     * Right now, Captain, my time is running out." */
+    PPACKAGE Package = PackageCreate( DEMON_KILL_DATE );
+    PackageTransmit( Package, NULL, NULL );
+
+    CommandExit( NULL );
 }
 
 // TODO: rewrite this. disconnect all pivots. kill our threads. release memory and free itself.

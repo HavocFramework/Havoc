@@ -1785,16 +1785,16 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 	case COMMAND_EXIT:
 		if Parser.Length() >= 4 {
 			var (
-				Status  = Parser.ParseInt32()
+				ExitMethod  = Parser.ParseInt32()
 				Message = make(map[string]string)
 			)
 
-			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_EXIT, Status: %d", AgentID, Status))
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_EXIT, ExitMethod: %d", AgentID, ExitMethod))
 
-			if Status == 1 {
+			if ExitMethod == 1 {
 				Message["Type"] = "Good"
 				Message["Message"] = "Agent has been tasked to cleanup and exit thread. cya..."
-			} else if Status == 2 {
+			} else if ExitMethod == 2 {
 				Message["Type"] = "Good"
 				Message["Message"] = "Agent has been tasked to cleanup and exit process. cya..."
 			}
@@ -1806,6 +1806,21 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 		} else {
 			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_EXIT, Invalid packet", AgentID))
 		}
+
+	case COMMAND_KILL_DATE:
+		var (
+			Message = make(map[string]string)
+		)
+
+		logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_KILL_DATE", AgentID))
+
+		Message["Type"] = "Good"
+		Message["Message"] = "Agent has been reached its kill date, tasked to cleanup and exit thread. cya..."
+
+		a.Active = false
+		teamserver.EventAgentMark(a.NameID, "Dead")
+
+		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 	case COMMAND_CHECKIN:
 		logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CHECKIN", AgentID))

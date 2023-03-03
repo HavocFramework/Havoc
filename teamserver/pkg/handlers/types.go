@@ -11,6 +11,7 @@ import (
 type (
 	HTTPConfig struct {
 		Name         string
+		KillDate     int64
 		Hosts        []string
 		HostBind     string
 		HostRotation string

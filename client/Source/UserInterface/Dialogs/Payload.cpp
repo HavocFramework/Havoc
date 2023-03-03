@@ -472,6 +472,7 @@ auto Payload::DefaultConfig() -> void
     auto Format                  = ComboFormat->currentText();
     auto DemonConfig             = HavocX::Teamserver.DemonConfig;
     auto ConfigSleep             = new QTreeWidgetItem( TreeConfig );
+    auto ConfigJitter            = new QTreeWidgetItem( TreeConfig );
 
     auto ConfigServiceName       = ( QTreeWidgetItem* ) nullptr;
     auto ConfigServiceNameInput  = ( QLineEdit* ) nullptr;
@@ -493,7 +494,11 @@ auto Payload::DefaultConfig() -> void
     auto SleepObfTechnique       = new QComboBox;
     auto SleepObfSpoofAddress    = new QLineEdit;
 
+    auto Jitter = DemonConfig[ "Jitter" ].toInt();
+    if ( Jitter < 0 || Jitter > 100 )
+        Jitter = 0;
     auto ConfigSleepLineEdit     = new QLineEdit( QString::number( DemonConfig[ "Sleep" ].toInt() ) );
+    auto ConfigJitterLineEdit    = new QLineEdit( QString::number( Jitter ) );
     auto ConfigIndSyscallCheck   = new QCheckBox;
     auto ConfigInjectAlloc       = new QComboBox;
     auto ConfigInjectExecute     = new QComboBox;
@@ -501,6 +506,7 @@ auto Payload::DefaultConfig() -> void
     auto ConfigSpawn32LineEdit   = new QLineEdit( DemonConfig[ "ProcessInjection" ].toObject()[ "Spawn32" ].toString() );
 
     ConfigSleep->setFlags( Qt::NoItemFlags );
+    ConfigJitter->setFlags( Qt::NoItemFlags );
     if ( Format.compare( "Windows Service Exe" ) == 0 )
     {
         ConfigServiceName->setFlags( Qt::NoItemFlags );
@@ -514,6 +520,7 @@ auto Payload::DefaultConfig() -> void
     ConfigInjectionSpawn32->setFlags( Qt::NoItemFlags );
 
     ConfigSleepLineEdit->setObjectName( "ConfigItem" );
+    ConfigJitterLineEdit->setObjectName( "ConfigItem" );
     ConfigIndSyscallCheck->setObjectName( "ConfigItem" );
     ConfigInjectAlloc->setObjectName( "ConfigItem" );
     ConfigInjectExecute->setObjectName( "ConfigItem" );
@@ -532,6 +539,7 @@ auto Payload::DefaultConfig() -> void
     ConfigInjectExecute->setCurrentIndex( 1 );
 
     TreeConfig->setItemWidget( ConfigSleep, 1, ConfigSleepLineEdit );
+    TreeConfig->setItemWidget( ConfigJitter, 1, ConfigJitterLineEdit );
     if ( Format.compare( "Windows Service Exe" ) == 0 )
         TreeConfig->setItemWidget( ConfigServiceName, 1, ConfigServiceNameInput );
     TreeConfig->setItemWidget( ConfigIndirectSyscalls, 1, ConfigIndSyscallCheck );
@@ -543,6 +551,7 @@ auto Payload::DefaultConfig() -> void
     TreeConfig->setItemWidget( ConfigInjectionSpawn32, 1, ConfigSpawn32LineEdit );
 
     ConfigSleep->setText( 0, "Sleep" );
+    ConfigJitter->setText( 0, "Jitter" );
     if ( Format.compare( "Windows Service Exe" ) == 0 )
         ConfigServiceName->setText( 0, "Service Name" );
     ConfigIndirectSyscalls->setText(  0, "Indirect Syscall" );

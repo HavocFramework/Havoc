@@ -57,7 +57,9 @@ type Listeners struct {
 
 type ListenerHTTP struct {
 	Name string `yaotl:"Name"`
-	/* KillDate string `yaotl:"KillDate,optional"` // TODO: finish this. */
+
+	// 2006-01-02 15:04:05
+	KillDate string `yaotl:"KillDate,optional"`
 
 	Hosts        []string `yaotl:"Hosts"`
 	HostBind     string   `yaotl:"HostBind"`
@@ -125,6 +127,7 @@ type ProcessInjectionBlock struct {
 
 type Demon struct {
 	Sleep            int                    `yaotl:"Sleep,optional"`
+	Jitter           int                    `yaotl:"Jitter,optional"`
 	Binary           *Binary                `yaotl:"Binary,block"`
 	ProcessInjection *ProcessInjectionBlock `yaotl:"Injection,block"`
 }

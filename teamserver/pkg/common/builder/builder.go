@@ -405,6 +405,7 @@ func (b *Builder) PatchConfig() []byte {
 	var (
 		DemonConfig        = packer.NewPacker(nil, nil)
 		ConfigSleep        int
+		ConfigJitter       int
 		ConfigAlloc        int
 		ConfigExecute      int
 		ConfigSpawn64      string
@@ -423,6 +424,25 @@ func (b *Builder) PatchConfig() []byte {
 			}
 			return nil
 		}
+	}
+
+	if val, ok := b.config.Config["Jitter"].(string); ok {
+		ConfigJitter, err = strconv.Atoi(val)
+		if err != nil {
+			if !b.silent {
+				b.SendConsoleMessage("Error", "Failed to convert Jitter string to int: "+err.Error())
+			}
+			return nil
+		}
+		if ConfigJitter < 0 || ConfigJitter > 100 {
+			if !b.silent {
+				b.SendConsoleMessage("Error", "Jitter has to be between 0 and 100")
+			}
+			return nil
+		}
+	} else {
+		b.SendConsoleMessage("Info", "Jitter not found?")
+		ConfigJitter = 0
 	}
 
 	if val, ok := b.config.Config["Indirect Syscall"].(bool); ok {
@@ -454,6 +474,7 @@ func (b *Builder) PatchConfig() []byte {
 
 	// Demon Config
 	DemonConfig.AddInt(ConfigSleep)
+	DemonConfig.AddInt(ConfigJitter)
 
 	if Injection := b.config.Config["Injection"].(map[string]any); len(Injection) > 0 {
 
@@ -566,6 +587,8 @@ func (b *Builder) PatchConfig() []byte {
 		if err != nil {
 			logger.Error("Failed convert Port string to int: " + err.Error())
 		}
+
+		DemonConfig.AddInt64(Config.Config.KillDate)
 
 		switch Config.Config.HostRotation {
 		case "round-robin":

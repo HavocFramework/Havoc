@@ -79,14 +79,11 @@ typedef struct
         DWORD Sleeping;
         DWORD Jitter;
 
-        /* Kill Date
-         * TODO: add this */
-        DWORD KillDate;
-
         struct {
 #ifdef TRANSPORT_HTTP
             PHOST_DATA Host;  /* current using host */
             PHOST_DATA Hosts; /* host linked list */
+            UINT64     KillDate;
             LPWSTR     Method; /* TODO: use WCHAR[4] instead of LPWSTR. */
             SHORT      HostRotation;
             DWORD      HostIndex;
@@ -203,6 +200,7 @@ typedef struct
         WIN_FUNC( CopyFileW )
         WIN_FUNC( GetModuleHandleA )
         WIN_FUNC( SetProcessValidCallTargets )
+        WIN_FUNC( GetSystemTimeAsFileTime )
 
         /* Ntdll.dll */
         WIN_FUNC( LdrLoadDll )
