@@ -181,6 +181,7 @@ bool Packager::DispatchInitConnection( Util::Packager::PPackage Package )
                     ScriptManager::AddScript( "client/Modules/InvokeAssembly/invokeassembly.py" );
                     ScriptManager::AddScript( "client/Modules/PowerPick/powerpick.py" );
                     ScriptManager::AddScript( "client/Modules/SituationalAwareness/SituationalAwareness.py" );
+                    ScriptManager::AddScript( "client/Modules/Delegation/delegation.py" );
                     ScriptManager::AddScript( "client/Modules/Domaininfo/Domaininfo.py" );
                     ScriptManager::AddScript( "client/Modules/Jump-exec/ScShell/scshell.py" );
                     ScriptManager::AddScript( "client/Modules/Jump-exec/Psexec/psexec.py" );
