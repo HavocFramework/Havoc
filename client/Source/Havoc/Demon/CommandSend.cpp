@@ -473,3 +473,19 @@ auto CommandExecute::Socket( const QString &TaskID, QString SubCommand, QString 
 
     NewPackageCommand( DemonCommandInstance->Teamserver, Body );
 }
+
+auto CommandExecute::Luid( const QString& TaskID ) -> void
+{
+    auto Body = Util::Packager::Body_t {
+            .SubEvent = Util::Packager::Session::SendCommand,
+            .Info = {
+                    { "TaskID",      TaskID.toStdString() },
+                    { "DemonID",     this->DemonCommandInstance->DemonConsole->SessionInfo.Name.toStdString() },
+
+                    { "CommandID",   to_string( ( int ) Commands::KERBEROS ).c_str() },
+                    { "CommandLine", DemonCommandInstance->CommandInputList[ TaskID ].toStdString() },
+            },
+    };
+
+    NewPackageCommand( DemonCommandInstance->Teamserver, Body );
+}

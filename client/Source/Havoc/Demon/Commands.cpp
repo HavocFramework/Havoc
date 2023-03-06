@@ -717,4 +717,11 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                     },
                 },
         },
+        {
+            .CommandString  = "luid",
+            .Description    = "get current logon ID",
+            .Usage          = "",
+            .Example        = "",
+            NO_SUBCOMMANDS
+        },
 };

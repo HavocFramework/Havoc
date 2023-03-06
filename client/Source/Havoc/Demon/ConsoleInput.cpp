@@ -1776,6 +1776,13 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 SEND( Execute.Pivot( TaskID, Command, Param ) )
             }
         }
+        else if ( InputCommands[ 0 ].compare( "luid" ) == 0 )
+        {
+            TaskID                     = CONSOLE_INFO( "Tasked demon to get the current logon ID" );
+            CommandInputList[ TaskID ] = commandline;
+
+            SEND( Execute.Luid( TaskID ) )
+        }
         else if ( InputCommands[ 0 ].compare( "exit" ) == 0 )
         {
             if ( InputCommands.length() > 1 )

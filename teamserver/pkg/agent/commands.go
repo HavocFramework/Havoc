@@ -37,6 +37,7 @@ const (
 	COMMAND_PIVOT                   = 2520
 	COMMAND_TRANSFER                = 2530
 	COMMAND_SOCKET                  = 2540
+	COMMAND_KERBEROS                = 2550
 
 	DEMON_INFO = 89
 
@@ -173,6 +174,10 @@ const (
 	SOCKET_TYPE_CLIENT          = 0x3
 
 	SOCKET_ERROR_ALREADY_BOUND = 0x1
+)
+
+const (
+	KERBEROS_COMMAND_LUID = 0x0
 )
 
 const (

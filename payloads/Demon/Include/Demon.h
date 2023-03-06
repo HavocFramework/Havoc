@@ -20,6 +20,7 @@
 #include <Core/Download.h>
 #include <Core/Transport.h>
 #include <Core/Socket.h>
+#include <Core/Kerberos.h>
 
 #include <Loader/CoffeeLdr.h>
 

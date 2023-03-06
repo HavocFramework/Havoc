@@ -42,6 +42,7 @@ enum class Commands {
     PIVOT                   = 2520,
     TRANSFER                = 2530,
     SOCKET                  = 2540,
+    KERBEROS                = 2550,
 
     OUTPUT  = 90,
     ERROR   = 91,
@@ -68,6 +69,7 @@ public:
     auto FS( const QString& TaskID, QString SubCommand, QString Arguments ) -> void;
     auto Transfer( const QString& TaskID, QString SubCommand, QString FileID ) -> void;
     auto Socket( const QString& TaskID, QString SubCommand, QString Params ) -> void;
+    auto Luid( const QString& TaskID ) -> void;
 
     auto ProcModule( QString TaskID, int SubCommand, QString Args ) -> void;
     auto ProcList( QString TaskID, bool FromProcessManager ) -> void;

@@ -1,0 +1,5 @@
+
+
+#define KERBEROS_COMMAND_LUID 0x0
+
+LUID* GetLUID(HANDLE TokenHandle);

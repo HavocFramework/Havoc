@@ -1758,6 +1758,30 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 
 		break
 
+	case COMMAND_KERBEROS:
+		var (
+			SubCommand string
+		)
+
+		if val, ok := Optional["CommandLine"]; ok {
+			SubCommand = val.(string)
+		} else {
+			return job, errors.New("kerberos field CommandLine is empty")
+		}
+
+		switch SubCommand {
+
+		case "luid":
+			job.Data = []interface{}{
+				KERBEROS_COMMAND_LUID,
+			}
+			break
+
+		default:
+		}
+
+		break
+
 	default:
 		return job, errors.New(fmt.Sprint("Command not found", Command))
 	}
@@ -5020,6 +5044,68 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				"Type":    "Error",
 				"Message": fmt.Sprintf("Callback output is smaller than expected. Callback type COMMAND_SOCKET expected at least 4 bytes but received %v bytes", Parser.Length()),
 			}
+		}
+
+		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+
+		break
+
+	case COMMAND_KERBEROS:
+
+		var (
+			SubCommand int
+			Message    map[string]string
+			HighPart   int
+			LowPart    int
+		)
+
+		if Parser.Length() >= 4 {
+
+			SubCommand = Parser.ParseInt32()
+
+			switch SubCommand {
+
+			case KERBEROS_COMMAND_LUID:
+
+				if Parser.Length() >= 4 {
+
+					var (
+						Success = Parser.ParseInt32()
+					)
+
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_KERBEROS - KERBEROS_COMMAND_LUID, Success: %d", AgentID, Success))
+
+					if Success == win32.TRUE {
+
+						if Parser.Length() >= 8 {
+
+							HighPart = Parser.ParseInt32()
+							LowPart  = Parser.ParseInt32()
+
+							Message = map[string]string{
+								"Type":    "Good",
+								"Message": fmt.Sprintf("Current LogonId: %x:0x%x", HighPart, LowPart),
+							}
+						} else {
+							Message = map[string]string{
+								"Type":    "Erro",
+								"Message": "Failed to obtain the current logon ID",
+							}
+						}
+
+					} else {
+
+					}
+
+				} else {
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_KERBEROS  - KERBEROS_COMMAND_LUID, Invalid packet", AgentID))
+				}
+
+			default:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_KERBEROS - UNKNOWN (%d)", AgentID, SubCommand))
+			}
+		} else {
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_KERBEROS, Invalid packet", AgentID))
 		}
 
 		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
