@@ -186,6 +186,7 @@ bool Packager::DispatchInitConnection( Util::Packager::PPackage Package )
                     ScriptManager::AddScript( "client/Modules/Domaininfo/Domaininfo.py" );
                     ScriptManager::AddScript( "client/Modules/Jump-exec/ScShell/scshell.py" );
                     ScriptManager::AddScript( "client/Modules/Jump-exec/Psexec/psexec.py" );
+                    ScriptManager::AddScript( "client/Modules/Jump-exec/WMI/wmi.py" );
                     ScriptManager::AddScript( "client/Modules/nanodump/nanodump.py" );
                     ScriptManager::AddScript( "client/Modules/nanorobeus/nanorobeus.py" );
                 }
