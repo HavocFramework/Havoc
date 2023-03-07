@@ -374,9 +374,81 @@ VOID CopySessionInfo( PSESSION_INFORMATION Session, PSECURITY_LOGON_SESSION_DATA
     StringCopyW( Session->Upn, Data->Upn.Buffer );
 }
 
+BOOL Purge( HANDLE hToken, LUID luid )
+{
+    BOOL                         highIntegrity  = FALSE;
+    HANDLE                       hLsa           = NULL;
+    LSA_STRING                   krbAuth        = {.Buffer = "kerberos", .Length = 8, .MaximumLength = 9};
+    NTSTATUS                     status         = STATUS_UNSUCCESSFUL;
+    NTSTATUS                     protocolStatus = STATUS_UNSUCCESSFUL;
+    KERB_PURGE_TKT_CACHE_REQUEST purgeRequest   = { 0 };
+    ULONG                        authPackage    = 0;
+    PVOID                        purgeResponse  = NULL;
+    ULONG                        responseSize   = 0;
+
+    if ( ! hToken )
+        return FALSE;
+
+    highIntegrity = IsHighIntegrity( hToken );
+    if ( ! highIntegrity )
+    {
+        PUTS( "[!] Not in high integrity." );
+        return FALSE;
+    }
+
+    status = GetLsaHandle( hToken, highIntegrity, &hLsa );
+    if ( ! NT_SUCCESS( status ) || ! hLsa )
+    {
+        PRINTF( "[!] GetLsaHandle %ld\n", status );
+        return FALSE;
+    }
+
+    status = Instance.Win32.LsaLookupAuthenticationPackage( hLsa, &krbAuth, &authPackage );
+    if ( ! NT_SUCCESS( status ) )
+    {
+        PRINTF( "[!] LsaLookupAuthenticationPackage %lx\n", status );
+        Instance.Win32.LsaDeregisterLogonProcess( hLsa );
+        return FALSE;
+    }
+
+    //purgeRequest.MessageType = KerbPurgeTicketCacheMessage;
+    purgeRequest.MessageType = 6;
+
+    if ( highIntegrity )
+        purgeRequest.LogonId = luid;
+    else
+        purgeRequest.LogonId = (LUID){.HighPart = 0, .LowPart = 0};
+
+    purgeRequest.RealmName = (UNICODE_STRING){.Buffer = L"", .Length = 0, .MaximumLength = 1};
+    purgeRequest.ServerName = (UNICODE_STRING){.Buffer = L"", .Length = 0, .MaximumLength = 1};
+
+    status = Instance.Win32.LsaCallAuthenticationPackage( hLsa, authPackage, &purgeRequest, sizeof(KERB_PURGE_TKT_CACHE_REQUEST), &purgeResponse, &responseSize, &protocolStatus );
+
+    if ( purgeResponse )
+    {
+        Instance.Win32.LsaFreeReturnBuffer( purgeResponse ); purgeResponse = NULL;
+    }
+
+    if ( ! NT_SUCCESS( status ) )
+    {
+        PRINTF( "[!] LsaCallAuthenticationPackage: %lx\n", status )
+        Instance.Win32.LsaDeregisterLogonProcess( hLsa );
+        return FALSE;
+    }
+
+    if ( ! NT_SUCCESS( protocolStatus ) )
+    {
+        PRINTF( "[!] LsaCallAuthenticationPackage: %lx\n", protocolStatus )
+        Instance.Win32.LsaDeregisterLogonProcess( hLsa );
+        return FALSE;
+    }
+
+    Instance.Win32.LsaDeregisterLogonProcess( hLsa );
+    return TRUE;
+}
+
 PSESSION_INFORMATION Klist( HANDLE hToken, LUID luid )
 {
-    //LUID                              luid           = (LUID){.HighPart = 0, .LowPart = 0};
     BOOL                              highIntegrity  = FALSE;
     HANDLE                            hLsa           = NULL;
     ULONG                             authPackage    = 0;

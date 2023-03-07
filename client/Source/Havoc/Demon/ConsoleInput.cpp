@@ -1825,6 +1825,37 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
 
             SEND( Execute.Klist( TaskID, Arg1, Arg2 ) );
         }
+        else if ( InputCommands[ 0 ].compare( "purge" ) == 0 )
+        {
+            auto Arg = QString();
+
+            if ( InputCommands.size() < 3 )
+            {
+                CONSOLE_ERROR( "Not enough arguments" )
+                return false;
+            }
+
+            if ( InputCommands.size() > 3 )
+            {
+                CONSOLE_ERROR( "Too many arguments" )
+                return false;
+            }
+
+            if ( InputCommands[ 1 ].compare( "/luid" ) == 0 )
+            {
+                Arg = InputCommands[ 2 ];
+            }
+            else
+            {
+                CONSOLE_ERROR( "Invalid parameter" )
+                return false;
+            }
+
+            TaskID                     = CONSOLE_INFO( "Tasked demon to purge a Kerberos ticket" );
+            CommandInputList[ TaskID ] = commandline;
+
+            SEND( Execute.Purge( TaskID, Arg ) );
+        }
         else if ( InputCommands[ 0 ].compare( "exit" ) == 0 )
         {
             if ( InputCommands.length() > 1 )

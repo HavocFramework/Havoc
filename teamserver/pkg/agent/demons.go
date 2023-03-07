@@ -1818,6 +1818,34 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 
 			break
 
+		case "purge":
+			var (
+				luid int64
+				arg1 string
+			)
+
+			if val, ok := Optional["Argument"]; ok {
+				arg1 = val.(string)
+			} else {
+				return job, errors.New("klist field Argument1 is empty")
+			}
+
+			if strings.HasPrefix(arg1, "0x") {
+				luid, err = strconv.ParseInt(arg1[2:], 16, 64)
+			} else {
+				luid, err = strconv.ParseInt(arg1, 16, 64)
+			}
+			if err != nil {
+				return job, err
+			}
+
+			job.Data = []interface{}{
+				KERBEROS_COMMAND_PURGE,
+				int(luid),
+			}
+
+			break
+
 		default:
 		}
 
@@ -5204,7 +5232,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 									LogonTime = (LogonTimeHigh << 4) | LogonTimeLow
 
-									Output += fmt.Sprintf("UserName                : \n%s\n", UserName)
+									Output += fmt.Sprintf("UserName                : %s\n", UserName)
 									Output += fmt.Sprintf("Domain                  : %s\n", Domain)
 									Output += fmt.Sprintf("LogonId                 : %x:0x%x\n", LogonIdHigh, LogonIdLow)
 									Output += fmt.Sprintf("Session                 : %d\n", Session)
@@ -5231,7 +5259,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 						} else {
 							Message = map[string]string{
 								"Type":    "Erro",
-								"Message": "Failed to list all sessions",
+								"Message": "Failed to list all kerberos tickets",
 							}
 						}
 					} else {
@@ -5239,6 +5267,31 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 					}
 
 				break
+
+			case KERBEROS_COMMAND_PURGE:
+
+				if Parser.Length() >= 4 {
+
+					Success = Parser.ParseInt32()
+
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_KERBEROS - KERBEROS_COMMAND_PURGE, Success: %d", AgentID, Success))
+
+					if Success == win32.TRUE {
+
+						Message = map[string]string{
+							"Type":    "Good",
+							"Message": "Successfully purged the Kerberos ticket",
+						}
+					} else {
+						Message = map[string]string{
+							"Type":    "Erro",
+							"Message": "Failed to purge the kerberos ticket",
+						}
+					}
+
+				} else {
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_KERBEROS  - KERBEROS_COMMAND_PURGE, Invalid packet", AgentID))
+				}
 
 			default:
 				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_KERBEROS - UNKNOWN (%d)", AgentID, SubCommand))

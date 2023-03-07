@@ -512,3 +512,23 @@ auto CommandExecute::Klist( const QString &TaskID, QString Argument1, QString Ar
 
     NewPackageCommand( DemonCommandInstance->Teamserver, Body );
 }
+
+auto CommandExecute::Purge( const QString &TaskID, QString Argument ) -> void
+{
+    auto Body = Util::Packager::Body_t {
+            .SubEvent = Util::Packager::Session::SendCommand,
+            .Info = {
+                    { "TaskID",      TaskID.toStdString() },
+                    { "DemonID",     this->DemonCommandInstance->DemonConsole->SessionInfo.Name.toStdString() },
+
+                    { "CommandID",   to_string( ( int ) Commands::KERBEROS ).c_str() },
+                    { "CommandLine", DemonCommandInstance->CommandInputList[ TaskID ].toStdString() },
+
+                    { "Command",     "purge" },
+
+                    { "Argument",    Argument.toStdString() },
+            },
+    };
+
+    NewPackageCommand( DemonCommandInstance->Teamserver, Body );
+}

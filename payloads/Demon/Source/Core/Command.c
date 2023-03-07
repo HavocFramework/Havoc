@@ -2963,6 +2963,17 @@ VOID Commandkerberos( PPARSER Parser )
             break;
         }
 
+        case KERBEROS_COMMAND_PURGE: PUTS("Kerberos::Purge")
+        {
+            LUID luid = (LUID){.HighPart = 0, .LowPart = 0};
+
+            luid.LowPart = ParserGetInt32( Parser );
+
+            PackageAddInt32( Package, Purge( hToken, luid ) ? TRUE : FALSE );
+
+            break;
+        }
+
         default: break;
     }
 

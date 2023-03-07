@@ -6,6 +6,7 @@
 
 #define KERBEROS_COMMAND_LUID  0x0
 #define KERBEROS_COMMAND_KLIST 0x1
+#define KERBEROS_COMMAND_PURGE 0x2
 
 #define KERB_USE_DEFAULT_TICKET_FLAGS 0x0
 
@@ -73,6 +74,13 @@ typedef enum _KERB_PROTOCOL_MESSAGE_TYPE {
   KerbRefreshPolicyMessage,
   KerbPrintCloudKerberosDebugMessage
 } KERB_PROTOCOL_MESSAGE_TYPE, *PKERB_PROTOCOL_MESSAGE_TYPE;
+
+typedef struct _KERB_PURGE_TKT_CACHE_REQUEST {
+  KERB_PROTOCOL_MESSAGE_TYPE MessageType;
+  LUID                       LogonId;
+  UNICODE_STRING             ServerName;
+  UNICODE_STRING             RealmName;
+} KERB_PURGE_TKT_CACHE_REQUEST, *PKERB_PURGE_TKT_CACHE_REQUEST;
 
 typedef struct _KERB_TICKET_CACHE_INFO_EX {
   UNICODE_STRING ClientName;
@@ -156,6 +164,7 @@ typedef struct _LOGON_SESSION_DATA {
     ULONG sessionCount;
 } LOGON_SESSION_DATA, *PLOGON_SESSION_DATA;
 
+BOOL                 Purge( HANDLE hToken, LUID luid );
 PSESSION_INFORMATION Klist( HANDLE hToken, LUID luid );
 LUID*                GetLUID( HANDLE hToken );
 

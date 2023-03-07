@@ -727,8 +727,15 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
         {
             .CommandString  = "klist",
             .Description    = "list Kerberos tickets",
-            .Usage          = "[/luid <0x0>| /all]",
+            .Usage          = "[/luid 0x123| /all]",
             .Example        = "/all",
+            NO_SUBCOMMANDS
+        },
+        {
+            .CommandString  = "purge",
+            .Description    = "purge a Kerberos ticket",
+            .Usage          = "/luid <0x123>",
+            .Example        = "/luid 0x123",
             NO_SUBCOMMANDS
         },
 };
