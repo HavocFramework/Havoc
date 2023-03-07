@@ -738,4 +738,11 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
             .Example        = "/luid 0x123",
             NO_SUBCOMMANDS
         },
+        {
+            .CommandString  = "ptt",
+            .Description    = "import Kerberos ticket into a logon session",
+            .Usage          = "<base64> [/luid <0x0>]",
+            .Example        = "doIFqjCCBaagAwIB...",
+            NO_SUBCOMMANDS
+        },
 };

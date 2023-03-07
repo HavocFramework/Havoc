@@ -1804,7 +1804,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 						luid, err = strconv.ParseInt(arg2, 16, 64)
 					}
 					if err != nil {
-						return nil, err
+						return job, errors.New("Invalid Luid value: " + arg2)
 					}
 				} else {
 					return job, errors.New("klist field Argument2 is empty")
@@ -1827,7 +1827,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 			if val, ok := Optional["Argument"]; ok {
 				arg1 = val.(string)
 			} else {
-				return job, errors.New("klist field Argument1 is empty")
+				return job, errors.New("purge field Argument is empty")
 			}
 
 			if strings.HasPrefix(arg1, "0x") {
@@ -1836,11 +1836,46 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 				luid, err = strconv.ParseInt(arg1, 16, 64)
 			}
 			if err != nil {
-				return job, err
+				return job, errors.New("Invalid Luid value: " + arg1)
 			}
 
 			job.Data = []interface{}{
 				KERBEROS_COMMAND_PURGE,
+				int(luid),
+			}
+
+			break
+
+		case "ptt":
+			var (
+				luid   int64
+				arg    string
+				ticket []byte
+			)
+
+			ticket, err = base64.StdEncoding.DecodeString(Optional["Ticket"].(string))
+			if err != nil {
+				return job, errors.New("ptt field Ticket is invalid")
+			}
+
+			if val, ok := Optional["Luid"]; ok {
+				arg = val.(string)
+			} else {
+				return job, errors.New("ptt field Luid is empty")
+			}
+
+			if strings.HasPrefix(arg, "0x") {
+				luid, err = strconv.ParseInt(arg[2:], 16, 64)
+			} else {
+				luid, err = strconv.ParseInt(arg, 16, 64)
+			}
+			if err != nil {
+				return job, errors.New("Invalid Luid value: " + arg)
+			}
+
+			job.Data = []interface{}{
+				KERBEROS_COMMAND_PTT,
+				ticket,
 				int(luid),
 			}
 
@@ -5291,6 +5326,31 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_KERBEROS  - KERBEROS_COMMAND_PURGE, Invalid packet", AgentID))
+				}
+
+			case KERBEROS_COMMAND_PTT:
+
+				if Parser.Length() >= 4 {
+
+					Success = Parser.ParseInt32()
+
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_KERBEROS - KERBEROS_COMMAND_PTT, Success: %d", AgentID, Success))
+
+					if Success == win32.TRUE {
+
+						Message = map[string]string{
+							"Type":    "Good",
+							"Message": "Successfully imported the Kerberos ticket",
+						}
+					} else {
+						Message = map[string]string{
+							"Type":    "Erro",
+							"Message": "Failed to import the kerberos ticket",
+						}
+					}
+
+				} else {
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_KERBEROS  - KERBEROS_COMMAND_PTT, Invalid packet", AgentID))
 				}
 
 			default:

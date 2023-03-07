@@ -7,6 +7,9 @@
 #define KERBEROS_COMMAND_LUID  0x0
 #define KERBEROS_COMMAND_KLIST 0x1
 #define KERBEROS_COMMAND_PURGE 0x2
+#define KERBEROS_COMMAND_PTT   0x3
+
+#define _KerbSubmitTicketMessage 21
 
 #define KERB_USE_DEFAULT_TICKET_FLAGS 0x0
 
@@ -75,6 +78,27 @@ typedef enum _KERB_PROTOCOL_MESSAGE_TYPE {
   KerbPrintCloudKerberosDebugMessage
 } KERB_PROTOCOL_MESSAGE_TYPE, *PKERB_PROTOCOL_MESSAGE_TYPE;
 
+typedef struct KERB_CRYPTO_KEY {
+    LONG KeyType;
+    ULONG Length;
+    PUCHAR Value;
+} KERB_CRYPTO_KEY, *PKERB_CRYPTO_KEY;
+
+typedef struct KERB_CRYPTO_KEY32 {
+    LONG KeyType;
+    ULONG Length;
+    ULONG Offset;
+} KERB_CRYPTO_KEY32, *PKERB_CRYPTO_KEY32;
+
+typedef struct _KERB_SUBMIT_TKT_REQUEST {
+    KERB_PROTOCOL_MESSAGE_TYPE MessageType;
+    LUID LogonId;
+    ULONG Flags;
+    KERB_CRYPTO_KEY32 Key;
+    ULONG KerbCredSize;
+    ULONG KerbCredOffset;
+} KERB_SUBMIT_TKT_REQUEST, *PKERB_SUBMIT_TKT_REQUEST;
+
 typedef struct _KERB_PURGE_TKT_CACHE_REQUEST {
   KERB_PROTOCOL_MESSAGE_TYPE MessageType;
   LUID                       LogonId;
@@ -118,12 +142,6 @@ typedef struct _KERB_RETRIEVE_TKT_REQUEST {
   LONG EncryptionType;
   SecHandle CredentialsHandle;
 } KERB_RETRIEVE_TKT_REQUEST,*PKERB_RETRIEVE_TKT_REQUEST;
-
-typedef struct KERB_CRYPTO_KEY {
-  LONG KeyType;
-  ULONG Length;
-  PUCHAR Value;
-} KERB_CRYPTO_KEY,*PKERB_CRYPTO_KEY;
 
 typedef struct _KERB_EXTERNAL_NAME {
   SHORT NameType;

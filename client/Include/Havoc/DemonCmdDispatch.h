@@ -72,6 +72,7 @@ public:
     auto Luid( const QString& TaskID ) -> void;
     auto CommandExecute::Klist( const QString &TaskID, QString Argument1, QString Argument2 ) -> void;
     auto CommandExecute::Purge( const QString &TaskID, QString Argument ) -> void;
+    auto CommandExecute::Ptt( const QString &TaskID, QString Ticket, QString Luid ) -> void;
 
     auto ProcModule( QString TaskID, int SubCommand, QString Args ) -> void;
     auto ProcList( QString TaskID, bool FromProcessManager ) -> void;
