@@ -9837,6 +9837,13 @@ LsaNtStatusToWinError(
 	IN NTSTATUS Status
 	);
 
+BOOL
+NTAPI
+ConvertSidToStringSidW(
+	IN PSID Sid,
+	OUT LPWSTR *StringSid
+	);
+
 #endif // _NTLSA_IFS_
 // 04.06.2011 - end
 

@@ -177,7 +177,8 @@ const (
 )
 
 const (
-	KERBEROS_COMMAND_LUID = 0x0
+	KERBEROS_COMMAND_LUID  = 0x0
+	KERBEROS_COMMAND_KLIST = 0x1
 )
 
 const (

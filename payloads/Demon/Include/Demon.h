@@ -155,6 +155,8 @@ typedef struct
         // Kernel32
         WIN_FUNC( CreateRemoteThread )
         WIN_FUNC( CreateToolhelp32Snapshot )
+        WIN_FUNC( Process32FirstW )
+        WIN_FUNC( Process32NextW )
         WIN_FUNC( VirtualProtect )
         WIN_FUNC( VirtualAllocEx )
         WIN_FUNC( CreateFileW )
@@ -264,7 +266,11 @@ typedef struct
         WIN_FUNC( AddMandatoryAce )
         WIN_FUNC( InitializeAcl )
         WIN_FUNC( AllocateAndInitializeSid )
+        WIN_FUNC( CheckTokenMembership )
         WIN_FUNC( SetEntriesInAclW )
+        WIN_FUNC( LsaNtStatusToWinError )
+        WIN_FUNC( EqualSid )
+        WIN_FUNC( ConvertSidToStringSidW )
 
         // Thread Management
         WIN_FUNC( OpenThread )
@@ -349,6 +355,17 @@ typedef struct
 
         /* dnsapi.dll */
         WIN_FUNC( DnsQuery_A )
+
+        /* sspicli.dll */
+        WIN_FUNC( LsaCallAuthenticationPackage )
+        WIN_FUNC( LsaGetLogonSessionData )
+        WIN_FUNC( LsaEnumerateLogonSessions )
+        WIN_FUNC( LsaRegisterLogonProcess )
+        WIN_FUNC( LsaLookupAuthenticationPackage )
+        WIN_FUNC( LsaDeregisterLogonProcess )
+        WIN_FUNC( LsaConnectUntrusted )
+        WIN_FUNC( LsaFreeReturnBuffer )
+
     } Win32;
 
     struct
@@ -407,6 +424,7 @@ typedef struct
         PVOID NetApi32;
         PVOID Ws2_32;
         PVOID Dnsapi;
+        PVOID Sspicli;
 
 #ifdef TRANSPORT_HTTP
         PVOID WinHttp;

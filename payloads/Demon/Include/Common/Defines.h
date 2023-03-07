@@ -40,6 +40,8 @@
 #define FuncHash_LocalFree                           0xa66df372
 #define FuncHash_CreateRemoteThread                  0xaa30775d
 #define FuncHash_CreateToolhelp32Snapshot            0x66851295
+#define FuncHash_Process32FirstW                     0xe18fc6e8
+#define FuncHash_Process32NextW                      0x9307647f
 #define FuncHash_CreatePipe                          0x9a8deee7
 #define FuncHash_CreateProcessA                      0xaeb52e19
 #define FuncHash_CreateFileW                         0xeb96c610
@@ -145,6 +147,7 @@
 #define FuncHash_AddMandatoryAce                     0x248cc186
 #define FuncHash_InitializeAcl                       0x62cac4c7
 #define FuncHash_AllocateAndInitializeSid            0x57a4ccf
+#define FuncHash_CheckTokenMembership                0xfeda76f0
 #define FuncHash_SetEntriesInAclW                    0xe2d6b8e9
 #define FuncHash_SetThreadToken                      0x575b17ca
 #define FuncHash_SafeArrayAccessData                 2675336209888825647
@@ -202,6 +205,17 @@
 #define FuncHash_send                                0x7c9ddb4f
 #define FuncHash_connect                             0xd3764dcf
 #define FuncHash_DnsQuery_A                          0xeb04a380
+#define FuncHash_LsaConnectUntrusted                 0xb851157d
+#define FuncHash_LsaRegisterLogonProcess             0x5e8f9888
+#define FuncHash_LsaNtStatusToWinError               0x99301546
+#define FuncHash_EqualSid                            0x3be9fe3d
+#define FuncHash_ConvertSidToStringSidW              0x99a22dd7
+#define FuncHash_LsaLookupAuthenticationPackage      0xf0fc4b4b
+#define FuncHash_LsaDeregisterLogonProcess           0x23961991
+#define FuncHash_LsaFreeReturnBuffer                 0x528ffd01
+#define FuncHash_LsaCallAuthenticationPackage        0xabc4bb2d
+#define FuncHash_LsaGetLogonSessionData              0x417c2162
+#define FuncHash_LsaEnumerateLogonSessions           0x9f1343e1
 
 //#define FuncHash_GetTokenInformation        881854923972837164
 //#define FuncHash_CreatePipe                 8244700854143020775

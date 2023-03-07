@@ -5,7 +5,9 @@
 DWORD   HashStringA(PCHAR String);
 
 INT     StringCompareA( LPCSTR String1, LPCSTR String2 );
+INT     StringCompareW( LPWSTR String1, LPWSTR String2 );
 PCHAR   StringCopyA( PCHAR String1, PCHAR String2 );
+PWCHAR  StringCopyW(PWCHAR String1, PWCHAR String2);
 SIZE_T  StringLengthA( LPCSTR String );
 SIZE_T  StringLengthW( LPCWSTR String );
 PCHAR   StringConcatA(PCHAR String, PCHAR String2);

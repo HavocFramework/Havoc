@@ -18,6 +18,18 @@ INT StringCompareA( LPCSTR String1, LPCSTR String2 )
 
 }
 
+INT StringCompareW( LPWSTR String1, LPWSTR String2 )
+{
+    for (; *String1 == *String2; String1++, String2++)
+    {
+        if (*String1 == '\0')
+            return 0;
+    }
+
+    return ((*(LPWSTR)String1 < *(LPWSTR)String2) ? -1 : +1);
+
+}
+
 DWORD HashStringA( PCHAR String )
 {
     ULONG Hash = HASH_KEY;
@@ -33,6 +45,15 @@ DWORD HashStringA( PCHAR String )
 PCHAR StringCopyA(PCHAR String1, PCHAR String2)
 {
     PCHAR p = String1;
+
+    while ((*p++ = *String2++) != 0);
+
+    return String1;
+}
+
+PWCHAR StringCopyW(PWCHAR String1, PWCHAR String2)
+{
+    PWCHAR p = String1;
 
     while ((*p++ = *String2++) != 0);
 

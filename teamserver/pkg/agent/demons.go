@@ -1763,10 +1763,10 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 			SubCommand string
 		)
 
-		if val, ok := Optional["CommandLine"]; ok {
+		if val, ok := Optional["Command"]; ok {
 			SubCommand = val.(string)
 		} else {
-			return job, errors.New("kerberos field CommandLine is empty")
+			return job, errors.New("kerberos field Command is empty")
 		}
 
 		switch SubCommand {
@@ -1775,6 +1775,47 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 			job.Data = []interface{}{
 				KERBEROS_COMMAND_LUID,
 			}
+			break
+
+		case "klist":
+			var (
+				luid int64
+				arg1 string
+				arg2 string
+			)
+
+			if val, ok := Optional["Argument1"]; ok {
+				arg1 = val.(string)
+			} else {
+				return job, errors.New("klist field Argument1 is empty")
+			}
+
+			if arg1 == "/all" {
+				job.Data = []interface{}{
+					KERBEROS_COMMAND_KLIST,
+					0,
+				}
+			} else if arg1 == "/luid" {
+				if val, ok := Optional["Argument2"]; ok {
+					arg2 = val.(string)
+					if strings.HasPrefix(arg2, "0x") {
+						luid, err = strconv.ParseInt(arg2[2:], 16, 64)
+					} else {
+						luid, err = strconv.ParseInt(arg2, 16, 64)
+					}
+					if err != nil {
+						return nil, err
+					}
+				} else {
+					return job, errors.New("klist field Argument2 is empty")
+				}
+				job.Data = []interface{}{
+					KERBEROS_COMMAND_KLIST,
+					1,
+					int(luid),
+				}
+			}
+
 			break
 
 		default:
@@ -5057,6 +5098,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			Message    map[string]string
 			HighPart   int
 			LowPart    int
+			Success    int
 		)
 
 		if Parser.Length() >= 4 {
@@ -5069,9 +5111,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 				if Parser.Length() >= 4 {
 
-					var (
-						Success = Parser.ParseInt32()
-					)
+					Success = Parser.ParseInt32()
 
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_KERBEROS - KERBEROS_COMMAND_LUID, Success: %d", AgentID, Success))
 
@@ -5087,19 +5127,118 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 								"Message": fmt.Sprintf("Current LogonId: %x:0x%x", HighPart, LowPart),
 							}
 						} else {
-							Message = map[string]string{
-								"Type":    "Erro",
-								"Message": "Failed to obtain the current logon ID",
-							}
+							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_KERBEROS  - KERBEROS_COMMAND_LUID, Invalid packet", AgentID))
 						}
 
 					} else {
-
+						Message = map[string]string{
+							"Type":    "Erro",
+							"Message": "Failed to obtain the current logon ID",
+						}
 					}
 
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_KERBEROS  - KERBEROS_COMMAND_LUID, Invalid packet", AgentID))
 				}
+
+			case KERBEROS_COMMAND_KLIST:
+
+					var (
+						NumSessions           int
+						Output                string
+						UserName              string
+						Domain                string
+						LogonIdLow            int
+						LogonIdHigh           int
+						Session               int
+						UserSID               string
+						LogonTimeLow          int
+						LogonTimeHigh         int
+						LogonTime             int
+						LogonType             int
+						AuthenticationPackage string
+						LogonServer           string
+						LogonServerDNSDomain  string
+						Upn                   string
+					)
+
+					if Parser.Length() >= 4 {
+
+						Success = Parser.ParseInt32()
+
+						logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_KERBEROS - KERBEROS_COMMAND_KLIST, Success: %d", AgentID, Success))
+
+						if Success == win32.TRUE {
+
+							if Parser.Length() >= 4 {
+
+								NumSessions = Parser.ParseInt32()
+
+								for NumSessions > 0 {
+
+									// TODO: check that the buffer is large enough
+
+									UserName              = common.DecodeUTF16(Parser.ParseBytes())
+									Domain                = common.DecodeUTF16(Parser.ParseBytes())
+									LogonIdLow            = Parser.ParseInt32()
+									LogonIdHigh           = Parser.ParseInt32()
+									Session               = Parser.ParseInt32()
+									UserSID               = common.DecodeUTF16(Parser.ParseBytes())
+									LogonTimeLow          = Parser.ParseInt32()
+									LogonTimeHigh         = Parser.ParseInt32()
+									LogonType             = Parser.ParseInt32()
+									AuthenticationPackage = common.DecodeUTF16(Parser.ParseBytes())
+									LogonServer           = common.DecodeUTF16(Parser.ParseBytes())
+									LogonServerDNSDomain  = common.DecodeUTF16(Parser.ParseBytes())
+									Upn                   = common.DecodeUTF16(Parser.ParseBytes())
+
+									LogonTypes := map[int]string{
+										win32.LOGON32_LOGON_INTERACTIVE: "Interactive",
+										win32.LOGON32_LOGON_NETWORK: "Network",
+										win32.LOGON32_LOGON_BATCH: "Batch",
+										win32.LOGON32_LOGON_SERVICE: "Service",
+										win32.LOGON32_LOGON_UNLOCK: "Unlock",
+										win32.LOGON32_LOGON_NETWORK_CLEARTEXT: "Network_Cleartext",
+										win32.LOGON32_LOGON_NEW_CREDENTIALS: "New_Credentials",
+									}
+
+									LogonTime = (LogonTimeHigh << 4) | LogonTimeLow
+
+									Output += fmt.Sprintf("UserName                : \n%s\n", UserName)
+									Output += fmt.Sprintf("Domain                  : %s\n", Domain)
+									Output += fmt.Sprintf("LogonId                 : %x:0x%x\n", LogonIdHigh, LogonIdLow)
+									Output += fmt.Sprintf("Session                 : %d\n", Session)
+									Output += fmt.Sprintf("UserSID                 : %s\n", UserSID)
+									Output += fmt.Sprintf("LogonTime               : %d\n", LogonTime)
+									Output += fmt.Sprintf("Authentication package  : %s\n", AuthenticationPackage)
+									Output += fmt.Sprintf("LogonType               : %s\n", LogonTypes[LogonType])
+									Output += fmt.Sprintf("LogonServer             : %s\n", LogonServer)
+									Output += fmt.Sprintf("LogonServerDNSDomain    : %s\n", LogonServerDNSDomain)
+									Output += fmt.Sprintf("UserPrincipalName       : %s\n", Upn)
+									Output += "\n"
+
+									NumSessions -= 1
+								}
+
+								Message = map[string]string{
+									"Type":    "Info",
+									"Output":  Output,
+								}
+							} else {
+								logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_KERBEROS  - KERBEROS_COMMAND_KLIST, Invalid packet", AgentID))
+							}
+
+						} else {
+							Message = map[string]string{
+								"Type":    "Erro",
+								"Message": "Failed to list all sessions",
+							}
+						}
+					} else {
+						logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_KERBEROS  - KERBEROS_COMMAND_KLIST, Invalid packet", AgentID))
+					}
+
+				break
 
 			default:
 				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_KERBEROS - UNKNOWN (%d)", AgentID, SubCommand))

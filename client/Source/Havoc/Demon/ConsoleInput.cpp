@@ -1783,6 +1783,48 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
 
             SEND( Execute.Luid( TaskID ) )
         }
+        else if ( InputCommands[ 0 ].compare( "klist" ) == 0 )
+        {
+            auto Arg1 = QString();
+            auto Arg2 = QString();
+
+            if ( InputCommands.size() < 2 )
+            {
+                CONSOLE_ERROR( "Not enough arguments" )
+                return false;
+            }
+
+            if ( InputCommands.size() > 3 )
+            {
+                CONSOLE_ERROR( "Too many arguments" )
+                return false;
+            }
+
+            if ( InputCommands[ 1 ].compare( "/all" ) == 0 )
+            {
+                Arg1 = "/all";
+            }
+            else if ( InputCommands[ 1 ].compare( "/luid" ) == 0 )
+            {
+                if ( InputCommands.size() != 3 )
+                {
+                    CONSOLE_ERROR( "Invalid parameter" )
+                    return false;
+                }
+                Arg1 = "/luid";
+                Arg2 = InputCommands[ 2 ];
+            }
+            else
+            {
+                CONSOLE_ERROR( "Invalid parameter" )
+                return false;
+            }
+
+            TaskID                     = CONSOLE_INFO( "Tasked demon to list Kerberos tickets" );
+            CommandInputList[ TaskID ] = commandline;
+
+            SEND( Execute.Klist( TaskID, Arg1, Arg2 ) );
+        }
         else if ( InputCommands[ 0 ].compare( "exit" ) == 0 )
         {
             if ( InputCommands.length() > 1 )
