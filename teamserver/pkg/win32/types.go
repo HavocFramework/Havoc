@@ -50,6 +50,27 @@ const (
 )
 
 const (
+    DES_CBC_CRC                  = 1
+    DES_CBC_MD4                  = 2
+    DES_CBC_MD5                  = 3
+    DES3_CBC_MD5                 = 5
+    DES3_CBC_SHA1                = 7
+    DSAWITHSHA1_CMSOID           = 9
+    MD5WITHRSAENCRYPTION_CMSOID  = 10
+    SHA1WITHRSAENCRYPTION_CMSOID = 11
+    RC2CBC_ENVOID                = 12
+    RSAENCRYPTION_ENVOID         = 13
+    RSAES_OAEP_ENV_OID           = 14
+    DES3_CBC_SHA1_KD             = 16
+    AES128_CTS_HMAC_SHA1         = 17
+    AES256_CTS_HMAC_SHA1         = 18
+    RC4_HMAC                     = 23
+    RC4_HMAC_EXP                 = 24
+    SUBKEY_KEYMATERIAL           = 65
+    OLD_EXP                      = -135
+)
+
+const (
     FALSE   = 0
     TRUE    = 1
 )

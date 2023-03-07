@@ -5208,6 +5208,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 					var (
 						NumSessions           int
+						NumTickets            int
 						Output                string
 						UserName              string
 						Domain                string
@@ -5223,6 +5224,20 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 						LogonServer           string
 						LogonServerDNSDomain  string
 						Upn                   string
+                        ClientName            string
+                        ClientRealm           string
+                        ServerName            string
+                        ServerRealm           string
+                        StartTimeLow          int
+                        StartTimeHigh         int
+                        EndTimeLow            int
+                        EndTimeHigh           int
+                        RenewTimeLow          int
+                        RenewTimeHigh         int
+                        EncryptionType        int
+                        TicketFlags           int
+                        TicketFlagsStr        string
+                        Ticket                []byte
 					)
 
 					if Parser.Length() >= 4 {
@@ -5278,6 +5293,98 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 									Output += fmt.Sprintf("LogonServer             : %s\n", LogonServer)
 									Output += fmt.Sprintf("LogonServerDNSDomain    : %s\n", LogonServerDNSDomain)
 									Output += fmt.Sprintf("UserPrincipalName       : %s\n", Upn)
+
+									if Parser.Length() >= 4 {
+
+										NumTickets = Parser.ParseInt32()
+										Output += fmt.Sprintf("Cached tickets:         : %d\n", NumTickets)
+
+										for NumTickets > 0 {
+
+											// TODO: check that the buffer is large enough
+
+											ClientName     = common.DecodeUTF16(Parser.ParseBytes())
+											ClientRealm    = common.DecodeUTF16(Parser.ParseBytes())
+											ServerName     = common.DecodeUTF16(Parser.ParseBytes())
+											ServerRealm    = common.DecodeUTF16(Parser.ParseBytes())
+											StartTimeLow   = Parser.ParseInt32()
+											StartTimeHigh  = Parser.ParseInt32()
+											EndTimeLow     = Parser.ParseInt32()
+											EndTimeHigh    = Parser.ParseInt32()
+											RenewTimeLow   = Parser.ParseInt32()
+											RenewTimeHigh  = Parser.ParseInt32()
+											EncryptionType = Parser.ParseInt32()
+											TicketFlags    = Parser.ParseInt32()
+											Ticket         = Parser.ParseBytes()
+
+											EncryptionTypes := map[int]string{
+												win32.DES_CBC_CRC:                  "DES_CBC_CRC",
+												win32.DES_CBC_MD4:                  "DES_CBC_MD4",
+												win32.DES_CBC_MD5:                  "DES_CBC_MD5",
+												win32.DES3_CBC_MD5:                 "DES3_CBC_MD5",
+												win32.DES3_CBC_SHA1:                "DES3_CBC_SHA1",
+												win32.DSAWITHSHA1_CMSOID:           "DSAWITHSHA1_CMSOID",
+												win32.MD5WITHRSAENCRYPTION_CMSOID:  "MD5WITHRSAENCRYPTION_CMSOID",
+												win32.SHA1WITHRSAENCRYPTION_CMSOID: "SHA1WITHRSAENCRYPTION_CMSOID",
+												win32.RC2CBC_ENVOID:                "RC2CBC_ENVOID",
+												win32.RSAENCRYPTION_ENVOID:         "RSAENCRYPTION_ENVOID",
+												win32.RSAES_OAEP_ENV_OID:           "RSAES_OAEP_ENV_OID",
+												win32.DES3_CBC_SHA1_KD:             "DES3_CBC_SHA1_KD",
+												win32.AES128_CTS_HMAC_SHA1:         "AES128_CTS_HMAC_SHA1",
+												win32.AES256_CTS_HMAC_SHA1:         "AES256_CTS_HMAC_SHA1",
+												win32.RC4_HMAC:                     "RC4_HMAC",
+												win32.RC4_HMAC_EXP:                 "RC4_HMAC_EXP",
+												win32.SUBKEY_KEYMATERIAL:           "SUBKEY_KEYMATERIAL",
+												win32.OLD_EXP:                      "OLD_EXP",
+											}
+
+											TicketFlagTypes := []string{
+												"name_canonicalize", 
+												"anonymous", 
+												"ok_as_delegate",
+												"?",
+												"hw_authent",
+												"pre_authent",
+												"initial",
+												"renewable",
+												"invalid",
+												"postdated",
+												"may_postdate",
+												"proxy",
+												"proxiable",
+												"forwarded",
+												"forwardable",
+												"reserved",
+											}
+
+											TicketFlagsStr = ""
+
+											for i := 0; i < 16; i++ {
+												if ((TicketFlags >> (i  + 16)) & 1) == 1 {
+													TicketFlagsStr += " " + TicketFlagTypes[i]
+												}
+											}
+
+											TicketFlagsStr += fmt.Sprintf(" (0x%x)", TicketFlags)
+
+											Output += "\n"
+											Output += fmt.Sprintf("\tClient name     : %s @ %s\n", ClientName, ClientRealm)
+											Output += fmt.Sprintf("\tServer name     : %s @ %s\n", ServerName, ServerRealm)
+											Output += fmt.Sprintf("\tStart time      : %d\n", (StartTimeHigh << 4) | StartTimeLow)
+											Output += fmt.Sprintf("\tEnd time        : %d\n", (EndTimeHigh << 4) | EndTimeLow)
+											Output += fmt.Sprintf("\tRewnew time     : %d\n", (RenewTimeHigh << 4) | RenewTimeLow)
+											Output += fmt.Sprintf("\tEncryption type : %s\n", EncryptionTypes[EncryptionType])
+											Output += fmt.Sprintf("\tFlags           :%s\n", TicketFlagsStr)
+											if len(Ticket) > 0 {
+												Output += fmt.Sprintf("\tTicket          : %s\n", base64.StdEncoding.EncodeToString(Ticket))
+											}
+
+											NumTickets -= 1
+										}
+									} else {
+										logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_KERBEROS  - KERBEROS_COMMAND_KLIST, Invalid packet", AgentID))
+									}
+
 									Output += "\n"
 
 									NumSessions -= 1

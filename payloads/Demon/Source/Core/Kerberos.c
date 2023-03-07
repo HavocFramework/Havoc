@@ -372,6 +372,36 @@ VOID CopySessionInfo( PSESSION_INFORMATION Session, PSECURITY_LOGON_SESSION_DATA
     StringCopyW( Session->LogonServerDNSDomain, Data->DnsDomainName.Buffer );
     // Upn
     StringCopyW( Session->Upn, Data->Upn.Buffer );
+    // Tickets
+    Session->Tickets = NULL;
+}
+
+VOID CopyTicketInfo( PTICKET_INFORMATION TicketInfo, PKERB_TICKET_CACHE_INFO_EX Data )
+{
+    // ClientName
+    StringCopyW( TicketInfo->ClientName, Data->ClientName.Buffer );
+    // ClientRealm
+    StringCopyW( TicketInfo->ClientRealm, Data->ClientRealm.Buffer );
+    // ServerName
+    StringCopyW( TicketInfo->ServerName, Data->ServerName.Buffer );
+    // ServerRealm
+    StringCopyW( TicketInfo->ServerRealm, Data->ServerRealm.Buffer );
+    // StartTime
+    TicketInfo->StartTime.LowPart  = Data->StartTime.LowPart;
+    TicketInfo->StartTime.HighPart = Data->StartTime.HighPart;
+    // EndTime
+    TicketInfo->EndTime.LowPart  = Data->EndTime.LowPart;
+    TicketInfo->EndTime.HighPart = Data->EndTime.HighPart;
+    // RenewTime
+    TicketInfo->RenewTime.LowPart  = Data->RenewTime.LowPart;
+    TicketInfo->RenewTime.HighPart = Data->RenewTime.HighPart;
+    // EncryptionType
+    TicketInfo->EncryptionType = Data->EncryptionType;
+    // TicketFlags
+    TicketInfo->TicketFlags = Data->TicketFlags;
+    // Ticket
+    TicketInfo->Ticket.Buffer = NULL;
+    TicketInfo->Ticket.Length = 0;
 }
 
 BOOL Ptt( HANDLE hToken, PBYTE Ticket, DWORD TicketSize, LUID luid )
@@ -536,13 +566,14 @@ PSESSION_INFORMATION Klist( HANDLE hToken, LUID luid )
     PLOGON_SESSION_DATA               sessionData    = NULL;
     KERB_QUERY_TKT_CACHE_REQUEST      cacheRequest   = { 0 };
     PKERB_QUERY_TKT_CACHE_EX_RESPONSE cacheResponse  = NULL;
-    KERB_TICKET_CACHE_INFO_EX         cacheInfo      = { 0 };
     ULONG                             responseSize   = 0;
     NTSTATUS                          protocolStatus = STATUS_SUCCESS;
     NTSTATUS                          status         = STATUS_SUCCESS;
     PSESSION_INFORMATION              Sessions       = NULL;
     PSESSION_INFORMATION              NewSession     = NULL;
     PSESSION_INFORMATION              TmpSession     = NULL;
+    PTICKET_INFORMATION               TicketInfo     = NULL;
+    PTICKET_INFORMATION               TmpTicketInfo  = NULL;
 
     if ( ! hToken )
         return NULL;
@@ -633,10 +664,28 @@ PSESSION_INFORMATION Klist( HANDLE hToken, LUID luid )
 
         for ( int j = 0; j < cacheResponse->CountOfTickets; j++ )
         {
-            cacheInfo = cacheResponse->Tickets[j];
+            TicketInfo = Instance.Win32.LocalAlloc( LPTR, sizeof( TICKET_INFORMATION ) );
+            if ( ! TicketInfo )
+                continue;
 
-            // TODO: parse cached tickets
+            CopyTicketInfo( TicketInfo, &cacheResponse->Tickets[j] );
+
+            if ( ! NewSession->Tickets )
+            {
+                NewSession->Tickets = TicketInfo;
+                TicketInfo->Next    = NULL;
+            }
+            else
+            {
+                TmpTicketInfo = NewSession->Tickets;
+                while ( TmpTicketInfo->Next )
+                    TmpTicketInfo = TmpTicketInfo->Next;
+
+                TmpTicketInfo->Next = TicketInfo;
+                TicketInfo->Next    = NULL;
+            }
         }
+
         Instance.Win32.LsaFreeReturnBuffer( cacheResponse ); cacheResponse = NULL;
     }
 

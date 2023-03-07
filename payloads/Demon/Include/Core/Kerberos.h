@@ -23,18 +23,33 @@
 
 #define FIELD_LENGTH 512
 
+typedef struct _TICKET_INFORMATION {
+  WCHAR         ClientName[FIELD_LENGTH];
+  WCHAR         ClientRealm[FIELD_LENGTH];
+  WCHAR         ServerName[FIELD_LENGTH];
+  WCHAR         ServerRealm[FIELD_LENGTH];
+  LARGE_INTEGER StartTime;
+  LARGE_INTEGER EndTime;
+  LARGE_INTEGER RenewTime;
+  LONG          EncryptionType;
+  ULONG         TicketFlags;
+  BUFFER        Ticket;
+  struct _TICKET_INFORMATION* Next;
+} TICKET_INFORMATION,*PTICKET_INFORMATION;
+
 typedef struct _SESSION_INFORMATION {
-  WCHAR         UserName[FIELD_LENGTH];
-  WCHAR         Domain[FIELD_LENGTH];
-  LUID          LogonId;
-  ULONG         Session;
-  WCHAR         UserSID[FIELD_LENGTH];
-  LARGE_INTEGER LogonTime;
-  ULONG         LogonType;
-  WCHAR         AuthenticationPackage[FIELD_LENGTH];
-  WCHAR         LogonServer[FIELD_LENGTH];
-  WCHAR         LogonServerDNSDomain[FIELD_LENGTH];
-  WCHAR         Upn[FIELD_LENGTH];
+  WCHAR               UserName[FIELD_LENGTH];
+  WCHAR               Domain[FIELD_LENGTH];
+  LUID                LogonId;
+  ULONG               Session;
+  WCHAR               UserSID[FIELD_LENGTH];
+  LARGE_INTEGER       LogonTime;
+  ULONG               LogonType;
+  WCHAR               AuthenticationPackage[FIELD_LENGTH];
+  WCHAR               LogonServer[FIELD_LENGTH];
+  WCHAR               LogonServerDNSDomain[FIELD_LENGTH];
+  WCHAR               Upn[FIELD_LENGTH];
+  PTICKET_INFORMATION Tickets;
   struct _SESSION_INFORMATION* Next;
 } SESSION_INFORMATION,*PSESSION_INFORMATION;
 
