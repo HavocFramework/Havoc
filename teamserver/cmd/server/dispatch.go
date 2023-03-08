@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"os"
 	"fmt"
 	"strconv"
 	"strings"
@@ -835,7 +836,9 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 						}
 					}
 
-					PayloadBuilder.SetOutputPath("/tmp/" + utils.GenerateID(10) + Ext)
+					OutputPath := "/tmp/" + utils.GenerateID(10) + Ext
+
+					PayloadBuilder.SetOutputPath(OutputPath)
 
 					if t.Profile.Config.Demon != nil {
 						if t.Profile.Config.Demon.Binary != nil {
@@ -850,6 +853,10 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 							if err != nil {
 								logger.Error("Error while sending event: " + err.Error())
 								return
+							}
+							err = os.Remove(OutputPath)
+							if err != nil {
+								logger.Error(fmt.Sprintf("Failed to cleanup binary: %s", OutputPath))
 							}
 						}
 					}

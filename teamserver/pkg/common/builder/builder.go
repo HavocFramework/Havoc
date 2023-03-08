@@ -150,6 +150,7 @@ func (b *Builder) SetSilent(silent bool) {
 func (b *Builder) Build() bool {
 	var (
 		CompileCommand string
+		AsmObj         string
 	)
 
 	if b.config.ListenerType == handlers.LISTENER_EXTERNAL {
@@ -234,7 +235,7 @@ func (b *Builder) Build() bool {
 			var FilePath = dir + "/" + f.Name()
 
 			if path.Ext(f.Name()) == ".asm" {
-				var AsmObj = "/tmp/" + utils.GenerateID(10) + ".o"
+				AsmObj = "/tmp/" + utils.GenerateID(10) + ".o"
 				b.Cmd(fmt.Sprintf(b.compilerOptions.Config.Nasm+" -f win64 %s -o %s", FilePath, AsmObj))
 				CompileCommand += AsmObj + " "
 			} else if path.Ext(f.Name()) == ".c" {
@@ -335,7 +336,16 @@ func (b *Builder) Build() bool {
 		b.SendConsoleMessage("Info", "Compiling source")
 	}
 
-	return b.CompileCmd(CompileCommand)
+	Successful := b.CompileCmd(CompileCommand)
+
+	if AsmObj != "" {
+		err := os.Remove(AsmObj)
+		if err != nil {
+			logger.Error(fmt.Sprintf("Failed to cleanup binary: %s", AsmObj))
+		}
+	}
+
+	return Successful
 }
 
 func (b *Builder) SetListener(Type int, Config any) {
