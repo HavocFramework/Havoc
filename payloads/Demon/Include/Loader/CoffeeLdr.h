@@ -5,6 +5,8 @@
 #ifndef DEMON_DOF_H
 #define DEMON_DOF_H
 
+#define STYP_TEXT 0x20
+
 typedef struct _COFFEE_PARAMS
 {
     PCHAR  EntryName;

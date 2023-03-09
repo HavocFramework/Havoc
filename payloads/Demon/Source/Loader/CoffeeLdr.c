@@ -149,14 +149,31 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
         }
     }
 
+    Success = FALSE;
+    for ( DWORD SectionCnt = 0; SectionCnt < Coffee->Header->NumberOfSections; SectionCnt++ )
+    {
+        Coffee->Section = U_PTR( Coffee->Data ) + sizeof( COFF_FILE_HEADER ) + U_PTR( sizeof( COFF_SECTION ) * SectionCnt );
+        if ( Coffee->Section->Characteristics & STYP_TEXT )
+        {
+            // set the .text section to RX
+            MemoryProtect( DX_MEM_SYSCALL, NtCurrentProcess(), Coffee->SecMap[ SectionCnt ].Ptr, Coffee->SecMap[ SectionCnt ].Size, PAGE_EXECUTE_READ );
+            Success = TRUE;
+        }
+    }
+
+    if ( ! Success )
+    {
+        // TODO: send message to the TS
+        PUTS( "No executable section found" )
+        return FALSE;
+    }
+
+    Success = FALSE;
     for ( DWORD SymCounter = 0; SymCounter < Coffee->Header->NumberOfSymbols; SymCounter++ )
     {
         if ( StringCompareA( Coffee->Symbol[ SymCounter ].First.Name, Function ) == 0 )
         {
             Success = TRUE;
-
-            // set the .text section to RX
-            MemoryProtect( DX_MEM_SYSCALL, NtCurrentProcess(), Coffee->SecMap[ 0 ].Ptr, Coffee->SecMap[ 0 ].Size, PAGE_EXECUTE_READ );
 
             CoffeeMain = ( Coffee->SecMap[ Coffee->Symbol[ SymCounter ].SectionNumber - 1 ].Ptr + Coffee->Symbol[ SymCounter ].Value );
             CoffeeFunction( CoffeeMain, Argument, Size );
@@ -261,13 +278,13 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
                 {
                     MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
 
-                    if ( ( ( PCHAR ) ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( PCHAR ) ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + 4 ) ) > 0xffffffff )
+                    if ( ( ( PCHAR ) ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( PCHAR ) ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) ) > 0xffffffff )
                     {
                         PUTS( "Relocation distance is over 0xffffffff" );
                         return FALSE;
                     }
 
-                    Offset = ( UINT32 ) ( ( PCHAR ) ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( PCHAR ) ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + 4 ) );
+                    Offset = ( UINT32 ) ( ( PCHAR ) ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( PCHAR ) ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) );
 
                     MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
                 }
@@ -275,13 +292,13 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
                 {
                     MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
 
-                    if ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + 4 ) ) > 0xffffffff )
+                    if ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) ) > 0xffffffff )
                     {
                         PUTS( "Relocation distance is over 0xffffffff" );
                         return FALSE;
                     }
 
-                    Offset = ( UINT32 ) ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + 4 ) );
+                    Offset = ( UINT32 ) ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) );
 
                     MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
                 }
