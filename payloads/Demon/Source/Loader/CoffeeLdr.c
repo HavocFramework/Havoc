@@ -136,6 +136,7 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
     PVOID CoffeeMain     = NULL;
     PVOID VehHandle      = NULL;
     PCHAR SymbolName     = NULL;
+    BOOL  Success        = FALSE;
     ULONG FunctionLength = StringLengthA( Function );
 
     if ( Instance.Config.Implant.CoffeeVeh )
@@ -151,12 +152,17 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
     }
 
     // set all executable sections to RX
-    for ( DWORD SectionCnt = 0; SectionCnt < Coffee->Header->NumberOfSections; SectionCnt++ )
+    for ( UINT16 SectionCnt = 0; SectionCnt < Coffee->Header->NumberOfSections; SectionCnt++ )
     {
         Coffee->Section = U_PTR( Coffee->Data ) + sizeof( COFF_FILE_HEADER ) + U_PTR( sizeof( COFF_SECTION ) * SectionCnt );
         if ( Coffee->Section->Characteristics & STYP_TEXT )
         {
-            MemoryProtect( DX_MEM_SYSCALL, NtCurrentProcess(), Coffee->SecMap[ SectionCnt ].Ptr, Coffee->SecMap[ SectionCnt ].Size, PAGE_EXECUTE_READ );
+            Success = MemoryProtect( DX_MEM_SYSCALL, NtCurrentProcess(), Coffee->SecMap[ SectionCnt ].Ptr, Coffee->SecMap[ SectionCnt ].Size, PAGE_EXECUTE_READ );
+            if ( ! Success )
+            {
+                PUTS( "Failed to protect memory" )
+                return FALSE;
+            }
         }
     }
 
@@ -204,7 +210,7 @@ BOOL CoffeeCleanup( PCOFFEE Coffee )
     SIZE_T   Size     = 0;
     NTSTATUS NtStatus = 0;
 
-    for ( DWORD SecCnt = 0; SecCnt < Coffee->Header->NumberOfSections; SecCnt++ )
+    for ( UINT16 SecCnt = 0; SecCnt < Coffee->Header->NumberOfSections; SecCnt++ )
     {
         if ( Coffee->SecMap[ SecCnt ].Ptr )
         {
@@ -258,7 +264,7 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
     PCHAR  SymName[9] = { 0 };
     PCHAR  SymbolName = NULL;
 
-    for ( DWORD SectionCnt = 0; SectionCnt < Coffee->Header->NumberOfSections; SectionCnt++ )
+    for ( UINT16 SectionCnt = 0; SectionCnt < Coffee->Header->NumberOfSections; SectionCnt++ )
     {
         Coffee->Section = U_PTR( Coffee->Data ) + sizeof( COFF_FILE_HEADER ) + U_PTR( sizeof( COFF_SECTION ) * SectionCnt );
         Coffee->Reloc   = U_PTR( Coffee->Data ) + Coffee->Section->PointerToRelocations;
@@ -536,6 +542,12 @@ DWORD CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSiz
     Coffee.Data   = CoffeeData;
     Coffee.Header = Coffee.Data;
 
+    if ( Coffee.Header->Machine != IMAGE_FILE_MACHINE_AMD64 )
+    {
+        PUTS( "The BOF is not AMD64" );
+        return 1;
+    }
+
     Coffee.SecMap     = Instance.Win32.LocalAlloc( LPTR, Coffee.Header->NumberOfSections * sizeof( SECTION_MAP ) );
     Coffee.FunMapSize = sizeof( UINT64 ) * 2048;
     Coffee.FunMap     = Instance.Win32.LocalAlloc( LPTR, Coffee.FunMapSize );
@@ -543,13 +555,25 @@ DWORD CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSiz
     PRINTF( "Coffee.SecMap => %p\n", Coffee.SecMap )
     PRINTF( "Coffee.FunMap => %p\n", Coffee.FunMap )
 
-    for ( DWORD SecCnt = 0 ; SecCnt < Coffee.Header->NumberOfSections; SecCnt++ )
+    if ( ! Coffee.SecMap || ! Coffee.FunMap )
+    {
+        PUTS( "Failed to allocate memory" )
+        return 1;
+    }
+
+    for ( UINT16 SecCnt = 0 ; SecCnt < Coffee.Header->NumberOfSections; SecCnt++ )
     {
         Coffee.Section               = U_PTR( Coffee.Data ) + sizeof( COFF_FILE_HEADER ) + U_PTR( sizeof( COFF_SECTION ) * SecCnt );
         Coffee.SecMap[ SecCnt ].Size = Coffee.Section->SizeOfRawData;
         Coffee.SecMap[ SecCnt ].Ptr  = MemoryAlloc( DX_MEM_DEFAULT, NtCurrentProcess(), Coffee.SecMap[ SecCnt ].Size, PAGE_READWRITE );
 
         PRINTF( "Coffee.SecMap[ %d ].Ptr => %p\n", SecCnt, Coffee.SecMap[ SecCnt ].Ptr )
+
+        if ( Coffee.SecMap[ SecCnt ].Size && ! Coffee.SecMap[ SecCnt ].Ptr )
+        {
+            PRINTF( "Failed to allocate %x bytes of memory\n", Coffee.SecMap[ SecCnt ].Size )
+            return 1;
+        }
 
         MemCopy( Coffee.SecMap[ SecCnt ].Ptr, U_PTR( CoffeeData ) + Coffee.Section->PointerToRawData, Coffee.Section->SizeOfRawData );
     }
