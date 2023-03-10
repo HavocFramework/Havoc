@@ -58,6 +58,8 @@ BOOL CoffeeProcessSymbol( LPSTR Symbol, PVOID* pFuncAddr )
     //    Symbol, SymHash
     //)
 
+    *pFuncAddr = NULL;
+
     MemCopy( Bak, Symbol, StringLengthA( Symbol ) + 1 );
 
     if ( SymBeacon == COFF_PREP_BEACON         || // check if this is a Beacon api
@@ -284,7 +286,6 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
                 SymbolName = ( ( PCHAR ) ( Coffee->Symbol + Coffee->Header->NumberOfSymbols ) ) + Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].First.Value[ 1 ];
             }
 
-            FuncPtr = NULL;
             if ( ! CoffeeProcessSymbol( SymbolName, &FuncPtr ) )
             {
                 PRINTF( "Symbol '%s' couldn't be resolved\n", SymbolName );
