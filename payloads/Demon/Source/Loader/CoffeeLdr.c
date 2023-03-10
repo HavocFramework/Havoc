@@ -225,34 +225,21 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
     return TRUE;
 }
 
-BOOL CoffeeCleanup( PCOFFEE Coffee )
+VOID CoffeeCleanup( PCOFFEE Coffee )
 {
     PVOID    Pointer  = NULL;
     SIZE_T   Size     = 0;
     NTSTATUS NtStatus = 0;
 
-    for ( UINT16 SecCnt = 0; SecCnt < Coffee->Header->NumberOfSections; SecCnt++ )
+    if ( MemoryProtect( DX_MEM_SYSCALL, NtCurrentProcess(), Coffee->ImageBase, Coffee->BofSize, PAGE_READWRITE ) )
+        MemSet( Coffee->ImageBase, 0, Coffee->BofSize );
+
+    Pointer = Coffee->ImageBase;
+    Size    = Coffee->BofSize;
+    if ( ! NT_SUCCESS( ( NtStatus = Instance.Syscall.NtFreeVirtualMemory( NtCurrentProcess(), &Pointer, &Size, MEM_RELEASE ) ) ) )
     {
-        if ( Coffee->SecMap[ SecCnt ].Ptr )
-        {
-            if ( ! MemoryProtect( DX_MEM_SYSCALL, NtCurrentProcess(), Coffee->SecMap[ SecCnt ].Ptr, Coffee->SecMap[ SecCnt ].Size, PAGE_READWRITE ) )
-            {
-                PUTS( "[!] Failed to change protection to RW" );
-                return FALSE;
-            }
-
-            MemSet( Coffee->SecMap[ SecCnt ].Ptr, 0, Coffee->SecMap[ SecCnt ].Size );
-
-            Size    = 0;
-            Pointer = Coffee->SecMap[ SecCnt ].Ptr;
-            if ( ! NT_SUCCESS( ( NtStatus = Instance.Syscall.NtFreeVirtualMemory( NtCurrentProcess(), &Pointer, &Size, MEM_RELEASE ) ) ) )
-            {
-                NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
-                PRINTF( "[!] Failed to free memory: %p : %lu\n", Coffee->SecMap[ SecCnt ].Ptr, NtGetLastError() );
-            }
-
-            Coffee->SecMap[ SecCnt ].Ptr = NULL;
-        }
+        NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
+        PRINTF( "[!] Failed to free memory: %p : %lu\n", Coffee->ImageBase, NtGetLastError() );
     }
 
     if ( Coffee->SecMap )
@@ -260,14 +247,6 @@ BOOL CoffeeCleanup( PCOFFEE Coffee )
         MemSet( Coffee->SecMap, 0, Coffee->Header->NumberOfSections * sizeof( SECTION_MAP ) );
         Instance.Win32.LocalFree( Coffee->SecMap );
         Coffee->SecMap = NULL;
-    }
-
-    if ( Coffee->FunMap )
-    {
-        MemSet( Coffee->FunMap, 0, Coffee->FunMapSize );
-        Instance.Win32.LocalFree( Coffee->FunMap );
-        Coffee->FunMap     = NULL;
-        Coffee->FunMapSize = 0;
     }
 }
 
@@ -314,37 +293,6 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
 
             if ( Coffee->Reloc->Type == IMAGE_REL_AMD64_REL32 && FuncPtr != NULL )
             {
-                // make sure that FunMap is bug enough
-                if ( ( FuncCount + 1 ) * sizeof( UINT64 ) > Coffee->FunMapSize )
-                {
-                    // too many functions, try to reallocate without moving the buffer
-                    PrevFunMap = Coffee->FunMap;
-                    Coffee->FunMapSize += sizeof( UINT64 ) * 100;
-                    Coffee->FunMap = Instance.Win32.LocalReAlloc(
-                            Coffee->FunMap,
-                            Coffee->FunMapSize,
-                            0);
-                    if ( ! Coffee->FunMap )
-                    {
-                        PUTS( "The BOF has too many functions" );
-
-                        Instance.Win32.LocalFree( PrevFunMap );
-
-                        PPACKAGE Package = PackageCreate( DEMON_COMMAND_INLINE_EXECUTE );
-
-                        PackageAddInt32( Package, DEMON_TOO_MANY_FUNCS );
-                        PackageTransmit( Package, NULL, NULL );
-
-                        return FALSE;
-                    }
-                }
-
-                if ( ( ( Coffee->FunMap + ( FuncCount * sizeof( UINT64 ) ) ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) ) > 0xffffffff )
-                {
-                    PUTS( "Relocation distance is over 0xffffffff" );
-                    return FALSE;
-                }
-
                 MemCopy( Coffee->FunMap + ( FuncCount * sizeof( UINT64 ) ), &FuncPtr, sizeof( UINT64 ) );
 
                 Offset  = ( UINT32 ) ( ( Coffee->FunMap + ( FuncCount * sizeof( UINT64 ) ) ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) );
@@ -356,31 +304,6 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
             }
             else if ( Coffee->Reloc->Type == IMAGE_REL_I386_DIR32 && FuncPtr != NULL )
             {
-                // make sure that FunMap is bug enough
-                if ( ( FuncCount + 1 ) * sizeof( UINT64 ) > Coffee->FunMapSize )
-                {
-                    // too many functions, try to reallocate without moving the buffer
-                    PrevFunMap = Coffee->FunMap;
-                    Coffee->FunMapSize += sizeof( UINT64 ) * 100;
-                    Coffee->FunMap = Instance.Win32.LocalReAlloc(
-                            Coffee->FunMap,
-                            Coffee->FunMapSize,
-                            0);
-                    if ( ! Coffee->FunMap )
-                    {
-                        PUTS( "The BOF has too many functions" );
-
-                        Instance.Win32.LocalFree( PrevFunMap );
-
-                        PPACKAGE Package = PackageCreate( DEMON_COMMAND_INLINE_EXECUTE );
-
-                        PackageAddInt32( Package, DEMON_TOO_MANY_FUNCS );
-                        PackageTransmit( Package, NULL, NULL );
-
-                        return FALSE;
-                    }
-                }
-
                 MemCopy( Coffee->FunMap + ( FuncCount * sizeof( UINT64 ) ), &FuncPtr, sizeof( UINT32 ) );
 
                 Offset  = ( UINT32 ) ( Coffee->FunMap + ( FuncCount * sizeof( UINT64 ) ) );
@@ -403,12 +326,6 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
             {
                 MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
 
-                if ( ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) ) > 0xffffffff )
-                {
-                    PUTS( "Relocation distance is over 0xffffffff" );
-                    return FALSE;
-                }
-
                 Offset  = ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) );
                 Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
 
@@ -417,12 +334,6 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
             else if ( Coffee->Reloc->Type == IMAGE_REL_AMD64_REL32_1 && FuncPtr == NULL )
             {
                 MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
-
-                if ( ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) ) > 0xffffffff )
-                {
-                    PUTS( "Relocation distance is over 0xffffffff" );
-                    return FALSE;
-                }
 
                 Offset  = ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) );
                 Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
@@ -434,12 +345,6 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
             {
                 MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
 
-                if ( ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) ) > 0xffffffff )
-                {
-                    PUTS( "Relocation distance is over 0xffffffff" );
-                    return FALSE;
-                }
-
                 Offset  = ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) );
                 Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
                 Offset += 2;
@@ -449,12 +354,6 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
             else if ( Coffee->Reloc->Type == IMAGE_REL_AMD64_REL32_3 && FuncPtr == NULL )
             {
                 MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
-
-                if ( ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) ) > 0xffffffff )
-                {
-                    PUTS( "Relocation distance is over 0xffffffff" );
-                    return FALSE;
-                }
 
                 Offset  = ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) );
                 Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
@@ -466,12 +365,6 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
             {
                 MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
 
-                if ( ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) ) > 0xffffffff )
-                {
-                    PUTS( "Relocation distance is over 0xffffffff" );
-                    return FALSE;
-                }
-
                 Offset  = ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) );
                 Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
                 Offset += 4;
@@ -482,12 +375,6 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
             {
                 MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
 
-                if ( ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) ) > 0xffffffff )
-                {
-                    PUTS( "Relocation distance is over 0xffffffff" );
-                    return FALSE;
-                }
-
                 Offset  = ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) );
                 Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
                 Offset += 5;
@@ -497,12 +384,6 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
             else if ( Coffee->Reloc->Type == IMAGE_REL_AMD64_ADDR32NB && FuncPtr == NULL )
             {
                 MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
-
-                if ( ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) ) > 0xffffffff )
-                {
-                    PUTS( "Relocation distance is over 0xffffffff" );
-                    return FALSE;
-                }
 
                 Offset  = ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) );
                 Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
@@ -548,9 +429,48 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
     return TRUE;
 }
 
+// calculate how many __imp_* function there are
+SIZE_T CoffeeGetFunMapSize( PCOFFEE Coffee )
+{
+    PCHAR SymName[9]    = { 0 };
+    PCHAR SymbolName    = NULL;
+    ULONG NumberOfFuncs = 0;
+
+    for ( UINT16 SectionCnt = 0; SectionCnt < Coffee->Header->NumberOfSections; SectionCnt++ )
+    {
+        Coffee->Section = U_PTR( Coffee->Data ) + sizeof( COFF_FILE_HEADER ) + U_PTR( sizeof( COFF_SECTION ) * SectionCnt );
+        Coffee->Reloc   = U_PTR( Coffee->Data ) + Coffee->Section->PointerToRelocations;
+
+        for ( DWORD RelocCnt = 0; RelocCnt < Coffee->Section->NumberOfRelocations; RelocCnt++ )
+        {
+            if ( Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].First.Value[ 0 ] != 0 )
+            {
+                // if the symbol is 8 bytes long, it will not be terminated by a null byte
+                MemSet( SymName, 0, sizeof( SymName ) );
+                MemCopy( SymName, Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].First.Name, 8 );
+                SymbolName = SymName;
+            }
+            else
+            {
+                // in this scenario, we can trust that the symbol ends with a null byte
+                SymbolName = ( ( PCHAR ) ( Coffee->Symbol + Coffee->Header->NumberOfSymbols ) ) + Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].First.Value[ 1 ];
+            }
+
+            // if the symbol starts with __imp_, count it
+            if ( HashEx( SymbolName, COFF_PREP_SYMBOL_SIZE, FALSE ) == COFF_PREP_SYMBOL )
+                NumberOfFuncs++;
+
+            Coffee->Reloc = U_PTR( Coffee->Reloc ) + sizeof( COFF_RELOC );
+        }
+    }
+
+    return sizeof( UINT64 ) * NumberOfFuncs;
+}
+
 DWORD CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSize )
 {
-    COFFEE Coffee = { 0 };
+    COFFEE Coffee   = { 0 };
+    PVOID  NextBase = NULL;
 
     PRINTF( "[EntryName: %s] [CoffeeData: %p] [ArgData: %p] [ArgSize: %ld]\n", EntryName, CoffeeData, ArgData, ArgSize )
 
@@ -560,8 +480,16 @@ DWORD CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSiz
         return 1;
     }
 
+    /*
+     * The BOF will be allocated as one big chunk of memory
+     * all sections are kept page aligned
+     * the FunctionMap stored at the end to prevent
+     * reloc 32-bit offsets to overflow
+     */
+
     Coffee.Data   = CoffeeData;
     Coffee.Header = Coffee.Data;
+    Coffee.Symbol = U_PTR( Coffee.Data ) + Coffee.Header->PointerToSymbolTable;
 
     if ( Coffee.Header->Machine != IMAGE_FILE_MACHINE_AMD64 )
     {
@@ -570,36 +498,50 @@ DWORD CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSiz
     }
 
     Coffee.SecMap     = Instance.Win32.LocalAlloc( LPTR, Coffee.Header->NumberOfSections * sizeof( SECTION_MAP ) );
-    Coffee.FunMapSize = sizeof( UINT64 ) * 2048;
-    Coffee.FunMap     = Instance.Win32.LocalAlloc( LPTR, Coffee.FunMapSize );
+    Coffee.FunMapSize = CoffeeGetFunMapSize( &Coffee );
 
-    PRINTF( "Coffee.SecMap => %p\n", Coffee.SecMap )
-    PRINTF( "Coffee.FunMap => %p\n", Coffee.FunMap )
-
-    if ( ! Coffee.SecMap || ! Coffee.FunMap )
+    if ( ! Coffee.SecMap )
     {
         PUTS( "Failed to allocate memory" )
         return 1;
     }
 
+    // calculate the size of the entire BOF
+    for ( UINT16 SecCnt = 0 ; SecCnt < Coffee.Header->NumberOfSections; SecCnt++ )
+    {
+        Coffee.Section  = U_PTR( Coffee.Data ) + sizeof( COFF_FILE_HEADER ) + U_PTR( sizeof( COFF_SECTION ) * SecCnt );
+        Coffee.BofSize += Coffee.Section->SizeOfRawData;
+        Coffee.BofSize  = PAGE_ALLIGN( Coffee.BofSize );
+    }
+
+    // at the bottom of the BOF, store the Function map, to ensure all reloc offsets are below 4K
+    Coffee.BofSize += Coffee.FunMapSize;
+
+    Coffee.ImageBase = MemoryAlloc( DX_MEM_DEFAULT, NtCurrentProcess(), Coffee.BofSize, PAGE_READWRITE );
+    if ( ! Coffee.ImageBase )
+    {
+        PUTS( "Failed to allocate memory for the BOF" )
+        return 1;
+    }
+
+    NextBase = Coffee.ImageBase;
     for ( UINT16 SecCnt = 0 ; SecCnt < Coffee.Header->NumberOfSections; SecCnt++ )
     {
         Coffee.Section               = U_PTR( Coffee.Data ) + sizeof( COFF_FILE_HEADER ) + U_PTR( sizeof( COFF_SECTION ) * SecCnt );
         Coffee.SecMap[ SecCnt ].Size = Coffee.Section->SizeOfRawData;
-        Coffee.SecMap[ SecCnt ].Ptr  = MemoryAlloc( DX_MEM_DEFAULT, NtCurrentProcess(), Coffee.SecMap[ SecCnt ].Size, PAGE_READWRITE );
+        Coffee.SecMap[ SecCnt ].Ptr  = NextBase;
+
+        NextBase += Coffee.Section->SizeOfRawData;
+        NextBase  = PAGE_ALLIGN( NextBase );
 
         PRINTF( "Coffee.SecMap[ %d ].Ptr => %p\n", SecCnt, Coffee.SecMap[ SecCnt ].Ptr )
-
-        if ( Coffee.SecMap[ SecCnt ].Size && ! Coffee.SecMap[ SecCnt ].Ptr )
-        {
-            PRINTF( "Failed to allocate %x bytes of memory\n", Coffee.SecMap[ SecCnt ].Size )
-            return 1;
-        }
 
         MemCopy( Coffee.SecMap[ SecCnt ].Ptr, U_PTR( CoffeeData ) + Coffee.Section->PointerToRawData, Coffee.Section->SizeOfRawData );
     }
 
-    Coffee.Symbol = U_PTR( Coffee.Data ) + Coffee.Header->PointerToSymbolTable;
+    // the FunMap is stored directly after the BOF
+    Coffee.FunMap = NextBase;
+
     if ( ! CoffeeProcessSections( &Coffee ) )
     {
         PUTS( "[*] Failed to process relocation" );

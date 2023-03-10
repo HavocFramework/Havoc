@@ -5,6 +5,9 @@
 #ifndef DEMON_DOF_H
 #define DEMON_DOF_H
 
+#define PAGE_SIZE 4096
+#define PAGE_ALLIGN( x ) U_PTR( x ) + ( ( PAGE_SIZE - ( U_PTR( x ) & (PAGE_SIZE - 1) ) ) % PAGE_SIZE )
+
 #define STYP_TEXT 0x20
 
 typedef struct _COFFEE_PARAMS
@@ -82,6 +85,8 @@ typedef struct _COFFEE
     PCOFF_SECTION     Section;
     PCOFF_RELOC       Reloc;
     PCOFF_SYMBOL      Symbol;
+    PVOID             ImageBase;
+    SIZE_T            BofSize;
 
     PSECTION_MAP      SecMap;
     PCHAR             FunMap;
