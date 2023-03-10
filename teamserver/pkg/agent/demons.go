@@ -3308,14 +3308,6 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 			break
 
-		case COMMAND_TOO_MANY_FUNCS:
-			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_INLINEEXECUTE - COMMAND_TOO_MANY_FUNCS", AgentID))
-			OutputMap["Type"] = "Error"
-			OutputMap["Message"] = "The BOF has too many functions"
-
-			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
-			break
-
 		default:
 			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_INLINEEXECUTE - UNKNOWN (%d)", AgentID, Type))
 		}
