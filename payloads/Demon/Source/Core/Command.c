@@ -1420,11 +1420,11 @@ VOID CommandToken( PPARSER Parser )
 
             if ( dwUserSize > 0 && dwPasswordSize > 0 && dwDomainSize > 0 )
             {
-                PRINTF( "Create new token: Domain:[%s] User:[%s] Password:[%s]", lpDomain, lpUser, lpPassword )
-
                 lpUser[ dwUserSize ]         = 0;
                 lpPassword[ dwPasswordSize ] = 0;
                 lpDomain[ dwDomainSize ]     = 0;
+
+                PRINTF( "Create new token: Domain:[%s] User:[%s] Password:[%s]\n", lpDomain, lpUser, lpPassword )
 
                 hToken = TokenMake( lpUser, lpPassword, lpDomain );
                 if ( hToken != NULL )
