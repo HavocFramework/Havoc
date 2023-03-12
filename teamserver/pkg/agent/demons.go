@@ -11,6 +11,7 @@ import (
 	"os"
 	"math/rand"
 	"net"
+	"encoding/binary"
 	"strconv"
 	"strings"
 	"time"
@@ -2877,25 +2878,128 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
 
 	case COMMAND_OUTPUT:
-		logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT", AgentID))
-		var Output = make(map[string]string)
 
-		Output["Type"] = "Good"
-		Output["Output"] = string(Parser.ParseBytes())
-		Output["Message"] = fmt.Sprintf("Received Output [%v bytes]:", len(Output["Output"]))
-		if len(Output["Output"]) > 0 {
-			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
-		}
+		if Parser.Length() >= 4 {
+			var Type = Parser.ParseInt32()
 
-	case CALLBACK_OUTPUT_OEM:
-		logger.Debug(fmt.Sprintf("Agent: %x, Command: CALLBACK_OUTPUT_OEM", AgentID))
-		var Output = make(map[string]string)
+			switch Type {
 
-		Output["Type"] = "Good"
-		Output["Output"] = common.DecodeUTF16(Parser.ParseBytes())
-		Output["Message"] = fmt.Sprintf("Received Output [%v bytes]:", len(Output["Output"]))
-		if len(Output["Output"]) > 0 {
-			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
+			case CALLBACK_OUTPUT:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT - CALLBACK_OUTPUT", AgentID))
+				var Output = make(map[string]string)
+
+				Output["Type"] = "Good"
+				Output["Output"] = string(Parser.ParseBytes())
+				Output["Message"] = fmt.Sprintf("Received Output [%v bytes]:", len(Output["Output"]))
+				if len(Output["Output"]) > 0 {
+					teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
+				}
+
+				break
+
+			case CALLBACK_OUTPUT_OEM:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT - CALLBACK_OUTPUT_OEM", AgentID))
+				var Output = make(map[string]string)
+
+				Output["Type"] = "Good"
+				Output["Output"] = common.DecodeUTF16(Parser.ParseBytes())
+				Output["Message"] = fmt.Sprintf("Received Output [%v bytes]:", len(Output["Output"]))
+				if len(Output["Output"]) > 0 {
+					teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
+				}
+
+				break
+
+			case CALLBACK_ERROR:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT - CALLBACK_ERROR", AgentID))
+
+				var Output = make(map[string]string)
+				Output["Type"] = typeError
+				Output["Output"] = string(Parser.ParseBytes())
+				Output["Message"] = fmt.Sprintf("Received Output [%v bytes]:", len(Output["Output"]))
+				if len(Output["Output"]) > 0 {
+					teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
+				}
+				
+				break
+
+			case CALLBACK_FILE:
+
+				if Parser.Length() >= 12 {
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT - CALLBACK_FILE", AgentID))
+
+					var Data       = Parser.ParseBytes()
+					var FileID     = int(binary.BigEndian.Uint32(Data[0:4]))
+					var FileLength = int(binary.BigEndian.Uint32(Data[4:8]))
+					var FileName   = string(Data[8:])
+
+					var Output = make(map[string]string)
+					Output["Type"] = "Info"
+					Output["Message"] = fmt.Sprintf("Started download of file: %v [%v]", FileName, FileLength)
+					logger.Debug(Output["Message"])
+
+					if err := a.DownloadAdd(FileID, FileName, FileLength); err != nil {
+						Output["Type"] = "Error"
+						Output["Message"] = err.Error()
+					} else {
+						Output["MiscType"] = "download"
+						Output["MiscData2"] = base64.StdEncoding.EncodeToString([]byte(FileName)) + ";" + common.ByteCountSI(int64(FileLength))
+					}
+					teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
+				} else {
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT - CALLBACK_FILE, Invalid packet", AgentID))
+				}
+
+				break
+
+			case CALLBACK_FILE_WRITE:
+				if Parser.Length() >= 8 {
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT - CALLBACK_FILE_WRITE", AgentID))
+
+					var Data       = Parser.ParseBytes()
+					var FileID     = int(binary.BigEndian.Uint32(Data[0:4]))
+					var FileChunk  = Data[4:]
+
+					var err = a.DownloadWrite(FileID, FileChunk)
+					if err != nil {
+						var Output = make(map[string]string)
+						Output["Type"] = "Error"
+						Output["Message"] = err.Error()
+						teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
+					}
+				} else {
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT - CALLBACK_FILE_WRITE, Invalid packet", AgentID))
+				}
+
+				break
+
+			case CALLBACK_FILE_CLOSE:
+				if Parser.Length() >= 4 {
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT - CALLBACK_FILE_CLOSE", AgentID))
+
+					var Data       = Parser.ParseBytes()
+					var FileID     = int(binary.BigEndian.Uint32(Data[0:4]))
+
+					var download = a.DownloadGet(FileID)
+					if download != nil {
+						var Output = make(map[string]string)
+						Output["Type"] = "Good"
+						Output["Message"] = fmt.Sprintf("Finished download of file: %v", download.FilePath)
+						teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
+					} else {
+						logger.Debug("download == nil")
+					}
+
+					a.DownloadClose(FileID)
+
+				} else {
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT - CALLBACK_FILE_CLOSE, Invalid packet", AgentID))
+				}
+
+				break
+			}
+		} else {
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT, Invalid packet", AgentID))
 		}
 
 	case COMMAND_INJECT_DLL:

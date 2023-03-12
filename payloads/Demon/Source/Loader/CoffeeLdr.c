@@ -262,7 +262,6 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
     DWORD  FuncCount  = 0;
     UINT64 OffsetLong = 0;
     UINT32 Offset     = 0;
-    PVOID  PrevFunMap = NULL;
     PCHAR  SymName[9] = { 0 };
     PCHAR  SymbolName = NULL;
 

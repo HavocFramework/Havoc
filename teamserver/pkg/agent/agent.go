@@ -676,29 +676,27 @@ func (a *Agent) DownloadAdd(FileID int, FilePath string, FileSize int) error {
 	return nil
 }
 
-func (a *Agent) DownloadWrite(FileID int, data []byte) {
+func (a *Agent) DownloadWrite(FileID int, data []byte) error {
 	for i := range a.Downloads {
 		if a.Downloads[i].FileID == FileID {
 			_, err := a.Downloads[i].File.Write(data)
 			if err != nil {
 				a.Downloads[i].File, err = os.Create(a.Downloads[i].LocalFile)
 				if err != nil {
-					logger.Error("Failed to create file: " + err.Error())
-					return
+					return errors.New("Failed to create file: " + err.Error())
 				}
 
 				_, err = a.Downloads[i].File.Write(data)
 				if err != nil {
-					logger.Error("Failed to write to file [" + a.Downloads[i].LocalFile + "]: " + err.Error())
+					return errors.New("Failed to write to file [" + a.Downloads[i].LocalFile + "]: " + err.Error())
 				}
 
 				a.Downloads[i].Progress += len(data)
-
-				break
 			}
-			break
+			return nil
 		}
 	}
+	return errors.New(fmt.Sprintf("FileID not found: %x", FileID))
 }
 
 func (a *Agent) DownloadClose(FileID int) {
