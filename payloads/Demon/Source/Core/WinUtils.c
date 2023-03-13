@@ -181,7 +181,7 @@ PCHAR TokenGetUserDomain( HANDLE hToken, PDWORD UserSize )
         return NULL;
     }
 
-    *UserSize  = UserNameSize + 1 + DomainSize;
+    *UserSize  = UserNameSize + 2 + DomainSize;
     UserDomain = Instance.Win32.LocalAlloc( LPTR, *UserSize );
 
     StringConcatA( UserDomain, Domain );
