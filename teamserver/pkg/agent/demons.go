@@ -5314,7 +5314,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 						UserSID               string
 						LogonTimeLow          int
 						LogonTimeHigh         int
-						LogonTime             int
+						LogonTime             int64
 						LogonType             int
 						AuthenticationPackage string
 						LogonServer           string
@@ -5324,10 +5324,13 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
                         ClientRealm           string
                         ServerName            string
                         ServerRealm           string
+                        StartTime             int64
                         StartTimeLow          int
                         StartTimeHigh         int
+                        EndTime               int64
                         EndTimeLow            int
                         EndTimeHigh           int
+                        RenewTime             int64
                         RenewTimeLow          int
                         RenewTimeHigh         int
                         EncryptionType        int
@@ -5376,14 +5379,15 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 										win32.LOGON32_LOGON_NEW_CREDENTIALS: "New_Credentials",
 									}
 
-									LogonTime = (LogonTimeHigh << 4) | LogonTimeLow
+									// go from FILETIME to SYSTEMTIME
+									LogonTime = int64( ( ( ( LogonTimeHigh << ( 4 * 8 ) ) | LogonTimeLow ) - 0x019DB1DED53E8000 ) / 10000000 )
 
 									Output += fmt.Sprintf("UserName                : %s\n", UserName)
 									Output += fmt.Sprintf("Domain                  : %s\n", Domain)
 									Output += fmt.Sprintf("LogonId                 : %x:0x%x\n", LogonIdHigh, LogonIdLow)
 									Output += fmt.Sprintf("Session                 : %d\n", Session)
 									Output += fmt.Sprintf("UserSID                 : %s\n", UserSID)
-									Output += fmt.Sprintf("LogonTime               : %d\n", LogonTime)
+									Output += fmt.Sprintf("LogonTime               : %s\n", time.Unix(LogonTime, 0))
 									Output += fmt.Sprintf("Authentication package  : %s\n", AuthenticationPackage)
 									Output += fmt.Sprintf("LogonType               : %s\n", LogonTypes[LogonType])
 									Output += fmt.Sprintf("LogonServer             : %s\n", LogonServer)
@@ -5412,6 +5416,11 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 											EncryptionType = Parser.ParseInt32()
 											TicketFlags    = Parser.ParseInt32()
 											Ticket         = Parser.ParseBytes()
+
+											// go from FILETIME to SYSTEMTIME
+											StartTime = int64( ( ( ( StartTimeHigh << ( 4 * 8 ) ) | StartTimeLow ) - 0x019DB1DED53E8000 ) / 10000000 )
+											EndTime   = int64( ( ( (   EndTimeHigh << ( 4 * 8 ) ) | EndTimeLow )   - 0x019DB1DED53E8000 ) / 10000000 )
+											RenewTime = int64( ( ( ( RenewTimeHigh << ( 4 * 8 ) ) | RenewTimeLow ) - 0x019DB1DED53E8000 ) / 10000000 )
 
 											EncryptionTypes := map[int]string{
 												win32.DES_CBC_CRC:                  "DES_CBC_CRC",
@@ -5466,9 +5475,9 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 											Output += "\n"
 											Output += fmt.Sprintf("\tClient name     : %s @ %s\n", ClientName, ClientRealm)
 											Output += fmt.Sprintf("\tServer name     : %s @ %s\n", ServerName, ServerRealm)
-											Output += fmt.Sprintf("\tStart time      : %d\n", (StartTimeHigh << 4) | StartTimeLow)
-											Output += fmt.Sprintf("\tEnd time        : %d\n", (EndTimeHigh << 4) | EndTimeLow)
-											Output += fmt.Sprintf("\tRewnew time     : %d\n", (RenewTimeHigh << 4) | RenewTimeLow)
+											Output += fmt.Sprintf("\tStart time      : %s\n", time.Unix(StartTime, 0))
+											Output += fmt.Sprintf("\tEnd time        : %s\n", time.Unix(EndTime, 0))
+											Output += fmt.Sprintf("\tRewnew time     : %s\n", time.Unix(RenewTime, 0))
 											Output += fmt.Sprintf("\tEncryption type : %s\n", EncryptionTypes[EncryptionType])
 											Output += fmt.Sprintf("\tFlags           :%s\n", TicketFlagsStr)
 											if len(Ticket) > 0 {
