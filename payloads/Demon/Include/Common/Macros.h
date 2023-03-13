@@ -23,9 +23,11 @@
 #define DLLEXPORT                       __declspec( dllexport )
 #define RVA( TYPE, DLLBASE, RVA )  ( TYPE ) ( ( PBYTE ) DLLBASE + RVA )
 #define DATA_FREE( d, l ) \
-    MemSet( d, 0, l ); \
-    Instance.Win32.LocalFree( d ); \
-    d = NULL;
+    if ( d ) { \
+        MemSet( d, 0, l ); \
+        Instance.Win32.LocalFree( d ); \
+        d = NULL; \
+    }
 
 #define U_PTR( x )                      ( ( UINT_PTR ) x )
 #define C_PTR( x )                      ( ( LPVOID ) x )
