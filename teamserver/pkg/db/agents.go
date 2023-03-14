@@ -37,7 +37,7 @@ func (db *DB) AgentAdd(agent *agent.Agent) error {
 	}
 
 	/* prepare some arguments to execute for the sqlite db */
-	stmt, err := db.db.Prepare("INSERT INTO TS_Agents (AgentID, AESKey, AESIv, Hostname, Username, DomainName, InternalIP, ProcessName, ProcessPID, ProcessPPID, ProcessArch, Elevated, OSVersion, OsArch, SleepDelay, SleepJitter) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+	stmt, err := db.db.Prepare("INSERT INTO TS_Agents (AgentID, Active, Reason, AESKey, AESIv, Hostname, Username, DomainName, InternalIP, ProcessName, ProcessPID, ProcessPPID, ProcessArch, Elevated, OSVersion, OSArch, SleepDelay, SleepJitter, FirstCallIn, LastCallIn) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
 	if err != nil {
 		return err
 	}
@@ -45,6 +45,8 @@ func (db *DB) AgentAdd(agent *agent.Agent) error {
 	/* add the data to the agent table */
 	_, err = stmt.Exec(
 		int(AgentID),
+		1,
+		"",
 		base64.StdEncoding.EncodeToString(agent.Encryption.AESKey),
 		base64.StdEncoding.EncodeToString(agent.Encryption.AESIv),
 		agent.Info.Hostname,
@@ -59,7 +61,9 @@ func (db *DB) AgentAdd(agent *agent.Agent) error {
 		agent.Info.OSVersion,
 		agent.Info.OSArch,
 		agent.Info.SleepDelay,
-		agent.Info.SleepJitter)
+		agent.Info.SleepJitter,
+		agent.Info.FirstCallIn,
+		agent.Info.LastCallIn)
 	if err != nil {
 		return err
 	}
@@ -114,4 +118,92 @@ func (db *DB) AgentRemove(AgentID int) error {
 	}
 
 	return nil
+}
+
+
+func (db *DB) AgentAll() []*agent.Agent {
+
+	var Agents []*agent.Agent
+
+	query, err := db.db.Query("SELECT AgentID, Active, Reason, AESKey, AESIv, Hostname, Username, DomainName, InternalIP, ProcessName, ProcessPID, ProcessPPID, ProcessArch, Elevated, OSVersion, OSArch, SleepDelay, SleepJitter, FirstCallIn, LastCallIn FROM TS_Agents WHERE Active = 1")
+	if err != nil {
+		return nil
+	}
+	defer query.Close()
+
+	for query.Next() {
+
+		var (
+			AgentID int
+			Active int
+			Reason string
+			AESKey string
+			AESIv string
+			Hostname string
+			Username string
+			DomainName string
+			InternalIP string
+			ProcessName string
+			ProcessPID int
+			ProcessPPID int
+			ProcessArch string
+			Elevated string
+			OSVersion string
+			OSArch string
+			SleepDelay int
+			SleepJitter int
+			FirstCallIn string
+			LastCallIn string
+		)
+
+		/* read the selected items */
+		err = query.Scan(&AgentID, &Active, &Reason, &AESKey, &AESIv, &Hostname, &Username, &DomainName, &InternalIP, &ProcessName, &ProcessPID, &ProcessPPID, &ProcessArch, &Elevated, &OSVersion, &OSArch, &SleepDelay, &SleepJitter, &FirstCallIn, &LastCallIn)
+		if err != nil {
+			/* at this point we failed
+			 * just return the collected agents */
+			return Agents
+		}
+
+		BytesAESKey, _ := base64.StdEncoding.DecodeString(AESKey)
+		BytesAESIv,  _ := base64.StdEncoding.DecodeString(AESIv)
+
+		var Agent = &agent.Agent{
+			Encryption: struct {
+				AESKey []byte
+				AESIv  []byte
+			}{
+				AESKey: BytesAESKey,
+				AESIv:  BytesAESIv,
+			},
+
+			Active:     Active == 1,
+			Reason:     Reason,
+			SessionDir: "",
+
+			Info: new(agent.AgentInfo),
+		}
+
+		Agent.NameID           = fmt.Sprintf("%x", AgentID)
+		Agent.Info.Hostname    = Hostname
+		Agent.Info.Username    = Username
+		Agent.Info.DomainName  = DomainName
+		Agent.Info.InternalIP  = InternalIP
+		Agent.Info.ProcessName = ProcessName
+		Agent.Info.ProcessPID  = ProcessPID
+		Agent.Info.ProcessPPID = ProcessPPID
+		Agent.Info.ProcessArch = ProcessArch
+		Agent.Info.Elevated    = Elevated
+		Agent.Info.OSVersion   = OSVersion
+		Agent.Info.OSArch      = OSArch
+		Agent.Info.SleepDelay  = SleepDelay
+		Agent.Info.SleepJitter = SleepJitter
+		Agent.Info.FirstCallIn = FirstCallIn
+		Agent.Info.LastCallIn  = LastCallIn
+
+		/* append collected agent to agent array */
+		Agents = append(Agents, Agent)
+
+	}
+
+	return Agents
 }

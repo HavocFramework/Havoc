@@ -448,6 +448,17 @@ func (t *Teamserver) Start() {
 
 	}
 
+	var AgentsCount = 0
+
+	for _, agent := range t.DB.AgentAll() {
+		AgentsCount += 1
+		t.Agents.AgentsAppend(agent)
+	}
+
+	if AgentsCount > 0 {
+		logger.Info(fmt.Sprintf("Restored %v agents from last session", colors.Green(AgentsCount)))
+	}
+
 	t.EventAppend(events.SendProfile(t.Profile))
 
 	// This should hold the Teamserver as long as the WebSocket Server is running

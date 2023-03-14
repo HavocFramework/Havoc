@@ -53,7 +53,7 @@ func (db *DB) init() error {
 		return err
 	}
 
-	_, err = db.db.Exec(`CREATE TABLE "TS_Agents" ("AgentID" int, "AESKey" string, "AESIv" string, "Hostname" string, "Username" string, "DomainName" string, "InternalIP" string, "ProcessName" string, "ProcessPID" int, "ProcessPPID" int, "ProcessArch" string, "Elevated" string, "OSVersion" string, "OsArch" string, "SleepDelay" int, "SleepJitter" int);`)
+	_, err = db.db.Exec(`CREATE TABLE "TS_Agents" ("AgentID" int, "Active" int, "Reason" string, "AESKey" string, "AESIv" string, "Hostname" string, "Username" string, "DomainName" string, "InternalIP" string, "ProcessName" string, "ProcessPID" int, "ProcessPPID" int, "ProcessArch" string, "Elevated" string, "OSVersion" string, "OSArch" string, "SleepDelay" int, "SleepJitter" int, "FirstCallIn" string, "LastCallIn" string);`)
 	if err != nil {
 		return err
 	}
