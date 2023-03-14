@@ -4644,7 +4644,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PIVOT - DEMON_PIVOT_SMB_DISCONNECT, Success: %d, AgentID: %x", AgentID, Success, AgentID))
 
 					if Success == win32.TRUE {
-						Message["Type"] = "Error"
+						Message["Type"] = "Info"
 						Message["Message"] = fmt.Sprintf("[SMB] Agent disconnected %x", AgentID)
 
 						Message["MiscType"] = "disconnect"

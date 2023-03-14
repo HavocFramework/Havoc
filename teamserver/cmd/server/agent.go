@@ -18,6 +18,11 @@ func (t *Teamserver) AgentAdd(Agent *agent.Agent) []*agent.Agent {
 		}
 	}
 
+	err := t.DB.AgentAdd(Agent)
+	if err != nil {
+		logger.Error("Could not add agent to database: " + err.Error())
+	}
+
 	return t.Agents.AgentsAppend(Agent)
 }
 

@@ -313,28 +313,28 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser) *Agent {
 	}
 
 	if Parser.Length() >= 4 {
-		Hostname = string(Parser.ParseBytes())
+		Hostname = Parser.ParseString()
 	} else {
 		logger.Debug("Failed to parse agent request")
 		return nil
 	}
 
 	if Parser.Length() >= 4 {
-		Username = string(Parser.ParseBytes())
+		Username = Parser.ParseString()
 	} else {
 		logger.Debug("Failed to parse agent request")
 		return nil
 	}
 
 	if Parser.Length() >= 4 {
-		DomainName = string(Parser.ParseBytes())
+		DomainName = Parser.ParseString()
 	} else {
 		logger.Debug("Failed to parse agent request")
 		return nil
 	}
 
 	if Parser.Length() >= 4 {
-		InternalIP = string(Parser.ParseBytes())
+		InternalIP = Parser.ParseString()
 	} else {
 		logger.Debug("Failed to parse agent request")
 		return nil
@@ -348,7 +348,7 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser) *Agent {
 			"InternIP: %v\n",
 		Hostname, Username, DomainName, InternalIP))
 
-	ProcessName = string(Parser.ParseBytes())
+	ProcessName = Parser.ParseString()
 	ProcessPID = Parser.ParseInt32()
 	ProcessPPID = Parser.ParseInt32()
 	ProcessArch = Parser.ParseInt32()
