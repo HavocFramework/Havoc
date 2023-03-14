@@ -280,225 +280,220 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser) *Agent {
 		}
 	*/
 
-	var Session = &Agent{
-		Encryption: struct {
-			AESKey []byte
-			AESIv  []byte
-		}{
-			AESKey: Parser.ParseAtLeastBytes(32),
-			AESIv:  Parser.ParseAtLeastBytes(16),
-		},
+	if Parser.Length() >= 32 + 16 {
 
-		Active:     false,
-		SessionDir: "",
+		var Session = &Agent{
+			Encryption: struct {
+				AESKey []byte
+				AESIv  []byte
+			}{
+				AESKey: Parser.ParseAtLeastBytes(32),
+				AESIv:  Parser.ParseAtLeastBytes(16),
+			},
 
-		Info: new(AgentInfo),
-	}
+			Active:     false,
+			SessionDir: "",
 
-	// check if there is aes key/iv.
-	if bytes.Compare(Session.Encryption.AESKey, AesKeyEmpty) != 0 {
-		Parser.DecryptBuffer(Session.Encryption.AESKey, Session.Encryption.AESIv)
-	}
+			Info: new(AgentInfo),
+		}
 
-	DemonID = Parser.ParseInt32()
-	logger.Debug(fmt.Sprintf("Parsed DemonID: %x", DemonID))
+		// check if there is aes key/iv.
+		if bytes.Compare(Session.Encryption.AESKey, AesKeyEmpty) != 0 {
+			Parser.DecryptBuffer(Session.Encryption.AESKey, Session.Encryption.AESIv)
+		}
 
-	if AgentID != DemonID {
-		if AgentID != 0 {
-			logger.Debug("Failed to decrypt agent init request")
+		if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadBytes, parser.ReadBytes, parser.ReadBytes, parser.ReadBytes, parser.ReadBytes, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32}) {
+			DemonID = Parser.ParseInt32()
+			logger.Debug(fmt.Sprintf("Parsed DemonID: %x", DemonID))
+
+			if AgentID != DemonID {
+				if AgentID != 0 {
+					logger.Debug("Failed to decrypt agent init request")
+					return nil
+				}
+			} else {
+				logger.Debug(fmt.Sprintf("AgentID (%x) == DemonID (%x)\n", AgentID, DemonID))
+			}
+
+			Hostname   = Parser.ParseString()
+			Username   = Parser.ParseString()
+			DomainName = Parser.ParseString()
+			InternalIP = Parser.ParseString()
+
+			logger.Debug(fmt.Sprintf(
+				"\n"+
+					"Hostname: %v\n"+
+					"Username: %v\n"+
+					"Domain  : %v\n"+
+					"InternIP: %v\n",
+				Hostname, Username, DomainName, InternalIP))
+
+			ProcessName = Parser.ParseString()
+			ProcessPID = Parser.ParseInt32()
+			ProcessPPID = Parser.ParseInt32()
+			ProcessArch = Parser.ParseInt32()
+			Elevated = Parser.ParseInt32()
+
+			logger.Debug(fmt.Sprintf(
+				"\n"+
+					"ProcessName: %v\n"+
+					"ProcessPID : %v\n"+
+					"ProcessPPID: %v\n"+
+					"ProcessArch: %v\n"+
+					"Elevated   : %v\n",
+				ProcessName, ProcessPID, ProcessPPID, ProcessArch, Elevated))
+
+			OsVersion = []int{Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32()}
+			OsArch = Parser.ParseInt32()
+			SleepDelay = Parser.ParseInt32()
+			SleepJitter = Parser.ParseInt32()
+
+			logger.Debug(fmt.Sprintf(
+				"\n"+
+					"SleepDelay  : %v\n"+
+					"SleepJitter : %v\n",
+				SleepDelay, SleepJitter))
+
+			Session.Active = true
+
+			Session.NameID           = fmt.Sprintf("%x", DemonID)
+			Session.Info.MagicValue  = MagicValue
+			Session.Info.FirstCallIn = time.Now().Format("02/01/2006 15:04:05")
+			Session.Info.LastCallIn  = time.Now().Format("02-01-2006 15:04:05.999")
+			Session.Info.Hostname    = Hostname
+			Session.Info.DomainName  = DomainName
+			Session.Info.Username    = Username
+			Session.Info.InternalIP  = InternalIP
+			Session.Info.SleepDelay  = SleepDelay
+			Session.Info.SleepJitter = SleepJitter
+
+			// Session.Info.ExternalIP 	= strings.Split(connection.RemoteAddr().String(), ":")[0]
+			// Session.Info.Listener 	= t.Name
+
+			switch ProcessArch {
+
+			case PROCESS_ARCH_UNKNOWN:
+				Session.Info.ProcessArch = "Unknown"
+				break
+
+			case PROCESS_ARCH_X64:
+				Session.Info.ProcessArch = "x64"
+				break
+
+			case PROCESS_ARCH_X86:
+				Session.Info.ProcessArch = "x86"
+				break
+
+			case PROCESS_ARCH_IA64:
+				Session.Info.ProcessArch = "IA64"
+				break
+
+			default:
+				Session.Info.ProcessArch = "Unknown"
+				break
+
+			}
+
+			Session.Info.OSVersion = getWindowsVersionString(OsVersion)
+
+			switch OsArch {
+			case 0:
+				Session.Info.OSArch = "x86"
+			case 9:
+				Session.Info.OSArch = "x64/AMD64"
+			case 5:
+				Session.Info.OSArch = "ARM"
+			case 12:
+				Session.Info.OSArch = "ARM64"
+			case 6:
+				Session.Info.OSArch = "Itanium-based"
+			default:
+				Session.Info.OSArch = "Unknown (" + strconv.Itoa(OsArch) + ")"
+			}
+
+			Session.Info.Elevated = "false"
+			if Elevated == 1 {
+				Session.Info.Elevated = "true"
+			}
+
+			process := strings.Split(ProcessName, "\\")
+
+			Session.Info.ProcessName = process[len(process)-1]
+			Session.Info.ProcessPID = ProcessPID
+			Session.Info.ProcessPPID = ProcessPPID
+			Session.Info.ProcessPath = ProcessName
+			Session.BackgroundCheck = false
+
+			/*for {
+			    if Parser.Length() >= 4 {
+			        var Option = Parser.ParseInt32()
+
+			        switch Option {
+			        case DEMON_CHECKIN_OPTION_PIVOTS:
+			            logger.Debug("DEMON_CHECKIN_OPTION_PIVOTS")
+			              var PivotCount = Parser.ParseInt32()
+
+			              logger.Debug("PivotCount: ", PivotCount)
+
+			              for {
+			                  if PivotCount == 0 {
+			                      break
+			                  }
+
+			                  var (
+			                      PivotAgentID = Parser.ParseInt32()
+			                      PivotPackage = Parser.ParseBytes()
+			                      PivotParser  = parser.NewParser(PivotPackage)
+			                      PivotSession *Agent
+			                  )
+
+			                  var (
+			                      _             = PivotParser.ParseInt32()
+			                      HdrMagicValue = PivotParser.ParseInt32()
+			                      _             = PivotParser.ParseInt32()
+			                      _             = PivotParser.ParseInt32()
+			                  )
+
+			                  PivotSession = ParseDemonRegisterRequest(PivotAgentID, PivotParser, RoutineFunc)
+			                  if PivotSession != nil {
+			                      PivotSession.Info.MagicValue = HdrMagicValue
+
+			                      LogDemonCallback(PivotSession)
+			                      RoutineFunc.AppendDemon(PivotSession)
+			                      pk := RoutineFunc.EventNewDemon(PivotSession)
+			                      RoutineFunc.EventAppend(pk)
+			                      RoutineFunc.EventBroadcast("", pk)
+
+			                      go PivotSession.BackgroundUpdateLastCallbackUI(RoutineFunc)
+
+			                      Session.Pivots.Links = append(Session.Pivots.Links, PivotSession)
+
+			                      PivotSession.Pivots.Parent = Session
+			                  }
+
+			                  PivotCount--
+			              }
+
+			            break
+			        }
+
+			    } else {
+			        break
+			    }
+			}*/
+
+			logger.Debug("Finished parsing demon")
+
+			return Session
+		} else {
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: REGISTER, Invalid packet", AgentID))
 			return nil
 		}
-	} else {
-		logger.Debug(fmt.Sprintf("AgentID (%x) == DemonID (%x)\n", AgentID, DemonID))
-	}
 
-	if Parser.Length() >= 4 {
-		Hostname = Parser.ParseString()
 	} else {
-		logger.Debug("Failed to parse agent request")
+		logger.Debug(fmt.Sprintf("Agent: %x, Command: REGISTER, Invalid packet", AgentID))
 		return nil
 	}
-
-	if Parser.Length() >= 4 {
-		Username = Parser.ParseString()
-	} else {
-		logger.Debug("Failed to parse agent request")
-		return nil
-	}
-
-	if Parser.Length() >= 4 {
-		DomainName = Parser.ParseString()
-	} else {
-		logger.Debug("Failed to parse agent request")
-		return nil
-	}
-
-	if Parser.Length() >= 4 {
-		InternalIP = Parser.ParseString()
-	} else {
-		logger.Debug("Failed to parse agent request")
-		return nil
-	}
-
-	logger.Debug(fmt.Sprintf(
-		"\n"+
-			"Hostname: %v\n"+
-			"Username: %v\n"+
-			"Domain  : %v\n"+
-			"InternIP: %v\n",
-		Hostname, Username, DomainName, InternalIP))
-
-	ProcessName = Parser.ParseString()
-	ProcessPID = Parser.ParseInt32()
-	ProcessPPID = Parser.ParseInt32()
-	ProcessArch = Parser.ParseInt32()
-	Elevated = Parser.ParseInt32()
-
-	logger.Debug(fmt.Sprintf(
-		"\n"+
-			"ProcessName: %v\n"+
-			"ProcessPID : %v\n"+
-			"ProcessPPID: %v\n"+
-			"ProcessArch: %v\n"+
-			"Elevated   : %v\n",
-		ProcessName, ProcessPID, ProcessPPID, ProcessArch, Elevated))
-
-	OsVersion = []int{Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32()}
-	OsArch = Parser.ParseInt32()
-	SleepDelay = Parser.ParseInt32()
-	SleepJitter = Parser.ParseInt32()
-
-	Session.Active = true
-
-	Session.NameID           = fmt.Sprintf("%x", DemonID)
-	Session.Info.MagicValue  = MagicValue
-	Session.Info.FirstCallIn = time.Now().Format("02/01/2006 15:04:05")
-	Session.Info.LastCallIn  = time.Now().Format("02-01-2006 15:04:05.999")
-	Session.Info.Hostname    = Hostname
-	Session.Info.DomainName  = DomainName
-	Session.Info.Username    = Username
-	Session.Info.InternalIP  = InternalIP
-	Session.Info.SleepDelay  = SleepDelay
-	Session.Info.SleepJitter = SleepJitter
-
-	// Session.Info.ExternalIP 	= strings.Split(connection.RemoteAddr().String(), ":")[0]
-	// Session.Info.Listener 	= t.Name
-
-	switch ProcessArch {
-
-	case PROCESS_ARCH_UNKNOWN:
-		Session.Info.ProcessArch = "Unknown"
-		break
-
-	case PROCESS_ARCH_X64:
-		Session.Info.ProcessArch = "x64"
-		break
-
-	case PROCESS_ARCH_X86:
-		Session.Info.ProcessArch = "x86"
-		break
-
-	case PROCESS_ARCH_IA64:
-		Session.Info.ProcessArch = "IA64"
-		break
-
-	default:
-		Session.Info.ProcessArch = "Unknown"
-		break
-
-	}
-
-	Session.Info.OSVersion = getWindowsVersionString(OsVersion)
-
-	switch OsArch {
-	case 0:
-		Session.Info.OSArch = "x86"
-	case 9:
-		Session.Info.OSArch = "x64/AMD64"
-	case 5:
-		Session.Info.OSArch = "ARM"
-	case 12:
-		Session.Info.OSArch = "ARM64"
-	case 6:
-		Session.Info.OSArch = "Itanium-based"
-	default:
-		Session.Info.OSArch = "Unknown (" + strconv.Itoa(OsArch) + ")"
-	}
-
-	Session.Info.Elevated = "false"
-	if Elevated == 1 {
-		Session.Info.Elevated = "true"
-	}
-
-	process := strings.Split(ProcessName, "\\")
-
-	Session.Info.ProcessName = process[len(process)-1]
-	Session.Info.ProcessPID = ProcessPID
-	Session.Info.ProcessPPID = ProcessPPID
-	Session.Info.ProcessPath = ProcessName
-	Session.BackgroundCheck = false
-
-	/*for {
-	    if Parser.Length() >= 4 {
-	        var Option = Parser.ParseInt32()
-
-	        switch Option {
-	        case DEMON_CHECKIN_OPTION_PIVOTS:
-	            logger.Debug("DEMON_CHECKIN_OPTION_PIVOTS")
-	              var PivotCount = Parser.ParseInt32()
-
-	              logger.Debug("PivotCount: ", PivotCount)
-
-	              for {
-	                  if PivotCount == 0 {
-	                      break
-	                  }
-
-	                  var (
-	                      PivotAgentID = Parser.ParseInt32()
-	                      PivotPackage = Parser.ParseBytes()
-	                      PivotParser  = parser.NewParser(PivotPackage)
-	                      PivotSession *Agent
-	                  )
-
-	                  var (
-	                      _             = PivotParser.ParseInt32()
-	                      HdrMagicValue = PivotParser.ParseInt32()
-	                      _             = PivotParser.ParseInt32()
-	                      _             = PivotParser.ParseInt32()
-	                  )
-
-	                  PivotSession = ParseDemonRegisterRequest(PivotAgentID, PivotParser, RoutineFunc)
-	                  if PivotSession != nil {
-	                      PivotSession.Info.MagicValue = HdrMagicValue
-
-	                      LogDemonCallback(PivotSession)
-	                      RoutineFunc.AppendDemon(PivotSession)
-	                      pk := RoutineFunc.EventNewDemon(PivotSession)
-	                      RoutineFunc.EventAppend(pk)
-	                      RoutineFunc.EventBroadcast("", pk)
-
-	                      go PivotSession.BackgroundUpdateLastCallbackUI(RoutineFunc)
-
-	                      Session.Pivots.Links = append(Session.Pivots.Links, PivotSession)
-
-	                      PivotSession.Pivots.Parent = Session
-	                  }
-
-	                  PivotCount--
-	              }
-
-	            break
-	        }
-
-	    } else {
-	        break
-	    }
-	}*/
-
-	logger.Debug("Finished parsing demon")
-
-	return Session
 }
 
 func (a *Agent) AddJobToQueue(job Job) []Job {

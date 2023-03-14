@@ -2,7 +2,6 @@ package db
 
 import (
 	"errors"
-	"log"
 	"fmt"
 	"strconv"
 	"encoding/base64"
@@ -10,7 +9,6 @@ import (
 	"Havoc/pkg/agent"
 )
 
-//func (db *DB) AgentAdd(AgentID int, Dir string, Agent string, InternalIP string, Hostname string, Username string, Domain string, Elevated string, ProcessArch string, ProcessName string, ProcessID int, ProcessPath string, OSVersion string, OSArch string, OSBuild string, FirstCallIn string, LastCallIn string) error {
 func (db *DB) AgentAdd(agent *agent.Agent) error {
 
 	var err error
@@ -98,4 +96,22 @@ func (db *DB) AgentExist(AgentID int) bool {
 	}
 
 	return false
+}
+
+func (db *DB) AgentRemove(AgentID int) error {
+	// prepare some arguments to execute for the sqlite db
+	stmt, err := db.db.Prepare("DELETE FROM TS_Agents WHERE AgentID = ?")
+	if err != nil {
+		return err
+	}
+
+	// execute statment
+	_, err = stmt.Exec(AgentID)
+	stmt.Close()
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
