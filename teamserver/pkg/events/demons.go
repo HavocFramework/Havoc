@@ -8,22 +8,17 @@ import (
 	"time"
 
 	"Havoc/pkg/agent"
-	"Havoc/pkg/handlers"
 	"Havoc/pkg/logr"
 	"Havoc/pkg/packager"
-
-	"github.com/fatih/structs"
 )
 
 /* TODO: rename everything here from 'Demon' to 'Agent' */
 
 var Demons demons
 
-func (demons) NewDemon(DemonAgent *agent.Agent) packager.Package {
+func (demons) NewDemon(Agent *agent.Agent) packager.Package {
 	var (
 		Package    packager.Package
-		TempParent *agent.Agent
-		TempMagic  string
 	)
 
 	Package.Head.Event = packager.Type.Session.Type
@@ -32,65 +27,94 @@ func (demons) NewDemon(DemonAgent *agent.Agent) packager.Package {
 	Package.Body.SubEvent = packager.Type.Session.NewSession
 	Package.Body.Info = make(map[string]interface{})
 
-	TempParent = DemonAgent.Pivots.Parent
-	DemonAgent.Pivots.Parent = nil
-
-	var InfoMap = structs.Map(DemonAgent)
-	var SessionInfo = InfoMap["Info"].(map[string]interface{})
-
-	switch DemonAgent.Info.Listener.(type) {
-	case *handlers.HTTP:
-		SessionInfo["Listener"] = DemonAgent.Info.Listener.(*handlers.HTTP).Config.Name
-		break
-
-	case *handlers.SMB:
-		SessionInfo["Listener"] = DemonAgent.Info.Listener.(*handlers.SMB).Config.Name
-		break
-
-	case *handlers.External:
-		SessionInfo["Listener"] = DemonAgent.Info.Listener.(*handlers.External).Config.Name
-		break
+	InfoMap := map[string]interface{}{
+		"Active": fmt.Sprintf("%v", Agent.Active),
+		"BackgroundCheck": Agent.BackgroundCheck,
+		"DomainName": Agent.Info.DomainName,
+		"Elevated": Agent.Info.Elevated,
+		"Encryption": map[string]interface{}{
+			"AESKey": base64.StdEncoding.EncodeToString(Agent.Encryption.AESKey),
+			"AESIv":  base64.StdEncoding.EncodeToString(Agent.Encryption.AESIv),
+		},
+		"InternalIP": Agent.Info.InternalIP,
+		"ExternalIP": Agent.Info.ExternalIP,
+		"FirstCallIn": Agent.Info.FirstCallIn,
+		"LastCallIn": Agent.Info.LastCallIn,
+		"Hostname": Agent.Info.Hostname,
+		"Listener": "null", // ?
+		"MagicValue": fmt.Sprintf("%x", Agent.Info.MagicValue),
+		"NameID": Agent.NameID,
+		"OSArch": Agent.Info.OSArch,
+		"OSBuild": Agent.Info.OSBuild,
+		"OSVersion": Agent.Info.OSVersion,
+		"Pivots": map[string]interface{}{
+			"Parent": nil,
+			"Links":  []string{},
+		},
+		"PortFwds": []string{},
+		"ProcessArch": Agent.Info.ProcessArch,
+		"ProcessName": Agent.Info.ProcessName,
+		"ProcessPID": Agent.Info.ProcessPID,
+		"ProcessPPID": Agent.Info.ProcessPPID,
+		"ProcessPath": Agent.Info.ProcessPath,
+		"Reason": Agent.Reason,
+		"SleepDelay": Agent.Info.SleepDelay,
+		"SleepJitter": Agent.Info.SleepJitter,
+		"SocksCli": []string{},
+		"SocksCliMtx": nil,
+		"SocksSvr": []string{},
+		"TaskedOnce": Agent.TaskedOnce,
+		"Username": Agent.Info.Username,
+		"PivotParent": "",
 	}
 
-	if InfoMap["Active"].(bool) {
-		InfoMap["Active"] = "true"
-	} else {
-		InfoMap["Active"] = "false"
+	/*
+	// BREAKS
+	//var InfoMap = structs.Map(Agent)
+	InfoMap["Active"] = fmt.Sprintf("%v", Agent.Active)
+	InfoMap["BackgroundCheck"] = Agent.BackgroundCheck
+	InfoMap["DomainName"] = Agent.Info.DomainName
+	InfoMap["Elevated"] = Agent.Info.Elevated
+	InfoMap["Encryption"] = map[string]interface{}{
+		"AESKey": base64.StdEncoding.EncodeToString(Agent.Encryption.AESKey),
+		"AESIv":  base64.StdEncoding.EncodeToString(Agent.Encryption.AESIv),
 	}
-
-	delete(InfoMap, "Connection")
-	delete(InfoMap, "SessionDir")
-	delete(InfoMap, "Info")
-	delete(InfoMap, "JobQueue")
-	delete(InfoMap, "Parent")
-
-	TempMagic = fmt.Sprintf("%x", DemonAgent.Info.MagicValue)
-
-	if TempParent != nil {
-		InfoMap["PivotParent"] = TempParent.NameID
+	InfoMap["InternalIP"] = Agent.Info.InternalIP
+	InfoMap["ExternalIP"] = Agent.Info.ExternalIP
+	InfoMap["FirstCallIn"] = Agent.Info.FirstCallIn
+	InfoMap["LastCallIn"] = Agent.Info.LastCallIn
+	InfoMap["Hostname"] = Agent.Info.Hostname
+	InfoMap["Listener"] = "null" // ?
+	InfoMap["MagicValue"] = fmt.Sprintf("%x", Agent.Info.MagicValue)
+	InfoMap["NameID"] = Agent.NameID
+	InfoMap["OSArch"] = Agent.Info.OSArch
+	InfoMap["OSBuild"] = Agent.Info.OSBuild
+	InfoMap["OSVersion"] = Agent.Info.OSVersion
+	InfoMap["Pivots"] = map[string]interface{}{
+		"Parent": nil,
+		"Links":  []string{},
 	}
-
-	for k, v := range SessionInfo {
-		switch v.(type) {
-		case string:
-			InfoMap[k] = v
-		case bool:
-			if v.(bool) {
-				InfoMap[k] = "true"
-			} else {
-				InfoMap[k] = "false"
-			}
-		case int:
-			InfoMap[k] = strconv.Itoa(v.(int))
-		case nil:
-			InfoMap[k] = "null"
-		}
+	InfoMap["PortFwds"] = []string{}
+	InfoMap["ProcessArch"] = Agent.Info.ProcessArch
+	InfoMap["ProcessName"] = Agent.Info.ProcessName
+	InfoMap["ProcessPID"] = Agent.Info.ProcessPID
+	InfoMap["ProcessPPID"] = Agent.Info.ProcessPPID
+	InfoMap["ProcessPath"] = Agent.Info.ProcessPath
+	InfoMap["Reason"] = Agent.Reason
+	InfoMap["SleepDelay"] = Agent.Info.SleepDelay
+	InfoMap["SleepJitter"] = Agent.Info.SleepJitter
+	InfoMap["SocksCli"] = []string{}
+	InfoMap["SocksCliMtx"] = nil
+	InfoMap["SocksSvr"] = []string{}
+	InfoMap["TaskedOnce"] = Agent.TaskedOnce
+	InfoMap["Username"] = Agent.Info.Username
+	InfoMap["Listener"] = nil
+	*/
+	if Agent.Pivots.Parent != nil {
+		InfoMap["PivotParent"] = Agent.Pivots.Parent.NameID
 	}
-
-	InfoMap["MagicValue"] = TempMagic
 
 	Package.Body.Info = InfoMap
-	DemonAgent.Pivots.Parent = TempParent
 
 	return Package
 }

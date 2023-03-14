@@ -450,26 +450,27 @@ func (t *Teamserver) Start() {
 
 	// load all existing Agents from the DB
 	Agents := t.DB.AgentAll()
-	for _, agent := range Agents {
-		t.AgentAdd(agent)
+	for _, Agent := range Agents {
+		t.AgentAdd(Agent)
 	}
 
-	for _, agent := range Agents {
+	for _, Agent := range Agents {
 		// check if the agent has a parent
-		parentID, err := t.ParentOf(agent)
+		parentID, err := t.ParentOf(Agent)
 		if err == nil {
-			agent.Pivots.Parent = t.AgentInstance(parentID)
+			Agent.Pivots.Parent = t.AgentInstance(parentID)
 		}
 		// check if the agent has any links
-		AgentsIDs := t.LinksOf(agent)
+		AgentsIDs := t.LinksOf(Agent)
 		for _, AgentID := range AgentsIDs {
-			agent.Pivots.Links = append(agent.Pivots.Links, t.AgentInstance(AgentID))
+			Agent.Pivots.Links = append(Agent.Pivots.Links, t.AgentInstance(AgentID))
 		}
 	}
 
-	//for _, agent := range Agents {
-	//	t.AgentSendNotify(agent)
-	//}
+	// notify the clients
+	for _, Agent := range Agents {
+		t.AgentSendNotify(Agent)
+	}
 
 	if len(Agents) > 0 {
 		logger.Info(fmt.Sprintf("Restored %v agents from last session", colors.Green(len(Agents))))
