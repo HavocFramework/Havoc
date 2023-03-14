@@ -73,6 +73,24 @@ func (db *DB) AgentAdd(agent *agent.Agent) error {
 	return nil
 }
 
+func (db *DB) AgentHasDied(AgentID int) bool {
+	// prepare some arguments to execute for the sqlite db
+	stmt, err := db.db.Prepare("UPDATE TS_Agents SET Active = 0 WHERE AgentID = ?")
+	if err != nil {
+		return false
+	}
+
+	// execute statment
+	_, err = stmt.Exec(AgentID)
+	stmt.Close()
+
+	if err != nil {
+		return false
+	}
+
+	return true
+}
+
 func (db *DB) AgentExist(AgentID int) bool {
 	// prepare some arguments to execute for the sqlite db
 	stmt, err := db.db.Prepare("SELECT COUNT(*) FROM TS_Agents WHERE AgentID = ?")

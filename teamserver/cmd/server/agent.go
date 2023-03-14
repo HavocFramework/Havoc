@@ -48,6 +48,12 @@ func (t *Teamserver) LinkRemove(ParentAgent *agent.Agent, LinkAgent *agent.Agent
 	return nil
 }
 
+func (t *Teamserver) AgentHasDied(Agent *agent.Agent) bool {
+	var AgentID, _ = strconv.ParseInt(Agent.NameID, 16, 64)
+
+	return t.DB.AgentHasDied(int(AgentID))
+}
+
 func (t *Teamserver) AgentAdd(Agent *agent.Agent) []*agent.Agent {
 	if Agent != nil {
 		if t.WebHooks != nil {

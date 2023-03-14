@@ -42,6 +42,7 @@ type TeamServer interface {
 	LinksOf(Agent *Agent) []int
 	LinkRemove(ParentAgent *Agent, LinkAgent *Agent) error
 	LinkAdd(ParentAgent *Agent, LinkAgent *Agent) error
+	AgentHasDied(Agent *Agent) bool
 	AgentAdd(agent *Agent) []*Agent
 	AgentSendNotify(agent *Agent)
 	AgentCallbackSize(DemonInstance *Agent, i int)

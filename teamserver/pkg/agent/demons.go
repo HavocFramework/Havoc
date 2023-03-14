@@ -1930,6 +1930,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 			a.Active = false
 			teamserver.EventAgentMark(a.NameID, "Dead")
+			teamserver.AgentHasDied(a)
 
 			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 		} else {
