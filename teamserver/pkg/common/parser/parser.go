@@ -2,7 +2,7 @@ package parser
 
 import (
 	"encoding/binary"
-
+	"Havoc/pkg/common"
 	"Havoc/pkg/common/crypt"
 )
 
@@ -144,6 +144,14 @@ func (p *Parser) ParseAtLeastBytes(NumberOfBytes int) []byte {
 	}
 
 	return bytesBuffer
+}
+
+func (p *Parser) ParseUTF16String() string {
+	return common.StripNull(common.DecodeUTF16(p.ParseBytes()))
+}
+
+func (p *Parser) ParseString() string {
+	return common.StripNull(string(p.ParseBytes()))
 }
 
 func (p *Parser) Length() int {

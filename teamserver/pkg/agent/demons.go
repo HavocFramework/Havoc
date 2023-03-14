@@ -1993,11 +1993,11 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 			if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadBytes, parser.ReadBytes, parser.ReadBytes, parser.ReadBytes, parser.ReadBytes, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32}) {
 				DemonID = Parser.ParseInt32()
-				Hostname = common.StripNull(string(Parser.ParseBytes()))
-				Username = common.StripNull(string(Parser.ParseBytes()))
-				DomainName = common.StripNull(string(Parser.ParseBytes()))
-				InternalIP = common.StripNull(string(Parser.ParseBytes()))
-				ProcessName = common.StripNull(string(Parser.ParseBytes()))
+				Hostname = Parser.ParseString()
+				Username = Parser.ParseString()
+				DomainName = Parser.ParseString()
+				InternalIP = Parser.ParseString()
+				ProcessName = Parser.ParseString()
 				ProcessPID = Parser.ParseInt32()
 				ProcessPPID = Parser.ParseInt32()
 				ProcessArch = Parser.ParseInt32()
@@ -2250,7 +2250,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadInt32}) {
 					var (
-						Path = string(Parser.ParseBytes())
+						Path = Parser.ParseString()
 						PID  = Parser.ParseInt32()
 					)
 
@@ -2444,7 +2444,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 					var (
 						Exp32    = Parser.ParseInt32()
-						Path     = Parser.ParseBytes()
+						Path     = Parser.ParseUTF16String()
 						Dir      string
 						DirMap   = make(map[string]any)
 						DirArr   []map[string]string
@@ -2471,7 +2471,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 							LastAccessSecond = Parser.ParseInt32()
 							LastAccessMinute = Parser.ParseInt32()
 							LastAccessHour   = Parser.ParseInt32()
-							FileName         = Parser.ParseBytes()
+							FileName         = Parser.ParseUTF16String()
 
 							Size         string
 							Type         string
@@ -2488,7 +2488,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 						}
 
 						LastModified = fmt.Sprintf("%02d/%02d/%d %02d:%02d:%02d", LastAccessDay, LastAccessMonth, LastAccessYear, LastAccessSecond, LastAccessMinute, LastAccessHour)
-						Name = common.DecodeUTF16(FileName)
+						Name = FileName
 
 						// ignore these. not needed
 						if Name == "." || Name == ".." || Name == "" {
@@ -2510,10 +2510,10 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 					if !Explorer {
 						Output["Type"] = "Info"
-						Output["Message"] = fmt.Sprintf("List Directory: %v", common.DecodeUTF16(Path))
+						Output["Message"] = fmt.Sprintf("List Directory: %v", Path)
 						Output["Output"] = Dir
 					} else {
-						DirMap["Path"] = []byte(common.DecodeUTF16(Path))
+						DirMap["Path"] = []byte(Path)
 						DirMap["Files"] = DirArr
 
 						DirJson, err := json.Marshal(DirMap)
@@ -2568,7 +2568,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 						if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadBytes}) {
 							var (
 								FileSize = Parser.ParseInt32()
-								FileName = common.DecodeUTF16(Parser.ParseBytes())
+								FileName = Parser.ParseUTF16String()
 								Size     = common.ByteCountSI(int64(FileSize))
 							)
 
@@ -2649,13 +2649,13 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadBytes}) {
 					var (
 						FileSize = Parser.ParseInt32()
-						FileName = Parser.ParseBytes()
+						FileName = Parser.ParseUTF16String()
 					)
 
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_UPLOAD, FileSize: %v, FileName: %v", AgentID, FileSize, utils.UTF16BytesToString(FileName)))
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_UPLOAD, FileSize: %v, FileName: %v", AgentID, FileSize, FileName))
 
 					Output["Type"] = "Info"
-					Output["Message"] = fmt.Sprintf("Uploaded file: %v (%v)", utils.UTF16BytesToString(FileName), FileSize)
+					Output["Message"] = fmt.Sprintf("Uploaded file: %v (%v)", FileName, FileSize)
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_UPLOAD, Invalid packet", AgentID))
 					Output["Type"] = "Error"
@@ -2667,7 +2667,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			case DEMON_COMMAND_FS_CD:
 
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
-					var Path = common.DecodeUTF16(Parser.ParseBytes())
+					var Path = Parser.ParseUTF16String()
 
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_CD, Path: %v", AgentID, Path))
 
@@ -2684,7 +2684,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadBytes}) {
 					var (
 						IsDir = Parser.ParseInt32()
-						Path  = common.DecodeUTF16(Parser.ParseBytes())
+						Path  = Parser.ParseUTF16String()
 					)
 
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_REMOVE, IsDir: %d, Path: %v", AgentID, IsDir, Path))
@@ -2692,9 +2692,9 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 					Output["Type"] = "Info"
 
 					if IsDir == win32.TRUE {
-						Output["Message"] = fmt.Sprintf("Removed directory: %v", string(Path))
+						Output["Message"] = fmt.Sprintf("Removed directory: %v", Path)
 					} else {
-						Output["Message"] = fmt.Sprintf("Removed file: %v", string(Path))
+						Output["Message"] = fmt.Sprintf("Removed file: %v", Path)
 					}
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_REMOVE, Invalid packet", AgentID))
@@ -2705,12 +2705,12 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			case DEMON_COMMAND_FS_MKDIR:
 
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
-					var Path = common.DecodeUTF16(Parser.ParseBytes())
+					var Path = Parser.ParseUTF16String()
 
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_MKDIR, Path: %v", AgentID, Path))
 
 					Output["Type"] = "Info"
-					Output["Message"] = fmt.Sprintf("Created directory: %v", string(Path))
+					Output["Message"] = fmt.Sprintf("Created directory: %v", Path)
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_MKDIR, Invalid packet", AgentID))
 				}
@@ -2721,8 +2721,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadBytes, parser.ReadBytes}) {
 					var (
 						Success  = Parser.ParseInt32()
-						PathFrom = common.DecodeUTF16(Parser.ParseBytes())
-						PathTo   = common.DecodeUTF16(Parser.ParseBytes())
+						PathFrom = Parser.ParseUTF16String()
+						PathTo   = Parser.ParseUTF16String()
 					)
 
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_COPY, Success: %d, PathFrom: %v, PathTo: %v", AgentID, Success, PathFrom, PathTo))
@@ -2743,12 +2743,12 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			case DEMON_COMMAND_FS_GET_PWD:
 
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
-					var Path = common.DecodeUTF16(Parser.ParseBytes())
+					var Path = Parser.ParseUTF16String()
 
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_GET_PWD, Path: %v", AgentID, Path))
 
 					Output["Type"] = "Info"
-					Output["Message"] = fmt.Sprintf("Current directory: %v", string(Path))
+					Output["Message"] = fmt.Sprintf("Current directory: %v", Path)
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_GET_PWD, Invalid packet", AgentID))
 				}
@@ -2758,15 +2758,15 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			case DEMON_COMMAND_FS_CAT:
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadBytes}) {
 					var (
-						FileName    = Parser.ParseBytes()
-						FileContent = Parser.ParseBytes()
+						FileName    = Parser.ParseUTF16String()
+						FileContent = Parser.ParseString()
 					)
 
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_CAT, FileName: %v", AgentID, FileName))
 
 					Output["Type"] = "Info"
-					Output["Message"] = fmt.Sprintf("File content of %v (%v):", common.DecodeUTF16(FileName), len(FileContent))
-					Output["Output"] = string(FileContent)
+					Output["Message"] = fmt.Sprintf("File content of %v (%v):", FileName, len(FileContent))
+					Output["Output"] = FileContent
 
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_CAT, Invalid packet", AgentID))
@@ -2813,21 +2813,18 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				Process Process
 			)
 
-			Process.Name = common.DecodeUTF16(Parser.ParseBytes())
+			Process.Name = Parser.ParseUTF16String()
 			Process.PID = strconv.Itoa(Parser.ParseInt32())
 			Process.IsWow = Parser.ParseInt32()
 			Process.PPID = strconv.Itoa(Parser.ParseInt32())
 			Process.Session = strconv.Itoa(Parser.ParseInt32())
 			Process.Threads = strconv.Itoa(Parser.ParseInt32())
-			Process.User = string(Parser.ParseBytes())
+			Process.User = Parser.ParseString()
 
 			var ProcessArch = "x64"
 			if Process.IsWow == win32.TRUE {
 				ProcessArch = "x86"
 			}
-
-			// trim null bytes
-			Process.User = string(bytes.Trim([]byte(Process.User), "\x00"))
 
 			collum = []string{Process.Name, Process.PID, Process.PPID, Process.Session, ProcessArch, Process.Threads, Process.User}
 
@@ -2880,7 +2877,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 					var Output = make(map[string]string)
 
 					Output["Type"] = "Good"
-					Output["Output"] = string(Parser.ParseBytes())
+					Output["Output"] = Parser.ParseString()
 					Output["Message"] = fmt.Sprintf("Received Output [%v bytes]:", len(Output["Output"]))
 					if len(Output["Output"]) > 0 {
 						teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
@@ -2897,7 +2894,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 					var Output = make(map[string]string)
 
 					Output["Type"] = "Good"
-					Output["Output"] = common.DecodeUTF16(Parser.ParseBytes())
+					Output["Output"] = Parser.ParseUTF16String()
 					Output["Message"] = fmt.Sprintf("Received Output [%v bytes]:", len(Output["Output"]))
 					if len(Output["Output"]) > 0 {
 						teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
@@ -2914,7 +2911,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 					var Output = make(map[string]string)
 					Output["Type"] = typeError
-					Output["Output"] = string(Parser.ParseBytes())
+					Output["Output"] = Parser.ParseString()
 					Output["Message"] = fmt.Sprintf("Received Output [%v bytes]:", len(Output["Output"]))
 					if len(Output["Output"]) > 0 {
 						teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
@@ -3137,7 +3134,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 							collum []string
 						)
 
-						ModuleName = string(Parser.ParseBytes())
+						ModuleName = Parser.ParseString()
 						ModuleBase = "0x0" + strconv.FormatInt(int64(uint32(Parser.ParseInt32())), 16)
 
 						collum = []string{strings.ReplaceAll(ModuleName, " ", ""), ModuleBase} // TODO: fix this to avoid new line in the havoc console
@@ -3171,10 +3168,10 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 					)
 
 					for Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadInt32, parser.ReadInt32, parser.ReadBytes, parser.ReadInt32}) {
-						ProcName = string(Parser.ParseBytes())
+						ProcName = Parser.ParseString()
 						ProcID = Parser.ParseInt32()
 						ParentPID = Parser.ParseInt32()
-						ProcUser = string(Parser.ParseBytes())
+						ProcUser = Parser.ParseString()
 						ProcArch = Parser.ParseInt32()
 
 						Output += fmt.Sprintf(
@@ -3365,7 +3362,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 		case CALLBACK_OUTPUT:
 			if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
 				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_INLINEEXECUTE - CALLBACK_OUTPUT", AgentID))
-				OutputMap["Output"] = string(Parser.ParseBytes())
+				OutputMap["Output"] = Parser.ParseString()
 				teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
 			} else {
 				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_INLINEEXECUTE - CALLBACK_OUTPUT, Invalid packet", AgentID))
@@ -3377,7 +3374,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
 				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_INLINEEXECUTE - CALLBACK_ERROR", AgentID))
 				OutputMap["Type"] = "Error"
-				OutputMap["Output"] = string(Parser.ParseBytes())
+				OutputMap["Output"] = Parser.ParseString()
 				teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
 			} else {
 				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_INLINEEXECUTE - CALLBACK_ERROR, Invalid packet", AgentID))
@@ -3388,10 +3385,10 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 		case CALLBACK_MSG_GOOD:
 			if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
 				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_INLINEEXECUTE - CALLBACK_MSG_GOOD", AgentID))
-				var String = Parser.ParseBytes()
+				var String = Parser.ParseString()
 
 				OutputMap["Type"] = "Good"
-				OutputMap["Message"] = string(String)
+				OutputMap["Message"] = String
 
 				teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
 			} else {
@@ -3403,10 +3400,10 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 		case CALLBACK_MSG_INFO:
 			if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
 				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_INLINEEXECUTE - CALLBACK_MSG_INFO", AgentID))
-				var String = Parser.ParseBytes()
+				var String = Parser.ParseString()
 
 				OutputMap["Type"] = "Info"
-				OutputMap["Message"] = string(String)
+				OutputMap["Message"] = String
 
 				teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
 			} else {
@@ -3418,10 +3415,10 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 		case CALLBACK_MSG_ERROR:
 			if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
 				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_INLINEEXECUTE - CALLBACK_MSG_ERROR", AgentID))
-				var String = Parser.ParseBytes()
+				var String = Parser.ParseString()
 
 				OutputMap["Type"] = "Error"
-				OutputMap["Message"] = string(String)
+				OutputMap["Message"] = String
 
 				teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
 			} else {
@@ -3451,7 +3448,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 		case COMMAND_SYMBOL_NOT_FOUND:
 
 			if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
-				var LibAndFunc = string(Parser.ParseBytes())
+				var LibAndFunc = Parser.ParseString()
 
 				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_INLINEEXECUTE - COMMAND_SYMBOL_NOT_FOUND, LibAndFunc: %s", AgentID, LibAndFunc))
 
@@ -3582,7 +3579,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_ASSEMBLY_INLINE_EXECUTE - DOTNET_INFO_NET_VERSION", AgentID))
 					Message["Type"] = "Info"
-					Message["Message"] = "Using CLR Version: " + utils.UTF16BytesToString(Parser.ParseBytes())
+					Message["Message"] = "Using CLR Version: " + Parser.ParseUTF16String()
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_ASSEMBLY_INLINE_EXECUTE - DOTNET_INFO_NET_VERSION, Invalid packet", AgentID))
 				}
@@ -3645,7 +3642,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 		var Message = make(map[string]string)
 
 		for Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
-			Output += fmt.Sprintf("   - %v\n", string(Parser.ParseBytes()))
+			Output += fmt.Sprintf("   - %v\n", Parser.ParseString())
 		}
 
 		Message["Type"] = typeInfo
@@ -3713,7 +3710,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadInt32, parser.ReadInt32}) {
 					var (
-						User      = string(Parser.ParseBytes())
+						User      = Parser.ParseString()
 						TokenID   = Parser.ParseInt32()
 						TargetPID = Parser.ParseInt32()
 					)
@@ -3741,7 +3738,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 					var (
 						TokenIndex    = Parser.ParseInt32()
 						Handle        = fmt.Sprintf("0x%x", Parser.ParseInt32())
-						DomainAndUser = string(Parser.ParseBytes())
+						DomainAndUser = Parser.ParseString()
 						ProcessID     = Parser.ParseInt32()
 						Type          = Parser.ParseInt32()
 					)
@@ -3811,7 +3808,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 								State     string
 							)
 
-							Privilege = string(Parser.ParseBytes())
+							Privilege = Parser.ParseString()
 							StateInt = Parser.ParseInt32()
 
 							if StateInt == 3 {
@@ -3853,7 +3850,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_MAKE", AgentID))
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
 					Output["Type"] = "Good"
-					Output["Message"] = fmt.Sprintf("Successful created token: " + string(Parser.ParseBytes()))
+					Output["Message"] = fmt.Sprintf("Successful created token: " + Parser.ParseString())
 				} else {
 					Output["Type"] = "Error"
 					Output["Message"] = fmt.Sprintf("Failed to create token")
@@ -3865,7 +3862,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadBytes}) {
 					var (
 						Elevated = Parser.ParseInt32()
-						User     = string(Parser.ParseBytes())
+						User     = Parser.ParseString()
 					)
 
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_GET_UID, Elevated: %d, User: %v", AgentID, Elevated, User))
@@ -3956,7 +3953,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 								Buffer += "(No tokens found)\n"
 							} else {
 								for NumDelTokens > 0 && Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadInt32, parser.ReadInt32}) {
-									DomainAndUser = string(Parser.ParseBytes())
+									DomainAndUser = Parser.ParseString()
 									ProcessPID    = Parser.ParseInt32()
 									localHandle   = Parser.ParseInt32()
 									if localHandle != 0 {
@@ -3979,7 +3976,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 									Buffer += "(No tokens found)\n"
 								} else {
 									for NumImpTokens > 0 && Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadInt32, parser.ReadInt32}) {
-										DomainAndUser = string(Parser.ParseBytes())
+										DomainAndUser = Parser.ParseString()
 										ProcessPID    = Parser.ParseInt32()
 										localHandle   = Parser.ParseInt32()
 										if localHandle != 0 {
@@ -4068,7 +4065,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			case CONFIG_INJECT_SPAWN64:
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CONFIG - CONFIG_INJECT_SPAWN64", AgentID))
-					ConfigData = string(Parser.ParseBytes())
+					ConfigData = Parser.ParseString()
 					Message["Message"] = "Default x64 target process set to " + ConfigData.(string)
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CONFIG - CONFIG_INJECT_SPAWN64, Invalid packet", AgentID))
@@ -4078,7 +4075,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			case CONFIG_INJECT_SPAWN32:
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CONFIG - CONFIG_INJECT_SPAWN32", AgentID))
-					ConfigData = string(Parser.ParseBytes())
+					ConfigData = Parser.ParseString()
 					Message["Message"] = "Default x86 target process set to " + ConfigData.(string)
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CONFIG - CONFIG_INJECT_SPAWN32, Invalid packet", AgentID))
@@ -4088,7 +4085,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			case CONFIG_IMPLANT_SPFTHREADSTART:
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadBytes}) {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CONFIG - CONFIG_IMPLANT_SPFTHREADSTART", AgentID))
-					ConfigData = string(Parser.ParseBytes()) + "!" + string(Parser.ParseBytes())
+					ConfigData = Parser.ParseString() + "!" + Parser.ParseString()
 					Message["Message"] = "Sleep obfuscation spoof thread start addr to " + ConfigData.(string)
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CONFIG - CONFIG_IMPLANT_SPFTHREADSTART, Invalid packet", AgentID))
@@ -4148,7 +4145,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			case CONFIG_INJECT_SPOOFADDR:
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadBytes}) {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CONFIG - CONFIG_INJECT_SPOOFADDR", AgentID))
-					ConfigData = string(Parser.ParseBytes()) + "!" + string(Parser.ParseBytes())
+					ConfigData = Parser.ParseString() + "!" + Parser.ParseString()
 					Message["Message"] = "Injection thread spoofing value set to " + ConfigData.(string)
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CONFIG - CONFIG_INJECT_SPOOFADDR, Invalid packet", AgentID))
@@ -4243,7 +4240,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 			case DEMON_NET_COMMAND_DOMAIN:
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
-					var Domain = string(Parser.ParseBytes())
+					var Domain = Parser.ParseString()
 
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_NET - DEMON_NET_COMMAND_DOMAIN, Domain: %s", AgentID, Domain))
 
@@ -4262,11 +4259,11 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				)
 
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
-					var Domain = string(Parser.ParseBytes())
+					var Domain = Parser.ParseString()
 					Output += fmt.Sprintf(" %-12s\n", "Usernames")
 					Output += fmt.Sprintf(" %-12s\n", "---------")
 					for Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
-						var Name = string(Parser.ParseBytes())
+						var Name = Parser.ParseString()
 
 						Index++
 
@@ -4291,7 +4288,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				)
 
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
-					var Domain = string(Parser.ParseBytes())
+					var Domain = Parser.ParseString()
 
 					table := tablewriter.NewWriter(&Buffer)
 
@@ -4306,8 +4303,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 					for Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadBytes, parser.ReadInt32, parser.ReadInt32}) {
 						var (
-							Client = string(Parser.ParseBytes())
-							User   = string(Parser.ParseBytes())
+							Client = Parser.ParseString()
+							User   = Parser.ParseString()
 							Time   = int(Parser.ParseInt32())
 							Idle   = int(Parser.ParseInt32())
 							Column []string
@@ -4349,7 +4346,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_NET - DEMON_NET_COMMAND_SHARE", AgentID))
 
-					var Domain = common.DecodeUTF16(Parser.ParseBytes())
+					var Domain = Parser.ParseUTF16String()
 
 					table := tablewriter.NewWriter(&Buffer)
 
@@ -4364,9 +4361,9 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 					for Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadBytes, parser.ReadBytes, parser.ReadInt32}) {
 						var (
-							Name   = common.DecodeUTF16(Parser.ParseBytes())
-							Path   = common.DecodeUTF16(Parser.ParseBytes())
-							Remark = common.DecodeUTF16(Parser.ParseBytes())
+							Name   = Parser.ParseUTF16String()
+							Path   = Parser.ParseUTF16String()
+							Remark = Parser.ParseUTF16String()
 							Access = int(Parser.ParseInt32())
 
 							Column []string
@@ -4396,15 +4393,15 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_NET - DEMON_NET_COMMAND_LOCALGROUP", AgentID))
 
-					var Domain = common.DecodeUTF16(Parser.ParseBytes())
+					var Domain = Parser.ParseUTF16String()
 
 					Data += fmt.Sprintf(" %-48s %s\n", "Group", "Description")
 					Data += fmt.Sprintf(" %-48s %s\n", "-----", "-----------")
 
 					for Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadBytes}) {
 						var (
-							Group       = string(Parser.ParseBytes())
-							Description = string(Parser.ParseBytes())
+							Group       = Parser.ParseString()
+							Description = Parser.ParseString()
 						)
 
 						Data += fmt.Sprintf(" %-48s  %s\n", Group, Description)
@@ -4423,15 +4420,15 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_NET - DEMON_NET_COMMAND_GROUP", AgentID))
-					var Domain = string(Parser.ParseBytes())
+					var Domain = Parser.ParseString()
 
 					Data += fmt.Sprintf(" %-48s %s\n", "Group", "Description")
 					Data += fmt.Sprintf(" %-48s %s\n", "-----", "-----------")
 
 					for Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadBytes}) {
 						var (
-							Group       = string(Parser.ParseBytes())
-							Description = string(Parser.ParseBytes())
+							Group       = Parser.ParseString()
+							Description = Parser.ParseString()
 						)
 
 						Data += fmt.Sprintf(" %-48s  %s\n", Group, Description)
@@ -4451,11 +4448,11 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_NET - DEMON_NET_COMMAND_USERS", AgentID))
-					var Target = string(Parser.ParseBytes())
+					var Target = Parser.ParseString()
 
 					for Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadInt32}) {
 						var (
-							User  = string(Parser.ParseBytes())
+							User  = Parser.ParseString()
 							Admin = Parser.ParseInt32()
 						)
 
@@ -4513,7 +4510,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 					DemonId = Parser.ParseInt32()
 
-					NamedPipe = string(Parser.ParseBytes())
+					NamedPipe = Parser.ParseString()
 
 					Data += fmt.Sprintf(" %-10x  %s\n", DemonId, NamedPipe)
 					Count++
@@ -5451,19 +5448,19 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 							for NumSessions > 0 && Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadBytes, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadBytes, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadBytes, parser.ReadBytes, parser.ReadBytes, parser.ReadBytes}) {
 
-								UserName              = common.DecodeUTF16(Parser.ParseBytes())
-								Domain                = common.DecodeUTF16(Parser.ParseBytes())
+								UserName              = Parser.ParseUTF16String()
+								Domain                = Parser.ParseUTF16String()
 								LogonIdLow            = Parser.ParseInt32()
 								LogonIdHigh           = Parser.ParseInt32()
 								Session               = Parser.ParseInt32()
-								UserSID               = common.DecodeUTF16(Parser.ParseBytes())
+								UserSID               = Parser.ParseUTF16String()
 								LogonTimeLow          = Parser.ParseInt32()
 								LogonTimeHigh         = Parser.ParseInt32()
 								LogonType             = Parser.ParseInt32()
-								AuthenticationPackage = common.DecodeUTF16(Parser.ParseBytes())
-								LogonServer           = common.DecodeUTF16(Parser.ParseBytes())
-								LogonServerDNSDomain  = common.DecodeUTF16(Parser.ParseBytes())
-								Upn                   = common.DecodeUTF16(Parser.ParseBytes())
+								AuthenticationPackage = Parser.ParseUTF16String()
+								LogonServer           = Parser.ParseUTF16String()
+								LogonServerDNSDomain  = Parser.ParseUTF16String()
+								Upn                   = Parser.ParseUTF16String()
 
 								LogonTypes := map[int]string{
 									win32.LOGON32_LOGON_INTERACTIVE: "Interactive",
@@ -5497,10 +5494,10 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 									for NumTickets > 0 && Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadBytes, parser.ReadBytes, parser.ReadBytes, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadBytes}) {
 
-										ClientName     = common.DecodeUTF16(Parser.ParseBytes())
-										ClientRealm    = common.DecodeUTF16(Parser.ParseBytes())
-										ServerName     = common.DecodeUTF16(Parser.ParseBytes())
-										ServerRealm    = common.DecodeUTF16(Parser.ParseBytes())
+										ClientName     = Parser.ParseUTF16String()
+										ClientRealm    = Parser.ParseUTF16String()
+										ServerName     = Parser.ParseUTF16String()
+										ServerRealm    = Parser.ParseUTF16String()
 										StartTimeLow   = Parser.ParseInt32()
 										StartTimeHigh  = Parser.ParseInt32()
 										EndTimeLow     = Parser.ParseInt32()
