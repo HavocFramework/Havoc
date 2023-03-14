@@ -714,6 +714,8 @@ func (b *Builder) PatchConfig() []byte {
 
 		DemonConfig.AddString("\\\\.\\pipe\\" + Config.Config.PipeName)
 
+		DemonConfig.AddInt64(Config.Config.KillDate)
+
 		break
 	}
 

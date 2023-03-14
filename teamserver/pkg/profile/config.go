@@ -83,6 +83,9 @@ type ListenerHTTP struct {
 type ListenerSMB struct {
 	Name     string `yaotl:"Name"`
 	PipeName string `yaotl:"PipeName"`
+
+	// 2006-01-02 15:04:05
+	KillDate string `yaotl:"KillDate,optional"`
 }
 
 type ListenerExternal struct {

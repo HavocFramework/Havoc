@@ -282,9 +282,20 @@ func (t *Teamserver) Start() {
 
 		/* Start all SMB listeners */
 		for _, listener := range t.Profile.Config.Listener.ListenerSMB {
+			if listener.KillDate != "" {
+				t, err := time.Parse("2006-01-02 15:04:05", listener.KillDate)
+				if err != nil {
+					logger.Error("Failed to parse the kill date: " + err.Error())
+					return
+				}
+				KillDate = t.Unix()
+			} else {
+				KillDate = 0
+			}
 			var HandlerData = handlers.SMBConfig{
 				Name:     listener.Name,
 				PipeName: listener.PipeName,
+				KillDate: KillDate,
 			}
 
 			if err := t.ListenerStart(handlers.LISTENER_PIVOT_SMB, HandlerData); err != nil {

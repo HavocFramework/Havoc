@@ -105,6 +105,7 @@ typedef struct
 #ifdef TRANSPORT_SMB
             LPSTR   Name;
             HANDLE  Handle;
+            UINT64  KillDate;
 #endif
 
         } Transport;

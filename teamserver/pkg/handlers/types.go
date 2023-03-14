@@ -49,6 +49,7 @@ type (
 	SMBConfig struct {
 		Name     string
 		PipeName string
+		KillDate int64
 	}
 )
 
