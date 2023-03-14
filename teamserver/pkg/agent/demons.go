@@ -2150,7 +2150,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 				Session = nil
 			} else {
-				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CHECKIN, Invalid packet2", AgentID))
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CHECKIN, Invalid packet", AgentID))
 			}
 		} else {
 			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CHECKIN, Invalid packet", AgentID))
@@ -4524,14 +4524,14 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 					Message["Message"] = fmt.Sprintf("Pivot List [%v]: ", Count)
 					Message["Output"] = "\n" + Data
 				} else {
-					Message["Type"] = "Error"
+					Message["Type"] = "Info"
 					Message["Message"] = fmt.Sprintf("No pivots connected")
 				}
 
 			case DEMON_PIVOT_SMB_CONNECT:
 				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32}) {
 					var Success = Parser.ParseInt32()
-					
+
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PIVOT - DEMON_PIVOT_SMB_CONNECT, Success: %d", AgentID, Success))
 
 					// if we successfully connected to the SMB named pipe

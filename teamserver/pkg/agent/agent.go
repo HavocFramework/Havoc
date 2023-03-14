@@ -39,6 +39,7 @@ func BuildPayloadMessage(Jobs []Job, AesKey []byte, AesIv []byte) []byte {
 
 			switch job.Data[i].(type) {
 			case int64:
+				// TODO: shouldn't this be 64 bit?
 				var integer64 = make([]byte, 4)
 
 				binary.LittleEndian.PutUint32(integer64, uint32(job.Data[i].(int64)))

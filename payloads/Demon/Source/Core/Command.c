@@ -2466,6 +2466,11 @@ VOID CommandPivot( PPARSER Parser )
                     CALLBACK_GETLASTERROR
                 } else PUTS( "Successful wrote demon data" )
             } else PUTS( "Didn't found demon pivot" )
+
+            // DEMON_PIVOT_SMB_COMMAND does not send any response
+            // TODO: send confirmation that it worked?
+            //       this message colides with PivotPush
+            return;
         }
 
         default: break;
