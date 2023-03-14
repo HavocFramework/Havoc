@@ -4683,23 +4683,32 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 						AgentHdr, err = ParseHeader(Package)
 					)
 
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PIVOT - DEMON_PIVOT_SMB_COMMAND", AgentID))
-
 					if err == nil {
 
 						if AgentHdr.MagicValue == DEMON_MAGIC_VALUE {
-							var Command = AgentHdr.Data.ParseInt32()
+							var Command    = AgentHdr.Data.ParseInt32()
+							var PivotAgent *Agent
 
+
+							// look for the pivot agent
 							found := false
 							for i := range a.Pivots.Links {
 								if a.Pivots.Links[i].NameID == utils.IntToHexString(AgentHdr.AgentID) {
-									a.Pivots.Links[i].TaskDispatch(Command, AgentHdr.Data, teamserver)
+									PivotAgent = a.Pivots.Links[i]
 									found = true
 									break
 								}
 							}
-
-							if !found {
+							if found {
+								// if the command is a COMMAND_GET_JOB, ignore it
+								// TODO: does it even make sense for the Pivot to send this message?
+								if Command == COMMAND_GET_JOB {
+									PivotAgent.UpdateLastCallback(teamserver)
+								} else {
+									logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PIVOT - DEMON_PIVOT_SMB_COMMAND, Linked Agent: %s, Command: %d", AgentID, PivotAgent.NameID, Command))
+									PivotAgent.TaskDispatch(Command, AgentHdr.Data, teamserver)
+								}
+							} else {
 								Message["Type"] = "Error"
 								Message["Message"] = fmt.Sprintf("Can't process output for %x: Agent not found", AgentHdr.AgentID)
 							}
