@@ -38,6 +38,10 @@ type ServiceAgentInterface interface {
 // TeamServer
 // interface that allows us to interact with the core teamserver
 type TeamServer interface {
+	ParentOf(Agent *Agent) (int, error)
+	LinksOf(Agent *Agent) []int
+	LinkRemove(ParentAgent *Agent, LinkAgent *Agent) error
+	LinkAdd(ParentAgent *Agent, LinkAgent *Agent) error
 	AgentAdd(agent *Agent) []*Agent
 	AgentSendNotify(agent *Agent)
 	AgentCallbackSize(DemonInstance *Agent, i int)

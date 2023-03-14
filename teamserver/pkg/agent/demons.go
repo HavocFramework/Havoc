@@ -4575,6 +4575,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 										DemonInfo.Pivots.Parent = a
 
 										a.Pivots.Links = append(a.Pivots.Links, DemonInfo)
+										teamserver.LinkAdd(a, DemonInfo)
 
 										DemonInfo.Info.MagicValue = AgentHdr.MagicValue
 
@@ -4658,6 +4659,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 						for i := range a.Pivots.Links {
 							if a.Pivots.Links[i].NameID == Message["MiscData"] {
+								teamserver.LinkRemove(a, a.Pivots.Links[i])
 								a.Pivots.Links = append(a.Pivots.Links[:i], a.Pivots.Links[i+1:]...)
 								break
 							}
@@ -4686,17 +4688,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 							var Command    = AgentHdr.Data.ParseInt32()
 							var PivotAgent *Agent
 
-
-							// look for the pivot agent
-							found := false
-							for i := range a.Pivots.Links {
-								if a.Pivots.Links[i].NameID == utils.IntToHexString(AgentHdr.AgentID) {
-									PivotAgent = a.Pivots.Links[i]
-									found = true
-									break
-								}
-							}
-							if found {
+							PivotAgent = teamserver.AgentInstance(AgentHdr.AgentID)
+							if PivotAgent != nil {
 								// if the command is a COMMAND_GET_JOB, ignore it
 								// TODO: does it even make sense for the Pivot to send this message?
 								if Command == COMMAND_GET_JOB {

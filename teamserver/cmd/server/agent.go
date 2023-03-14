@@ -11,6 +11,43 @@ import (
 	"Havoc/pkg/packager"
 )
 
+func (t *Teamserver) ParentOf(Agent *agent.Agent) (int, error) {
+	var AgentID, _ = strconv.ParseInt(Agent.NameID, 16, 64)
+
+	ID, err := t.DB.ParentOf(int(AgentID))
+	return ID, err
+}
+
+func (t *Teamserver) LinksOf(Agent *agent.Agent) []int {
+	var AgentID, _ = strconv.ParseInt(Agent.NameID, 16, 64)
+
+	return t.DB.LinksOf(int(AgentID))
+}
+
+func (t *Teamserver) LinkAdd(ParentAgent *agent.Agent, LinkAgent *agent.Agent) error {
+	var ParentAgentID, _ = strconv.ParseInt(ParentAgent.NameID, 16, 64)
+	var LinkAgentID,   _ = strconv.ParseInt(LinkAgent.NameID, 16, 64)
+
+	err := t.DB.LinkAdd(int(ParentAgentID), int(LinkAgentID))
+	if err != nil {
+		logger.Error("Could not add link to database: " + err.Error())
+	}
+
+	return nil
+}
+
+func (t *Teamserver) LinkRemove(ParentAgent *agent.Agent, LinkAgent *agent.Agent) error {
+	var ParentAgentID, _ = strconv.ParseInt(ParentAgent.NameID, 16, 64)
+	var LinkAgentID,   _ = strconv.ParseInt(LinkAgent.NameID, 16, 64)
+
+	err := t.DB.LinkRemove(int(ParentAgentID), int(LinkAgentID))
+	if err != nil {
+		logger.Error("Could not remove link to database: " + err.Error())
+	}
+
+	return nil
+}
+
 func (t *Teamserver) AgentAdd(Agent *agent.Agent) []*agent.Agent {
 	if Agent != nil {
 		if t.WebHooks != nil {

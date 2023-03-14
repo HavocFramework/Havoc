@@ -184,6 +184,8 @@ func (db *DB) AgentAll() []*agent.Agent {
 		}
 
 		Agent.NameID           = fmt.Sprintf("%x", AgentID)
+		Agent.Info.MagicValue  = agent.DEMON_MAGIC_VALUE
+		Agent.Info.Listener    = nil
 		Agent.Info.Hostname    = Hostname
 		Agent.Info.Username    = Username
 		Agent.Info.DomainName  = DomainName

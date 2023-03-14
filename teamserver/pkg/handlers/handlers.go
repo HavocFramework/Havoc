@@ -274,8 +274,6 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.B
 
 			Build = Packer.Build()
 
-			logger.Debug(fmt.Sprintf("%x", Build))
-
 			_, err = Response.Write(Build)
 			if err != nil {
 				logger.Error(err)
