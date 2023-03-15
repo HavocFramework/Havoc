@@ -1171,6 +1171,28 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 				KillDate,
 			}
 			break
+
+		case "workinghours":
+			ConfigId = CONFIG_WORKINGHOURS
+			var (
+				WorkingHours int32
+			)
+			if ConfigVal.(string) != "0" {
+				WorkingHours, err = common.ParseWorkingHours(ConfigVal.(string))
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				WorkingHours = 0
+			}
+
+			logger.Debug(fmt.Sprintf("WorkingHours: %d", WorkingHours))
+
+			job.Data = []interface{}{
+				ConfigId,
+				WorkingHours,
+			}
+			break
 		}
 
 		if len(job.Data) == 0 {
@@ -4124,7 +4146,20 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CONFIG - CONFIG_KILLDATE, Invalid packet", AgentID))
 				}
 				break
-				
+
+			case CONFIG_WORKINGHOURS:
+				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32}) {
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CONFIG - CONFIG_WORKINGHOURS", AgentID))
+					WorkingHours := Parser.ParseInt32()
+					if WorkingHours == 0 {
+						Message["Message"] = "WorkingHours was disabled"
+					} else {
+						Message["Message"] = "WorkingHours has been updated"
+					}
+				} else {
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CONFIG - CONFIG_KILLDATE, Invalid packet", AgentID))
+				}
+				break
 
 			case CONFIG_IMPLANT_SPFTHREADSTART:
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadBytes}) {

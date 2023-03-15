@@ -12,12 +12,65 @@ import (
 	"strconv"
 	"unicode/utf16"
 	"unicode/utf8"
+	"regexp"
+	"errors"
+	"strings"
 
 	"Havoc/pkg/logger"
 
 	"golang.org/x/image/bmp"
 	"golang.org/x/text/encoding/unicode"
 )
+
+func ParseWorkingHours(WorkingHours string) (int32, error) {
+	/*
+	 * The working hours are packed in a uint32
+	 * X: enabled or not
+	 * A: start hour
+	 * B: start minute
+	 * C: end hour
+	 * D: end minute
+	 *          XAAAAABBBBBBCCCCCDDDDDD
+	 * 00000000010000011111100000111111
+	 * ------------32 bits-------------
+	 */
+	 var (
+	 	IntWorkingHours int32 = 0
+	 )
+
+	if WorkingHours != "" {
+		match, err := regexp.MatchString("^[12]?[0-9]:[0-6][0-9]-[12]?[0-9]:[0-6][0-9]$", WorkingHours)
+		if err != nil || match == false {
+			return IntWorkingHours, errors.New("Failed to parse the WorkingHours: Invalid format for working hours, use: 8:00-17:00")
+		}
+
+		startAndEnd         := strings.Split(WorkingHours, "-")
+		startHourandMinutes := strings.Split(startAndEnd[0], ":")
+		endHourandMinutes   := strings.Split(startAndEnd[1], ":")
+
+		startHour, _ := strconv.Atoi(startHourandMinutes[0])
+		startMin , _ := strconv.Atoi(startHourandMinutes[1])
+		endHour,   _ := strconv.Atoi(endHourandMinutes[0])
+		endMin,    _ := strconv.Atoi(endHourandMinutes[1])
+
+		if startHour < 0 || startHour > 24 || endHour < 0 || endHour > 24 || startMin < 0 || startMin > 60 || endMin < 0 || endMin > 60 {
+			return IntWorkingHours, errors.New("Failed to parse the WorkingHours: Invalid hour or minute defined in working hours")
+		}
+
+		if endHour < startHour || (startHour == endHour && endMin <= startMin) {
+			return IntWorkingHours, errors.New("Failed to parse the WorkingHours: Then end hour can't be sooner than the start hour")
+		}
+
+		// set the "enabled" bit
+		IntWorkingHours |= 1 << 22
+		IntWorkingHours |= (int32(startHour) & 0b011111) << 17
+		IntWorkingHours |= (int32(startMin)  & 0b111111) << 11
+		IntWorkingHours |= (int32(endHour)   & 0b011111) << 6
+		IntWorkingHours |= (int32(endMin)    & 0b111111) << 0
+	}
+
+	return IntWorkingHours, nil
+}
 
 func Bmp2Png(BmpBytes []byte) []byte {
 	var (

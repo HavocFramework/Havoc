@@ -1623,6 +1623,18 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                     }
                     TaskID = CONSOLE_INFO( "Tasked demon to configure the KillDate: " + InputCommands[ 2 ] );
                 }
+                else if ( InputCommands[ 1 ].compare( "workinghours" ) == 0 )
+                {
+                    if ( InputCommands.size() < 3 ) {
+                        CONSOLE_ERROR( "Not enough arguments" );
+                        return false;
+                    };
+                    if ( InputCommands.size() > 3 ) {
+                        CONSOLE_ERROR( "Too many arguments" );
+                        return false;
+                    };
+                    TaskID = CONSOLE_INFO( "Tasked demon to configure the working hours: " + InputCommands[ 2 ] );
+                }
                 else
                 {
                     DemonConsole->Console->append( "" );

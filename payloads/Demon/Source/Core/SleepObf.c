@@ -476,6 +476,13 @@ UINT32 SleepTime( VOID )
     UINT32 MaxVariation = ( Instance.Config.Jitter * SleepTime ) / 100;
     ULONG  Rand         = 0;
 
+    if ( ! SleepTime && ! InWorkingHours() )
+    {
+        // if we are not longer in working hours and the sleep time is 0
+        // set the sleep time to 5 mins
+        SleepTime = 300000;
+    }
+
     if ( MaxVariation )
     {
         Rand = RandomNumber32();

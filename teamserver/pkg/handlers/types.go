@@ -12,6 +12,7 @@ type (
 	HTTPConfig struct {
 		Name         string
 		KillDate     int64
+		WorkingHours string
 		Hosts        []string
 		HostBind     string
 		HostRotation string
@@ -47,9 +48,10 @@ type (
 	}
 
 	SMBConfig struct {
-		Name     string
-		PipeName string
-		KillDate int64
+		Name         string
+		PipeName     string
+		KillDate     int64
+		WorkingHours string
 	}
 )
 

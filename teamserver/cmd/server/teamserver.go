@@ -240,6 +240,7 @@ func (t *Teamserver) Start() {
 			var HandlerData = handlers.HTTPConfig{
 				Name:         listener.Name,
 				KillDate:     KillDate,
+				WorkingHours: listener.WorkingHours,
 				Hosts:        listener.Hosts,
 				HostBind:     listener.HostBind,
 				HostRotation: listener.HostRotation,
@@ -293,9 +294,10 @@ func (t *Teamserver) Start() {
 				KillDate = 0
 			}
 			var HandlerData = handlers.SMBConfig{
-				Name:     listener.Name,
-				PipeName: listener.PipeName,
-				KillDate: KillDate,
+				Name:         listener.Name,
+				PipeName:     listener.PipeName,
+				KillDate:     KillDate,
+				WorkingHours: listener.WorkingHours,
 			}
 
 			if err := t.ListenerStart(handlers.LISTENER_PIVOT_SMB, HandlerData); err != nil {

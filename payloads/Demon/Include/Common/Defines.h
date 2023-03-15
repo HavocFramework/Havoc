@@ -97,6 +97,7 @@
 #define FuncHash_Wow64RevertWow64FsRedirection       0x72f47e1c
 #define FuncHash_GetModuleHandleA                    0x5a153f58
 #define FuncHash_GetSystemTimeAsFileTime             0x4bbf083c
+#define FuncHash_GetLocalTime                        0x12d7e0df
 #define FuncHash_NtOpenProcess                       0x5003c058
 #define FuncHash_NtQueryInformationProcess           0xd034fc62
 #define FuncHash_NtQuerySystemInformation            0xee4f73a8

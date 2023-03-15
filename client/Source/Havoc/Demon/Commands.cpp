@@ -620,6 +620,12 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                     .Usage          = R"([YEAR-MONTH-DAY HOUR-MINUTE-SECOND])",
                     .Example        = R"(2006-01-02 15:04:05)",
                 },
+                {
+                    .CommandString  = "workinghours",
+                    .Description    = "change the working hours, set to 0 to disable.",
+                    .Usage          = R"([H:mm-H-mm])",
+                    .Example        = R"(8:30-19:00)",
+                },
             },
         },
         {

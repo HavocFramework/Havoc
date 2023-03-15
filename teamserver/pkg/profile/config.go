@@ -59,7 +59,9 @@ type ListenerHTTP struct {
 	Name string `yaotl:"Name"`
 
 	// 2006-01-02 15:04:05
-	KillDate string `yaotl:"KillDate,optional"`
+	KillDate     string `yaotl:"KillDate,optional"`
+	// 8:00-17:00
+	WorkingHours string `yaotl:"WorkingHours,optional"`
 
 	Hosts        []string `yaotl:"Hosts"`
 	HostBind     string   `yaotl:"HostBind"`
@@ -85,7 +87,9 @@ type ListenerSMB struct {
 	PipeName string `yaotl:"PipeName"`
 
 	// 2006-01-02 15:04:05
-	KillDate string `yaotl:"KillDate,optional"`
+	KillDate     string `yaotl:"KillDate,optional"`
+	// 8:00-17:00
+	WorkingHours string `yaotl:"WorkingHours,optional"`
 }
 
 type ListenerExternal struct {

