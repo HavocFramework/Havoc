@@ -66,6 +66,7 @@
 
 #define DEMON_CONFIG_INJECTION_SPAWN64       152
 #define DEMON_CONFIG_INJECTION_SPAWN32       153
+#define DEMON_CONFIG_KILLDATE                154
 
 #define DEMON_NET_COMMAND_DOMAIN             1
 #define DEMON_NET_COMMAND_LOGONS             2

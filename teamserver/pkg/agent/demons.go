@@ -1143,6 +1143,34 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 			ConfigId = CONFIG_INJECT_SPAWN32
 			Value = ConfigVal
 			break
+
+		case "killdate":
+			ConfigId = CONFIG_KILLDATE
+			var (
+				KillDate int64
+			)
+			if ConfigVal.(string) != "0" {
+				t, err := time.Parse("2006-01-02 15:04:05", ConfigVal.(string))
+				if err != nil {
+					logger.Error("Failed to parse the kill date: " + err.Error())
+					return nil, errors.New("Invalid date format, use: 2006-01-02 15:04:05")
+				} else {
+					KillDate = t.Unix()
+					if KillDate < time.Now().Unix() {
+						return nil, errors.New("The date can't be in the past")
+					}
+				}
+			} else {
+				KillDate = 0
+			}
+
+			logger.Debug(fmt.Sprintf("KillDate: %d", KillDate))
+
+			job.Data = []interface{}{
+				ConfigId,
+				KillDate,
+			}
+			break
 		}
 
 		if len(job.Data) == 0 {
@@ -4082,6 +4110,21 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CONFIG - CONFIG_INJECT_SPAWN32, Invalid packet", AgentID))
 				}
 				break
+
+			case CONFIG_KILLDATE:
+				if Parser.CanIRead([]parser.ReadType{parser.ReadInt64}) {
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CONFIG - CONFIG_KILLDATE", AgentID))
+					KDate := Parser.ParseInt64()
+					if KDate == 0 {
+						Message["Message"] = "KillDate was disabled"
+					} else {
+						Message["Message"] = fmt.Sprintf("KillDate set to %s", time.Unix(Parser.ParseInt64(), 0).Format("2006-01-02 15:04:05"))
+					}
+				} else {
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CONFIG - CONFIG_KILLDATE, Invalid packet", AgentID))
+				}
+				break
+				
 
 			case CONFIG_IMPLANT_SPFTHREADSTART:
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadBytes}) {

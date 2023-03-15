@@ -1603,6 +1603,26 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                     };
                     TaskID = CONSOLE_INFO( "Tasked demon to configure default x86 target process: " + InputCommands[ 2 ] );
                 }
+                else if ( InputCommands[ 1 ].compare( "killdate" ) == 0 )
+                {
+                    if ( InputCommands.size() < 3 ) {
+                        CONSOLE_ERROR( "Not enough arguments" );
+                        return false;
+                    };
+                    if ( InputCommands.size() > 4 ) {
+                        CONSOLE_ERROR( "Too many arguments" );
+                        return false;
+                    };
+                    if ( InputCommands.size() == 4 ) {
+                        InputCommands[ 2 ] = InputCommands[ 2 ] + " " + InputCommands[ 3 ];
+                    };
+                    if ( InputCommands.size() == 3 && InputCommands[ 2 ].compare( "0" ) != 0 )
+                    {
+                        CONSOLE_ERROR( "Invalid arguments" );
+                        return false;
+                    }
+                    TaskID = CONSOLE_INFO( "Tasked demon to configure the KillDate: " + InputCommands[ 2 ] );
+                }
                 else
                 {
                     DemonConsole->Console->append( "" );

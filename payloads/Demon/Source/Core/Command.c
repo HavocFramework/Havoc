@@ -1925,6 +1925,16 @@ VOID CommandConfig( PPARSER Parser )
             break;
         }
 
+        case DEMON_CONFIG_KILLDATE:
+        {
+            Instance.Config.Transport.KillDate = ParserGetInt64( Parser );
+
+            PRINTF( "Instance.Config.Transport.KillDate => %d\n", Instance.Config.Transport.KillDate );
+            PackageAddInt64( Package, Instance.Config.Transport.KillDate );
+
+            break;
+        }
+
         default:
             PackageAddInt32( Package, 0 );
             break;

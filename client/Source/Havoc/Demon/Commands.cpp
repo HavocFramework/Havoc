@@ -614,6 +614,12 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                     .Usage          = R"([C:\path\to\executable.exe])",
                     .Example        = R"(C:\Windows\SysWow64\rundll32.exe)",
                 },
+                {
+                    .CommandString  = "killdate",
+                    .Description    = "change the default KillDate, set to 0 to disable. The time is interpreted in GMT 0",
+                    .Usage          = R"([YEAR-MONTH-DAY HOUR-MINUTE-SECOND])",
+                    .Example        = R"(2006-01-02 15:04:05)",
+                },
             },
         },
         {

@@ -91,7 +91,7 @@ func (p *Parser) ParseInt32() int {
 	}
 }
 
-func (p *Parser) ParseInt64() int {
+func (p *Parser) ParseInt64() int64 {
 	var integer = make([]byte, 8)
 
 	for i := range integer {
@@ -109,9 +109,9 @@ func (p *Parser) ParseInt64() int {
 	}
 
 	if p.bigEndian {
-		return int(binary.BigEndian.Uint64(integer))
+		return int64(binary.BigEndian.Uint64(integer))
 	} else {
-		return int(binary.LittleEndian.Uint64(integer))
+		return int64(binary.LittleEndian.Uint64(integer))
 	}
 }
 
