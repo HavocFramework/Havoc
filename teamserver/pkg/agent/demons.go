@@ -2332,7 +2332,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 	case COMMAND_SLEEP:
 
-		if Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadInt32}) {
+		if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadInt32}) {
 			var Output = make(map[string]string)
 
 			a.Info.SleepDelay  = Parser.ParseInt32()
