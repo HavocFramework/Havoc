@@ -599,6 +599,7 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                     .Arch        = Package->Body.Info[ "ProcessArch" ].c_str(),
                     .First       = Package->Body.Info[ "FirstCallIn" ].c_str(),
                     .Last        = QString( Package->Body.Info[ "LastCallIn" ].c_str() ).split(" ")[ 1 ],
+                    .Health      = QString("test value"),
                     .Elevated    = Package->Body.Info[ "Elevated" ].c_str(),
                     .PivotParent = Package->Body.Info[ "PivotParent" ].c_str(),
                     .Marked      = Package->Body.Info[ "Active" ].c_str(),

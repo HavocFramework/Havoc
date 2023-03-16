@@ -95,6 +95,11 @@
        <string>Last</string>
       </property>
      </column>
+     <column>
+      <property name="text">
+       <string>Health</string>
+      </property>
+     </column>
      <item row="0" column="0">
       <property name="text">
        <string>asdaqwesd</string>

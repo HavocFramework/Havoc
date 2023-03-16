@@ -249,6 +249,7 @@ namespace HavocNamespace
             QString  Arch;
             QString  First;
             QString  Last;
+            QString  Health;
             QString  Elevated;
             QString  PivotParent;
             QString  Marked;

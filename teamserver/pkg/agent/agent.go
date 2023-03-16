@@ -418,10 +418,10 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser) *Agent {
 			process := strings.Split(ProcessName, "\\")
 
 			Session.Info.ProcessName = process[len(process)-1]
-			Session.Info.ProcessPID = ProcessPID
+			Session.Info.ProcessPID  = ProcessPID
 			Session.Info.ProcessPPID = ProcessPPID
 			Session.Info.ProcessPath = ProcessName
-			Session.BackgroundCheck = false
+			Session.BackgroundCheck  = false
 
 			/*for {
 			    if Parser.Length() >= 4 {

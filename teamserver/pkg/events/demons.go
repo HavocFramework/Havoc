@@ -68,48 +68,6 @@ func (demons) NewDemon(Agent *agent.Agent) packager.Package {
 		"PivotParent": "",
 	}
 
-	/*
-	// BREAKS
-	//var InfoMap = structs.Map(Agent)
-	InfoMap["Active"] = fmt.Sprintf("%v", Agent.Active)
-	InfoMap["BackgroundCheck"] = Agent.BackgroundCheck
-	InfoMap["DomainName"] = Agent.Info.DomainName
-	InfoMap["Elevated"] = Agent.Info.Elevated
-	InfoMap["Encryption"] = map[string]interface{}{
-		"AESKey": base64.StdEncoding.EncodeToString(Agent.Encryption.AESKey),
-		"AESIv":  base64.StdEncoding.EncodeToString(Agent.Encryption.AESIv),
-	}
-	InfoMap["InternalIP"] = Agent.Info.InternalIP
-	InfoMap["ExternalIP"] = Agent.Info.ExternalIP
-	InfoMap["FirstCallIn"] = Agent.Info.FirstCallIn
-	InfoMap["LastCallIn"] = Agent.Info.LastCallIn
-	InfoMap["Hostname"] = Agent.Info.Hostname
-	InfoMap["Listener"] = "null" // ?
-	InfoMap["MagicValue"] = fmt.Sprintf("%x", Agent.Info.MagicValue)
-	InfoMap["NameID"] = Agent.NameID
-	InfoMap["OSArch"] = Agent.Info.OSArch
-	InfoMap["OSBuild"] = Agent.Info.OSBuild
-	InfoMap["OSVersion"] = Agent.Info.OSVersion
-	InfoMap["Pivots"] = map[string]interface{}{
-		"Parent": nil,
-		"Links":  []string{},
-	}
-	InfoMap["PortFwds"] = []string{}
-	InfoMap["ProcessArch"] = Agent.Info.ProcessArch
-	InfoMap["ProcessName"] = Agent.Info.ProcessName
-	InfoMap["ProcessPID"] = Agent.Info.ProcessPID
-	InfoMap["ProcessPPID"] = Agent.Info.ProcessPPID
-	InfoMap["ProcessPath"] = Agent.Info.ProcessPath
-	InfoMap["Reason"] = Agent.Reason
-	InfoMap["SleepDelay"] = Agent.Info.SleepDelay
-	InfoMap["SleepJitter"] = Agent.Info.SleepJitter
-	InfoMap["SocksCli"] = []string{}
-	InfoMap["SocksCliMtx"] = nil
-	InfoMap["SocksSvr"] = []string{}
-	InfoMap["TaskedOnce"] = Agent.TaskedOnce
-	InfoMap["Username"] = Agent.Info.Username
-	InfoMap["Listener"] = nil
-	*/
 	if Agent.Pivots.Parent != nil {
 		InfoMap["PivotParent"] = Agent.Pivots.Parent.NameID
 	}

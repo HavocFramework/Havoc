@@ -143,6 +143,11 @@
            <string>Last</string>
           </property>
          </column>
+         <column>
+          <property name="text">
+           <string>Health</string>
+          </property>
+         </column>
         </widget>
        </item>
       </layout>

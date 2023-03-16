@@ -19,6 +19,7 @@ private:
     QTableWidgetItem*   TitleProcessId   = nullptr;
     QTableWidgetItem*   TitleArch        = nullptr;
     QTableWidgetItem*   TitleLast        = nullptr;
+    QTableWidgetItem*   TitleHealth      = nullptr;
 
 public:
     QTableWidget*   SessionTableWidget = nullptr;
