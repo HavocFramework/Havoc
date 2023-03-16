@@ -753,13 +753,6 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                             Session.KillDate     = (uint64_t)strtoull(LastTimeJson["KillDate"].toString().toStdString().c_str(), NULL, 0),
                             Session.WorkingHours = (uint32_t)strtoul(LastTimeJson["WorkingHours"].toString().toStdString().c_str(), NULL, 0),
 
-                            //spdlog::info( "Last: {}", LastTimeJson["Last"].toString().toStdString() );
-                            //spdlog::info( "Sleep: {}", Session.SleepDelay );
-                            //spdlog::info( "Sleep: {}", LastTimeJson["Sleep"].toString().toStdString() );
-                            //spdlog::info( "Jitter: {}", LastTimeJson["Jitter"].toString().toStdString() );
-                            //spdlog::info( "KillDate: {}", LastTimeJson["KillDate"].toString().toStdString() );
-                            //spdlog::info( "WorkingHours: {}", LastTimeJson["WorkingHours"].toString().toStdString() );
-
                             HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue(
                                 Package->Body.Info["DemonID"].c_str(), 8, LastTimeJson["Diff"].toString()
                             );

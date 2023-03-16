@@ -229,14 +229,15 @@ void HavocNamespace::UserInterface::HavocUI::UpdateSessionsHealth()
         if ( session.Marked.compare( "Dead" ) == 0 )
             continue;
 
-        auto Now  = QDateTime::currentDateTime();
+        auto Now  = QDateTime::currentDateTimeUtc();
         auto Last = QDateTime::fromString(session.Last.toStdString().c_str(), "dd-MM-yyyy hh:mm:ss");
         auto diff = Last.secsTo(Now);
 
-        if ( session.KillDate > 0 && Now.secsTo(QDateTime::fromSecsSinceEpoch(session.KillDate)) <= 0 )
+        if ( session.KillDate > 0 && Now.secsTo(QDateTime::fromSecsSinceEpoch(session.KillDate, Qt::UTC)) <= 0 )
         {
             // agent reached its killdate
             session.Health = "reached killdate";
+            session.Marked = "Dead";
             HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue(session.Name, 9, session.Health);
             continue;
         }
@@ -272,12 +273,14 @@ void HavocNamespace::UserInterface::HavocUI::UpdateSessionsHealth()
             // agent has ping back in time
             session.Health = "healthy";
             HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue(session.Name, 9, session.Health);
+            continue;
         }
         else
         {
             // agent has not pinged back in time
             session.Health = "unresponsive";
             HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue(session.Name, 9, session.Health);
+            continue;
         }
     }
 }

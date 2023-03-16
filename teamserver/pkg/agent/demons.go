@@ -4146,7 +4146,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 					if a.Info.KillDate == 0 {
 						Message["Message"] = "KillDate was disabled"
 					} else {
-						Message["Message"] = fmt.Sprintf("KillDate set to %s", time.Unix(a.Info.KillDate, 0).Format("2006-01-02 15:04:05"))
+						Message["Message"] = "KillDate has been set"
 					}
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CONFIG - CONFIG_KILLDATE, Invalid packet", AgentID))
@@ -4160,7 +4160,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 					if a.Info.WorkingHours == 0 {
 						Message["Message"] = "WorkingHours was disabled"
 					} else {
-						Message["Message"] = "WorkingHours has been updated"
+						Message["Message"] = "WorkingHours has been set"
 					}
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CONFIG - CONFIG_KILLDATE, Invalid packet", AgentID))
