@@ -241,8 +241,9 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
     PackageAddInt32( *MetaData, Instance.Session.OS_Arch );
 
     PackageAddInt32( *MetaData, Instance.Config.Sleeping );
-
     PackageAddInt32( *MetaData, Instance.Config.Jitter );
+    PackageAddInt64( *MetaData, Instance.Config.Transport.KillDate );
+    PackageAddInt32( *MetaData, Instance.Config.Transport.WorkingHours );
 }
 
 VOID DemonInit( VOID )

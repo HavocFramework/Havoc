@@ -37,7 +37,7 @@ func (db *DB) AgentAdd(agent *agent.Agent) error {
 	}
 
 	/* prepare some arguments to execute for the sqlite db */
-	stmt, err := db.db.Prepare("INSERT INTO TS_Agents (AgentID, Active, Reason, AESKey, AESIv, Hostname, Username, DomainName, InternalIP, ProcessName, ProcessPID, ProcessPPID, ProcessArch, Elevated, OSVersion, OSArch, SleepDelay, SleepJitter, FirstCallIn, LastCallIn) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+	stmt, err := db.db.Prepare("INSERT INTO TS_Agents (AgentID, Active, Reason, AESKey, AESIv, Hostname, Username, DomainName, InternalIP, ProcessName, ProcessPID, ProcessPPID, ProcessArch, Elevated, OSVersion, OSArch, SleepDelay, SleepJitter, KillDate, WorkingHours, FirstCallIn, LastCallIn) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
 	if err != nil {
 		return err
 	}
@@ -62,6 +62,8 @@ func (db *DB) AgentAdd(agent *agent.Agent) error {
 		agent.Info.OSArch,
 		agent.Info.SleepDelay,
 		agent.Info.SleepJitter,
+		agent.Info.KillDate,
+		agent.Info.WorkingHours,
 		agent.Info.FirstCallIn,
 		agent.Info.LastCallIn)
 	if err != nil {
@@ -143,7 +145,7 @@ func (db *DB) AgentAll() []*agent.Agent {
 
 	var Agents []*agent.Agent
 
-	query, err := db.db.Query("SELECT AgentID, Active, Reason, AESKey, AESIv, Hostname, Username, DomainName, InternalIP, ProcessName, ProcessPID, ProcessPPID, ProcessArch, Elevated, OSVersion, OSArch, SleepDelay, SleepJitter, FirstCallIn, LastCallIn FROM TS_Agents WHERE Active = 1")
+	query, err := db.db.Query("SELECT AgentID, Active, Reason, AESKey, AESIv, Hostname, Username, DomainName, InternalIP, ProcessName, ProcessPID, ProcessPPID, ProcessArch, Elevated, OSVersion, OSArch, SleepDelay, SleepJitter, KillDate, WorkingHours, FirstCallIn, LastCallIn FROM TS_Agents WHERE Active = 1")
 	if err != nil {
 		return nil
 	}
@@ -170,12 +172,14 @@ func (db *DB) AgentAll() []*agent.Agent {
 			OSArch string
 			SleepDelay int
 			SleepJitter int
+			KillDate int64
+			WorkingHours int32
 			FirstCallIn string
 			LastCallIn string
 		)
 
 		/* read the selected items */
-		err = query.Scan(&AgentID, &Active, &Reason, &AESKey, &AESIv, &Hostname, &Username, &DomainName, &InternalIP, &ProcessName, &ProcessPID, &ProcessPPID, &ProcessArch, &Elevated, &OSVersion, &OSArch, &SleepDelay, &SleepJitter, &FirstCallIn, &LastCallIn)
+		err = query.Scan(&AgentID, &Active, &Reason, &AESKey, &AESIv, &Hostname, &Username, &DomainName, &InternalIP, &ProcessName, &ProcessPID, &ProcessPPID, &ProcessArch, &Elevated, &OSVersion, &OSArch, &SleepDelay, &SleepJitter, &KillDate, &WorkingHours, &FirstCallIn, &LastCallIn)
 		if err != nil {
 			/* at this point we failed
 			 * just return the collected agents */
@@ -201,27 +205,29 @@ func (db *DB) AgentAll() []*agent.Agent {
 			Info: new(agent.AgentInfo),
 		}
 
-		Agent.NameID           = fmt.Sprintf("%x", AgentID)
-		Agent.SessionDir       = ""
-		Agent.BackgroundCheck  = false
-		Agent.TaskedOnce       = true
-		Agent.Info.MagicValue  = agent.DEMON_MAGIC_VALUE
-		Agent.Info.Listener    = nil
-		Agent.Info.Hostname    = Hostname
-		Agent.Info.Username    = Username
-		Agent.Info.DomainName  = DomainName
-		Agent.Info.InternalIP  = InternalIP
-		Agent.Info.ProcessName = ProcessName
-		Agent.Info.ProcessPID  = ProcessPID
-		Agent.Info.ProcessPPID = ProcessPPID
-		Agent.Info.ProcessArch = ProcessArch
-		Agent.Info.Elevated    = Elevated
-		Agent.Info.OSVersion   = OSVersion
-		Agent.Info.OSArch      = OSArch
-		Agent.Info.SleepDelay  = SleepDelay
-		Agent.Info.SleepJitter = SleepJitter
-		Agent.Info.FirstCallIn = FirstCallIn
-		Agent.Info.LastCallIn  = LastCallIn
+		Agent.NameID            = fmt.Sprintf("%x", AgentID)
+		Agent.SessionDir        = ""
+		Agent.BackgroundCheck   = false
+		Agent.TaskedOnce        = true
+		Agent.Info.MagicValue   = agent.DEMON_MAGIC_VALUE
+		Agent.Info.Listener     = nil
+		Agent.Info.Hostname     = Hostname
+		Agent.Info.Username     = Username
+		Agent.Info.DomainName   = DomainName
+		Agent.Info.InternalIP   = InternalIP
+		Agent.Info.ProcessName  = ProcessName
+		Agent.Info.ProcessPID   = ProcessPID
+		Agent.Info.ProcessPPID  = ProcessPPID
+		Agent.Info.ProcessArch  = ProcessArch
+		Agent.Info.Elevated     = Elevated
+		Agent.Info.OSVersion    = OSVersion
+		Agent.Info.OSArch       = OSArch
+		Agent.Info.SleepDelay   = SleepDelay
+		Agent.Info.SleepJitter  = SleepJitter
+		Agent.Info.KillDate     = KillDate
+		Agent.Info.WorkingHours = WorkingHours
+		Agent.Info.FirstCallIn  = FirstCallIn
+		Agent.Info.LastCallIn   = LastCallIn
 
 		/* append collected agent to agent array */
 		Agents = append(Agents, Agent)

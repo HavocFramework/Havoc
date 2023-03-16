@@ -60,6 +60,8 @@ func (demons) NewDemon(Agent *agent.Agent) packager.Package {
 		"Reason": Agent.Reason,
 		"SleepDelay": Agent.Info.SleepDelay,
 		"SleepJitter": Agent.Info.SleepJitter,
+		"KillDate": Agent.Info.KillDate,
+		"WorkingHours": Agent.Info.WorkingHours,
 		"SocksCli": []string{},
 		"SocksCliMtx": nil,
 		"SocksSvr": []string{},

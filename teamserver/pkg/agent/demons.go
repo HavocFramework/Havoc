@@ -2011,21 +2011,23 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 		if Parser.Length() >= 32 + 16 {
 			var (
-				MagicValue  int
-				DemonID     int
-				Hostname    string
-				DomainName  string
-				Username    string
-				InternalIP  string
-				ProcessName string
-				ProcessPID  int
-				OsVersion   []int
-				OsArch      int
-				Elevated    int
-				ProcessArch int
-				ProcessPPID int
-				SleepDelay  int
-				SleepJitter int
+				MagicValue   int
+				DemonID      int
+				Hostname     string
+				DomainName   string
+				Username     string
+				InternalIP   string
+				ProcessName  string
+				ProcessPID   int
+				OsVersion    []int
+				OsArch       int
+				Elevated     int
+				ProcessArch  int
+				ProcessPPID  int
+				SleepDelay   int
+				SleepJitter  int
+				KillDate     int64
+				WorkingHours int32
 				Session     = &Agent{
 					Encryption: struct {
 						AESKey []byte
@@ -2042,7 +2044,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				}
 			)
 
-			if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadBytes, parser.ReadBytes, parser.ReadBytes, parser.ReadBytes, parser.ReadBytes, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32}) {
+			if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadBytes, parser.ReadBytes, parser.ReadBytes, parser.ReadBytes, parser.ReadBytes, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt64, parser.ReadInt32}) {
 				DemonID = Parser.ParseInt32()
 				Hostname = Parser.ParseString()
 				Username = Parser.ParseString()
@@ -2057,19 +2059,23 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				OsArch = Parser.ParseInt32()
 				SleepDelay  = Parser.ParseInt32()
 				SleepJitter = Parser.ParseInt32()
+				KillDate = Parser.ParseInt64()
+				WorkingHours = int32(Parser.ParseInt32())
 
 				Session.Active = true
 
-				Session.NameID           = fmt.Sprintf("%x", DemonID)
-				Session.Info.MagicValue  = MagicValue
-				Session.Info.FirstCallIn = a.Info.FirstCallIn
-				Session.Info.LastCallIn  = a.Info.LastCallIn
-				Session.Info.Hostname    = Hostname
-				Session.Info.DomainName  = DomainName
-				Session.Info.Username    = Username
-				Session.Info.InternalIP  = InternalIP
-				Session.Info.SleepDelay  = SleepDelay
-				Session.Info.SleepJitter = SleepJitter
+				Session.NameID            = fmt.Sprintf("%x", DemonID)
+				Session.Info.MagicValue   = MagicValue
+				Session.Info.FirstCallIn  = a.Info.FirstCallIn
+				Session.Info.LastCallIn   = a.Info.LastCallIn
+				Session.Info.Hostname     = Hostname
+				Session.Info.DomainName   = DomainName
+				Session.Info.Username     = Username
+				Session.Info.InternalIP   = InternalIP
+				Session.Info.SleepDelay   = SleepDelay
+				Session.Info.SleepJitter  = SleepJitter
+				Session.Info.KillDate     = KillDate
+				Session.Info.WorkingHours = WorkingHours
 
 				// Session.Info.ExternalIP 	= strings.Split(connection.RemoteAddr().String(), ":")[0]
 				// Session.Info.Listener 	= t.Name

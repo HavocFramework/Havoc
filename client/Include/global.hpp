@@ -249,10 +249,13 @@ namespace HavocNamespace
             QString  Arch;
             QString  First;
             QString  Last;
-            QString  Health;
             QString  Elevated;
             QString  PivotParent;
             QString  Marked;
+            uint32_t SleepDelay;
+            uint32_t SleepJitter;
+            uint64_t KillDate;
+            uint32_t WorkingHours;
 
             UserInterface::Widgets::DemonInteracted* InteractedWidget;
             UserInterface::Widgets::ProcessList*     ProcessList;

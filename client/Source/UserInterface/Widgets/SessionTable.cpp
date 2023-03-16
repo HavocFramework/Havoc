@@ -24,8 +24,8 @@ void HavocNamespace::UserInterface::Widgets::SessionTable::setupUi(QWidget *Form
     gridLayout->setObjectName( QString::fromUtf8( "gridLayout" ) );
     SessionTableWidget = new QTableWidget( Form );
 
-    if ( SessionTableWidget->columnCount() < 9 )
-        SessionTableWidget->setColumnCount( 9 );
+    if ( SessionTableWidget->columnCount() < 10 )
+        SessionTableWidget->setColumnCount( 10 );
 
     SessionTableWidget->setStyleSheet(
         "QTableWidget { "
@@ -166,7 +166,6 @@ void HavocNamespace::UserInterface::Widgets::SessionTable::NewSessionItem( Util:
     item_Last->setFlags( item_Last->flags() ^ Qt::ItemIsEditable );
     SessionTableWidget->setItem( SessionTableWidget->rowCount()-1, 8, item_Last );
 
-    //item_Health->setText( item.Health );
     item_Health->setText( "test value" );
     item_Health->setTextAlignment( Qt::AlignCenter );
     item_Health->setFlags( item_Health->flags() ^ Qt::ItemIsEditable );
