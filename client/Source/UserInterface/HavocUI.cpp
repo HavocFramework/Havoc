@@ -233,14 +233,14 @@ void HavocNamespace::UserInterface::HavocUI::UpdateSessionsHealth()
         auto Last = QDateTime::fromString(session.Last.toStdString().c_str(), "dd-MM-yyyy hh:mm:ss");
         auto diff = Last.secsTo(Now);
 
-        spdlog::info( "session.SleepDelay: {}", session.SleepDelay );
-        spdlog::info( "session.SleepJitter: {}", session.SleepJitter );
-
         if ( session.KillDate > 0 && Now.secsTo(QDateTime::fromSecsSinceEpoch(session.KillDate)) <= 0 )
         {
-            spdlog::info( "agent reached its killdate" );
+            // agent reached its killdate
+            session.Health = "reached killdate";
+            HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue(session.Name, 9, session.Health);
             continue;
         }
+
         if ( ( ( session.WorkingHours >> 22 ) & 1 ) == 1 )
         {
             uint32_t StartHour   = ( session.WorkingHours >> 17 ) & 0b011111;
@@ -260,21 +260,25 @@ void HavocNamespace::UserInterface::HavocUI::UpdateSessionsHealth()
 
             if ( isOffHours )
             {
-                spdlog::info( "agent is offhours" );
+                // agent is offhours
+                session.Health = "offhours";
+                HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue(session.Name, 9, session.Health);
                 continue;
             }
-
         }
+
         if ( diff < session.SleepDelay + ( session.SleepDelay * 0.01 * session.SleepJitter ) )
         {
-            spdlog::info( "agent is ok!" );
+            // agent has ping back in time
+            session.Health = "healthy";
+            HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue(session.Name, 9, session.Health);
         }
         else
         {
-            spdlog::info( "agent is dead?" );
+            // agent has not pinged back in time
+            session.Health = "unresponsive";
+            HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue(session.Name, 9, session.Health);
         }
-        //spdlog::info( "diff: {}", diff );
-        //spdlog::info( "Last: {}", session.Last.toStdString() );
     }
 }
 

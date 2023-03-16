@@ -612,12 +612,12 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
             if ( Agent.Marked == "true" )
             {
                 Agent.Marked = "Alive";
-                Agent.Health = "✓";
+                Agent.Health = "healthy";
             }
             else if ( Agent.Marked == "false" )
             {
                 Agent.Marked = "Dead";
-                Agent.Health = "💀";
+                Agent.Health = "dead";
             }
 
             for ( auto& session : HavocX::Teamserver.Sessions )
