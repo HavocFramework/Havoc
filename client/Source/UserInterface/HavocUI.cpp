@@ -19,6 +19,7 @@
 #include <QToolButton>
 #include <QShortcut>
 #include <QStackedWidget>
+#include <QTimer>
 
 using namespace HavocNamespace::HavocSpace;
 
@@ -210,6 +211,71 @@ void HavocNamespace::UserInterface::HavocUI::setupUi(QMainWindow *Havoc)
 
     retranslateUi( this->HavocWindow );
     QMetaObject::connectSlotsByName( this->HavocWindow );
+
+    QTimer *FiveSEcondsTimer = new QTimer(this);
+    QMainWindow::connect(FiveSEcondsTimer, &QTimer::timeout, this, &HavocUI::FiveSecondsTick);
+    FiveSEcondsTimer->start(5000);
+}
+
+void HavocNamespace::UserInterface::HavocUI::FiveSecondsTick()
+{
+    UpdateSessionsHealth();
+}
+
+void HavocNamespace::UserInterface::HavocUI::UpdateSessionsHealth()
+{
+    for ( auto& session : HavocX::Teamserver.Sessions )
+    {
+        if ( session.Marked.compare( "Dead" ) == 0 )
+            continue;
+
+        auto Now  = QDateTime::currentDateTime();
+        auto Last = QDateTime::fromString(session.Last.toStdString().c_str(), "dd-MM-yyyy hh:mm:ss");
+        auto diff = Last.secsTo(Now);
+
+        spdlog::info( "session.SleepDelay: {}", session.SleepDelay );
+        spdlog::info( "session.SleepJitter: {}", session.SleepJitter );
+
+        if ( session.KillDate > 0 && Now.secsTo(QDateTime::fromSecsSinceEpoch(session.KillDate)) <= 0 )
+        {
+            spdlog::info( "agent reached its killdate" );
+            continue;
+        }
+        if ( ( ( session.WorkingHours >> 22 ) & 1 ) == 1 )
+        {
+            uint32_t StartHour   = ( session.WorkingHours >> 17 ) & 0b011111;
+            uint32_t StartMinute = ( session.WorkingHours >> 11 ) & 0b111111;
+            uint32_t EndHour     = ( session.WorkingHours >>  6 ) & 0b011111;
+            uint32_t EndMinute   = ( session.WorkingHours >>  0 ) & 0b111111;
+            bool isOffHours = false;
+
+            if ( StartHour < Now.time().hour() || EndHour > Now.time().hour() )
+                isOffHours = true;
+
+            if ( StartHour == Now.time().hour() && StartMinute < Now.time().minute() )
+                isOffHours = true;
+
+            if ( EndHour == Now.time().hour() && EndMinute > Now.time().minute() )
+                isOffHours = true;
+
+            if ( isOffHours )
+            {
+                spdlog::info( "agent is offhours" );
+                continue;
+            }
+
+        }
+        if ( diff < session.SleepDelay + ( session.SleepDelay * 0.01 * session.SleepJitter ) )
+        {
+            spdlog::info( "agent is ok!" );
+        }
+        else
+        {
+            spdlog::info( "agent is dead?" );
+        }
+        //spdlog::info( "diff: {}", diff );
+        //spdlog::info( "Last: {}", session.Last.toStdString() );
+    }
 }
 
 void HavocNamespace::UserInterface::HavocUI::retranslateUi( QMainWindow* Havoc ) const

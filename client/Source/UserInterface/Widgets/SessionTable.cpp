@@ -166,7 +166,7 @@ void HavocNamespace::UserInterface::Widgets::SessionTable::NewSessionItem( Util:
     item_Last->setFlags( item_Last->flags() ^ Qt::ItemIsEditable );
     SessionTableWidget->setItem( SessionTableWidget->rowCount()-1, 8, item_Last );
 
-    item_Health->setText( "test value" );
+    item_Health->setText( item.Health );
     item_Health->setTextAlignment( Qt::AlignCenter );
     item_Health->setFlags( item_Health->flags() ^ Qt::ItemIsEditable );
     SessionTableWidget->setItem( SessionTableWidget->rowCount()-1, 9, item_Health );

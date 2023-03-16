@@ -598,7 +598,8 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                     .PID          = Package->Body.Info[ "ProcessPID" ].c_str(),
                     .Arch         = Package->Body.Info[ "ProcessArch" ].c_str(),
                     .First        = Package->Body.Info[ "FirstCallIn" ].c_str(),
-                    .Last         = QString( Package->Body.Info[ "LastCallIn" ].c_str() ).split(" ")[ 1 ],
+                    //.Last         = QString( Package->Body.Info[ "LastCallIn" ].c_str() ).split(" ")[ 1 ],
+                    .Last         = Package->Body.Info[ "LastCallIn" ].c_str(),
                     .Elevated     = Package->Body.Info[ "Elevated" ].c_str(),
                     .PivotParent  = Package->Body.Info[ "PivotParent" ].c_str(),
                     .Marked       = Package->Body.Info[ "Active" ].c_str(),
@@ -611,10 +612,12 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
             if ( Agent.Marked == "true" )
             {
                 Agent.Marked = "Alive";
+                Agent.Health = "✓";
             }
             else if ( Agent.Marked == "false" )
             {
                 Agent.Marked = "Dead";
+                Agent.Health = "💀";
             }
 
             for ( auto& session : HavocX::Teamserver.Sessions )
@@ -740,11 +743,25 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
 
                         case ( int ) Commands::CALLBACK:
                         {
+                            // update the "Last" field on this session
                             auto LastTime     = QString( QByteArray::fromBase64( Output.toLocal8Bit() ) );
                             auto LastTimeJson = QJsonDocument::fromJson( LastTime.toLocal8Bit() );
 
+                            Session.Last         = LastTimeJson["Last"].toString();
+                            Session.SleepDelay   = (uint32_t)strtoul(LastTimeJson["Sleep"].toString().toStdString().c_str(), NULL, 0),
+                            Session.SleepJitter  = (uint32_t)strtoul(LastTimeJson["Jitter"].toString().toStdString().c_str(), NULL, 0),
+                            Session.KillDate     = (uint64_t)strtoull(LastTimeJson["KillDate"].toString().toStdString().c_str(), NULL, 0),
+                            Session.WorkingHours = (uint32_t)strtoul(LastTimeJson["WorkingHours"].toString().toStdString().c_str(), NULL, 0),
+
+                            //spdlog::info( "Last: {}", LastTimeJson["Last"].toString().toStdString() );
+                            //spdlog::info( "Sleep: {}", Session.SleepDelay );
+                            //spdlog::info( "Sleep: {}", LastTimeJson["Sleep"].toString().toStdString() );
+                            //spdlog::info( "Jitter: {}", LastTimeJson["Jitter"].toString().toStdString() );
+                            //spdlog::info( "KillDate: {}", LastTimeJson["KillDate"].toString().toStdString() );
+                            //spdlog::info( "WorkingHours: {}", LastTimeJson["WorkingHours"].toString().toStdString() );
+
                             HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue(
-                                Package->Body.Info["DemonID"].c_str(), 8, LastTimeJson["Output"].toString()
+                                Package->Body.Info["DemonID"].c_str(), 8, LastTimeJson["Diff"].toString()
                             );
                             break;
                         }

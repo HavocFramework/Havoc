@@ -77,6 +77,7 @@ public:
 public:
     HavocNamespace::UserInterface::Widgets::SessionTable *SessionTable;
 
+    void UpdateSessionsHealth();
     void setupUi(QMainWindow *Havoc);
     void retranslateUi(QMainWindow *Havoc) const;
     void setDBManager(HavocSpace::DBManager* dbManager);
@@ -91,6 +92,7 @@ public:
     void InitShortCuts();
 
 public slots:
+    void FiveSecondsTick();
     void removeTab(int) const; // TODO: <-- TEAMSERVER
     void tabSelected() const;
 

@@ -4142,11 +4142,11 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			case CONFIG_KILLDATE:
 				if Parser.CanIRead([]parser.ReadType{parser.ReadInt64}) {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CONFIG - CONFIG_KILLDATE", AgentID))
-					KDate := Parser.ParseInt64()
-					if KDate == 0 {
+					a.Info.KillDate = Parser.ParseInt64()
+					if a.Info.KillDate == 0 {
 						Message["Message"] = "KillDate was disabled"
 					} else {
-						Message["Message"] = fmt.Sprintf("KillDate set to %s", time.Unix(Parser.ParseInt64(), 0).Format("2006-01-02 15:04:05"))
+						Message["Message"] = fmt.Sprintf("KillDate set to %s", time.Unix(a.Info.KillDate, 0).Format("2006-01-02 15:04:05"))
 					}
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CONFIG - CONFIG_KILLDATE, Invalid packet", AgentID))
@@ -4156,8 +4156,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 			case CONFIG_WORKINGHOURS:
 				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32}) {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CONFIG - CONFIG_WORKINGHOURS", AgentID))
-					WorkingHours := Parser.ParseInt32()
-					if WorkingHours == 0 {
+					a.Info.WorkingHours = int32(Parser.ParseInt32())
+					if a.Info.WorkingHours == 0 {
 						Message["Message"] = "WorkingHours was disabled"
 					} else {
 						Message["Message"] = "WorkingHours has been updated"

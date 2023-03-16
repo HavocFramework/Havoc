@@ -524,7 +524,7 @@ func (a *Agent) UpdateLastCallback(Teamserver TeamServer) {
 
 	diff := NewLastCallIn.Sub(OldLastCallIn)
 
-	Teamserver.AgentLastTimeCalled(a.NameID, diff.String())
+	Teamserver.AgentLastTimeCalled(a.NameID, diff.String(), a.Info.LastCallIn, a.Info.SleepDelay, a.Info.SleepJitter, a.Info.KillDate, a.Info.WorkingHours)
 }
 
 func (a *Agent) BackgroundUpdateLastCallbackUI(teamserver TeamServer) {
@@ -552,7 +552,7 @@ func (a *Agent) BackgroundUpdateLastCallbackUI(teamserver TeamServer) {
 
 		diff := NewLastCallIn.Sub(OldLastCallIn)
 
-		teamserver.AgentLastTimeCalled(a.NameID, diff.String())
+		teamserver.AgentLastTimeCalled(a.NameID, diff.String(), a.Info.LastCallIn, a.Info.SleepDelay, a.Info.SleepJitter, a.Info.KillDate, a.Info.WorkingHours)
 
 		time.Sleep(time.Second * 1)
 	}

@@ -252,6 +252,7 @@ namespace HavocNamespace
             QString  Elevated;
             QString  PivotParent;
             QString  Marked;
+            QString  Health;
             uint32_t SleepDelay;
             uint32_t SleepJitter;
             uint64_t KillDate;
