@@ -4533,11 +4533,11 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_NET - DEMON_NET_COMMAND_USERS", AgentID))
-					var Target = Parser.ParseString()
+					var Target = Parser.ParseUTF16String()
 
 					for Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadInt32}) {
 						var (
-							User  = Parser.ParseString()
+							User  = Parser.ParseUTF16String()
 							Admin = Parser.ParseInt32()
 						)
 
