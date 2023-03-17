@@ -1,5 +1,7 @@
 #include <global.hpp>
 
+#include <Havoc/Havoc.hpp>
+
 #include <UserInterface/Widgets/SessionGraph.hpp>
 #include <UserInterface/Widgets/DemonInteracted.h>
 #include <UserInterface/Widgets/TeamserverTabSession.h>
@@ -448,6 +450,18 @@ void Node::contextMenuEvent( QGraphicsSceneContextMenuEvent* event )
                     HavocX::Teamserver.TabSession->NewBottomTab( Session.InteractedWidget->DemonInteractedWidget, tabName.toStdString() );
                     Session.InteractedWidget->lineEdit->setFocus();
                 }
+                else if ( action->text().compare( "Mark as Dead" ) == 0 )
+                {
+                    auto Marked = QString();
+                    Marked = "Dead";
+                    HavocApplication->HavocAppUI.MarkSessionAs( Session, Marked );
+                }
+                else if ( action->text().compare( "Mark as Alive" ) == 0 )
+                {
+                    auto Marked = QString();
+                    Marked = "Alive";
+                    HavocApplication->HavocAppUI.MarkSessionAs( Session, Marked );
+                }
                 else if ( action->text().compare( "Mark as Dead" ) == 0 || action->text().compare( "Mark as Alive" ) == 0 )
                 {
                     for ( int i = 0; i <  HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->rowCount(); i++ )
@@ -498,7 +512,7 @@ void Node::contextMenuEvent( QGraphicsSceneContextMenuEvent* event )
                             }
 
                             Package->Body = Util::Packager::Body_t {
-                                    .SubEvent = 0x5,
+                                    .SubEvent = Util::Packager::Session::MarkAs,
                                     .Info = {
                                             { "AgentID", AgentID.toStdString() },
                                             { "Marked",  Marked.toStdString() },

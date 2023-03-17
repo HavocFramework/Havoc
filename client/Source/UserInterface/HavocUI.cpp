@@ -13,6 +13,10 @@
 #include <UserInterface/Widgets/ScriptManager.h>
 #include <UserInterface/Widgets/LootWidget.h>
 
+#include <Util/ColorText.h>
+
+#include <Havoc/Packager.hpp>
+
 #include <QPixmap>
 #include <QProcess>
 #include <QFile>
@@ -222,6 +226,65 @@ void HavocNamespace::UserInterface::HavocUI::FiveSecondsTick()
     UpdateSessionsHealth();
 }
 
+void HavocNamespace::UserInterface::HavocUI::MarkSessionAs(HavocNamespace::Util::SessionItem Session, QString Mark)
+{
+    for ( int i = 0; i <  HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->rowCount(); i++ )
+    {
+        auto AgentID = HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, 0 )->text();
+
+        if ( Session.Name.compare( AgentID ) == 0 )
+        {
+            auto Package = new Util::Packager::Package;
+            QString Marked;
+
+            if ( Mark.compare( "Alive" ) == 0 )
+            {
+                Marked = "Alive";
+                Session.Marked = Marked;
+
+                auto Icon = ( Session.Elevated.compare( "true" ) == 0 ) ?
+                            WinVersionIcon( Session.OS, true ) :
+                            WinVersionIcon( Session.OS, false );
+
+                HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, 0 )->setIcon( Icon );
+
+                for ( int j = 0; j < HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->columnCount(); j++ )
+                {
+                    HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, j )->setBackground( QColor( Util::ColorText::Colors::Hex::Background ) );
+                    HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, j )->setForeground( QColor( Util::ColorText::Colors::Hex::Foreground ) );
+                }
+            }
+            else if ( Mark.compare( "Dead" ) == 0 )
+            {
+                Marked = "Dead";
+                Session.Marked = Marked;
+
+                HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, 0 )->setIcon( QIcon( ":/icons/DeadWhite" ) );
+
+                for ( int j = 0; j < HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->columnCount(); j++ )
+                {
+                    HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, j )->setBackground( QColor( Util::ColorText::Colors::Hex::CurrentLine ) );
+                    HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, j )->setForeground( QColor( Util::ColorText::Colors::Hex::Comment ) );
+                }
+            }
+
+            spdlog::info( "- Marked.toStdString(): {}", Marked.toStdString() );
+            Package->Body = Util::Packager::Body_t {
+                    .SubEvent = Util::Packager::Session::MarkAs,
+                    .Info = {
+                            { "AgentID", AgentID.toStdString() },
+                            { "Marked",  Marked.toStdString() },
+                    }
+            };
+
+            HavocX::Connector->SendPackage( Package );
+
+            break;
+        }
+    }
+}
+
+
 void HavocNamespace::UserInterface::HavocUI::UpdateSessionsHealth()
 {
     for ( auto& session : HavocX::Teamserver.Sessions )
@@ -236,9 +299,10 @@ void HavocNamespace::UserInterface::HavocUI::UpdateSessionsHealth()
         if ( session.KillDate > 0 && Now.secsTo(QDateTime::fromSecsSinceEpoch(session.KillDate, Qt::UTC)) <= 0 )
         {
             // agent reached its killdate
-            session.Health = "reached killdate";
+            session.Health = "killdate";
             session.Marked = "Dead";
             HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue(session.Name, 9, session.Health);
+            MarkSessionAs(session, QString( "Dead") );
             continue;
         }
 

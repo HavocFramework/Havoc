@@ -23,6 +23,7 @@ using namespace HavocNamespace;
 enum class Commands {
     CHECKIN                 = 100,
     CALLBACK                = 10,
+    CONSOLE_MESSAGE         = 0x80,
     SLEEP                   = 11,
     PROC_LIST               = 12,
     FS                      = 15,

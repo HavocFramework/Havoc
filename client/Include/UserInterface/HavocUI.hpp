@@ -77,6 +77,7 @@ public:
 public:
     HavocNamespace::UserInterface::Widgets::SessionTable *SessionTable;
 
+    void MarkSessionAs(HavocNamespace::Util::SessionItem session, QString Mark);
     void UpdateSessionsHealth();
     void setupUi(QMainWindow *Havoc);
     void retranslateUi(QMainWindow *Havoc) const;

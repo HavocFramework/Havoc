@@ -48,6 +48,7 @@ const int Util::Packager::Session::NewSession       = 0x1;
 const int Util::Packager::Session::Remove           = 0x2;
 const int Util::Packager::Session::SendCommand      = 0x3;
 const int Util::Packager::Session::ReceiveCommand   = 0x4;
+const int Util::Packager::Session::MarkAs           = 0x5;
 
 const int Util::Packager::Service::Type             = 0x9;
 const int Util::Packager::Service::AgentRegister    = 0x1;
@@ -598,7 +599,6 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                     .PID          = Package->Body.Info[ "ProcessPID" ].c_str(),
                     .Arch         = Package->Body.Info[ "ProcessArch" ].c_str(),
                     .First        = Package->Body.Info[ "FirstCallIn" ].c_str(),
-                    //.Last         = QString( Package->Body.Info[ "LastCallIn" ].c_str() ).split(" ")[ 1 ],
                     .Last         = Package->Body.Info[ "LastCallIn" ].c_str(),
                     .Elevated     = Package->Body.Info[ "Elevated" ].c_str(),
                     .PivotParent  = Package->Body.Info[ "PivotParent" ].c_str(),
@@ -680,6 +680,7 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
             {
                 if ( Session.Name.compare( Package->Body.Info[ "DemonID" ].c_str() ) == 0 )
                 {
+                    /*
                     if ( Session.Marked.compare( "Dead" ) == 0 )
                     {
                         auto Package = new Util::Packager::Package;
@@ -707,7 +708,7 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                         }
 
                         Package->Body = Util::Packager::Body_t {
-                                .SubEvent = 0x5,
+                                .SubEvent = Util::Packager::Session::MarkAs,
                                 .Info = {
                                     { "AgentID", Session.Name.toStdString() },
                                     { "Marked",  "Alive" },
@@ -718,6 +719,7 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
 
                         HavocX::Connector->SendPackage( Package );
                     }
+                    */
 
                     Session.InteractedWidget->DemonCommands->OutputDispatch.DemonCommandInstance = Session.InteractedWidget->DemonCommands;
 
@@ -726,7 +728,7 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
 
                     switch ( CommandID )
                     {
-                        case 0x80:
+                        case ( int ) Commands::CONSOLE_MESSAGE:
 
                             if ( QByteArray::fromBase64( Output.toLocal8Bit() ).length() > 5 )
                             {
@@ -776,10 +778,19 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
             break;
         }
 
-        case 0x5:
+        case Util::Packager::Session::MarkAs:
         {
             auto AgentID = Package->Body.Info[ "AgentID" ];
             auto Marked  = Package->Body.Info[ "Marked" ];
+
+            for ( auto& session : HavocX::Teamserver.Sessions )
+            {
+                if ( session.Name.toStdString() == AgentID )
+                {
+                    session.Marked = Marked.c_str();
+                    break;
+                }
+            }
 
             for ( int i = 0; i < HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->rowCount(); i++ )
             {
@@ -798,6 +809,8 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                                         WinVersionIcon( session.OS, false );
 
                                 HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, 0 )->setIcon( Icon );
+
+                                break;
                             }
                         }
 
@@ -817,6 +830,8 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                             HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, j )->setForeground( QColor( Util::ColorText::Colors::Hex::Comment ) );
                         }
                     }
+
+                    break;
                 }
             }
 
@@ -940,6 +955,7 @@ bool Packager::DispatchTeamserver( Util::Packager::PPackage Package )
 
         }
     }
+    return true;
 }
 
 

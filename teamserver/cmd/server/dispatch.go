@@ -34,6 +34,7 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 						if val, ok := pk.Body.Info["Marked"]; ok {
 							if val == "Dead" {
 								t.Agents.Agents[i].Active = false
+								t.AgentHasDied(t.Agents.Agents[i])
 							} else if val == "Alive" {
 								t.Agents.Agents[i].Active = true
 							}
