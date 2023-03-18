@@ -11,6 +11,13 @@ import (
 	"Havoc/pkg/packager"
 )
 
+func (t *Teamserver) AgentUpdate(agent *agent.Agent) {
+	err := t.DB.AgentUpdate(agent)
+	if err != nil {
+		logger.Error("Could not update agent: " + err.Error())
+	}
+}
+
 func (t *Teamserver) ParentOf(Agent *agent.Agent) (int, error) {
 	var AgentID, _ = strconv.ParseInt(Agent.NameID, 16, 64)
 

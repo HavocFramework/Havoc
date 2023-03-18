@@ -1980,7 +1980,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 			a.Active = false
 			teamserver.EventAgentMark(a.NameID, "Dead")
-			teamserver.AgentHasDied(a)
+			teamserver.AgentUpdate(a)
 
 			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 		} else {
@@ -1999,6 +1999,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 		a.Active = false
 		teamserver.EventAgentMark(a.NameID, "Dead")
+		teamserver.AgentUpdate(a)
 
 		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
@@ -2028,21 +2029,10 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				SleepJitter  int
 				KillDate     int64
 				WorkingHours int32
-				Session     = &Agent{
-					Encryption: struct {
-						AESKey []byte
-						AESIv  []byte
-					}{
-						AESKey: Parser.ParseAtLeastBytes(32),
-						AESIv:  Parser.ParseAtLeastBytes(16),
-					},
-
-					Active:     false,
-					SessionDir: "",
-
-					Info: new(AgentInfo),
-				}
 			)
+
+			a.Encryption.AESKey = Parser.ParseAtLeastBytes(32)
+			a.Encryption.AESIv = Parser.ParseAtLeastBytes(16)
 
 			if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadBytes, parser.ReadBytes, parser.ReadBytes, parser.ReadBytes, parser.ReadBytes, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt64, parser.ReadInt32}) {
 				DemonID = Parser.ParseInt32()
@@ -2062,78 +2052,78 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				KillDate = Parser.ParseInt64()
 				WorkingHours = int32(Parser.ParseInt32())
 
-				Session.Active = true
+				a.Active = true
 
-				Session.NameID            = fmt.Sprintf("%x", DemonID)
-				Session.Info.MagicValue   = MagicValue
-				Session.Info.FirstCallIn  = a.Info.FirstCallIn
-				Session.Info.LastCallIn   = a.Info.LastCallIn
-				Session.Info.Hostname     = Hostname
-				Session.Info.DomainName   = DomainName
-				Session.Info.Username     = Username
-				Session.Info.InternalIP   = InternalIP
-				Session.Info.SleepDelay   = SleepDelay
-				Session.Info.SleepJitter  = SleepJitter
-				Session.Info.KillDate     = KillDate
-				Session.Info.WorkingHours = WorkingHours
+				a.NameID            = fmt.Sprintf("%x", DemonID)
+				a.Info.MagicValue   = MagicValue
+				a.Info.FirstCallIn  = a.Info.FirstCallIn
+				a.Info.LastCallIn   = a.Info.LastCallIn
+				a.Info.Hostname     = Hostname
+				a.Info.DomainName   = DomainName
+				a.Info.Username     = Username
+				a.Info.InternalIP   = InternalIP
+				a.Info.SleepDelay   = SleepDelay
+				a.Info.SleepJitter  = SleepJitter
+				a.Info.KillDate     = KillDate
+				a.Info.WorkingHours = WorkingHours
 
-				// Session.Info.ExternalIP 	= strings.Split(connection.RemoteAddr().String(), ":")[0]
-				// Session.Info.Listener 	= t.Name
+				// a.Info.ExternalIP 	= strings.Split(connection.RemoteAddr().String(), ":")[0]
+				// a.Info.Listener 	= t.Name
 
 				switch ProcessArch {
 
 				case PROCESS_ARCH_UNKNOWN:
-					Session.Info.ProcessArch = "Unknown"
+					a.Info.ProcessArch = "Unknown"
 					break
 
 				case PROCESS_ARCH_X64:
-					Session.Info.ProcessArch = "x64"
+					a.Info.ProcessArch = "x64"
 					break
 
 				case PROCESS_ARCH_X86:
-					Session.Info.ProcessArch = "x86"
+					a.Info.ProcessArch = "x86"
 					break
 
 				case PROCESS_ARCH_IA64:
-					Session.Info.ProcessArch = "IA64"
+					a.Info.ProcessArch = "IA64"
 					break
 
 				default:
-					Session.Info.ProcessArch = "Unknown"
+					a.Info.ProcessArch = "Unknown"
 					break
 
 				}
 
-				Session.Info.OSVersion = getWindowsVersionString(OsVersion)
+				a.Info.OSVersion = getWindowsVersionString(OsVersion)
 
 				switch OsArch {
 				case 0:
-					Session.Info.OSArch = "x86"
+					a.Info.OSArch = "x86"
 				case 9:
-					Session.Info.OSArch = "x64/AMD64"
+					a.Info.OSArch = "x64/AMD64"
 				case 5:
-					Session.Info.OSArch = "ARM"
+					a.Info.OSArch = "ARM"
 				case 12:
-					Session.Info.OSArch = "ARM64"
+					a.Info.OSArch = "ARM64"
 				case 6:
-					Session.Info.OSArch = "Itanium-based"
+					a.Info.OSArch = "Itanium-based"
 				default:
-					Session.Info.OSArch = "Unknown (" + strconv.Itoa(OsArch) + ")"
+					a.Info.OSArch = "Unknown (" + strconv.Itoa(OsArch) + ")"
 				}
 
-				Session.Info.Elevated = "false"
+				a.Info.Elevated = "false"
 				if Elevated == 1 {
-					Session.Info.Elevated = "true"
+					a.Info.Elevated = "true"
 				}
 
 				process := strings.Split(ProcessName, "\\")
 
-				Session.Info.ProcessName = process[len(process)-1]
-				Session.Info.ProcessPID = ProcessPID
-				Session.Info.ProcessPPID = ProcessPPID
-				Session.Info.ProcessPath = ProcessName
+				a.Info.ProcessName = process[len(process)-1]
+				a.Info.ProcessPID = ProcessPID
+				a.Info.ProcessPPID = ProcessPPID
+				a.Info.ProcessPath = ProcessName
 
-				Session.SessionDir = logr.LogrInstance.AgentPath + "/" + Session.NameID
+				a.SessionDir = logr.LogrInstance.AgentPath + "/" + a.NameID
 
 				Message["Output"] = fmt.Sprintf(
 					"\n"+
@@ -2171,41 +2161,41 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 						"",
 
 					// Teamserver
-					Session.SessionDir,
+					a.SessionDir,
 
 					// Meta Data
-					Session.NameID,
-					Session.Info.MagicValue,
-					Session.Info.FirstCallIn,
-					Session.Info.LastCallIn,
-					hex.EncodeToString(Session.Encryption.AESKey),
-					hex.EncodeToString(Session.Encryption.AESIv),
-					Session.Info.SleepDelay,
-					Session.Info.SleepJitter,
+					a.NameID,
+					a.Info.MagicValue,
+					a.Info.FirstCallIn,
+					a.Info.LastCallIn,
+					hex.EncodeToString(a.Encryption.AESKey),
+					hex.EncodeToString(a.Encryption.AESIv),
+					a.Info.SleepDelay,
+					a.Info.SleepJitter,
 
 					// Host info
-					Session.Info.Hostname,
-					Session.Info.Username,
-					Session.Info.DomainName,
-					Session.Info.InternalIP,
+					a.Info.Hostname,
+					a.Info.Username,
+					a.Info.DomainName,
+					a.Info.InternalIP,
 
 					// Process Info
-					Session.Info.ProcessName,
-					Session.Info.ProcessArch,
-					Session.Info.ProcessPID,
-					Session.Info.ProcessPPID,
-					Session.Info.ProcessPath,
-					Session.Info.Elevated,
+					a.Info.ProcessName,
+					a.Info.ProcessArch,
+					a.Info.ProcessPID,
+					a.Info.ProcessPPID,
+					a.Info.ProcessPath,
+					a.Info.Elevated,
 
 					// Operating System Info
-					Session.Info.OSVersion,
+					a.Info.OSVersion,
 					OsVersion[0], OsVersion[1], OsVersion[2], OsVersion[3], OsVersion[4],
-					Session.Info.OSArch,
+					a.Info.OSArch,
 
 					// TODO: add Optional data too
 				)
 
-				Session = nil
+				teamserver.AgentUpdate(a)
 			} else {
 				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CHECKIN, Invalid packet", AgentID))
 			}
@@ -2337,6 +2327,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 			a.Info.SleepDelay  = Parser.ParseInt32()
 			a.Info.SleepJitter = Parser.ParseInt32()
+			teamserver.AgentUpdate(a)
 
 			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SLEEP, SleepDelay: %d, SleepJitter: %d", AgentID, a.Info.SleepDelay, a.Info.SleepJitter))
 
@@ -4143,6 +4134,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				if Parser.CanIRead([]parser.ReadType{parser.ReadInt64}) {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CONFIG - CONFIG_KILLDATE", AgentID))
 					a.Info.KillDate = Parser.ParseInt64()
+					teamserver.AgentUpdate(a)
 					if a.Info.KillDate == 0 {
 						Message["Message"] = "KillDate was disabled"
 					} else {
@@ -4157,6 +4149,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32}) {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CONFIG - CONFIG_WORKINGHOURS", AgentID))
 					a.Info.WorkingHours = int32(Parser.ParseInt32())
+					teamserver.AgentUpdate(a)
 					if a.Info.WorkingHours == 0 {
 						Message["Message"] = "WorkingHours was disabled"
 					} else {
@@ -4652,6 +4645,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 										DemonInfo.Pivots.Parent = a
 
 										a.Pivots.Links = append(a.Pivots.Links, DemonInfo)
+										teamserver.LinkAdd(a, DemonInfo)
 
 									} else {
 										// if the agent doesn't exist then we assume that it's a register request from a new agent

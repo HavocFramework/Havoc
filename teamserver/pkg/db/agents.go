@@ -75,6 +75,67 @@ func (db *DB) AgentAdd(agent *agent.Agent) error {
 	return nil
 }
 
+func (db *DB) AgentUpdate(agent *agent.Agent) error {
+
+	var err error
+	var AgentID int64
+	var active int
+
+	AgentID, err = strconv.ParseInt(agent.NameID, 16, 32)
+	if err != nil {
+		return err
+	}
+
+	/* check if agent already exists */
+	if db.AgentExist(int(AgentID)) == false {
+		return errors.New("Agent does not exist")
+	}
+
+	/* prepare some arguments to execute for the sqlite db */
+	stmt, err := db.db.Prepare("UPDATE TS_Agents SET Active = ?, Reason = ?, AESKey = ?, AESIv = ?, Hostname = ?, Username = ?, DomainName = ?, InternalIP = ?, ProcessName = ?, ProcessPID = ?, ProcessPPID = ?, ProcessArch = ?, Elevated = ?, OSVersion = ?, OSArch = ?, SleepDelay = ?, SleepJitter = ?, KillDate = ?, WorkingHours = ?, FirstCallIn = ?, LastCallIn = ? WHERE AgentID = ?")
+	if err != nil {
+		return err
+	}
+
+	if agent.Active {
+		active = 1
+	} else {
+		active = 0
+	}
+
+	/* add the data to the agent table */
+	_, err = stmt.Exec(
+		active,
+		agent.Reason,
+		base64.StdEncoding.EncodeToString(agent.Encryption.AESKey),
+		base64.StdEncoding.EncodeToString(agent.Encryption.AESIv),
+		agent.Info.Hostname,
+		agent.Info.Username,
+		agent.Info.DomainName,
+		agent.Info.InternalIP,
+		agent.Info.ProcessName,
+		agent.Info.ProcessPID,
+		agent.Info.ProcessPPID,
+		agent.Info.ProcessArch,
+		agent.Info.Elevated,
+		agent.Info.OSVersion,
+		agent.Info.OSArch,
+		agent.Info.SleepDelay,
+		agent.Info.SleepJitter,
+		agent.Info.KillDate,
+		agent.Info.WorkingHours,
+		agent.Info.FirstCallIn,
+		agent.Info.LastCallIn,
+		int(AgentID))
+	if err != nil {
+		return err
+	}
+
+	stmt.Close()
+
+	return nil
+}
+
 func (db *DB) AgentHasDied(AgentID int) bool {
 	// prepare some arguments to execute for the sqlite db
 	stmt, err := db.db.Prepare("UPDATE TS_Agents SET Active = 0 WHERE AgentID = ?")
