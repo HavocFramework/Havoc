@@ -2150,7 +2150,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 						"  - Process Name       : %v\n"+
 						"  - Process Arch       : %v\n"+
 						"  - Process ID         : %v\n"+
-						"  - Process Parent ID  : %v\n" +
+						//"  - Process Parent ID  : %v\n" +
 						"  - Process Path       : %v\n"+
 						"  - Process Elevated   : %v\n"+
 						"\n"+
@@ -2183,7 +2183,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 					a.Info.ProcessName,
 					a.Info.ProcessArch,
 					a.Info.ProcessPID,
-					a.Info.ProcessPPID,
+					//a.Info.ProcessPPID,
 					a.Info.ProcessPath,
 					a.Info.Elevated,
 
