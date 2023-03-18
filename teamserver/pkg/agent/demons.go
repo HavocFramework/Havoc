@@ -2913,6 +2913,15 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
 
 	case COMMAND_OUTPUT:
+		var Output = make(map[string]string)
+
+		Output["Type"] = "Good"
+		Output["Output"] = string(Parser.ParseBytes())
+		Output["Message"] = fmt.Sprintf("Received Output [%v bytes]:", len(Output["Output"]))
+
+		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
+
+	case BEACON_OUTPUT:
 
 		if Parser.CanIRead([]parser.ReadType{parser.ReadInt32}) {
 			var Type = Parser.ParseInt32()
@@ -2921,7 +2930,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 			case CALLBACK_OUTPUT:
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT - CALLBACK_OUTPUT", AgentID))
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: BEACON_OUTPUT - CALLBACK_OUTPUT", AgentID))
 					var Output = make(map[string]string)
 
 					Output["Type"] = "Good"
@@ -2933,12 +2942,12 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 					break
 				} else {
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT - CALLBACK_OUTPUT, Invalid packet", AgentID))
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: BEACON_OUTPUT - CALLBACK_OUTPUT, Invalid packet", AgentID))
 				}
 
 			case CALLBACK_OUTPUT_OEM:
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT - CALLBACK_OUTPUT_OEM", AgentID))
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: BEACON_OUTPUT - CALLBACK_OUTPUT_OEM", AgentID))
 					var Output = make(map[string]string)
 
 					Output["Type"] = "Good"
@@ -2950,12 +2959,12 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 					break
 				} else {
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT - CALLBACK_OUTPUT_OEM, Invalid packet", AgentID))
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: BEACON_OUTPUT - CALLBACK_OUTPUT_OEM, Invalid packet", AgentID))
 				}
 
 			case CALLBACK_ERROR:
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT - CALLBACK_ERROR", AgentID))
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: BEACON_OUTPUT - CALLBACK_ERROR", AgentID))
 
 					var Output = make(map[string]string)
 					Output["Type"] = typeError
@@ -2967,15 +2976,14 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 					
 					break
 				} else {
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT - CALLBACK_ERROR, Invalid packet", AgentID))
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: BEACON_OUTPUT - CALLBACK_ERROR, Invalid packet", AgentID))
 				}
 
 			case CALLBACK_FILE:
-
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
 					var Data = Parser.ParseBytes()
 					if len(Data) > 8 {
-						logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT - CALLBACK_FILE", AgentID))
+						logger.Debug(fmt.Sprintf("Agent: %x, Command: BEACON_OUTPUT - CALLBACK_FILE", AgentID))
 						var FileID     = int(binary.BigEndian.Uint32(Data[0:4]))
 						var FileLength = int(binary.BigEndian.Uint32(Data[4:8]))
 						var FileName   = string(Data[8:])
@@ -2994,10 +3002,10 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 						}
 						teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
 					} else {
-						logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT - CALLBACK_FILE, Invalid packet", AgentID))
+						logger.Debug(fmt.Sprintf("Agent: %x, Command: BEACON_OUTPUT - CALLBACK_FILE, Invalid packet", AgentID))
 					}
 				} else {
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT - CALLBACK_FILE, Invalid packet", AgentID))
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: BEACON_OUTPUT - CALLBACK_FILE, Invalid packet", AgentID))
 				}
 
 				break
@@ -3006,7 +3014,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
 					var Data = Parser.ParseBytes()
 					if len(Data) >= 4 {
-						logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT - CALLBACK_FILE_WRITE", AgentID))
+						logger.Debug(fmt.Sprintf("Agent: %x, Command: BEACON_OUTPUT - CALLBACK_FILE_WRITE", AgentID))
 
 						var FileID     = int(binary.BigEndian.Uint32(Data[0:4]))
 						var FileChunk  = Data[4:]
@@ -3019,10 +3027,10 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 							teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
 						}
 					} else {
-						logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT - CALLBACK_FILE_WRITE, Invalid packet", AgentID))
+						logger.Debug(fmt.Sprintf("Agent: %x, Command: BEACON_OUTPUT - CALLBACK_FILE_WRITE, Invalid packet", AgentID))
 					}
 				} else {
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT - CALLBACK_FILE_WRITE, Invalid packet", AgentID))
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: BEACON_OUTPUT - CALLBACK_FILE_WRITE, Invalid packet", AgentID))
 				}
 
 				break
@@ -3031,7 +3039,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
 					var Data = Parser.ParseBytes()
 					if len(Data) >= 4 {
-						logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT - CALLBACK_FILE_CLOSE", AgentID))
+						logger.Debug(fmt.Sprintf("Agent: %x, Command: BEACON_OUTPUT - CALLBACK_FILE_CLOSE", AgentID))
 
 						var FileID = int(binary.BigEndian.Uint32(Data[0:4]))
 
@@ -3048,16 +3056,19 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 						a.DownloadClose(FileID)
 
 					} else {
-						logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT - CALLBACK_FILE_CLOSE, Invalid packet", AgentID))
+						logger.Debug(fmt.Sprintf("Agent: %x, Command: BEACON_OUTPUT - CALLBACK_FILE_CLOSE, Invalid packet", AgentID))
 					}
 				} else {
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT - CALLBACK_FILE_CLOSE, Invalid packet", AgentID))
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: BEACON_OUTPUT - CALLBACK_FILE_CLOSE, Invalid packet", AgentID))
 				}
 
 				break
+
+			default:
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: BEACON_OUTPUT - UNKNOWN (%d)", AgentID, Type))
 			}
 		} else {
-			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT, Invalid packet", AgentID))
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: BEACON_OUTPUT, Invalid packet", AgentID))
 		}
 
 	case COMMAND_INJECT_DLL:

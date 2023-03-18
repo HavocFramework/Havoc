@@ -33,6 +33,7 @@
 #define DEMON_ERROR                     91
 #define DEMON_EXIT                      92
 #define DEMON_KILL_DATE                 93
+#define BEACON_OUTPUT                   94
 #define DEMON_INITIALIZE                99
 
 #define DEMON_EXCEPTION                 0x98

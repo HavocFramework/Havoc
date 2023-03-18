@@ -160,7 +160,7 @@ VOID BeaconPrintf( INT Type, PCHAR fmt, ... )
 {
     PRINTF( "BeaconPrintf( %d, %x, ... )\n", Type, fmt )
 
-    PPACKAGE    package         = PackageCreate( DEMON_OUTPUT );
+    PPACKAGE    package         = PackageCreate( BEACON_OUTPUT );
     va_list     VaListArg       = 0;
     PCHAR       CallbackOutput  = NULL;
     INT         CallbackSize    = 0;
@@ -188,7 +188,7 @@ VOID BeaconOutput( INT Type, PCHAR data, INT len )
 {
     PRINTF( "BeaconOutput( %d, %p, %d )\n", Type, data, len )
 
-    PPACKAGE Package = PackageCreate( DEMON_OUTPUT );
+    PPACKAGE Package = PackageCreate( BEACON_OUTPUT );
 
     PackageAddInt32( Package, Type );
 
