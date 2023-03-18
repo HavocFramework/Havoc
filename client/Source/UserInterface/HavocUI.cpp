@@ -216,12 +216,12 @@ void HavocNamespace::UserInterface::HavocUI::setupUi(QMainWindow *Havoc)
     retranslateUi( this->HavocWindow );
     QMetaObject::connectSlotsByName( this->HavocWindow );
 
-    QTimer *FiveSEcondsTimer = new QTimer(this);
-    QMainWindow::connect(FiveSEcondsTimer, &QTimer::timeout, this, &HavocUI::FiveSecondsTick);
-    FiveSEcondsTimer->start(5000);
+    QTimer *OneSecondTimer = new QTimer(this);
+    QMainWindow::connect(OneSecondTimer, &QTimer::timeout, this, &HavocUI::OneSecondTick);
+    OneSecondTimer->start(1000);
 }
 
-void HavocNamespace::UserInterface::HavocUI::FiveSecondsTick()
+void HavocNamespace::UserInterface::HavocUI::OneSecondTick()
 {
     UpdateSessionsHealth();
 }

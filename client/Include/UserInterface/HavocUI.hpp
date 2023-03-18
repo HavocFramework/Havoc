@@ -93,7 +93,7 @@ public:
     void InitShortCuts();
 
 public slots:
-    void FiveSecondsTick();
+    void OneSecondTick();
     void removeTab(int) const; // TODO: <-- TEAMSERVER
     void tabSelected() const;
 
