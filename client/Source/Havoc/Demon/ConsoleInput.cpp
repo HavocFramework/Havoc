@@ -1930,27 +1930,34 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
         }
         else if ( InputCommands[ 0 ].compare( "exit" ) == 0 )
         {
-            if ( InputCommands.length() > 1 )
+            if ( InputCommands.length() < 2 )
             {
-                if ( InputCommands[ 1 ].compare( "thread" ) == 0 )
-                {
-                    TaskID                     = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to cleanup and exit the thread" );
-                    CommandInputList[ TaskID ] = commandline;
+                CONSOLE_ERROR( "Not enough arguments" )
+                return false;
+            }
+            if ( InputCommands.length() > 2 )
+            {
+                CONSOLE_ERROR( "Too many arguments" )
+                return false;
+            }
+            if ( InputCommands[ 1 ].compare( "thread" ) == 0 )
+            {
+                TaskID                     = CONSOLE_INFO( "Tasked demon to cleanup and exit the thread" );
+                CommandInputList[ TaskID ] = commandline;
 
-                    SEND( Execute.Exit( TaskID, "thread" ) )
-                }
-                else if ( InputCommands[ 1 ].compare( "process" ) == 0 )
-                {
-                    TaskID                     = CONSOLE_INFO( "Tasked demon to cleanup and exit the process" );
-                    CommandInputList[ TaskID ] = commandline;
+                SEND( Execute.Exit( TaskID, "thread" ) )
+            }
+            else if ( InputCommands[ 1 ].compare( "process" ) == 0 )
+            {
+                TaskID                     = CONSOLE_INFO( "Tasked demon to cleanup and exit the process" );
+                CommandInputList[ TaskID ] = commandline;
 
-                    SEND( Execute.Exit( TaskID, "process" ) )
-                }
-                else
-                {
-                    CONSOLE_ERROR( "Option not found: " + InputCommands[ 1 ] )
-                    return false;
-                }
+                SEND( Execute.Exit( TaskID, "process" ) )
+            }
+            else
+            {
+                CONSOLE_ERROR( "Option not found: " + InputCommands[ 1 ] )
+                return false;
             }
         }
         else if ( InputCommands[ 0 ].compare( "clear" ) == 0 )
