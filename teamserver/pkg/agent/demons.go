@@ -2684,6 +2684,9 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 						}
 
 						break
+
+					default:
+						logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - UNKNOWN (%d)", AgentID, Mode))
 					}
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_DOWNLOAD, Invalid packet", AgentID))
@@ -3627,6 +3630,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 						Message["Message"] = "Amsi already patched"
 
 						break
+					default:
+						logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_ASSEMBLY_INLINE_EXECUTE - DOTNET_INFO_AMSI_PATCHED, Invalid packet", AgentID))
 					}
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_ASSEMBLY_INLINE_EXECUTE - DOTNET_INFO_AMSI_PATCHED, Invalid packet", AgentID))
