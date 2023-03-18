@@ -38,6 +38,7 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 							} else if val == "Alive" {
 								t.Agents.Agents[i].Active = true
 							}
+							t.AgentUpdate(t.Agents.Agents[i])
 						}
 
 					}
