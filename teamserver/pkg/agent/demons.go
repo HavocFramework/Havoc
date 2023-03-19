@@ -2917,12 +2917,21 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 	case COMMAND_OUTPUT:
 		var Output = make(map[string]string)
+		var message string
 
-		Output["Type"] = "Good"
-		Output["Output"] = string(Parser.ParseBytes())
-		Output["Message"] = fmt.Sprintf("Received Output [%v bytes]:", len(Output["Output"]))
+		if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
+			message = Parser.ParseString()
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT, len: %d", AgentID, len(message)))
 
-		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
+			Output["Type"] = "Good"
+			Output["Output"] = message
+			Output["Message"] = fmt.Sprintf("Received Output [%v bytes]:", len(message))
+			if len(message) > 0 {
+				teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Output)
+			}
+		} else {
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_OUTPUT, Invalid packet ", AgentID))
+		}
 
 	case BEACON_OUTPUT:
 
