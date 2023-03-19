@@ -24,8 +24,8 @@ void HavocNamespace::UserInterface::Widgets::SessionTable::setupUi(QWidget *Form
     gridLayout->setObjectName( QString::fromUtf8( "gridLayout" ) );
     SessionTableWidget = new QTableWidget( Form );
 
-    if ( SessionTableWidget->columnCount() < 10 )
-        SessionTableWidget->setColumnCount( 10 );
+    if ( SessionTableWidget->columnCount() < 9 )
+        SessionTableWidget->setColumnCount( 9 );
 
     SessionTableWidget->setStyleSheet(
         "QTableWidget { "
@@ -41,7 +41,7 @@ void HavocNamespace::UserInterface::Widgets::SessionTable::setupUi(QWidget *Form
     TitleOperating   = new QTableWidgetItem( "OS" );
     TitleProcess     = new QTableWidgetItem( "Process" );
     TitleProcessId   = new QTableWidgetItem( "PID" );
-    TitleArch        = new QTableWidgetItem( "Arch" );
+    //TitleArch        = new QTableWidgetItem( "Arch" );
     TitleLast        = new QTableWidgetItem( "Last" );
     TitleHealth      = new QTableWidgetItem( "Health" );
 
@@ -52,9 +52,9 @@ void HavocNamespace::UserInterface::Widgets::SessionTable::setupUi(QWidget *Form
     SessionTableWidget->setHorizontalHeaderItem( 4, TitleOperating );
     SessionTableWidget->setHorizontalHeaderItem( 5, TitleProcess );
     SessionTableWidget->setHorizontalHeaderItem( 6, TitleProcessId );
-    SessionTableWidget->setHorizontalHeaderItem( 7, TitleArch );
-    SessionTableWidget->setHorizontalHeaderItem( 8, TitleLast );
-    SessionTableWidget->setHorizontalHeaderItem( 9, TitleHealth );
+    //SessionTableWidget->setHorizontalHeaderItem( 7, TitleArch );
+    SessionTableWidget->setHorizontalHeaderItem( 7, TitleLast );
+    SessionTableWidget->setHorizontalHeaderItem( 8, TitleHealth );
     SessionTableWidget->horizontalHeader()->resizeSection( 5, 150 );
 
     SessionTableWidget->setObjectName( QString::fromUtf8( "tableWidget" ) );
@@ -109,7 +109,7 @@ void HavocNamespace::UserInterface::Widgets::SessionTable::NewSessionItem( Util:
     auto *item_OS        = new QTableWidgetItem();
     auto *item_Process   = new QTableWidgetItem();
     auto *item_ProcessID = new QTableWidgetItem();
-    auto *item_Arch      = new QTableWidgetItem();
+    //auto *item_Arch      = new QTableWidgetItem();
     auto *item_Last      = new QTableWidgetItem();
     auto *item_Health    = new QTableWidgetItem();
     auto Icon            = QIcon();
@@ -156,20 +156,20 @@ void HavocNamespace::UserInterface::Widgets::SessionTable::NewSessionItem( Util:
     item_ProcessID->setFlags( item_ProcessID->flags() ^ Qt::ItemIsEditable );
     SessionTableWidget->setItem( SessionTableWidget->rowCount()-1, 6, item_ProcessID );
 
-    item_Arch->setText( item.Arch );
-    item_Arch->setTextAlignment( Qt::AlignCenter );
-    item_Arch->setFlags( item_Arch->flags() ^ Qt::ItemIsEditable );
-    SessionTableWidget->setItem( SessionTableWidget->rowCount()-1, 7, item_Arch );
+    //item_Arch->setText( item.Arch );
+    //item_Arch->setTextAlignment( Qt::AlignCenter );
+    //item_Arch->setFlags( item_Arch->flags() ^ Qt::ItemIsEditable );
+    //SessionTableWidget->setItem( SessionTableWidget->rowCount()-1, 7, item_Arch );
 
     item_Last->setText( item.Last );
     item_Last->setTextAlignment( Qt::AlignCenter );
     item_Last->setFlags( item_Last->flags() ^ Qt::ItemIsEditable );
-    SessionTableWidget->setItem( SessionTableWidget->rowCount()-1, 8, item_Last );
+    SessionTableWidget->setItem( SessionTableWidget->rowCount()-1, 7, item_Last );
 
     item_Health->setText( item.Health );
     item_Health->setTextAlignment( Qt::AlignCenter );
     item_Health->setFlags( item_Health->flags() ^ Qt::ItemIsEditable );
-    SessionTableWidget->setItem( SessionTableWidget->rowCount()-1, 9, item_Health );
+    SessionTableWidget->setItem( SessionTableWidget->rowCount()-1, 8, item_Health );
 
     SessionTableWidget->setSortingEnabled( isSortingEnabled );
 

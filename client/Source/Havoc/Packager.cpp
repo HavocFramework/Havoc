@@ -756,7 +756,7 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                             Session.WorkingHours = (uint32_t)strtoul(LastTimeJson["WorkingHours"].toString().toStdString().c_str(), NULL, 0),
 
                             HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue(
-                                Package->Body.Info["DemonID"].c_str(), 8, LastTimeJson["Diff"].toString()
+                                Package->Body.Info["DemonID"].c_str(), 7, LastTimeJson["Diff"].toString()
                             );
                             break;
                         }
