@@ -357,6 +357,7 @@ VOID DemonInit( VOID )
         Instance.Win32.GetModuleHandleA                    = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_GetModuleHandleA );
         Instance.Win32.GetSystemTimeAsFileTime             = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_GetSystemTimeAsFileTime );
         Instance.Win32.GetLocalTime                        = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_GetLocalTime );
+        Instance.Win32.DuplicateHandle                     = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_DuplicateHandle );
 
     }
 

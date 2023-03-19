@@ -22398,6 +22398,33 @@ LdrQueryProcessModuleInformation(
 	PULONG ReturnLength
 	);
 
+NTSYSAPI
+ULONG
+NTAPI
+RtlRandomEx(
+    PULONG Seed
+	);
+
+NTSYSAPI
+BOOL
+NTAPI
+ImpersonateLoggedOnUser(
+ 	IN HANDLE hToken
+	);
+
+NTSYSAPI
+BOOL
+NTAPI
+DuplicateHandle(
+	IN  HANDLE   hSourceProcessHandle,
+	IN  HANDLE   hSourceHandle,
+	IN  HANDLE   hTargetProcessHandle,
+ 	OUT LPHANDLE lpTargetHandle,
+	IN  DWORD    dwDesiredAccess,
+	IN  BOOL     bInheritHandle,
+	IN  DWORD    dwOptions
+	);
+
 
 //
 // end non-crt prototypes
@@ -22435,10 +22462,3 @@ IMPORT_FN wchar_t * __cdecl wcsncpy(wchar_t *dest, const wchar_t *source, size_t
 
 
 #endif /* _NTDLL_ */
-
-NTSYSAPI
-ULONG
-NTAPI
-RtlRandomEx(
-    PULONG Seed
-	);

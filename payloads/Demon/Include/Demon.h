@@ -208,6 +208,7 @@ typedef struct
         WIN_FUNC( SetProcessValidCallTargets )
         WIN_FUNC( GetSystemTimeAsFileTime )
         WIN_FUNC( GetLocalTime )
+        WIN_FUNC( DuplicateHandle )
 
         /* Ntdll.dll */
         WIN_FUNC( LdrLoadDll )
@@ -285,11 +286,11 @@ typedef struct
         WIN_FUNC( GetThreadContext )
         WIN_FUNC( SetThreadContext )
 
-        WIN_FUNC( ConvertThreadToFiberEx );
-        WIN_FUNC( ConvertFiberToThread );
-        WIN_FUNC( SwitchToFiber );
-        WIN_FUNC( CreateFiberEx );
-        WIN_FUNC( DeleteFiber );
+        WIN_FUNC( ConvertThreadToFiberEx )
+        WIN_FUNC( ConvertFiberToThread )
+        WIN_FUNC( SwitchToFiber )
+        WIN_FUNC( CreateFiberEx )
+        WIN_FUNC( DeleteFiber )
 
         // Token Management
         WIN_FUNC( RevertToSelf )
