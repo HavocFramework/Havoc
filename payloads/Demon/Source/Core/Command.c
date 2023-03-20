@@ -2032,7 +2032,7 @@ VOID CommandNet( PPARSER Parser )
             DWORD               dwTotalEntries  = 0;
             DWORD               dwResumeHandle  = 0;
             DWORD               NetStatus       = NULL;
-            CHAR                UserName[ 260 ] = { 0 };
+
             DWORD               UserNameSize    = 0;
             LPWSTR              ServerName      = NULL;
 
@@ -2051,12 +2051,7 @@ VOID CommandNet( PPARSER Parser )
                         if ( UserInfo == NULL )
                             break;
 
-                        UserNameSize = StringLengthW( UserInfo[i].wkui0_username );
-
-                        MemSet( UserName, 0, 260 );
-                        UserNameSize = WCharStringToCharString( UserName, UserInfo[i].wkui0_username, UserNameSize );
-
-                        PackageAddBytes( Package, UserName, UserNameSize );
+                        PackageAddBytes( Package, UserInfo[i].wkui0_username,  StringLengthW( UserInfo[i].wkui0_username ) * 2 );
                     }
                 }
                 else
@@ -2099,9 +2094,9 @@ VOID CommandNet( PPARSER Parser )
             DWORD             ResumeHandle      = 0;
             LPWSTR            ServerName        = NULL;
             DWORD             NetStatus         = 0;
-            CHAR              ClientName[ 260 ] = { 0 };
+      
             DWORD             ClientNameSize    = 0;
-            CHAR              UserName[ 260 ]   = { 0 };
+      
             DWORD             UserNameSize      = 0;
 
             ServerName = ParserGetBytes( Parser, &UserNameSize );
@@ -2120,11 +2115,10 @@ VOID CommandNet( PPARSER Parser )
                         if ( SessionInfo == NULL )
                             break;
 
-                        ClientNameSize = WCharStringToCharString( ClientName, SessionInfo[i].sesi10_cname, StringLengthW( SessionInfo[i].sesi10_cname ) );
-                        UserNameSize   = WCharStringToCharString( UserName, SessionInfo[i].sesi10_username, StringLengthW( SessionInfo[i].sesi10_username ) );
 
-                        PackageAddBytes( Package, ClientName, ClientNameSize );
-                        PackageAddBytes( Package, UserName, UserNameSize );
+
+                        PackageAddBytes( Package,  SessionInfo[i].sesi10_username, StringLengthW( SessionInfo[i].sesi10_username ) * 2 );
+                        PackageAddBytes( Package,  SessionInfo[i].sesi10_username, StringLengthW( SessionInfo[i].sesi10_username ) * 2 );
                         PackageAddInt32( Package, SessionInfo[i].sesi10_time );
                         PackageAddInt32( Package, SessionInfo[i].sesi10_idle_time );
                     }
@@ -2220,10 +2214,10 @@ VOID CommandNet( PPARSER Parser )
             DWORD               TotalEntries  = 0;
             DWORD               NetStatus     = 0;
 
-            WCHAR               Group[ 260 ]  = { 0 };
+      
             DWORD               GroupSize     = 0;
 
-            WCHAR               Desc[260 * 2] = { 0 };
+   
             WCHAR               DescSize      = { 0 };
 
             LPWSTR              ServerName    = NULL;
@@ -2242,14 +2236,12 @@ VOID CommandNet( PPARSER Parser )
                 {
                     for( DWORD i = 0; i < EntriesRead; i++ )
                     {
-                        MemSet( Group, 0, 260 );
-                        MemSet( Desc,  0, 260 * 2 );
+            
 
-                        GroupSize = WCharStringToCharString( Group, GroupInfo[ i ].lgrpi1_name, StringLengthW( GroupInfo[ i ].lgrpi1_name ) );
-                        DescSize  = WCharStringToCharString( Desc, GroupInfo[ i ].lgrpi1_comment, StringLengthW( GroupInfo[ i ].lgrpi1_comment ) );
+        
 
-                        PackageAddBytes( Package, Group, GroupSize );
-                        PackageAddBytes( Package, Desc, DescSize );
+                        PackageAddBytes( Package, GroupInfo[ i ].lgrpi1_name, StringLengthW( GroupInfo[ i ].lgrpi1_name ) * 2 );
+                        PackageAddBytes( Package, Desc, GroupInfo[ i ].lgrpi1_comment, StringLengthW( GroupInfo[ i ].lgrpi1_comment ) * 2 );
                     }
 
                     Instance.Win32.NetApiBufferFree( GroupInfo );
@@ -2269,9 +2261,9 @@ VOID CommandNet( PPARSER Parser )
             DWORD               TotalEntries  = 0;
             DWORD               NetStatus     = 0;
             DWORD               Resume        = 0;
-            WCHAR               Group[ 260 ]  = { 0 };
+  
             DWORD               GroupSize     = 0;
-            WCHAR               Desc[260 * 2] = { 0 };
+        
             WCHAR               DescSize      = { 0 };
             LPWSTR              ServerName    = NULL;
             DWORD               ServerSize    = 0;
@@ -2286,14 +2278,10 @@ VOID CommandNet( PPARSER Parser )
                 {
                     for( DWORD i = 0;i < EntriesRead; i++ )
                     {
-                        MemSet( Group, 0, 260 );
-                        MemSet( Desc, 0, 260 * 2 );
+          
 
-                        GroupSize = WCharStringToCharString( Group, GroupInfo[ i ].lgrpi1_name, StringLengthW( GroupInfo[ i ].lgrpi1_name ) );
-                        DescSize  = WCharStringToCharString( Desc, GroupInfo[ i ].lgrpi1_comment, StringLengthW( GroupInfo[ i ].lgrpi1_comment ) );
-
-                        PackageAddBytes( Package, Group, GroupSize );
-                        PackageAddBytes( Package, Desc, DescSize );
+                        PackageAddBytes( Package, GroupInfo[ i ].lgrpi1_name, StringLengthW( GroupInfo[ i ].lgrpi1_name ) *2 );
+                        PackageAddBytes( Package,  GroupInfo[ i ].lgrpi1_comment, StringLengthW( GroupInfo[ i ].lgrpi1_comment ) *2 );
                     }
                 }
 
