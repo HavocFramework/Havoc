@@ -392,13 +392,14 @@ void UserInterface::Widgets::TeamserverTabSession::handleDemonContextMenu( const
                             Session.ProcessList->Teamserver = HavocX::Teamserver.Name;
 
                             HavocX::Teamserver.TabSession->NewBottomTab( Session.ProcessList->ProcessListWidget, TabName.toStdString() );
+                            Session.InteractedWidget->DemonCommands->Execute.ProcList( Util::gen_random( 8 ).c_str(), true );
                         }
                         else
                         {
                             HavocX::Teamserver.TabSession->NewBottomTab( Session.ProcessList->ProcessListWidget, TabName.toStdString() );
                         }
 
-                        Session.InteractedWidget->DemonCommands->Execute.ProcList( Util::gen_random( 8 ).c_str(), true );
+                        
                     }
                     else if ( action->text().compare( "File Explorer" ) == 0 )
                     {
@@ -411,13 +412,14 @@ void UserInterface::Widgets::TeamserverTabSession::handleDemonContextMenu( const
                             Session.FileBrowser->SessionID = Session.Name;
 
                             HavocX::Teamserver.TabSession->NewBottomTab( Session.FileBrowser->FileBrowserWidget, TabName.toStdString(), "" );
+                            Session.InteractedWidget->DemonCommands->Execute.FS( Util::gen_random( 8 ).c_str(), "dir;ui", "." );
                         }
                         else
                         {
                             HavocX::Teamserver.TabSession->NewBottomTab( Session.FileBrowser->FileBrowserWidget, TabName.toStdString(), "" );
                         }
 
-                        Session.InteractedWidget->DemonCommands->Execute.FS( Util::gen_random( 8 ).c_str(), "dir;ui", "." );
+                        
                     }
                 }
 
