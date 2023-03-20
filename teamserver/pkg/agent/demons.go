@@ -4362,11 +4362,11 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				)
 
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
-					var Domain = Parser.ParseString()
+					var Domain = Parser.ParseUTF16String()
 					Output += fmt.Sprintf(" %-12s\n", "Usernames")
 					Output += fmt.Sprintf(" %-12s\n", "---------")
 					for Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
-						var Name = Parser.ParseString()
+						var Name = Parser.ParseUTF16String()
 
 						Index++
 
@@ -4391,7 +4391,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				)
 
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
-					var Domain = Parser.ParseString()
+					var Domain = Parser.ParseUTF16String()
 
 					table := tablewriter.NewWriter(&Buffer)
 
@@ -4406,8 +4406,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 					for Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadBytes, parser.ReadInt32, parser.ReadInt32}) {
 						var (
-							Client = Parser.ParseString()
-							User   = Parser.ParseString()
+							Client = Parser.ParseUTF16String()
+							User   = Parser.ParseUTF16String()
 							Time   = int(Parser.ParseInt32())
 							Idle   = int(Parser.ParseInt32())
 							Column []string
@@ -4503,8 +4503,8 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 					for Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadBytes}) {
 						var (
-							Group       = Parser.ParseString()
-							Description = Parser.ParseString()
+							Group       = Parser.ParseUTF16String()
+							Description = Parser.ParseUTF16String()
 						)
 
 						Data += fmt.Sprintf(" %-48s  %s\n", Group, Description)
@@ -4523,15 +4523,15 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_NET - DEMON_NET_COMMAND_GROUP", AgentID))
-					var Domain = Parser.ParseString()
+					var Domain = Parser.ParseUTF16String()
 
 					Data += fmt.Sprintf(" %-48s %s\n", "Group", "Description")
 					Data += fmt.Sprintf(" %-48s %s\n", "-----", "-----------")
 
 					for Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadBytes}) {
 						var (
-							Group       = Parser.ParseString()
-							Description = Parser.ParseString()
+							Group       = Parser.ParseUTF16String()
+							Description = Parser.ParseUTF16String()
 						)
 
 						Data += fmt.Sprintf(" %-48s  %s\n", Group, Description)
