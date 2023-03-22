@@ -318,7 +318,7 @@ Demon {
 ```
 
 - `Sleep` - The default interval to sleep between check-ins for commands.
-- `Jitter` - The amount of jitter to be applied to sleep intervals (in milliseconds).
+- `Jitter` - The amount of jitter to be applied to sleep intervals (in percentage).
 
 - `Implant\SleepMask` - Enables the Sleep Mask obfuscation
 - `Implant\SleepMaskTechnique` - Chose from a variety of built-in sleep mask techniques:
@@ -338,25 +338,27 @@ Havoc supports multiple listener profiles and a variety of configuration options
 ```hcl
 Listeners {
     Http {
-        Name        = "HTTPS Listener"
-        Host        = "10.0.0.10"
-        Port        = 443
-        Method      = "POST"
-        Secure      = true
-        UserAgent   = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
-        Uris        = [
+        Name         = "HTTPS Listener"
+        KillDate     = "2006-01-02 15:04:05"
+        WorkingHours = "8:00-17:00"
+        Hosts        = ["10.0.0.10"]
+        Port         = 443
+        Method       = "POST"
+        Secure       = true
+        UserAgent    = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
+        Uris         = [
             "/funny_cat.gif",
             "/index.php",
             "/test.txt",
             "/helloworld.js"
         ]
-        Headers     = [
+        Headers      = [
             "X-Havoc: true",
             "X-Havoc-Agent: Demon",
         ]
 
         Response {
-            Headers = [
+            Headers  = [
                 "Content-type: text/plain",
                 "X-IsHavocFramework: true",
             ]
@@ -365,6 +367,18 @@ Listeners {
     }
 }
 ```
+
+- `Name` - Name of the listener
+- `KillDate` - (Optional) Date in which the Demon will terminate itself in UTC
+- `WorkingHours` - (Optional) The hours in which Demon will check in
+- `Hosts` - The list of domains that Demon will use to reach the teamserver
+- `Port` - Port used by Demon to access the teamserver, normally 80 or 443
+- `Method` - Method to use while checking in (GET or POST)
+- `Secure` - true for HTTPS, false for HTTP
+- `UserAgent` - The User Agent that Demon will use
+- `Uris` - The paths that Demon will use. If more than one is provided, Demon chooses one at random each time
+- `Headers` - Request headers that Demon will include in all requests
+- `Response-Headers` - Response headers that the server will include in all responses
 
 ---
 
