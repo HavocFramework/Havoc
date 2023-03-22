@@ -95,7 +95,6 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
             PRINTF( "WinHttpSetOption: Failed => %d\n", NtGetLastError() );
         }
     }
-
     /* Add our headers */
     do
     {

