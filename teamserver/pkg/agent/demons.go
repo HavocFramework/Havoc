@@ -1285,9 +1285,10 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 			break
 
 		case DEMON_NET_COMMAND_GROUP:
+			var Target = common.EncodeUTF16(Param)
 			job.Data = []interface{}{
 				NetCommand,
-				Param,
+				Target,
 			}
 			break
 
@@ -4347,8 +4348,13 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_NET - DEMON_NET_COMMAND_DOMAIN, Domain: %s", AgentID, Domain))
 
-					Message["Type"] = "Good"
-					Message["Message"] = "Domain for this Host: " + Domain
+					if Domain == "" {
+						Message["Type"] = "Good"
+						Message["Message"] = "The machine does not seem to be joined to a domain"
+					} else {
+						Message["Type"] = "Good"
+						Message["Message"] = fmt.Sprintf("Domain for this Host: %s", Domain)
+					}
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_NET - DEMON_NET_COMMAND_DOMAIN, Invalid packet", AgentID))
 				}
@@ -4374,7 +4380,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 					}
 
 					Message["Type"] = "Info"
-					Message["Message"] = fmt.Sprintf("Logged on users at %v [%v]: ", Domain, Index)
+					Message["Message"] = fmt.Sprintf("Logged on users at %s [%v]: ", Domain, Index)
 					Message["Output"] = "\n" + Output
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_NET - DEMON_NET_COMMAND_LOGONS, Invalid packet", AgentID))
@@ -4538,7 +4544,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 					}
 
 					Message["Type"] = "Info"
-					Message["Message"] = fmt.Sprintf("List groups on %v: ", Domain)
+					Message["Message"] = fmt.Sprintf("List groups on %s: ", Domain)
 					Message["Output"] = "\n" + Data
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_NET - DEMON_NET_COMMAND_GROUP, Invalid packet", AgentID))

