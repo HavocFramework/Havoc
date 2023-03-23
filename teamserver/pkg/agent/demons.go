@@ -2013,7 +2013,6 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 
 		if Parser.Length() >= 32 + 16 {
 			var (
-				MagicValue   int
 				DemonID      int
 				Hostname     string
 				DomainName   string
@@ -2056,7 +2055,6 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 				a.Active = true
 
 				a.NameID            = fmt.Sprintf("%x", DemonID)
-				a.Info.MagicValue   = MagicValue
 				a.Info.FirstCallIn  = a.Info.FirstCallIn
 				a.Info.LastCallIn   = a.Info.LastCallIn
 				a.Info.Hostname     = Hostname
