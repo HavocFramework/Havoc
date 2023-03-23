@@ -29,18 +29,24 @@ func (p *Packer) AddInt64(data int64) {
     var buffer = make([]byte, 8)
     binary.LittleEndian.PutUint64(buffer, uint64(data))
     p.data = append(p.data, buffer...)
+
+    p.size += 8
 }
 
 func (p *Packer) AddInt32(data int32) {
     var buffer = make([]byte, 4)
     binary.LittleEndian.PutUint32(buffer, uint32(data))
     p.data = append(p.data, buffer...)
+
+    p.size += 4
 }
 
 func (p *Packer) AddInt(data int) {
     var buffer = make([]byte, 4)
     binary.LittleEndian.PutUint32(buffer, uint32(data))
     p.data = append(p.data, buffer...)
+
+    p.size += 4
 }
 
 // AddUInt32 use a much as possible this function
@@ -48,6 +54,8 @@ func (p *Packer) AddUInt32(data uint32) {
     var buffer = make([]byte, 4)
     binary.LittleEndian.PutUint32(buffer, data)
     p.data = append(p.data, buffer...)
+
+    p.size += 4
 }
 
 func (p *Packer) AddString(data string) {
@@ -55,6 +63,9 @@ func (p *Packer) AddString(data string) {
     binary.LittleEndian.PutUint32(buffer, uint32(len(data)))
     p.data = append(p.data, buffer...)
     p.data = append(p.data, []byte(data)...)
+
+    p.size += 4
+    p.size += len(data)
 }
 
 func (p *Packer) AddBytes(data []byte) {
@@ -62,6 +73,9 @@ func (p *Packer) AddBytes(data []byte) {
     binary.LittleEndian.PutUint32(buffer, uint32(len(data)))
     p.data = append(p.data, buffer...)
     p.data = append(p.data, data...)
+
+    p.size += 4
+    p.size += len(data)
 }
 
 func (p *Packer) Build() []byte {
@@ -91,4 +105,6 @@ func (p *Packer) AddOwnSizeFirst() {
     var oldData = p.data
     p.AddInt(len(oldData))
     p.AddBytes(oldData)
+
+    p.size += 4
 }

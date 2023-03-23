@@ -134,7 +134,7 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.B
 
 				// TODO: move this to its own function
 				// show bytes for pivot
-				var CallbackSizes = make(map[int64][]byte)
+				var CallbackSizes = make(map[uint32][]byte)
 				for j := range job {
 
 					if len(job[j].Data) >= 1 {
@@ -147,7 +147,7 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.B
 
 								var (
 									TaskBuffer    = job[j].Data[2].([]byte)
-									PivotAgentID  = int(job[j].Data[1].(int64))
+									PivotAgentID  = int(job[j].Data[1].(uint32))
 									PivotInstance *agent.Agent
 								)
 
@@ -166,7 +166,7 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.B
 									CommandID = Parser.ParseInt32()
 
 									if CommandID != agent.COMMAND_PIVOT {
-										CallbackSizes[int64(PivotAgentID)] = append(CallbackSizes[job[j].Data[1].(int64)], TaskBuffer...)
+										CallbackSizes[uint32(PivotAgentID)] = append(CallbackSizes[job[j].Data[1].(uint32)], TaskBuffer...)
 										break
 									}
 
@@ -196,7 +196,7 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.B
 											continue
 
 										} else {
-											CallbackSizes[int64(PivotAgentID)] = append(CallbackSizes[job[j].Data[1].(int64)], TaskBuffer...)
+											CallbackSizes[uint32(PivotAgentID)] = append(CallbackSizes[job[j].Data[1].(uint32)], TaskBuffer...)
 
 											break
 										}
@@ -223,14 +223,14 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.B
 							payload = agent.BuildPayloadMessage([]agent.Job{job[j]}, Agent.Encryption.AESKey, Agent.Encryption.AESIv)
 
 							/* add the size of the task to the callback size */
-							CallbackSizes[int64(Header.AgentID)] = append(CallbackSizes[int64(Header.AgentID)], payload...)
+							CallbackSizes[uint32(Header.AgentID)] = append(CallbackSizes[uint32(Header.AgentID)], payload...)
 
 							break
 
 						}
 
 					} else {
-						CallbackSizes[int64(Header.AgentID)] = append(CallbackSizes[int64(Header.AgentID)], payload...)
+						CallbackSizes[uint32(Header.AgentID)] = append(CallbackSizes[uint32(Header.AgentID)], payload...)
 					}
 
 				}

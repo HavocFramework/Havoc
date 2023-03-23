@@ -587,7 +587,7 @@ func (a *Agent) PivotAddJob(job Job) {
 		Command: COMMAND_PIVOT,
 		Data: []interface{}{
 			DEMON_PIVOT_SMB_COMMAND,
-			AgentID,
+			uint32(AgentID),
 			Packer.Buffer(),
 		},
 	}
@@ -617,7 +617,7 @@ func (a *Agent) PivotAddJob(job Job) {
 			Command: COMMAND_PIVOT,
 			Data: []interface{}{
 				DEMON_PIVOT_SMB_COMMAND,
-				AgentID,
+				uint32(AgentID),
 				Packer.Buffer(),
 			},
 		}

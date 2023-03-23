@@ -204,6 +204,8 @@ BOOL PackageTransmit( PPACKAGE Package, PVOID* Response, PSIZE_T Size )
 
         if ( TransportSend( Package->Buffer, Package->Length, Response, Size ) )
             Success = TRUE;
+        else
+            PUTS("TransportSend failed!")
 
         if ( Package->Destroy )
             PackageDestroy( Package );
