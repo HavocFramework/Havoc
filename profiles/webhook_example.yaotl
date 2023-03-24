@@ -34,6 +34,9 @@ Service {
 
 Demon {
     Sleep = 2
+    Jitter = 30
+
+    TrustXForwardedFor = false
 
     Injection {
         Spawn64 = "C:\\Windows\\System32\\notepad.exe"

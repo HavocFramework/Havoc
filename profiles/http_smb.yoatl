@@ -26,8 +26,11 @@ Listeners {
         ]
         HostBind     = "192.168.0.148" # the address where the listener should bind to. 
         HostRotation = "round-robin"
-        Port         = 443
+        PortBind     = 443
+        PortConn     = 443
         Secure       = true
+        KillDate     = "2024-01-02 12:00:00"
+        WorkingHours = "8:00-17:00"
         UserAgent    = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
 
         Uris = [
@@ -66,6 +69,9 @@ Service {
 
 Demon {
     Sleep = 2
+    Jitter = 20
+
+    TrustXForwardedFor = false
 
     Injection {
         Spawn64 = "C:\\Windows\\System32\\Werfault.exe"
