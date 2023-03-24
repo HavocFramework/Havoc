@@ -74,14 +74,64 @@ func (h *HTTP) generateCertFiles() bool {
 	return true
 }
 
+// fake nginx 404 page
+func (h *HTTP) fake404(ctx *gin.Context) {
+	ctx.Writer.WriteHeader(http.StatusNotFound)
+	html, err := os.ReadFile("teamserver/pkg/handlers/404.html")
+	if err != nil {
+		logger.Debug("Could not read fake 404 page: " + err.Error())
+		return
+	}
+	ctx.Header("Server", "nginx")
+	ctx.Header("Content-Type", "text/html")
+	ctx.Writer.Write(html)
+}
+
 func (h *HTTP) request(ctx *gin.Context) {
 	Body, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
 		logger.Debug("Error while reading request: " + err.Error())
 	}
 
-	//logger.Debug(" - HTTP Host : " + ctx.Request.Host)
-	//logger.Debug(" - HTTP Body : \n" + hex.Dump(Body))
+	//logger.Debug("POST " + ctx.Request.RequestURI)
+	//logger.Debug("Host: " + ctx.Request.Host)
+	//for name, values := range ctx.Request.Header {
+	//	for _, value := range values {
+	//		logger.Debug(name + ":e)
+	//	}
+	//}
+	//logger.Debug("\n" + hex.Dump(Body))
+
+	// check that the headers defined on the profile are present
+	valid := true
+	for _, Header := range h.Config.Headers {
+		NameValue := strings.Split(Header, ": ")
+		if ctx.Request.Header.Get(NameValue[0]) != NameValue[1] {
+			valid = false
+			break
+		}
+	}
+
+	if valid == false {
+		h.fake404(ctx)
+		return
+	}
+
+	// check that the URI is defined on the profile
+	if len(h.Config.Uris) > 0 {
+		valid = false
+		for _, Uri := range h.Config.Uris {
+			if ctx.Request.RequestURI == Uri {
+				valid = true
+				break
+			}
+		}
+
+		if valid == false {
+			h.fake404(ctx)
+			return
+		}
+	}
 
 	for _, Header := range h.Config.Response.Headers {
 		var hdr = strings.Split(Header, ":")
@@ -94,11 +144,11 @@ func (h *HTTP) request(ctx *gin.Context) {
 		_, err := ctx.Writer.Write(Response.Bytes())
 		if err != nil {
 			logger.Debug("Failed to write to request: " + err.Error())
-			ctx.Status(http.StatusNotFound)
+			h.fake404(ctx)
 			return
 		}
 	} else {
-		ctx.AbortWithStatus(http.StatusNotFound)
+		h.fake404(ctx)
 		return
 	}
 
@@ -115,6 +165,7 @@ func (h *HTTP) Start() {
 	}
 
 	h.GinEngine.POST("/*endpoint", h.request)
+	h.GinEngine.GET("/*endpoint", h.fake404)
 	h.Active = true
 
 	if h.Config.Secure {
