@@ -560,7 +560,7 @@ func (s *Service) dispatch(response map[string]map[string]any, client *ClientSer
 				}
 
 				// retrieve the listener port
-				if val, ok = Data["Port"]; ok {
+				if val, ok = Data["PortBind"]; ok {
 					Listener["Port"] = val
 				} else {
 					logger.DebugError("BodyListenerStart body listener doesn't contain Port string")

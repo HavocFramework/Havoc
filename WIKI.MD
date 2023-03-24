@@ -342,7 +342,8 @@ Listeners {
         KillDate     = "2006-01-02 15:04:05"
         WorkingHours = "8:00-17:00"
         Hosts        = ["10.0.0.10"]
-        Port         = 443
+        PortBind     = 443
+        PortConn     = 443
         Method       = "POST"
         Secure       = true
         UserAgent    = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
@@ -372,7 +373,8 @@ Listeners {
 - `KillDate` - (Optional) Date in which the Demon will terminate itself in UTC
 - `WorkingHours` - (Optional) The hours in which Demon will check in
 - `Hosts` - The list of domains that Demon will use to reach the teamserver
-- `Port` - Port used by Demon to access the teamserver, normally 80 or 443
+- `PortBind` - Port that the teamserver will bind to
+- `PortConn` - Port used by Demon to access the teamserver, if not set, PortBind is used
 - `Method` - Method to use while checking in (GET or POST)
 - `Secure` - true for HTTPS, false for HTTP
 - `UserAgent` - The User Agent that Demon will use

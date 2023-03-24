@@ -572,8 +572,16 @@ func (b *Builder) PatchConfig() ([]byte, error) {
 	case handlers.LISTENER_HTTP:
 		var (
 			Config    = b.config.ListenerConfig.(*handlers.HTTP)
-			Port, err = strconv.Atoi(Config.Config.Port)
+			Port, err = strconv.Atoi(Config.Config.PortConn)
 		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if Port == 0 {
+			Port, err = strconv.Atoi(Config.Config.PortBind)
+		}
 
 		if err != nil {
 			return nil, err

@@ -16,7 +16,8 @@ type (
 		Hosts        []string
 		HostBind     string
 		HostRotation string
-		Port         string
+		PortBind     string
+		PortConn     string
 		UserAgent    string
 		Headers      []string
 		Uris         []string

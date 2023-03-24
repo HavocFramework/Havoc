@@ -244,7 +244,8 @@ func (t *Teamserver) Start() {
 				Hosts:        listener.Hosts,
 				HostBind:     listener.HostBind,
 				HostRotation: listener.HostRotation,
-				Port:         strconv.Itoa(listener.Port),
+				PortBind:     strconv.Itoa(listener.PortBind),
+				PortConn:     strconv.Itoa(listener.PortConn),
 				UserAgent:    listener.UserAgent,
 				Headers:      listener.Headers,
 				Uris:         listener.Uris,
@@ -372,7 +373,7 @@ func (t *Teamserver) Start() {
 			HandlerData.Hosts = strings.Split(Data["Hosts"].(string), ", ")
 			HandlerData.HostBind = Data["HostBind"].(string)
 			HandlerData.HostRotation = Data["HostRotation"].(string)
-			HandlerData.Port = Data["Port"].(string)
+			HandlerData.PortBind = Data["Port"].(string)
 			HandlerData.UserAgent = Data["UserAgent"].(string)
 			HandlerData.Headers = strings.Split(Data["Headers"].(string), ", ")
 			HandlerData.Uris = strings.Split(Data["Uris"].(string), ", ")

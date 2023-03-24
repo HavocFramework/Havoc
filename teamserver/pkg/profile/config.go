@@ -66,7 +66,10 @@ type ListenerHTTP struct {
 	Hosts        []string `yaotl:"Hosts"`
 	HostBind     string   `yaotl:"HostBind"`
 	HostRotation string   `yaotl:"HostRotation"`
-	Port         int      `yaotl:"Port"`
+	/* Port used by the TS */
+	PortBind     int      `yaotl:"PortBind"`
+	/* Port used by the agent */
+	PortConn     int      `yaotl:"PortConn,optional"`
 
 	/* Methode string `yaotl:"Method,optional"` */
 

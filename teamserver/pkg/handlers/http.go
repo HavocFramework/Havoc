@@ -174,7 +174,7 @@ func (h *HTTP) request(ctx *gin.Context) {
 func (h *HTTP) Start() {
 	logger.Debug("Setup HTTP/s Server")
 
-	if len(h.Config.Hosts) == 0 && h.Config.Port == "" && h.Config.Name == "" {
+	if len(h.Config.Hosts) == 0 && h.Config.PortBind == "" && h.Config.Name == "" {
 		logger.Error("HTTP Hosts/Port/Name not set")
 		return
 	}
@@ -186,7 +186,7 @@ func (h *HTTP) Start() {
 	if h.Config.Secure {
 		// TODO: only generate certs if h.Config.Cert is emtpy
 		if h.generateCertFiles() {
-			logger.Info("Started \"" + colors.Green(h.Config.Name) + "\" listener: " + colors.BlueUnderline("https://"+h.Config.HostBind+":"+h.Config.Port))
+			logger.Info("Started \"" + colors.Green(h.Config.Name) + "\" listener: " + colors.BlueUnderline("https://"+h.Config.HostBind+":"+h.Config.PortBind))
 
 			pk := h.Teamserver.ListenerAdd("", LISTENER_HTTP, h)
 			h.Teamserver.EventAppend(pk)
@@ -199,7 +199,7 @@ func (h *HTTP) Start() {
 				)
 
 				h.Server = &http.Server{
-					Addr:    h.Config.HostBind + ":" + h.Config.Port,
+					Addr:    h.Config.HostBind + ":" + h.Config.PortBind,
 					Handler: h.GinEngine,
 				}
 
@@ -223,7 +223,7 @@ func (h *HTTP) Start() {
 			logger.Error("Failed to generate server tls certifications")
 		}
 	} else {
-		logger.Info("Started \"" + colors.Green(h.Config.Name) + "\" listener: " + colors.BlueUnderline("http://"+h.Config.HostBind+":"+h.Config.Port))
+		logger.Info("Started \"" + colors.Green(h.Config.Name) + "\" listener: " + colors.BlueUnderline("http://"+h.Config.HostBind+":"+h.Config.PortBind))
 
 		pk := h.Teamserver.ListenerAdd("", LISTENER_HTTP, h)
 		h.Teamserver.EventAppend(pk)
@@ -231,7 +231,7 @@ func (h *HTTP) Start() {
 
 		go func() {
 			h.Server = &http.Server{
-				Addr:    h.Config.HostBind + ":" + h.Config.Port,
+				Addr:    h.Config.HostBind + ":" + h.Config.PortBind,
 				Handler: h.GinEngine,
 			}
 
