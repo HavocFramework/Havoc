@@ -98,7 +98,7 @@ func (h *HTTP) request(ctx *gin.Context) {
 	//logger.Debug("Host: " + ctx.Request.Host)
 	//for name, values := range ctx.Request.Header {
 	//	for _, value := range values {
-	//		logger.Debug(name + ":e)
+	//		logger.Debug(name + ": " + value)
 	//	}
 	//}
 	//logger.Debug("\n" + hex.Dump(Body))
@@ -133,6 +133,18 @@ func (h *HTTP) request(ctx *gin.Context) {
 			return
 		}
 	}
+
+	// check that the User-Agent is valid
+	if h.Config.UserAgent != "" {
+		if h.Config.UserAgent != ctx.Request.UserAgent() {
+			h.fake404(ctx)
+			return
+		}
+	}
+
+	// TODO: should we check the Host header?
+	//       the value might change depending
+	//       on the redirector setup
 
 	for _, Header := range h.Config.Response.Headers {
 		var hdr = strings.Split(Header, ":")
