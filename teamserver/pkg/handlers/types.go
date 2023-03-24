@@ -18,6 +18,7 @@ type (
 		HostRotation string
 		PortBind     string
 		PortConn     string
+		BehindRedir  bool
 		UserAgent    string
 		Headers      []string
 		Uris         []string

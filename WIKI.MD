@@ -305,6 +305,8 @@ Demon {
     Sleep   = 2
     Jitter  = 20
 
+    TrustXForwardedFor = false
+
     Implant {
         SleepMask = 1
         SleepMaskTechnique = 0
@@ -319,6 +321,8 @@ Demon {
 
 - `Sleep` - The default interval to sleep between check-ins for commands.
 - `Jitter` - The amount of jitter to be applied to sleep intervals (in percentage).
+
+- `TrustXForwardedFor` - If true, the public IP of every agent will be set to the value of the X-Forwarded-For header. Only enable if the teamserver is behind a redirector
 
 - `Implant\SleepMask` - Enables the Sleep Mask obfuscation
 - `Implant\SleepMaskTechnique` - Chose from a variety of built-in sleep mask techniques:

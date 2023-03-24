@@ -89,12 +89,18 @@ func (h *HTTP) fake404(ctx *gin.Context) {
 }
 
 func (h *HTTP) request(ctx *gin.Context) {
+	var ExternalIP string
+
 	Body, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
 		logger.Debug("Error while reading request: " + err.Error())
 	}
 
-	ExternalIP := strings.Split(ctx.Request.RemoteAddr, ":")[0]
+	if h.Config.BehindRedir {
+		ExternalIP = ctx.Request.Header.Get("X-Forwarded-For")
+	} else {
+		ExternalIP = strings.Split(ctx.Request.RemoteAddr, ":")[0]
+	}
 
 	//logger.Debug("POST " + ctx.Request.RequestURI)
 	//logger.Debug("Host: " + ctx.Request.Host)
