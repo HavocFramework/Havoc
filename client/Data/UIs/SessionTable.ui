@@ -87,11 +87,6 @@
      </column>
      <column>
       <property name="text">
-       <string>Arch</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
        <string>Last</string>
       </property>
      </column>

@@ -94,6 +94,8 @@ func (h *HTTP) request(ctx *gin.Context) {
 		logger.Debug("Error while reading request: " + err.Error())
 	}
 
+	ExternalIP := strings.Split(ctx.Request.RemoteAddr, ":")[0]
+
 	//logger.Debug("POST " + ctx.Request.RequestURI)
 	//logger.Debug("Host: " + ctx.Request.Host)
 	//for name, values := range ctx.Request.Header {
@@ -153,7 +155,7 @@ func (h *HTTP) request(ctx *gin.Context) {
 		}
 	}
 
-	if Response, Success := parseAgentRequest(h.Teamserver, Body); Success {
+	if Response, Success := parseAgentRequest(h.Teamserver, Body, ExternalIP); Success {
 		_, err := ctx.Writer.Write(Response.Bytes())
 		if err != nil {
 			logger.Debug("Failed to write to request: " + err.Error())

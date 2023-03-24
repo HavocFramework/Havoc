@@ -20,7 +20,7 @@ import (
 //
 //	Response byte.Buffer
 //	Success	 bool
-func parseAgentRequest(Teamserver agent.TeamServer, Body []byte) (bytes.Buffer, bool) {
+func parseAgentRequest(Teamserver agent.TeamServer, Body []byte, ExternalIP string) (bytes.Buffer, bool) {
 
 	var (
 		Header   agent.Header
@@ -40,11 +40,11 @@ func parseAgentRequest(Teamserver agent.TeamServer, Body []byte) (bytes.Buffer, 
 
 	// handle this demon connection if the magic value matches
 	if Header.MagicValue == agent.DEMON_MAGIC_VALUE {
-		return handleDemonAgent(Teamserver, Header)
+		return handleDemonAgent(Teamserver, Header, ExternalIP)
 	}
 
 	// If it's not a Demon request then try to see if it's a 3rd party agent.
-	return handleServiceAgent(Teamserver, Header)
+	return handleServiceAgent(Teamserver, Header, ExternalIP)
 }
 
 // handleDemonAgent
@@ -53,7 +53,7 @@ func parseAgentRequest(Teamserver agent.TeamServer, Body []byte) (bytes.Buffer, 
 //
 //	Response bytes.Buffer
 //	Success  bool
-func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.Buffer, bool) {
+func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header, ExternalIP string) (bytes.Buffer, bool) {
 
 	var (
 		Agent    *agent.Agent
@@ -255,7 +255,7 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.B
 
 		/* TODO: rework this. */
 		if Command == agent.DEMON_INIT {
-			Agent = agent.ParseDemonRegisterRequest(Header.AgentID, Header.Data)
+			Agent = agent.ParseDemonRegisterRequest(Header.AgentID, Header.Data, ExternalIP)
 			if Agent == nil {
 				return Response, false
 			}
@@ -296,7 +296,7 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.B
 //
 //	Response bytes.Buffer
 //	Success  bool
-func handleServiceAgent(Teamserver agent.TeamServer, Header agent.Header) (bytes.Buffer, bool) {
+func handleServiceAgent(Teamserver agent.TeamServer, Header agent.Header, ExternalIP string) (bytes.Buffer, bool) {
 
 	var (
 		Response  bytes.Buffer

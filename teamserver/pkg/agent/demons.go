@@ -4679,7 +4679,7 @@ func (a *Agent) TaskDispatch(CommandID int, Parser *parser.Parser, teamserver Te
 									} else {
 										// if the agent doesn't exist then we assume that it's a register request from a new agent
 
-										DemonInfo = ParseDemonRegisterRequest(AgentHdr.AgentID, AgentHdr.Data)
+										DemonInfo = ParseDemonRegisterRequest(AgentHdr.AgentID, AgentHdr.Data, "")
 										DemonInfo.Pivots.Parent = a
 
 										a.Pivots.Links = append(a.Pivots.Links, DemonInfo)

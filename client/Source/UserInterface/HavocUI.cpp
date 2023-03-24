@@ -301,7 +301,7 @@ void HavocNamespace::UserInterface::HavocUI::UpdateSessionsHealth()
             // agent reached its killdate
             session.Health = "killdate";
             session.Marked = "Dead";
-            HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue(session.Name, 8, session.Health);
+            HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue(session.Name, 9, session.Health);
             MarkSessionAs(session, QString( "Dead") );
             continue;
         }
@@ -327,7 +327,7 @@ void HavocNamespace::UserInterface::HavocUI::UpdateSessionsHealth()
             {
                 // agent is offhours
                 session.Health = "offhours";
-                HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue(session.Name, 8, session.Health);
+                HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue(session.Name, 9, session.Health);
                 continue;
             }
         }
@@ -336,14 +336,14 @@ void HavocNamespace::UserInterface::HavocUI::UpdateSessionsHealth()
         {
             // agent has ping back in time
             session.Health = "healthy";
-            HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue(session.Name, 8, session.Health);
+            HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue(session.Name, 9, session.Health);
             continue;
         }
         else
         {
             // agent has not pinged back in time
             session.Health = "unresponsive";
-            HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue(session.Name, 8, session.Health);
+            HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue(session.Name, 9, session.Health);
             continue;
         }
     }

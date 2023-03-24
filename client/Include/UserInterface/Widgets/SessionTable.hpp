@@ -12,6 +12,7 @@ private:
 
     QTableWidgetItem*   TitleAgentID     = nullptr;
     QTableWidgetItem*   TitleInternal    = nullptr;
+    QTableWidgetItem*   TitleExternal    = nullptr;
     QTableWidgetItem*   TitleUser        = nullptr;
     QTableWidgetItem*   TitleComputer    = nullptr;
     QTableWidgetItem*   TitleOperating   = nullptr;

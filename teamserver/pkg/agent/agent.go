@@ -233,7 +233,7 @@ func RegisterInfoToInstance(Header Header, RegisterInfo map[string]any) *Agent {
 	return agent
 }
 
-func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser) *Agent {
+func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP string) *Agent {
 	//logger.Debug("Response:\n" + hex.Dump(Parser.Buffer()))
 
 	var (
@@ -321,19 +321,24 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser) *Agent {
 			DomainName = Parser.ParseString()
 			InternalIP = Parser.ParseString()
 
+			if ExternalIP != "" {
+				Session.Info.ExternalIP = ExternalIP
+			}
+
 			logger.Debug(fmt.Sprintf(
 				"\n"+
 					"Hostname: %v\n"+
 					"Username: %v\n"+
 					"Domain  : %v\n"+
-					"InternIP: %v\n",
-				Hostname, Username, DomainName, InternalIP))
+					"InternIP: %v\n"+
+					"ExternIP: %v\n",
+				Hostname, Username, DomainName, InternalIP, ExternalIP))
 
 			ProcessName = Parser.ParseString()
-			ProcessPID = Parser.ParseInt32()
+			ProcessPID  = Parser.ParseInt32()
 			ProcessPPID = Parser.ParseInt32()
 			ProcessArch = Parser.ParseInt32()
-			Elevated = Parser.ParseInt32()
+			Elevated    = Parser.ParseInt32()
 
 			logger.Debug(fmt.Sprintf(
 				"\n"+
@@ -372,7 +377,6 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser) *Agent {
 			Session.Info.KillDate     = KillDate
 			Session.Info.WorkingHours = WorkingHours
 
-			// Session.Info.ExternalIP 	= strings.Split(connection.RemoteAddr().String(), ":")[0]
 			// Session.Info.Listener 	= t.Name
 
 			switch ProcessArch {
