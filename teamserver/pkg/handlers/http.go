@@ -84,6 +84,7 @@ func (h *HTTP) fake404(ctx *gin.Context) {
 	}
 	ctx.Header("Server", "nginx")
 	ctx.Header("Content-Type", "text/html")
+	ctx.Header("X-Havoc", "true")
 	ctx.Writer.Write(html)
 }
 
