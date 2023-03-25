@@ -1995,7 +1995,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
         }
         else
         {
-            if ( ! Send )
+            if ( ! Send && ! CommandTaskInfo[ TaskID ].isEmpty() )
             {
                 DemonConsole->AppendRaw();
                 DemonConsole->AppendRaw( Prompt );

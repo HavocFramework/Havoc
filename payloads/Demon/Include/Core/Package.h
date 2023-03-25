@@ -4,6 +4,7 @@
 #include <Core/Command.h>
 
 typedef struct {
+    UINT32  RequestID;
     UINT32  CommandID;
     PVOID   Buffer;
     size_t  Length;
@@ -14,6 +15,7 @@ typedef struct {
 
 /* Package generator */
 PPACKAGE PackageCreate( UINT32 CommandID );
+PPACKAGE PackageCreateWithRequestID( UINT32 RequestID, UINT32 CommandID );
 PPACKAGE PackageNew();
 
 /* PackageAddInt32

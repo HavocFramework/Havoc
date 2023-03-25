@@ -262,6 +262,8 @@ namespace HavocNamespace
             UserInterface::Widgets::ProcessList*     ProcessList;
             FileBrowser*                             FileBrowser;
 
+            std::map<QString, PyObject*> TaskIDToPythonCallbacks;
+
             void Export();
         } SessionItem;
 

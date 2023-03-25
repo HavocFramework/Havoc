@@ -28,6 +28,9 @@ typedef struct _DOWNLOAD_DATA
     /* file handle opened/created using CreateFile */
     HANDLE hFile;
 
+    /* The random task id associated with the requested download*/
+    UINT32 RequestID;
+
     /* What we have left to read. */
     DWORD Size;
 

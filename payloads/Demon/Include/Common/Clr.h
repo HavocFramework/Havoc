@@ -659,6 +659,9 @@ typedef struct _MethodInfo {
 
 typedef struct _DOTNET_ARGS
 {
+    /* The random task id associated with the requested DOTNET exec */
+    UINT32 RequestID;
+
     /* Buffers */
     BUFFER PipeName;
     BUFFER AppDomainName;

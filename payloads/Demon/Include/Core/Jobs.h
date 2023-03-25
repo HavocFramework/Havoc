@@ -13,6 +13,7 @@
 
 typedef struct _JOB_DATA
 {
+    UINT32            RequestID;
     DWORD             JobID;
     SHORT             Type;
     SHORT             State;
@@ -30,7 +31,7 @@ typedef struct _JOB_DATA
  * @param Data
  * @return
  */
-VOID JobAdd( DWORD JobID, SHORT Type, SHORT State, HANDLE Handle, PVOID Data );
+VOID JobAdd( UINT32 RequestID, DWORD JobID, SHORT Type, SHORT State, HANDLE Handle, PVOID Data );
 
 /*!
  * Check if all jobs are still running and exists

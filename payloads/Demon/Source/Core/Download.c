@@ -137,7 +137,7 @@ VOID DownloadPush()
             {
                 PUTS( "Send download chunk" )
 
-                Package = PackageCreate( DEMON_COMMAND_FS );
+                Package = PackageCreateWithRequestID( Download->RequestID, DEMON_COMMAND_FS );
 
                 /* Add Download header. */
                 PackageAddInt32( Package, 2 ); /* Download sub command */
@@ -155,7 +155,7 @@ VOID DownloadPush()
             /* if this was the last chunk we read send a finish download close request */
             if ( ( Read > 0 ) && ( ! Download->Size ) )
             {
-                Package = PackageCreate( DEMON_COMMAND_FS );
+                Package = PackageCreateWithRequestID( Download->RequestID, DEMON_COMMAND_FS );
 
                 /* Add Download header. */
                 PackageAddInt32( Package, 2 ); /* Download sub command */

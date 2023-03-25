@@ -743,6 +743,36 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
 
                             break;
 
+                        case ( int ) Commands::BOF_CALLBACK:
+
+                            if ( QByteArray::fromBase64( Output.toLocal8Bit() ).length() > 5 )
+                            {
+                                auto JsonDocument  = QJsonDocument::fromJson( QByteArray::fromBase64( Output.toLocal8Bit( ) ) );
+                                auto Worked        = JsonDocument[ "Worked" ].toString();
+                                auto Output        = JsonDocument[ "Output" ].toString();
+                                auto TaskID        = JsonDocument[ "TaskID" ].toString();
+                                PyObject* Callback = nullptr;
+
+                                auto it = Session.TaskIDToPythonCallbacks.find( TaskID );
+                                if ( it != Session.TaskIDToPythonCallbacks.end() ) {
+                                    Callback = it->second;
+                                    if ( PyCallable_Check( Callback ) )
+                                    {
+                                        PyObject *arglist = Py_BuildValue( "sOs", Session.Name.toStdString().c_str(), Worked == "true" ? Py_True : Py_False, Output.toStdString().c_str() );
+                                        PyObject_CallObject( Callback, arglist );
+                                        Py_XDECREF( Callback );
+                                    } else {
+                                        spdlog::error( "Callback is not callable" );
+                                    }
+
+                                    Session.TaskIDToPythonCallbacks.erase( TaskID );
+                                } else {
+                                    spdlog::error( "[PACKAGE] TaskID not found: {}", TaskID.toStdString() );
+                                }
+                            }
+
+                            break;
+
                         case ( int ) Commands::CALLBACK:
                         {
                             // update the "Last" field on this session

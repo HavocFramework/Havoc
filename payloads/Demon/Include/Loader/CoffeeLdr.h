@@ -100,9 +100,9 @@ typedef struct _COFFEE
  * @param CoffeeData
  * @param ArgData
  * @param ArgSize
- * @return Status. Succeeded or not
+ * @return
  */
-DWORD CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSize );
+VOID CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSize );
 
 /*!
  * CoffeeRunner

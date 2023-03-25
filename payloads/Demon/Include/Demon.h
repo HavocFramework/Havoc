@@ -53,6 +53,9 @@ typedef struct
     /* MetaData */
     PPACKAGE MetaData;
 
+    /* The last RequestID recieved by the TS */
+    UINT32 CurrentRequestID;
+
     struct {
         UINT32  AgentID;
         BOOL    Connected;

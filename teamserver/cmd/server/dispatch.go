@@ -54,6 +54,7 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 				AgentType = "Demon"
 				err       error
 				DemonID   string
+				found     = false
 			)
 
 			if agentID, ok := pk.Body.Info["DemonID"].(string); ok {
@@ -66,6 +67,7 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 			for i := range t.Agents.Agents {
 
 				if t.Agents.Agents[i].NameID == DemonID {
+					found = true
 
 					// handle demon session input
 					// TODO: maybe move to own function ?
@@ -176,8 +178,17 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 								} else {
 									*Message = make(map[string]string)
 
-									job, err = t.Agents.Agents[i].TaskPrepare(command, pk.Body.Info, Message)
-									if err != nil || job == nil {
+									var ClientID string
+									ClientID = ""
+									for _, client := range t.Clients {
+										if client.Username == pk.Head.User {
+											ClientID = client.ClientID
+											break
+										}
+									}
+
+									job, err = t.Agents.Agents[i].TaskPrepare(command, pk.Body.Info, Message, ClientID)
+									if err != nil {
 										Console(t.Agents.Agents[i].NameID, map[string]string{
 											"Type":    "Error",
 											"Message": "Failed to create Task: " + err.Error(),
@@ -185,19 +196,26 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 										return
 									}
 
+									if job != nil {
+										t.Agents.Agents[i].AddRequest(*job)
+									}
+
 									if t.Agents.Agents[i].Pivots.Parent != nil {
 										// if it's a pivot agent then add the job to the parent
 
 										logger.Debug("Prepare command for pivot demon: " + t.Agents.Agents[i].NameID)
 
-										t.Agents.Agents[i].PivotAddJob(*job)
+										if job != nil {
+											t.Agents.Agents[i].PivotAddJob(*job)
+										}
 
 										logr.LogrInstance.AddAgentInput("Demon", t.Agents.Agents[i].NameID, pk.Head.User, pk.Body.Info["TaskID"].(string), pk.Body.Info["CommandLine"].(string), time.Now().UTC().Format("02/01/2006 15:04:05"))
 
 									} else {
 										// if it's a direct agent add the job to the direct agent.
-
-										t.Agents.Agents[i].AddJobToQueue(*job)
+										if job != nil {
+											t.Agents.Agents[i].AddJobToQueue(*job)
+										}
 
 										logr.LogrInstance.AddAgentInput("Demon", pk.Body.Info["DemonID"].(string), pk.Head.User, pk.Body.Info["TaskID"].(string), pk.Body.Info["CommandLine"].(string), time.Now().UTC().Format("02/01/2006 15:04:05"))
 
@@ -290,7 +308,13 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 							}
 						}
 					}
+					break
 				}
+			}
+
+			if found == false {
+				logger.Error(fmt.Sprintf("The AgentID %s was not found", DemonID))
+				return
 			}
 
 			if pk.Head.OneTime == "true" {

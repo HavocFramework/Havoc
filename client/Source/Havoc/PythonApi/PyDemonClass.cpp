@@ -33,12 +33,13 @@ PyMemberDef PyDemonClass_members[] = {
 
 PyMethodDef PyDemonClass_methods[] = {
 
-        { "ConsoleWrite",           ( PyCFunction ) DemonClass_ConsoleWrite,        METH_VARARGS, "Prints messages to the demon sessions console" },
-        { "ProcessCreate",          ( PyCFunction ) DemonClass_ProcessCreate,       METH_VARARGS, "Creates a Process" },
-        { "InlineExecute",          ( PyCFunction ) DemonClass_InlineExecute,       METH_VARARGS, "Executes a coff file in the context of the demon sessions" },
-        { "DllSpawn",               ( PyCFunction ) DemonClass_DllSpawn,            METH_VARARGS, "Spawn and injects a reflective dll and get output from it" },
-        { "DllInject",              ( PyCFunction ) DemonClass_DllInject,           METH_VARARGS, "Injects a reflective dll into a specified process" },
-        { "DotnetInlineExecute",    ( PyCFunction ) DemonClass_DotnetInlineExecute, METH_VARARGS, "Executes a dotnet assembly in the context of the demon sessions" },
+        { "ConsoleWrite",           ( PyCFunction ) DemonClass_ConsoleWrite,           METH_VARARGS, "Prints messages to the demon sessions console" },
+        { "ProcessCreate",          ( PyCFunction ) DemonClass_ProcessCreate,          METH_VARARGS, "Creates a Process" },
+        { "InlineExecute",          ( PyCFunction ) DemonClass_InlineExecute,          METH_VARARGS, "Executes a coff file in the context of the demon sessions" },
+        { "InlineExecuteGetOutput", ( PyCFunction ) DemonClass_InlineExecuteGetOutput, METH_VARARGS, "Executes a coff file in the context of the demon sessions and get the output via a callback" },
+        { "DllSpawn",               ( PyCFunction ) DemonClass_DllSpawn,               METH_VARARGS, "Spawn and injects a reflective dll and get output from it" },
+        { "DllInject",              ( PyCFunction ) DemonClass_DllInject,              METH_VARARGS, "Injects a reflective dll into a specified process" },
+        { "DotnetInlineExecute",    ( PyCFunction ) DemonClass_DotnetInlineExecute,    METH_VARARGS, "Executes a dotnet assembly in the context of the demon sessions" },
 
         { NULL },
 };
@@ -235,6 +236,64 @@ PyObject* DemonClass_InlineExecute( PPyDemonClass self, PyObject *args )
                 auto ArgsByteArray = QByteArray( ObjArgs, ArgSize );
 
                 Sessions.InteractedWidget->DemonCommands->Execute.InlineExecute( ( char* ) TaskID, ( char* ) EntryFunc, ( char* ) Path, ArgsByteArray, Flags );
+            }
+
+            break;
+        }
+    }
+
+    Py_RETURN_NONE;
+}
+
+PyObject* DemonClass_InlineExecuteGetOutput( PPyDemonClass self, PyObject *args )
+{
+    spdlog::debug( "[PyApi] Demon::InlineExecuteGetOutput" );
+
+    char*     TaskID     = nullptr;
+    char*     EntryFunc  = nullptr;
+    char*     Path       = nullptr;
+    PyObject* PyArgBytes = nullptr;
+    auto      Flags      = QString();
+    PyObject* Callback   = nullptr;
+
+    if ( ! PyArg_ParseTuple( args, "OssS", &Callback, &EntryFunc, &Path, &PyArgBytes ) )
+        return nullptr;
+
+    // InlineExecuteGetOutput only works in "non-threaded" mode
+    // this is to avoid "RequestID" mixups
+    Flags = "non-threaded";
+
+    if ( ! PyCallable_Check( Callback ) )
+    {
+        spdlog::error( "The callback is not callable" );
+        return nullptr;
+    }
+
+    for ( auto& Sessions : HavocX::Teamserver.Sessions )
+    {
+        if ( Sessions.Name.compare( self->DemonID ) == 0 )
+        {
+            if ( FileRead( Path ) == nullptr )
+            {
+                Sessions.InteractedWidget->AppendRaw();
+                Sessions.InteractedWidget->TaskError( "Failed to open object file path: " + QString( Path ) );
+            }
+            else
+            {
+                auto ArgSize       = PyBytes_GET_SIZE( PyArgBytes );
+                auto ObjArgs       = PyBytes_AS_STRING( PyArgBytes );
+                auto ArgsByteArray = QByteArray( ObjArgs, ArgSize );
+
+                // create a new TaskID
+                auto TaskID = QString( Util::gen_random( 8 ).c_str() );
+
+                // save it the TaskID and the callback function
+                Sessions.TaskIDToPythonCallbacks.insert(pair<QString, PyObject*>(TaskID, Callback));
+                Py_XINCREF(Callback);
+
+                Sessions.InteractedWidget->DemonCommands->Execute.InlineExecuteGetOutput( ( char* ) TaskID.toStdString().c_str(), ( char* ) EntryFunc, ( char* ) Path, ArgsByteArray, Flags );
+
+                return PyUnicode_FromString( TaskID.toStdString().c_str() );
             }
 
             break;

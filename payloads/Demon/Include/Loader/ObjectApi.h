@@ -17,10 +17,6 @@ extern DWORD        BeaconApiCounter;
 #define CALLBACK_ERROR       0x0d
 #define CALLBACK_OUTPUT_UTF8 0x20
 
-#define CALLBACK_MSG_GOOD    0x90
-#define CALLBACK_MSG_INFO    0x91
-#define CALLBACK_MSG_ERROR   0x92
-
 typedef struct {
     PCHAR  original; /* the original buffer [so we can free it] */
     PCHAR  buffer;   /* current pointer into our buffer */

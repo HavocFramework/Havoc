@@ -46,6 +46,7 @@ PyObject*   DemonClass_ProcessCreate( PPyDemonClass self, PyObject *args );
 PyObject*   DemonClass_DllInject( PPyDemonClass self, PyObject *args );
 PyObject*   DemonClass_DllSpawn( PPyDemonClass self, PyObject *args );
 PyObject*   DemonClass_InlineExecute( PPyDemonClass self, PyObject *args );
+PyObject*   DemonClass_InlineExecuteGetOutput( PPyDemonClass self, PyObject *args );
 PyObject*   DemonClass_DotnetInlineExecute( PPyDemonClass self, PyObject *args );
 
 // Utils

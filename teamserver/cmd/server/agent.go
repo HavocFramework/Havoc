@@ -162,6 +162,18 @@ func (t *Teamserver) AgentConsole(AgentID string, CommandID int, Output map[stri
 	t.EventBroadcast("", pk)
 }
 
+func (t *Teamserver) PythonModuleCallback(ClientID string, AgentID string, CommandID int, Output map[string]string) {
+	var (
+		out, _ = json.Marshal(Output)
+		pk     = events.Demons.DemonOutput(AgentID, CommandID, string(out))
+	)
+
+	err := t.SendEvent(ClientID, pk)
+	if err != nil {
+		logger.Error("SendEvent error: ", err)
+	}
+}
+
 func (t *Teamserver) AgentCallback(DemonID string, Time string) {
 	var (
 		Output = map[string]string{

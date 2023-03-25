@@ -102,6 +102,31 @@ auto CommandExecute::InlineExecute( QString TaskID, QString FunctionName, QStrin
             { "CommandLine",    DemonCommandInstance->CommandInputList[TaskID].toStdString() },
             { "DemonID",        this->DemonCommandInstance->DemonConsole->SessionInfo.Name.toStdString() },
             { "CommandID",      to_string( static_cast<int>( Commands::INLINE_EXECUTE ) ).c_str() },
+            { "HasCallback",    "false"},
+
+            { "FunctionName",   FunctionName.toStdString() },
+            { "Binary",         Content.toBase64().toStdString() },
+            { "Arguments",      Util::base64_encode( Args.toStdString().c_str(), Args.length() ) },
+            { "Flags",          Flags.toStdString() },
+         },
+    };
+
+    NewPackageCommand( this->DemonCommandInstance->Teamserver, Body );
+}
+
+auto CommandExecute::InlineExecuteGetOutput( QString TaskID, QString FunctionName, QString Path, QByteArray Args, QString Flags ) -> void
+{
+    auto Content = FileRead( Path );
+    if ( Content.isEmpty() ) return;
+
+    auto Body    = Util::Packager::Body_t {
+        .SubEvent = Util::Packager::Session::SendCommand,
+        .Info = {
+            { "TaskID",         TaskID.toStdString() },
+            { "CommandLine",    DemonCommandInstance->CommandInputList[TaskID].toStdString() },
+            { "DemonID",        this->DemonCommandInstance->DemonConsole->SessionInfo.Name.toStdString() },
+            { "CommandID",      to_string( static_cast<int>( Commands::INLINE_EXECUTE ) ).c_str() },
+            { "HasCallback",    "true"},
 
             { "FunctionName",   FunctionName.toStdString() },
             { "Binary",         Content.toBase64().toStdString() },
