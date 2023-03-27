@@ -113,8 +113,8 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                     .Description    = "create a process",
                     .Behavior       = BEHAVIOR_API_ONLY,
                     .MitreTechniques = {  },
-                    .Usage          = "[normal/suspended] [process] (args)",
-                    .Example        = R"(suspended C:\Windows\System32\notepad.exe)",
+                    .Usage          = "[normal/suspended] (--silent) (--no-pipe) process (args)",
+                    .Example        = R"(suspended --no-pipe C:\Windows\System32\notepad.exe)",
                 },
                 {
                     .CommandString  = "modules",

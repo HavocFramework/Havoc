@@ -361,32 +361,28 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 				ProcessVerbose int
 			)
 
-			// State, ProcessApp, Verbose, Piped, ProcessArg
-			if len(Args) > 4 {
-				ProcArgs, _ := base64.StdEncoding.DecodeString(Args[4])
-				ProcessArgs = string(ProcArgs)
-			}
+			logger.Debug(Arguments)
 
+			// State, Verbose, Piped, ProcessApp, ProcessArg
 			ProcessState, err := strconv.Atoi(Args[0])
 			if err != nil {
 				logger.Error("")
 			}
 
-			if len(Args[1]) != 0 {
-				Process = Args[1]
-			} else {
-				Process = 0
-			}
-
 			ProcessVerbose = 0
-			if strings.ToLower(Args[2]) == "true" {
+			if strings.ToLower(Args[1]) == "true" {
 				ProcessVerbose = 1
 			}
 
 			ProcessPiped = 0
-			if strings.ToLower(Args[3]) == "true" {
+			if strings.ToLower(Args[2]) == "true" {
 				ProcessPiped = 1
 			}
+
+			Process = Args[3]
+
+			ProcArgs, _ := base64.StdEncoding.DecodeString(Args[4])
+			ProcessArgs = string(ProcArgs)
 
 			job.Data = []interface{}{
 				SubCommand,
@@ -2321,23 +2317,6 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 				break
 
-			case DEMON_INFO_PROC_CREATE:
-
-				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadInt32}) {
-					var (
-						Path = Parser.ParseString()
-						PID  = Parser.ParseInt32()
-					)
-
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: DEMON_INFO - DEMON_INFO_PROC_CREATE, Path: %s, PID: %d", AgentID, Path, PID))
-
-					Output["Message"] = fmt.Sprintf("Process started: Path:[%v] ProcessID:[%v]", Path, PID)
-				} else {
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: DEMON_INFO - DEMON_INFO_PROC_CREATE, Invalid packet: %d", AgentID))
-				}
-
-				break
-
 			default:
 				logger.Debug(fmt.Sprintf("Agent: %x, Command: DEMON_INFO - UNKNOWN (%d)", AgentID, InfoID))
 			}
@@ -2495,8 +2474,17 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						Message["Message"] = fmt.Sprintf("Failed to kill job %v", JobID)
 					}
 				} else {
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_JOB - DEMON_COMMAND_JOB_KILL_REMOVE", AgentID))
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_JOB - DEMON_COMMAND_JOB_KILL_REMOVE, Invalid packet", AgentID))
 				}
+
+				break
+
+			case DEMON_COMMAND_JOB_DIED:
+
+				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_JOB - DEMON_COMMAND_JOB_DIED", AgentID))
+
+				// this message is sent by the agent when a created process dies
+				a.RequestCompleted(RequestID)
 
 				break
 
@@ -2507,6 +2495,8 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 			a.RequestCompleted(RequestID)
 			break
+		} else {
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_JOB, Invalid packet", AgentID))
 		}
 
 	case COMMAND_FS:
@@ -3346,16 +3336,35 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 			case DEMON_COMMAND_PROC_CREATE:
 
-				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32}) {
-					var ProcessID = Parser.ParseInt32()
+				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32}) {
+					var (
+						Path    = Parser.ParseString()
+						PID     = Parser.ParseInt32()
+						Success = Parser.ParseInt32()
+						Verbose = Parser.ParseInt32()
+						Piped   = Parser.ParseInt32()
+					)
 
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PROC - DEMON_COMMAND_PROC_CREATE, ProcessID: %d", AgentID, ProcessID))
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: DEMON_INFO - DEMON_INFO_PROC_CREATE, Path: %s, PID: %d, Success: %d, Verbose: %d, Piped: %d", AgentID, Path, PID, Success, Verbose, Piped))
 
-					Message["Type"] = "Info"
-					Message["Message"] = fmt.Sprintf("Successful spawned a process: %v", ProcessID)
+					if Verbose == 1 {
+						if Success == 1 {
+							Message["Type"] = "Info"
+							Message["Message"] = fmt.Sprintf("Process started: Path:[%v] ProcessID:[%v]", Path, PID)
+						} else {
+							Message["Type"] = "Erro"
+							Message["Message"] = fmt.Sprintf("Process could not be started: Path:[%v]", Path)
+						}
+					}
+
+					if Success == 0 || Piped == 0 {
+						// if we don't expect to recieve output, then close the RequestID
+						a.RequestCompleted(RequestID)
+					}
 				} else {
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PROC - DEMON_COMMAND_PROC_CREATE, Invalid packet", AgentID))
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PROC - DEMON_COMMAND_PROC_CREATE, Invalid packet: %d", AgentID))
 				}
+
 				// TODO: can we expect more messages from this request?
 				//a.RequestCompleted(RequestID)
 

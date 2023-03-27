@@ -699,30 +699,71 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             {
                 if ( InputCommands.length() >= 4 )
                 {
-                    auto Args = QString();
+                    auto Index   = 2;
+                    auto Flags   = QString();
+                    auto Program = QString();
+                    auto Args    = QString();
+                    auto Verbose = QString();
+                    auto Piped   = QString();
 
-                    if ( InputCommands[ 2 ].compare( "normal" ) == 0 )
+                    if ( InputCommands[ Index ].compare( "normal" ) == 0 )
                     {
-                        TaskID = CONSOLE_INFO( "Tasked demon to spawn a process: " + InputCommands[ 3 ] );
-                        InputCommands[ 2 ] = "0";
+                        Flags = "0";
                     }
-                    else if ( InputCommands[ 2 ].compare( "suspended" ) == 0 )
+                    else if ( InputCommands[ Index ].compare( "suspended" ) == 0 )
                     {
-                        TaskID = CONSOLE_INFO( "Tasked demon to spawn a process in suspended state: " + InputCommands[ 3 ] );
-                        InputCommands[ 2 ] = "4";
+                        // CREATE_SUSPENDED = 0x00000004
+                        Flags = "4";
                     }
                     else
                     {
-                        CONSOLE_ERROR( "Process creation flag not found: " + InputCommands[ 3 ] )
+                        CONSOLE_ERROR( "Process creation flag not found: " + InputCommands[ Index ] )
                         return false;
                     }
 
-                    if ( InputCommands.length() > 4 )
-                        Args = InputCommands[ 4 ].toUtf8().toBase64();
+                    Index++;
+
+                    Verbose = "TRUE";
+                    if ( InputCommands[ Index ].compare( "--silent" ) == 0 )
+                    {
+                        Verbose = "FALSE";
+                        Index++;
+                    }
+
+
+                    Piped = "TRUE";
+                    if ( InputCommands[ Index ].compare( "--no-pipe" ) == 0 )
+                    {
+                        Piped = "FALSE";
+                        Index++;
+                    }
+
+                    Program = InputCommands[ Index ];
+
+                    Index++;
+
+                    Args = "";
+                    for (int i = Index; i < InputCommands.length(); ++i)
+                    {
+                        if (i > Index)
+                            Args += " ";
+                        Args += InputCommands[ i ];
+                    }
+
+                    if ( Flags.compare( "4" ) == 0 )
+                    {
+                        TaskID = CONSOLE_INFO( "Tasked demon to spawn a process in suspended state: " + Program );
+                    }
+                    else
+                    {
+                        TaskID = CONSOLE_INFO( "Tasked demon to spawn a process: " + Program );
+                    }
+
+                    Args = Args.toUtf8().toBase64();
 
                     CommandInputList[ TaskID ] = commandline;
 
-                    SEND( Execute.ProcModule( TaskID, 4, InputCommands[ 2 ] + ";" + InputCommands[ 3 ] + ";TRUE;FALSE;" + Args ) )
+                    SEND( Execute.ProcModule( TaskID, 4, Flags + ";" + Verbose + ";" + Piped + ";" + Program + ";" + Args ) )
                 }
                 else
                 {

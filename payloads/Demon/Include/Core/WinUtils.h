@@ -67,7 +67,7 @@ PCHAR    TokenGetUserDomain( HANDLE hToken, PDWORD UserSize );
 BOOL     WinScreenshot( PVOID* ImagePointer, PSIZE_T ImageSize );
 
 BOOL     AnonPipesInit( PANONPIPE AnonPipes );
-VOID     AnonPipesRead( PANONPIPE AnonPipes );
+VOID     AnonPipesRead( PANONPIPE AnonPipes, UINT32 RequestID );
 VOID     AnonPipesClose( PANONPIPE AnonPipes );
 
 BOOL     PipeWrite( HANDLE Handle, PBUFFER Buffer );

@@ -544,7 +544,7 @@ HandleError:
     return FALSE;
 }
 
-VOID AnonPipesRead( PANONPIPE AnonPipes )
+VOID AnonPipesRead( PANONPIPE AnonPipes, UINT32 RequestID )
 {
     PPACKAGE Package         = NULL;
     BOOL     Success         = FALSE;
@@ -585,7 +585,7 @@ VOID AnonPipesRead( PANONPIPE AnonPipes )
 
     if ( dwBufferSize )
     {
-        Package = PackageCreate( DEMON_OUTPUT );
+        Package = PackageCreateWithRequestID( RequestID, DEMON_OUTPUT );
         PackageAddBytes( Package, Buffer, dwBufferSize );
         PackageTransmit( Package, NULL, NULL );
     }

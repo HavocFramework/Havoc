@@ -99,6 +99,7 @@
 #define DEMON_COMMAND_JOB_SUSPEND            2
 #define DEMON_COMMAND_JOB_RESUME             3
 #define DEMON_COMMAND_JOB_KILL_REMOVE        4
+#define DEMON_COMMAND_JOB_DIED               5
 
 #define DEMON_COMMAND_TRANSFER_LIST          0
 #define DEMON_COMMAND_TRANSFER_STOP          1

