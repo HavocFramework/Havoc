@@ -3339,8 +3339,8 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						Path    = Parser.ParseString()
 						PID     = Parser.ParseInt32()
 						Success = Parser.ParseInt32()
-						Verbose = Parser.ParseInt32()
 						Piped   = Parser.ParseInt32()
+						Verbose = Parser.ParseInt32()
 					)
 
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: DEMON_INFO - DEMON_INFO_PROC_CREATE, Path: %s, PID: %d, Success: %d, Verbose: %d, Piped: %d", AgentID, Path, PID, Success, Verbose, Piped))
