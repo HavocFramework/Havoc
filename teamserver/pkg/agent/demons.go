@@ -361,8 +361,6 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 				ProcessVerbose int
 			)
 
-			logger.Debug(Arguments)
-
 			// State, Verbose, Piped, ProcessApp, ProcessArg
 			ProcessState, err := strconv.Atoi(Args[0])
 			if err != nil {

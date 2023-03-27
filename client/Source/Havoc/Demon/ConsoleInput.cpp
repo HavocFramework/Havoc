@@ -742,12 +742,10 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
 
                     Index++;
 
-                    Args = "";
+                    Args = Program;
                     for (int i = Index; i < InputCommands.length(); ++i)
                     {
-                        if (i > Index)
-                            Args += " ";
-                        Args += InputCommands[ i ];
+                        Args += " " + InputCommands[ i ];
                     }
 
                     if ( Flags.compare( "4" ) == 0 )
