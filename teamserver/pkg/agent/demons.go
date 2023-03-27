@@ -909,9 +909,16 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 			case "privs-get":
 				SubCommand = 0x4
 
+				if PrivName, ok := Optional["Arguments"].(string); ok {
+
 				job.Data = []interface{}{
 					SubCommand,
 					win32.FALSE,
+					PrivName,
+				}
+
+				} else {
+					return job, errors.New("token arguments not found")
 				}
 
 				break
@@ -4002,13 +4009,23 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						Output["Message"] = "List Privileges for current Token:"
 						Output["Output"] = "\n" + OutputBuffer.String()
 					} else {
-						// TODO: finish this
-						if Parser.Length() > 0 {
-							Output["Type"] = "Good"
-							Output["Message"] = "Get Privilege for current Token:"
+
+						if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadBytes}) {
+							var (
+								Success  = Parser.ParseInt32()
+								PrivName = Parser.ParseString()
+							)
+
+							if Success == 1 {
+								Output["Type"] = "Good"
+								Output["Message"] = fmt.Sprintf("The privilege %s was successfully enabled", PrivName)
+							} else {
+								Output["Type"] = "Error"
+								Output["Message"] = fmt.Sprintf("Failed to enable the %s privilege", PrivName)
+							}
+
 						} else {
-							Output["Type"] = "Error"
-							Output["Message"] = "Failed to get privilege current token"
+							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_PRIVSGET_OR_LIST, Invalid packet", AgentID))
 						}
 					}
 					a.RequestCompleted(RequestID)

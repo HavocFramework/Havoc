@@ -34,7 +34,6 @@ BOOL TokenSetPrivilege( LPSTR Privilege, BOOL Enable )
     if ( ! Instance.Win32.LookupPrivilegeValueA( NULL, Privilege, &TokenLUID ) )
     {
         PRINTF( "[-] LookupPrivilegeValue error: %u\n", NtGetLastError() );
-        CALLBACK_GETLASTERROR
         return FALSE;
     }
 

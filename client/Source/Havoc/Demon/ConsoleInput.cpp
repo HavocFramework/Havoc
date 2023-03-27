@@ -1174,6 +1174,24 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 CommandInputList[ TaskID ] = commandline;
                 SEND( Execute.Token( TaskID, "privs-list", "" ) );
             }
+            else if ( InputCommands[ 1 ].compare( "privs-get" ) == 0 )
+            {
+                if ( InputCommands.size() < 3 )
+                {
+                    CONSOLE_ERROR( "Not enough arguments" )
+                    return false;
+                }
+
+                if ( InputCommands.size() > 4 )
+                {
+                    CONSOLE_ERROR( "Too many arguments" )
+                    return false;
+                }
+
+                TaskID                     = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to enable a privilege: " + InputCommands[ 2 ] );
+                CommandInputList[ TaskID ] = commandline;
+                SEND( Execute.Token( TaskID, "privs-get", InputCommands[ 2 ] ) );
+            }
             else
             {
                 CONSOLE_ERROR( "Module command not found" )

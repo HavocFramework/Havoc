@@ -415,6 +415,12 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                     .MitreTechniques = { "T1134" },
                 },
                 {
+                    .CommandString  = "privs-get",
+                    .Description    = "enable a privilege",
+                    .Behavior       = BEHAVIOR_API_ONLY,
+                    .MitreTechniques = { "T1134" },
+                },
+                {
                     .CommandString  = "revert",
                     .Description    = "revert to default process token",
                     .Behavior       = BEHAVIOR_API_ONLY,
