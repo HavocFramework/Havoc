@@ -374,7 +374,7 @@ func (t *Teamserver) Start() {
 			HandlerData.Hosts = strings.Split(Data["Hosts"].(string), ", ")
 			HandlerData.HostBind = Data["HostBind"].(string)
 			HandlerData.HostRotation = Data["HostRotation"].(string)
-			HandlerData.PortBind = Data["Port"].(string)
+			HandlerData.PortBind = Data["PortBind"].(string)
 			HandlerData.UserAgent = Data["UserAgent"].(string)
 			HandlerData.Headers = strings.Split(Data["Headers"].(string), ", ")
 			HandlerData.Uris = strings.Split(Data["Uris"].(string), ", ")
