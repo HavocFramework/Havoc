@@ -26,8 +26,8 @@ func NewPacker(AesKey, AesIV []byte) *Packer {
 }
 
 func (p *Packer) AddInt64(data int64) {
-    var buffer = make([]byte, 4)
-    binary.LittleEndian.PutUint32(buffer, uint32(data))
+    var buffer = make([]byte, 8)
+    binary.LittleEndian.PutUint64(buffer, uint64(data))
     p.data = append(p.data, buffer...)
 }
 
