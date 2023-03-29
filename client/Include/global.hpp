@@ -178,7 +178,8 @@ namespace HavocNamespace
                 QStringList Hosts;
                 QString     HostBind;
                 QString     HostRotation;
-                QString     Port;
+                QString     PortBind;
+                QString     PortConn;
                 QString     UserAgent;
                 QStringList Headers;
                 QStringList Uris;

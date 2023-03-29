@@ -88,8 +88,11 @@ public:
     QLabel*         LabelHostBind;
     QComboBox*      ComboHostBind;
 
-    QLabel*         LabelPort;
-    QLineEdit*      InputPort;
+    QLabel*         LabelPortBind;
+    QLineEdit*      InputPortBind;
+
+    QLabel*         LabelPortConn;
+    QLineEdit*      InputPortConn;
 
     QLineEdit*      InputUserAgent;
     QLabel*         LabelUserAgent;

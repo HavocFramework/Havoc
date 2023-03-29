@@ -65,8 +65,11 @@ NewListener::NewListener( QDialog* Dialog )
     LabelHostBind           = new QLabel( PageHTTP );
     ComboHostBind           = new QComboBox( PageHTTP );
 
-    LabelPort               = new QLabel( PageHTTP );
-    InputPort               = new QLineEdit( PageHTTP );
+    LabelPortBind           = new QLabel( PageHTTP );
+    InputPortBind           = new QLineEdit( PageHTTP );
+
+    LabelPortConn           = new QLabel( PageHTTP );
+    InputPortConn           = new QLineEdit( PageHTTP );
 
     LabelUserAgent          = new QLabel( PageHTTP );
     InputUserAgent          = new QLineEdit( PageHTTP );
@@ -125,7 +128,8 @@ NewListener::NewListener( QDialog* Dialog )
     ProxyConfigBox->setEnabled( true );
     InputUserAgent->setText( "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36" ); // default. maybe make it dynamic/random ?
     InputUserAgent->setCursorPosition( 0 );
-    InputPort->setText( "443" );
+    InputPortBind->setText( "443" );
+    InputPortConn->setText( "443" );
 
     // =============
     // ==== SMB ====
@@ -227,7 +231,8 @@ NewListener::NewListener( QDialog* Dialog )
     gridLayout_3->addWidget( ComboHostBind, 5, 1, 1, 2 );
     gridLayout_3->addWidget( LabelUris, 15, 0, 1, 1 );
     gridLayout_3->addWidget( LabelHostHeader, 19, 0, 1, 1 );
-    gridLayout_3->addWidget( InputPort, 6, 1, 1, 2 );
+    gridLayout_3->addWidget( InputPortBind, 6, 1, 1, 2 );
+    gridLayout_3->addWidget( InputPortConn, 7, 1, 1, 2 );
     gridLayout_3->addWidget( CheckEnableProxy, 20, 0, 1, 3 );
     gridLayout_3->addWidget( ButtonHeaderGroupClear, 11, 2, 1, 1 );
     gridLayout_3->addWidget( InputHostHeader, 19, 1, 1, 2 );
@@ -241,7 +246,8 @@ NewListener::NewListener( QDialog* Dialog )
     gridLayout_3->addWidget( ButtonHostsGroupClear, 1, 2, 1, 1 );
     gridLayout_3->addWidget( ButtonHeaderGroupAdd, 10, 2, 1, 1 );
     gridLayout_3->addWidget( HostsGroup, 0, 1, 4, 1 );
-    gridLayout_3->addWidget( LabelPort, 6, 0, 1, 1 );
+    gridLayout_3->addWidget( LabelPortBind, 6, 0, 1, 1 );
+    gridLayout_3->addWidget( LabelPortConn, 7, 0, 1, 1 );
     gridLayout_3->addWidget( ProxyConfigBox, 21, 0, 1, 3 );
     gridLayout_3->addWidget( UrisGroup, 15, 1, 3, 1 );
     gridLayout_3->addWidget( LabelHostRotation, 4, 0, 1, 1 );
@@ -301,7 +307,8 @@ NewListener::NewListener( QDialog* Dialog )
     LabelHosts->setText(QCoreApplication::translate("ListenerWidget", "Hosts", nullptr));
     ButtonHostsGroupClear->setText(QCoreApplication::translate("ListenerWidget", "Clear", nullptr));
     ButtonHeaderGroupAdd->setText(QCoreApplication::translate("ListenerWidget", "Add", nullptr));
-    LabelPort->setText(QCoreApplication::translate("ListenerWidget", "Port:", nullptr));
+    LabelPortBind->setText(QCoreApplication::translate("ListenerWidget", "PortBind:", nullptr));
+    LabelPortConn->setText(QCoreApplication::translate("ListenerWidget", "PortConn:", nullptr));
     LabelProxyType->setText(QCoreApplication::translate("ListenerWidget", "Proxy Type:", nullptr));
     LabelProxyHost->setText(QCoreApplication::translate("ListenerWidget", "Proxy Host:", nullptr));
     LabelProxyPort->setText(QCoreApplication::translate("ListenerWidget", "Proxy Port: ", nullptr));
@@ -402,12 +409,14 @@ NewListener::NewListener( QDialog* Dialog )
         if ( text.compare( HavocSpace::Listener::PayloadHTTPS ) == 0 )
         {
             StackWidgetConfigPages->setCurrentIndex( 0 );
-            InputPort->setText( "443" );
+            InputPortBind->setText( "443" );
+            InputPortConn->setText( "443" );
         }
         else if ( text.compare( HavocSpace::Listener::PayloadHTTP ) == 0 )
         {
             StackWidgetConfigPages->setCurrentIndex( 0 );
-            InputPort->setText( "80" );
+            InputPortBind->setText( "80" );
+            InputPortConn->setText( "80" );
         }
         else if ( text.compare( HavocSpace::Listener::PayloadSMB ) == 0 )
         {
@@ -468,8 +477,11 @@ MapStrStr NewListener::Start( Util::ListenerItem Item, bool Edit )
             else
                 ComboHostRotation->setCurrentIndex( 0 );
 
-            InputPort->setText( Info.Port );
-            InputPort->setReadOnly( true );
+            InputPortBind->setText( Info.PortBind );
+            InputPortBind->setReadOnly( true );
+
+            InputPortConn->setText( Info.PortConn );
+            InputPortConn->setReadOnly( true );
 
             InputUserAgent->setText( Info.UserAgent );
             InputUserAgent->setCursorPosition( 0 );
@@ -669,7 +681,8 @@ MapStrStr NewListener::Start( Util::ListenerItem Item, bool Edit )
         ListenerInfo.insert( { "Hosts", Hosts } );
         ListenerInfo.insert( { "HostBind", ComboHostBind->currentText().toStdString() } );
         ListenerInfo.insert( { "HostRotation", ComboHostRotation->currentText().toStdString() } );
-        ListenerInfo.insert( { "Port", InputPort->text().toStdString() } );
+        ListenerInfo.insert( { "PortBind", InputPortBind->text().toStdString() } );
+        ListenerInfo.insert( { "PortConn", InputPortConn->text().toStdString() } );
         ListenerInfo.insert( { "Headers", Headers } );
         ListenerInfo.insert( { "Uris", Uris } );
         ListenerInfo.insert( { "UserAgent", InputUserAgent->text().toStdString() } );
@@ -818,17 +831,33 @@ void HavocNamespace::UserInterface::Dialogs::NewListener::onButton_Save()
             return;
         }
 
-        if ( InputPort->text().isEmpty() )
+        if ( InputPortBind->text().isEmpty() )
         {
-            MessageBox( "Listener Error", "No Port specified", QMessageBox::Critical );
+            MessageBox( "Listener Error", "No PortBind specified", QMessageBox::Critical );
 
             return;
         }
         else
         {
-            if ( ! is_number( InputPort->text().toStdString() ) )
+            if ( ! is_number( InputPortBind->text().toStdString() ) )
             {
-                MessageBox( "Listener Error", "Port is not a number", QMessageBox::Critical );
+                MessageBox( "Listener Error", "PortBind is not a number", QMessageBox::Critical );
+
+                return;
+            }
+        }
+
+        if ( InputPortConn->text().isEmpty() )
+        {
+            MessageBox( "Listener Error", "No PortConn specified", QMessageBox::Critical );
+
+            return;
+        }
+        else
+        {
+            if ( ! is_number( InputPortConn->text().toStdString() ) )
+            {
+                MessageBox( "Listener Error", "PortConn is not a number", QMessageBox::Critical );
 
                 return;
             }

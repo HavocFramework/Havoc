@@ -266,7 +266,8 @@ bool Packager::DispatchListener( Util::Packager::PPackage Package )
                         .Hosts          = Hosts,
                         .HostBind       = Package->Body.Info[ "HostBind" ].c_str(),
                         .HostRotation   = Package->Body.Info[ "HostRotation" ].c_str(),
-                        .Port           = Package->Body.Info[ "Port" ].c_str(),
+                        .PortBind       = Package->Body.Info[ "PortBind" ].c_str(),
+                        .PortConn       = Package->Body.Info[ "PortConn" ].c_str(),
                         .UserAgent      = Package->Body.Info[ "UserAgent" ].c_str(),
                         .Headers        = Headers,
                         .Uris           = Uris,
@@ -311,9 +312,10 @@ bool Packager::DispatchListener( Util::Packager::PPackage Package )
                         found = true;
 
                         ListenerInfo.Info = Listener::Service {
-                                { "Host", Package->Body.Info[ "Host" ].c_str() },
-                                { "Port", Package->Body.Info[ "Port" ].c_str() },
-                                { "Info", Package->Body.Info[ "Info" ].c_str() } // NOTE: this is json string.
+                                { "Host",     Package->Body.Info[ "Host" ].c_str() },
+                                { "PortBind", Package->Body.Info[ "Port" ].c_str() },
+                                { "PortConn", Package->Body.Info[ "Port" ].c_str() },
+                                { "Info",     Package->Body.Info[ "Info" ].c_str() } // NOTE: this is json string.
                         };
 
                         break;
@@ -401,7 +403,8 @@ bool Packager::DispatchListener( Util::Packager::PPackage Package )
                         .Hosts          = Hosts,
                         .HostBind       = Package->Body.Info[ "HostBind" ].c_str(),
                         .HostRotation   = Package->Body.Info[ "HostRotation" ].c_str(),
-                        .Port           = Package->Body.Info[ "Port" ].c_str(),
+                        .PortBind       = Package->Body.Info[ "PortBind" ].c_str(),
+                        .PortConn       = Package->Body.Info[ "PortConn" ].c_str(),
                         .UserAgent      = Package->Body.Info[ "UserAgent" ].c_str(),
                         .Headers        = Headers,
                         .Uris           = Uris,

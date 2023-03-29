@@ -48,8 +48,9 @@ void HavocNamespace::UserInterface::Widgets::ListenersTable::setupUi( QWidget* F
     tableWidget->setHorizontalHeaderItem( 0, new QTableWidgetItem( "Name" )     );
     tableWidget->setHorizontalHeaderItem( 1, new QTableWidgetItem( "Protocol" ) );
     tableWidget->setHorizontalHeaderItem( 2, new QTableWidgetItem( "Host" )     );
-    tableWidget->setHorizontalHeaderItem( 3, new QTableWidgetItem( "Port" )     );
-    tableWidget->setHorizontalHeaderItem( 4, new QTableWidgetItem( "Status" )   );
+    tableWidget->setHorizontalHeaderItem( 3, new QTableWidgetItem( "PortBind" ) );
+    tableWidget->setHorizontalHeaderItem( 4, new QTableWidgetItem( "PortConn" ) );
+    tableWidget->setHorizontalHeaderItem( 5, new QTableWidgetItem( "Status" )   );
 
     tableWidget->setObjectName( QString::fromUtf8( "tableWidget" ) );
     tableWidget->setMouseTracking( false );
@@ -195,7 +196,8 @@ void HavocNamespace::UserInterface::Widgets::ListenersTable::ListenerAdd( Util::
     auto item_Name     = new QTableWidgetItem();
     auto item_Protocol = new QTableWidgetItem();
     auto item_Host     = new QTableWidgetItem();
-    auto item_Port     = new QTableWidgetItem();
+    auto item_PortBind = new QTableWidgetItem();
+    auto item_PortConn = new QTableWidgetItem();
     auto item_Status   = new QTableWidgetItem();
 
     item_Name->setText( item.Name.c_str() );
@@ -213,7 +215,8 @@ void HavocNamespace::UserInterface::Widgets::ListenersTable::ListenerAdd( Util::
     else if ( item.Protocol == Listener::PayloadHTTP.toStdString() || item.Protocol == Listener::PayloadHTTPS.toStdString() )
     {
         item_Host->setText( any_cast<Listener::HTTP>( item.Info ).HostBind );
-        item_Port->setText( any_cast<Listener::HTTP>( item.Info ).Port );
+        item_PortBind->setText( any_cast<Listener::HTTP>( item.Info ).PortBind );
+        item_PortConn->setText( any_cast<Listener::HTTP>( item.Info ).PortConn );
     }
     else if ( item.Protocol == Listener::PayloadExternal.toStdString() )
     {
@@ -221,21 +224,27 @@ void HavocNamespace::UserInterface::Widgets::ListenersTable::ListenerAdd( Util::
     }
     else
     {
-        auto Host = QString();
-        auto Port = QString();
+        auto Host     = QString();
+        auto PortBind = QString();
+        auto PortConn = QString();
 
-        Host = QString( any_cast<MapStrStr>( any_cast<Listener::Service>( item.Info ) )[ "Host" ].c_str() );
-        Port = QString( any_cast<MapStrStr>( any_cast<Listener::Service>( item.Info ) )[ "Port" ].c_str() );
+        Host     = QString( any_cast<MapStrStr>( any_cast<Listener::Service>( item.Info ) )[ "Host" ].c_str() );
+        PortBind = QString( any_cast<MapStrStr>( any_cast<Listener::Service>( item.Info ) )[ "PortBind" ].c_str() );
+        PortConn = QString( any_cast<MapStrStr>( any_cast<Listener::Service>( item.Info ) )[ "PortConn" ].c_str() );
 
         item_Host->setText( Host );
-        item_Port->setText( Port );
+        item_PortBind->setText( PortBind );
+        item_PortConn->setText( PortConn );
     }
 
     item_Host->setFlags( item_Host->flags() ^ Qt::ItemIsEditable );
     item_Host->setTextAlignment( Qt::AlignLeft );
 
-    item_Port->setFlags( item_Port->flags() ^ Qt::ItemIsEditable );
-    item_Port->setTextAlignment( Qt::AlignLeft );
+    item_PortBind->setFlags( item_PortBind->flags() ^ Qt::ItemIsEditable );
+    item_PortBind->setTextAlignment( Qt::AlignLeft );
+
+    item_PortConn->setFlags( item_PortConn->flags() ^ Qt::ItemIsEditable );
+    item_PortConn->setTextAlignment( Qt::AlignLeft );
 
     item_Status->setText( item.Status.c_str() );
     item_Status->setFlags( item_Status->flags() ^ Qt::ItemIsEditable );
@@ -253,8 +262,9 @@ void HavocNamespace::UserInterface::Widgets::ListenersTable::ListenerAdd( Util::
     tableWidget->setItem( tableWidget->rowCount() - 1, 0, item_Name );
     tableWidget->setItem( tableWidget->rowCount() - 1, 1, item_Protocol );
     tableWidget->setItem( tableWidget->rowCount() - 1, 2, item_Host );
-    tableWidget->setItem( tableWidget->rowCount() - 1, 3, item_Port );
-    tableWidget->setItem( tableWidget->rowCount() - 1, 4, item_Status );
+    tableWidget->setItem( tableWidget->rowCount() - 1, 3, item_PortBind );
+    tableWidget->setItem( tableWidget->rowCount() - 1, 4, item_PortConn );
+    tableWidget->setItem( tableWidget->rowCount() - 1, 5, item_Status );
 
     tableWidget->setSortingEnabled( isSortingEnabled );
 
