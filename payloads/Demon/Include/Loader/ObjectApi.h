@@ -11,6 +11,7 @@ typedef struct
 
 extern COFFAPIFUNC  BeaconApi[];
 extern DWORD        BeaconApiCounter;
+extern COFFAPIFUNC  LdrApi[];
 
 #define CALLBACK_OUTPUT      0x0
 #define CALLBACK_OUTPUT_OEM  0x1e

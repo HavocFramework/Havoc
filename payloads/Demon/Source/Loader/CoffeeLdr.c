@@ -14,9 +14,10 @@
 #include <Loader/ObjectApi.h>
 
 #if defined( __x86_64__ ) || defined( _WIN64 )
+    // __imp_
     #define COFF_PREP_SYMBOL        0xec6ba2a8
     #define COFF_PREP_SYMBOL_SIZE   6
-
+    // __imp_Beacon
     #define COFF_PREP_BEACON        0xd0a409b0
     #define COFF_PREP_BEACON_SIZE   ( COFF_PREP_SYMBOL_SIZE + 6 )
 #endif
@@ -37,6 +38,30 @@ LONG WINAPI VehDebugger( PEXCEPTION_POINTERS Exception )
     PackageTransmit( Package, NULL, NULL );
 
     return EXCEPTION_CONTINUE_EXECUTION;
+}
+
+// check if the symbol is on the form: __imp_LIBNAME$FUNCNAME
+BOOL SymbolIncludesLibrary( LPSTR Symbol )
+{
+    // does it start with __imp_?
+    if ( HashEx( Symbol, COFF_PREP_SYMBOL_SIZE, FALSE ) != COFF_PREP_SYMBOL )
+        return FALSE;
+
+    // does it contain a $ (which separates DLL name and export name)
+    SIZE_T Length = StringLengthA( Symbol );
+    for (SIZE_T i = COFF_PREP_SYMBOL_SIZE + 1; i < Length - 1; ++i)
+    {
+        if ( Symbol[ i ] == '$' )
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+BOOL SymbolIsImport( LPSTR Symbol )
+{
+    // does it start with __imp_?
+    return HashEx( Symbol, COFF_PREP_SYMBOL_SIZE, FALSE ) == COFF_PREP_SYMBOL;
 }
 
 BOOL CoffeeProcessSymbol( LPSTR Symbol, PVOID* pFuncAddr )
@@ -62,14 +87,9 @@ BOOL CoffeeProcessSymbol( LPSTR Symbol, PVOID* pFuncAddr )
 
     MemCopy( Bak, Symbol, StringLengthA( Symbol ) + 1 );
 
-    if ( SymBeacon == COFF_PREP_BEACON         || // check if this is a Beacon api
-         SymHash   == COFFAPI_TOWIDECHAR       ||
-         SymHash   == COFFAPI_GETPROCADDRESS   ||
-         SymHash   == COFFAPI_LOADLIBRARYA     ||
-         SymHash   == COFFAPI_GETMODULEHANDLE  ||
-         SymHash   == COFFAPI_FREELIBRARY      )
+    if ( SymBeacon == COFF_PREP_BEACON )
     {
-        //PUTS( "Internal Function" )
+        // this is an import symbol from Beacon: __imp_BeaconFUNCNAME
         SymFunction = Symbol + COFF_PREP_SYMBOL_SIZE;
 
         for ( DWORD i = 0 ;; i++ )
@@ -87,9 +107,29 @@ BOOL CoffeeProcessSymbol( LPSTR Symbol, PVOID* pFuncAddr )
 
         goto SymbolNotFound;
     }
-    else if ( HashEx( Symbol, COFF_PREP_SYMBOL_SIZE, FALSE ) == COFF_PREP_SYMBOL )
+    else if ( SymbolIsImport( Symbol ) && ! SymbolIncludesLibrary( Symbol ) )
     {
-        //PUTS( "External Function" )
+        // this is an import symbol without library: __imp_FUNCNAME
+        SymFunction = Symbol + COFF_PREP_SYMBOL_SIZE;
+
+        // we support a handful of functions that don't usually have the DLL
+        for ( DWORD i = 0 ;; i++ )
+        {
+            if ( ! LdrApi[ i ].NameHash )
+                break;
+
+            if ( HashStringA( SymFunction ) == LdrApi[ i ].NameHash )
+            {
+                *pFuncAddr = LdrApi[ i ].Pointer;
+                return TRUE;
+            }
+        }
+
+        goto SymbolNotFound;
+    }
+    else if ( SymbolIsImport( Symbol ) )
+    {
+        // this is a typical import symbol in the form: __imp_LIBNAME$FUNCNAME
         SymLibrary  = Bak + COFF_PREP_SYMBOL_SIZE;
         SymLibrary  = StringTokenA( SymLibrary, "$" );
         SymFunction = SymLibrary + StringLengthA( SymLibrary ) + 1;
@@ -281,6 +321,8 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
                 MemSet( SymName, 0, sizeof( SymName ) );
                 MemCopy( SymName, Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].First.Name, 8 );
                 SymbolName = SymName;
+                // TODO: the following symbols take 2 entries: .text, .xdata, .pdata, .rdata
+                //       skip an entry if one of those is found
             }
             else
             {

