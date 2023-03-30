@@ -472,18 +472,53 @@ VOID EkkoObf( DWORD TimeOut )
 
 UINT32 SleepTime( VOID )
 {
-    UINT32 SleepTime    = Instance.Config.Sleeping * 1000;
-    UINT32 MaxVariation = ( Instance.Config.Jitter * SleepTime ) / 100;
-    ULONG  Rand         = 0;
+    UINT32     SleepTime    = Instance.Config.Sleeping * 1000;
+    UINT32     MaxVariation = ( Instance.Config.Jitter * SleepTime ) / 100;
+    ULONG      Rand         = 0;
+    UINT32     WorkingHours = Instance.Config.Transport.WorkingHours;
+    SYSTEMTIME SystemTime   = { 0 };
+    WORD       StartHour    = 0;
+    WORD       StartMinute  = 0;
+    WORD       EndHour      = 0;
+    WORD       EndMinute    = 0;
 
-    if ( ! SleepTime && ! InWorkingHours() )
+    if ( ! InWorkingHours() )
     {
-        // if we are not longer in working hours and the sleep time is 0
-        // set the sleep time to 5 mins
-        SleepTime = 300000;
-    }
+        /*
+         * we are no longer in working hours,
+         * if the SleepTime is 0, then we will assume the operator is performing some "important" task right now,
+         * so we will ignore working hours and we won't sleep
+         * if the SleepTime is not 0, we will sleep until we are in working hours again
+         */
+        if ( SleepTime )
+        {
+            // calculate how much we need to sleep until we reach the start of the working hours
+            SleepTime = 0;
 
-    if ( MaxVariation )
+            StartHour   = ( WorkingHours >> 17 ) & 0b011111;
+            StartMinute = ( WorkingHours >> 11 ) & 0b111111;
+            EndHour     = ( WorkingHours >>  6 ) & 0b011111;
+            EndMinute   = ( WorkingHours >>  0 ) & 0b111111;
+
+            Instance.Win32.GetLocalTime(&SystemTime);
+
+            if ( SystemTime.wHour >= EndHour )
+            {
+                // seconds until 00:00
+                SleepTime += ( 24 - SystemTime.wHour - 1 ) * 60 + ( 60 - SystemTime.wMinute );
+                // seconds until start of working hours from 00:00
+                SleepTime += StartHour * 60 + StartMinute;
+            }
+            else
+            {
+                // seconds until start of working hours from current time
+                SleepTime += ( StartHour - SystemTime.wHour ) * 60 + ( StartMinute - SystemTime.wMinute );
+            }
+            SleepTime *= 1000;
+        }
+    }
+    // MaxVariation will be non-zero if sleep jitter was specified
+    else if ( MaxVariation )
     {
         Rand = RandomNumber32();
         Rand = Rand % MaxVariation;
