@@ -2821,7 +2821,7 @@ VOID CommandSocket( PPARSER Parser )
             if ( Addr )
             {
                 /* Create a socks proxy socket and insert it into the linked list. */
-                if ( ( Socket = SocketNew( NULL, SOCKET_TYPE_REVERSE_PROXY, HTONS32( Addr ), Port, 0, 0 ) ) )
+                if ( ( Socket = SocketNew( NULL, SOCKET_TYPE_REVERSE_PROXY, Addr, Port, 0, 0 ) ) )
                     Socket->ID = ScId;
 
                 PackageAddInt32( Package, Socket ? TRUE : FALSE );

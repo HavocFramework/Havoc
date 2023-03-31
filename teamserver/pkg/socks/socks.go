@@ -61,6 +61,8 @@ func (s *Socks) Start() error {
 
 func (s *Socks) Close() {
 
-	s.listener.Close()
+	if s.listener != nil {
+		s.listener.Close()
+	}
 
 }

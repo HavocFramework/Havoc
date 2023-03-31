@@ -1,7 +1,6 @@
 package socks
 
 import (
-	"Havoc/pkg/logger"
 	"bufio"
 	"encoding/binary"
 	"errors"
@@ -50,7 +49,6 @@ func ReadSocksHeader(conn net.Conn) (SocksHeader, error) {
 
 	/* if we specified a host then peek that too */
 	if peek[0x0] == 0x0 && peek[0x1] == 0x0 && peek[0x2] == 0x0 && peek[0x3] == 0x1 {
-		logger.Info("Parse host too")
 		err = nil
 
 		size = 12

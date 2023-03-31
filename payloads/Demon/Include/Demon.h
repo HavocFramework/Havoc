@@ -361,6 +361,7 @@ typedef struct
 
         /* dnsapi.dll */
         WIN_FUNC( DnsQuery_A )
+        WIN_FUNC( DnsFree )
 
         /* sspicli.dll */
         WIN_FUNC( LsaCallAuthenticationPackage )

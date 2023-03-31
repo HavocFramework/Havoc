@@ -62,15 +62,16 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, DWORD LclAddr, DWORD LclPort
         }
 
         /* Set bind address and port */
-        SockAddr.sin_addr.s_addr = HTONS32( LclAddr );
+        SockAddr.sin_addr.s_addr = LclAddr;
         SockAddr.sin_port        = HTONS16( LclPort );
         SockAddr.sin_family      = AF_INET;
 
-        PRINTF( "SockAddr:  \n"
-                " - Addr: %x\n"
-                " - Port: %d\n",
-                SockAddr.sin_addr.s_addr,
-                SockAddr.sin_port
+        PRINTF( "SockAddr: %d.%d.%d.%d:%d\n",
+                ( LclAddr & 0x000000ff ) >> ( 0 * 8 ),
+                ( LclAddr & 0x0000ff00 ) >> ( 1 * 8 ),
+                ( LclAddr & 0x00ff0000 ) >> ( 2 * 8 ),
+                ( LclAddr & 0xff000000 ) >> ( 3 * 8 ),
+                LclPort
         )
 
         if ( Type == SOCKET_TYPE_REVERSE_PROXY )
@@ -390,15 +391,20 @@ DWORD DnsQueryIP( LPSTR Domain )
 {
     DNS_STATUS  DnsStatus = { 0 };
     PDNS_RECORD DnsRecord = NULL;
+    DWORD       IP        = 0;
 
     PRINTF( "Query Domain: %s\n", Domain )
 
-    DnsStatus = Instance.Win32.DnsQuery_A( Domain, DNS_TYPE_A, DNS_QUERY_BYPASS_CACHE, NULL, &DnsRecord, NULL);
+    DnsStatus = Instance.Win32.DnsQuery_A( Domain, DNS_TYPE_A, DNS_QUERY_STANDARD, NULL, &DnsRecord, NULL);
     if ( DnsStatus != ERROR_SUCCESS || DnsRecord == NULL )
     {
         PRINTF( "DnsQuery_A Failed: %d\n", NtGetLastError() )
         return 0;
     }
 
-    return DnsRecord->Data.A.IpAddress;
+    IP = DnsRecord->Data.A.IpAddress;
+
+    Instance.Win32.DnsFree( DnsRecord, DnsFreeRecordList );
+
+    return IP;
 }
