@@ -39,7 +39,25 @@ func BuildPayloadMessage(Jobs []Job, AesKey []byte, AesIv []byte) []byte {
 		for i := range job.Data {
 
 			switch job.Data[i].(type) {
+			case int:
+				var integer32 = make([]byte, 4)
+
+				binary.LittleEndian.PutUint32(integer32, uint32(job.Data[i].(int)))
+
+				DataPayload = append(DataPayload, integer32...)
+
+				break
+
 			case int64:
+				var integer64 = make([]byte, 8)
+
+				binary.LittleEndian.PutUint64(integer64, uint64(job.Data[i].(int64)))
+
+				DataPayload = append(DataPayload, integer64...)
+
+				break
+
+			case uint64:
 				var integer64 = make([]byte, 8)
 
 				binary.LittleEndian.PutUint64(integer64, uint64(job.Data[i].(int64)))
@@ -57,21 +75,30 @@ func BuildPayloadMessage(Jobs []Job, AesKey []byte, AesIv []byte) []byte {
 
 				break
 
-			case int:
-				var integer32 = make([]byte, 4)
-
-				binary.LittleEndian.PutUint32(integer32, uint32(job.Data[i].(int)))
-
-				DataPayload = append(DataPayload, integer32...)
-
-				break
-
 			case uint32:
 				var integer32 = make([]byte, 4)
 
 				binary.LittleEndian.PutUint32(integer32, job.Data[i].(uint32))
 
 				DataPayload = append(DataPayload, integer32...)
+
+				break
+
+			case int16:
+				var integer16 = make([]byte, 2)
+
+				binary.LittleEndian.PutUint16(integer16, uint16(job.Data[i].(int16)))
+
+				DataPayload = append(DataPayload, integer16...)
+
+				break
+
+			case uint16:
+				var integer16 = make([]byte, 2)
+
+				binary.LittleEndian.PutUint16(integer16, job.Data[i].(uint16))
+
+				DataPayload = append(DataPayload, integer16...)
 
 				break
 
@@ -94,6 +121,18 @@ func BuildPayloadMessage(Jobs []Job, AesKey []byte, AesIv []byte) []byte {
 				DataPayload = append(DataPayload, job.Data[i].([]byte)...)
 
 				break
+
+			case byte:
+				var singlebyte = make([]byte, 1)
+
+				singlebyte[0] = job.Data[i].(byte)
+
+				DataPayload = append(DataPayload, singlebyte...)
+
+				break
+
+			default:
+				logger.Error(fmt.Sprintf("Could not package, unknown data type: %v", job.Data[i]))
 			}
 		}
 

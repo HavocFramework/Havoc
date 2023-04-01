@@ -1550,24 +1550,55 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 
 			Socks = socks.NewSocks("0.0.0.0:" + Param)
 			if Socks == nil {
-				return nil, errors.New("failed to create a new socks4a instance")
+				return nil, errors.New("failed to create a new socks5 instance")
 			}
 
 			Socks.SetHandler(func(s *socks.Socks, conn net.Conn) {
 
 				var (
 					ConnectJob  Job
+					NegotiationHeader socks.NegotiationHeader
 					SocksHeader socks.SocksHeader
 					err         error
 					SocketId    int32
 				)
 
+				// parse all the methods supported by the client
+				NegotiationHeader, err = socks.SubNegotiationClient(conn)
+				if err != nil {
+					logger.Error("Failed to read socks negotiation header: " + err.Error())
+					return
+				}
+
+				// we only support NOAUTH, there is no real need to support other types
+				HasNoAuth := false
+				for _, Method := range NegotiationHeader.Methods {
+					if Method == socks.NoAuth {
+						HasNoAuth = true
+						break
+					}
+				}
+
+				// is NOAUTH is not an option, then bail out
+				if HasNoAuth == false {
+					_, err = conn.Write([]byte{socks.Version, socks.NoMatch})
+					if err != nil {
+						logger.Error("Failed to send response to socks client: " + err.Error())
+					}
+					return
+				}
+
+				// tell the client that we support NOAUTH
+				_, err = conn.Write([]byte{socks.Version, socks.NoAuth})
+				if err != nil {
+					logger.Error("Failed to send response to socks client: " + err.Error())
+					return
+				}
+
 				SocksHeader, err = socks.ReadSocksHeader(conn)
 				if err != nil {
-					if err != io.EOF {
-						logger.Error("Failed to read socks header: " + err.Error())
-						return
-					}
+					logger.Error("Failed to read socks header: " + err.Error())
+					return
 				}
 
 				/* generate some random socket id */
@@ -1583,9 +1614,9 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 					Data: []any{
 						SOCKET_COMMAND_CONNECT,
 						SocketId,
+						SocksHeader.ATYP,
+						SocksHeader.IpDomain,
 						SocksHeader.Port,
-						SocksHeader.IP,
-						SocksHeader.Domain,
 					},
 				}
 
@@ -1688,7 +1719,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 
 					*Message = map[string]string{
 						"Type":    "Good",
-						"Message": fmt.Sprintf("Started socks4a server on port %v", Param),
+						"Message": fmt.Sprintf("Started socks5 server on port %v", Param),
 						"Output":  "",
 					}
 				}
@@ -5533,29 +5564,49 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 			case SOCKET_COMMAND_CONNECT:
 
-				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadInt32}) {
+				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadInt32, parser.ReadInt32}) {
 
 					var (
 						Success  = Parser.ParseInt32()
 						SocketId = Parser.ParseInt32()
+						ATYP     = Parser.ParseInt32()
 					)
 
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CONNECT, Success: %d, SocketId: %x", AgentID, Success, SocketId))
 
 					if Client := a.SocksClientGet(SocketId); Client != nil {
 
-						if Success == win32.TRUE {
+						/*
+						 * Server Reply
+						 * +----+-----+-------+------+----------+----------+
+						 * |VER | REP |  RSV  | ATYP | BND.ADDR | BND.PORT |
+						 * +----+-----+-------+------+----------+----------+
+					     */
 
-							_, err := Client.Conn.Write([]byte{0x00, 0x5A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+						if Success == win32.TRUE {
+							// succeeded
+							_, err := Client.Conn.Write([]byte{socks.Version, 0x00, 0x00, socks.IPv4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
 							if err != nil {
 								return
 							}
 							Client.Connected = true
 
 						} else {
-
 							a.SocksClientClose(int32(SocketId))
 
+							if ATYP == int(socks.IPv6) {
+								// Address type not supported
+								_, err := Client.Conn.Write([]byte{socks.Version, 0x08, 0x00, socks.IPv4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+								if err != nil {
+									return
+								}
+							} else {
+								// general SOCKS server failure
+								_, err := Client.Conn.Write([]byte{socks.Version, 0x01, 0x00, socks.IPv4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+								if err != nil {
+									return
+								}
+							}
 						}
 
 					} else {

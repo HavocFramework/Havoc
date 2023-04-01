@@ -702,7 +702,7 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
         },
         {
             .CommandString  = "socks",
-            .Description    = "socks4a proxy",
+            .Description    = "socks5 proxy",
             .Usage          = "[sub command] (args)",
             .Example        = "add 4444",
             .Module         = true,
@@ -711,26 +711,26 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                 {
                     {
                         .CommandString  = "add",
-                        .Description    = "add a socks4a proxy",
+                        .Description    = "add a socks5 proxy",
                         .Behavior       = BEHAVIOR_API_ONLY,
                         .Usage          = "[bind port]",
                         .Example        = "4444",
                     },
                     {
                         .CommandString  = "list",
-                        .Description    = "list all socks4a proxy servers",
+                        .Description    = "list all socks5 proxy servers",
                         .Behavior       = BEHAVIOR_API_ONLY,
                     },
                     {
                         .CommandString  = "kill",
-                        .Description    = "kill and remove a socks4a proxy server",
+                        .Description    = "kill and remove a socks5 proxy server",
                         .Behavior       = BEHAVIOR_API_ONLY,
                         .Usage          = "[bind port]",
                         .Example        = R"(4444)",
                     },
                     {
                         .CommandString  = "clear",
-                        .Description    = "kill and clear all socks4a proxy servers",
+                        .Description    = "kill and clear all socks5 proxy servers",
                         .Behavior       = BEHAVIOR_API_ONLY,
                     },
                 },

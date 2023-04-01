@@ -397,7 +397,7 @@ DWORD DnsQueryIP( LPSTR Domain )
     Ret = Instance.Win32.getaddrinfo( Domain, NULL, &hints, &res );
     if ( Ret != 0 )
     {
-        PRINTF( "getaddrinfo failed with %d for %s", Ret, Domain );
+        PRINTF( "getaddrinfo failed with %d for %s\n", Ret, Domain );
         return 0;
     }
 

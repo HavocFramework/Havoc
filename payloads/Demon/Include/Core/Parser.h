@@ -15,6 +15,8 @@ typedef struct {
 
 VOID  ParserNew( PPARSER parser, PCHAR buffer, UINT32 size );
 VOID  ParserDecrypt( PPARSER parser, PBYTE Key, PBYTE IV );
+INT16 ParserGetInt16( PPARSER parser );
+BYTE  ParserGetByte( PPARSER parser );
 INT   ParserGetInt32( PPARSER parser );
 INT64 ParserGetInt64( PPARSER parser );
 PCHAR ParserGetBytes( PPARSER parser, PINT size );

