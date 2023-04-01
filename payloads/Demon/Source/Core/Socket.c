@@ -389,22 +389,29 @@ VOID SocketPush()
  */
 DWORD DnsQueryIP( LPSTR Domain )
 {
+    ADDRINFOA   hints     = { 0 };
+    PADDRINFOA  res       = NULL;
     DNS_STATUS  DnsStatus = { 0 };
     PDNS_RECORD DnsRecord = NULL;
     DWORD       IP        = 0;
+    INT         Ret       = 0;
 
-    PRINTF( "Query Domain: %s\n", Domain )
-
-    DnsStatus = Instance.Win32.DnsQuery_A( Domain, DNS_TYPE_A, DNS_QUERY_STANDARD, NULL, &DnsRecord, NULL);
-    if ( DnsStatus != ERROR_SUCCESS || DnsRecord == NULL )
+    Ret = Instance.Win32.getaddrinfo( Domain, NULL, &hints, &res );
+    if ( Ret != 0 )
     {
-        PRINTF( "DnsQuery_A Failed: %d\n", NtGetLastError() )
+        PRINTF( "getaddrinfo failed with %d for %s", Ret, Domain );
         return 0;
     }
 
-    IP = DnsRecord->Data.A.IpAddress;
+    IP = ((struct sockaddr_in *)(res->ai_addr))->sin_addr.S_un.S_addr;
 
-    Instance.Win32.DnsFree( DnsRecord, DnsFreeRecordList );
+    PRINTF( "Got IP for %s: %d.%d.%d.%d\n",
+        Domain,
+        ( IP & 0x000000ff ) >> ( 0 * 8 ),
+        ( IP & 0x0000ff00 ) >> ( 1 * 8 ),
+        ( IP & 0x00ff0000 ) >> ( 2 * 8 ),
+        ( IP & 0xff000000 ) >> ( 3 * 8 )
+    )
 
     return IP;
 }

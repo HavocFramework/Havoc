@@ -358,10 +358,7 @@ typedef struct
         WIN_FUNC( recv )
         WIN_FUNC( send )
         WIN_FUNC( connect )
-
-        /* dnsapi.dll */
-        WIN_FUNC( DnsQuery_A )
-        WIN_FUNC( DnsFree )
+        WIN_FUNC( getaddrinfo )
 
         /* sspicli.dll */
         WIN_FUNC( LsaCallAuthenticationPackage )
