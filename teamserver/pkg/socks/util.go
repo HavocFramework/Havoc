@@ -28,6 +28,21 @@ const (
 	IPv6   byte = 4
 )
 
+const (
+	Succeeded                 = 0x00
+	GeneralSocksServerFailure = 0x01
+	NetworkUnreachable        = 0x03
+	HostUnreachable           = 0x04
+	ConnectionRefused         = 0x05
+	TTLExpired                = 0x06
+	CommandNotSupported       = 0x07
+	AddressTypeNotSupported   = 0x08
+)
+
+const (
+	ConnectCommand = 0x1
+)
+
 type SocksHeader struct {
 	Version  byte
 	Command  byte
@@ -135,11 +150,6 @@ func ReadSocksHeader(conn net.Conn) (SocksHeader, error) {
 		return header, err
 	}
 
-	/* check if it's a CONNECT command */
-	if header.Command != 0x1 {
-		return header, err
-	}
-
 	header.RSV, err = reader.ReadByte()
 	if err != nil {
 		return header, err
@@ -208,4 +218,49 @@ func ReadSocksHeader(conn net.Conn) (SocksHeader, error) {
 	header.Port = binary.BigEndian.Uint16(PortArr)
 
 	return header, nil
+}
+
+/*
+ * Server Reply
+ * +----+-----+-------+------+----------+----------+
+ * |VER | REP |  RSV  | ATYP | BND.ADDR | BND.PORT |
+ * +----+-----+-------+------+----------+----------+
+ */
+
+func SendConnectSuccess(conn net.Conn) error {
+	_, err := conn.Write([]byte{Version, Succeeded, 0x00, IPv4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+	return err
+}
+
+func SendAddressTypeNotSupported(conn net.Conn) error {
+	_, err := conn.Write([]byte{Version, AddressTypeNotSupported, 0x00, IPv4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+	return err
+}
+
+func SendCommandNotSupported(conn net.Conn) error {
+	_, err := conn.Write([]byte{Version, CommandNotSupported, 0x00, IPv4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+	return err
+}
+
+func SendConnectFailure(conn net.Conn, ErrorCode uint32) error {
+	var err error
+
+	if ErrorCode == 10060 {
+		// Connection Time-out
+		_, err = conn.Write([]byte{Version, TTLExpired, 0x00, IPv4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+	} else if ErrorCode == 10061 {
+		// ConnectionRefused
+		_, err = conn.Write([]byte{Version, ConnectionRefused, 0x00, IPv4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+	} else if ErrorCode == 10065 {
+		// HostUnreachable
+		_, err = conn.Write([]byte{Version, HostUnreachable, 0x00, IPv4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+	} else if ErrorCode == 10051 {
+		// NetworkUnreachable
+		_, err = conn.Write([]byte{Version, NetworkUnreachable, 0x00, IPv4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+	} else {
+		// some other generic error
+		_, err = conn.Write([]byte{Version, AddressTypeNotSupported, 0x00, IPv4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+	}
+
+	return err
 }

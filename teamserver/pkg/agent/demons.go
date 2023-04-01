@@ -1601,6 +1601,16 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 					return
 				}
 
+				/* check if it's a CONNECT command */
+				if SocksHeader.Command != socks.ConnectCommand {
+					err = socks.SendCommandNotSupported(conn)
+					if err != nil {
+						logger.Error("Failed to send response to socks client: " + err.Error())
+						return
+					}
+					return
+				}
+
 				/* generate some random socket id */
 				SocketId = rand.Int31n(0x10000)
 
@@ -5564,28 +5574,22 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 			case SOCKET_COMMAND_CONNECT:
 
-				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadInt32, parser.ReadInt32}) {
+				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32}) {
 
 					var (
-						Success  = Parser.ParseInt32()
-						SocketId = Parser.ParseInt32()
-						ATYP     = Parser.ParseInt32()
+						Success   = Parser.ParseInt32()
+						SocketId  = Parser.ParseInt32()
+						ATYP      = Parser.ParseInt32()
+						ErrorCode = Parser.ParseInt32()
 					)
 
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CONNECT, Success: %d, SocketId: %x", AgentID, Success, SocketId))
 
 					if Client := a.SocksClientGet(SocketId); Client != nil {
 
-						/*
-						 * Server Reply
-						 * +----+-----+-------+------+----------+----------+
-						 * |VER | REP |  RSV  | ATYP | BND.ADDR | BND.PORT |
-						 * +----+-----+-------+------+----------+----------+
-					     */
-
 						if Success == win32.TRUE {
 							// succeeded
-							_, err := Client.Conn.Write([]byte{socks.Version, 0x00, 0x00, socks.IPv4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+							err := socks.SendConnectSuccess(Client.Conn)
 							if err != nil {
 								return
 							}
@@ -5596,13 +5600,13 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 							if ATYP == int(socks.IPv6) {
 								// Address type not supported
-								_, err := Client.Conn.Write([]byte{socks.Version, 0x08, 0x00, socks.IPv4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+								err := socks.SendAddressTypeNotSupported(Client.Conn)
 								if err != nil {
 									return
 								}
 							} else {
 								// general SOCKS server failure
-								_, err := Client.Conn.Write([]byte{socks.Version, 0x01, 0x00, socks.IPv4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+								err := socks.SendConnectFailure(Client.Conn, uint32(ErrorCode))
 								if err != nil {
 									return
 								}

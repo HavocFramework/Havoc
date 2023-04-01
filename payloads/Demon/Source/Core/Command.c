@@ -2853,6 +2853,7 @@ VOID CommandSocket( PPARSER Parser )
 
             PackageAddInt32( Package, ScId );
             PackageAddInt32( Package, ATYP );
+            PackageAddInt32( Package, NtGetLastError() );
 
             break;
         }
