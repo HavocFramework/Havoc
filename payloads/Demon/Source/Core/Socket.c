@@ -391,8 +391,6 @@ DWORD DnsQueryIP( LPSTR Domain )
 {
     ADDRINFOA   hints     = { 0 };
     PADDRINFOA  res       = NULL;
-    DNS_STATUS  DnsStatus = { 0 };
-    PDNS_RECORD DnsRecord = NULL;
     DWORD       IP        = 0;
     INT         Ret       = 0;
 
