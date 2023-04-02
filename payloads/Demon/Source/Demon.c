@@ -800,6 +800,7 @@ VOID DemonInit( VOID )
         Instance.Win32.send         = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_send );
         Instance.Win32.connect      = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_connect );
         Instance.Win32.getaddrinfo  = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_getaddrinfo );
+        Instance.Win32.freeaddrinfo = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_freeaddrinfo );
 
         PUTS( "Loaded Ws2_32 functions" )
     }

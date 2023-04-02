@@ -259,7 +259,7 @@ func SendConnectFailure(conn net.Conn, ErrorCode uint32) error {
 		_, err = conn.Write([]byte{Version, NetworkUnreachable, 0x00, IPv4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
 	} else {
 		// some other generic error
-		_, err = conn.Write([]byte{Version, AddressTypeNotSupported, 0x00, IPv4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+		_, err = conn.Write([]byte{Version, GeneralSocksServerFailure, 0x00, IPv4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
 	}
 
 	return err

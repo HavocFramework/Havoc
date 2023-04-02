@@ -2,7 +2,7 @@
 
 #define SOCKET_TYPE_NONE                 0x0
 #define SOCKET_TYPE_REVERSE_PORTFWD      0x1
-#define SOCKET_TYPE_REVERSE_PROXY        0x2 /* TODO: implement */
+#define SOCKET_TYPE_REVERSE_PROXY        0x2
 #define SOCKET_TYPE_CLIENT               0x3
 #define SOCKET_TYPE_CLIENT_REMOVED       0x4 /* this is something we received from our operator */
 #define SOCKET_TYPE_SOCKS_REMOVED        0x5 /* this is when a socket died, or we failed to read/write from/to it */
@@ -26,6 +26,17 @@
 /* Errors */
 #define SOCKET_ERROR_ALREADY_BOUND  0x1
 
+typedef struct sockaddr_in6 {
+  ADDRESS_FAMILY sin6_family;
+  USHORT         sin6_port;
+  ULONG          sin6_flowinfo;
+  IN6_ADDR       sin6_addr;
+  union {
+    ULONG    sin6_scope_id;
+    SCOPE_ID sin6_scope_struct;
+  };
+} SOCKADDR_IN6_LH, *PSOCKADDR_IN6_LH, *LPSOCKADDR_IN6_LH;
+
 typedef struct _SOCKET_DATA
 {
     DWORD  ID;
@@ -35,7 +46,8 @@ typedef struct _SOCKET_DATA
     DWORD Type;
 
     /* Bind Host and Port data */
-    DWORD LclAddr;
+    DWORD IPv4;
+    PBYTE IPv6;
     DWORD LclPort;
 
     /* Forward Host and Port data */
@@ -52,20 +64,28 @@ typedef struct _SOCKET_DATA
  * to the specified Address and Port.
  * @param Type
  * @param Socket
- * @param LclAddr
+ * @param IPv4
+ * @param IPv6
  * @param LclPort
  * @param FwdAddr
  * @param FwdPort
  * @return SocketData object pointer
  */
-PSOCKET_DATA SocketNew( SOCKET Socket, DWORD Type, DWORD LclAddr, DWORD LclPort, DWORD FwdAddr, DWORD FwdPort );
+PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, DWORD IPv4, PBYTE IPv6, DWORD LclPort, DWORD FwdAddr, DWORD FwdPort );
 
 /* Check for new connections, read everything from the sockets and or close "dead" sockets */
 VOID SocketPush();
 
 /*!
- * Query the IP from the specified domain
+ * Query the IPv4 from the specified domain
  * @param Domain
- * @return Ip address
+ * @return IPv4 address
  */
-DWORD DnsQueryIP( LPSTR Domain );
+DWORD DnsQueryIPv4( LPSTR Domain );
+
+/*!
+ * Query the IPv6 from the specified domain
+ * @param Domain
+ * @return IPv6 address
+ */
+PBYTE DnsQueryIPv6( LPSTR Domain );

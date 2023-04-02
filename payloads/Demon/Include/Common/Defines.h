@@ -208,6 +208,7 @@
 #define FuncHash_send                                0x7c9ddb4f
 #define FuncHash_connect                             0xd3764dcf
 #define FuncHash_getaddrinfo                         0x7c84cdcc
+#define FuncHash_freeaddrinfo                        0x526629ce
 #define FuncHash_LsaConnectUntrusted                 0xb851157d
 #define FuncHash_LsaRegisterLogonProcess             0x5e8f9888
 #define FuncHash_LsaNtStatusToWinError               0x99301546

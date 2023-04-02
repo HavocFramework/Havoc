@@ -22445,6 +22445,11 @@ getaddrinfo(
 	OUT         PADDRINFOA      *ppResult
 	);
 
+VOID
+WSAAPI
+freeaddrinfo(
+	IN PADDRINFOA pAddrInfo
+	);
 
 //
 // end non-crt prototypes

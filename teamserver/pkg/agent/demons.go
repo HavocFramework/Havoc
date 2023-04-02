@@ -1611,6 +1611,18 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 					return
 				}
 
+				// NOTE: if you don't want to support IPv6, uncomment this:
+				/*
+				if SocksHeader.ATYP == socks.IPv6 {
+					err = socks.SendAddressTypeNotSupported(conn)
+					if err != nil {
+						logger.Error("Failed to send response to socks client: " + err.Error())
+						return
+					}
+					return
+				}
+				*/
+
 				/* generate some random socket id */
 				SocketId = rand.Int31n(0x10000)
 
@@ -5574,12 +5586,11 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 			case SOCKET_COMMAND_CONNECT:
 
-				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32}) {
+				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadInt32, parser.ReadInt32}) {
 
 					var (
 						Success   = Parser.ParseInt32()
 						SocketId  = Parser.ParseInt32()
-						ATYP      = Parser.ParseInt32()
 						ErrorCode = Parser.ParseInt32()
 					)
 
@@ -5598,18 +5609,9 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						} else {
 							a.SocksClientClose(int32(SocketId))
 
-							if ATYP == int(socks.IPv6) {
-								// Address type not supported
-								err := socks.SendAddressTypeNotSupported(Client.Conn)
-								if err != nil {
-									return
-								}
-							} else {
-								// general SOCKS server failure
-								err := socks.SendConnectFailure(Client.Conn, uint32(ErrorCode))
-								if err != nil {
-									return
-								}
+							err := socks.SendConnectFailure(Client.Conn, uint32(ErrorCode))
+							if err != nil {
+								return
 							}
 						}
 

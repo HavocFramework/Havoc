@@ -359,6 +359,7 @@ typedef struct
         WIN_FUNC( send )
         WIN_FUNC( connect )
         WIN_FUNC( getaddrinfo )
+        WIN_FUNC( freeaddrinfo )
 
         /* sspicli.dll */
         WIN_FUNC( LsaCallAuthenticationPackage )
