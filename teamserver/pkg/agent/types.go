@@ -119,6 +119,9 @@ type SocksClient struct {
 	SocketID  int32
 	Conn      net.Conn
 	Connected bool
+	ATYP      byte
+	IpDomain  []byte
+	Port      uint16
 }
 
 type SocksServer struct {

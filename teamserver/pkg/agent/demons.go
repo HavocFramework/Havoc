@@ -1628,7 +1628,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 
 				s.Clients = append(s.Clients, SocketId)
 
-				a.SocksClientAdd(SocketId, conn)
+				a.SocksClientAdd(SocketId, conn, SocksHeader.ATYP, SocksHeader.IpDomain, SocksHeader.Port)
 
 				/* now parse the host:port and send it to the agent. */
 				ConnectJob = Job{
@@ -5607,7 +5607,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 						if Success == win32.TRUE {
 							// succeeded
-							err := socks.SendConnectSuccess(Client.Conn)
+							err := socks.SendConnectSuccess(Client.Conn, Client.ATYP, Client.IpDomain, Client.Port)
 							if err != nil {
 								return
 							}

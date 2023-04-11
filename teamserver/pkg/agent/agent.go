@@ -972,7 +972,7 @@ func (a *Agent) PortFwdClose(SocketID int) {
 
 }
 
-func (a *Agent) SocksClientAdd(SocketID int32, conn net.Conn) *SocksClient {
+func (a *Agent) SocksClientAdd(SocketID int32, conn net.Conn, ATYP byte, IpDomain []byte, Port uint16) *SocksClient {
 
 	a.SocksCliMtx.Lock()
 
@@ -981,6 +981,9 @@ func (a *Agent) SocksClientAdd(SocketID int32, conn net.Conn) *SocksClient {
 	client.SocketID = SocketID
 	client.Conn = conn
 	client.Connected = false
+	client.ATYP = ATYP
+	client.IpDomain = IpDomain
+	client.Port = Port
 
 	a.SocksCli = append(a.SocksCli, client)
 

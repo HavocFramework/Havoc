@@ -24,7 +24,7 @@ const (
 
 const (
 	IPv4   byte = 1
-	Domain byte = 3
+	FQDN   byte = 3
 	IPv6   byte = 4
 )
 
@@ -227,8 +227,23 @@ func ReadSocksHeader(conn net.Conn) (SocksHeader, error) {
  * +----+-----+-------+------+----------+----------+
  */
 
-func SendConnectSuccess(conn net.Conn) error {
-	_, err := conn.Write([]byte{Version, Succeeded, 0x00, IPv4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+func SendConnectSuccess(conn net.Conn, ATYP byte, IpDomain []byte, Port uint16) error {
+	var err error
+
+	// version, success message, reserved byte and the address type
+	response := []byte{Version, Succeeded, 0x00, ATYP}
+	// if the address type is FQDN, first add the size of the domain
+	if ATYP == FQDN {
+		response = append(response, byte(len(IpDomain)))
+	}
+	// add IPv4/IPv6/FQDN
+	response = append(response, IpDomain...)
+	// port
+	response = append(response, byte((Port >> 8) & 0xff))
+	response = append(response, byte((Port >> 0) & 0xff))
+
+	_, err = conn.Write(response)
+
 	return err
 }
 
