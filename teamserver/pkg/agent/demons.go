@@ -316,7 +316,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 			ArgArray = strings.Split(Arguments, ";")
 
 			if val, err := base64.StdEncoding.DecodeString(ArgArray[0]); err == nil {
-				FileName = []byte(common.EncodeUTF16(string(val) + "\x00"))
+				FileName = []byte(common.EncodeUTF16(string(val)))
 			} else {
 				return nil, err
 			}

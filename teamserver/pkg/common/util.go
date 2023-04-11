@@ -117,6 +117,10 @@ func DecodeUTF16(b []byte) string {
 func EncodeUTF16(s string) string {
 	var err error
 
+	// in C, strings terminate with a null-byte
+	if strings.HasSuffix(s, "\x00") == false {
+		s += "\x00"
+	}
 	uni := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM)
 	encoded, err := uni.NewEncoder().String(s)
 	if err != nil {

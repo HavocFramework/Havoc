@@ -105,10 +105,17 @@ func BuildPayloadMessage(Jobs []Job, AesKey []byte, AesIv []byte) []byte {
 			case string:
 				var size = make([]byte, 4)
 
-				binary.LittleEndian.PutUint32(size, uint32(len(job.Data[i].(string))))
+				str := job.Data[i].(string)
+
+				// in C, strings terminate with a null-byte
+				if strings.HasSuffix(str, "\x00") == false {
+					str += "\x00"
+				}
+
+				binary.LittleEndian.PutUint32(size, uint32(len(str)))
 
 				DataPayload = append(DataPayload, size...)
-				DataPayload = append(DataPayload, []byte(job.Data[i].(string))...)
+				DataPayload = append(DataPayload, []byte(str)...)
 
 				break
 
