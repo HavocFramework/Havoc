@@ -1484,6 +1484,13 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 if ( Content == nullptr )
                     return false;
 
+                // if the remote path does not contain the filename, use the same as the local path
+                if ( RemotePath.endsWith("\\", Qt::CaseInsensitive) )
+                {
+                    auto index = FilePath.lastIndexOf("/");
+                    RemotePath = RemotePath + FilePath.mid( index + 1, RemotePath.size() - index - 1 );
+                }
+
                 TaskID                     = CONSOLE_INFO( "Tasked demon to upload a file " + FilePath + " to " + RemotePath );
                 CommandInputList[ TaskID ] = commandline;
 
