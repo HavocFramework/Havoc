@@ -316,7 +316,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 			ArgArray = strings.Split(Arguments, ";")
 
 			if val, err := base64.StdEncoding.DecodeString(ArgArray[0]); err == nil {
-				FileName = []byte(common.EncodeUTF16(string(val)))
+				FileName = []byte(common.EncodeUTF16(string(val) + "\x00"))
 			} else {
 				return nil, err
 			}
@@ -2894,17 +2894,24 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 				break
 
 			case DEMON_COMMAND_FS_CAT:
-				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadBytes}) {
+				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadInt32, parser.ReadBytes}) {
 					var (
 						FileName    = Parser.ParseUTF16String()
+						Success     = Parser.ParseInt32()
 						FileContent = Parser.ParseString()
 					)
 
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_CAT, FileName: %v", AgentID, FileName))
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_CAT, FileName: %v, Success: %d", AgentID, FileName, Success))
 
-					Output["Type"] = "Info"
-					Output["Message"] = fmt.Sprintf("File content of %v (%v):", FileName, len(FileContent))
-					Output["Output"] = FileContent
+					if Success == win32.TRUE {
+						Output["Type"] = "Info"
+						Output["Message"] = fmt.Sprintf("File content of %v (%v):", FileName, len(FileContent))
+						Output["Output"] = FileContent
+					} else {
+						Output["Type"] = "Erro"
+						Output["Message"] = fmt.Sprintf("Failed to read file: %v", FileName)
+					}
+
 					a.RequestCompleted(RequestID)
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_CAT, Invalid packet", AgentID))

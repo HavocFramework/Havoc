@@ -62,6 +62,7 @@ BOOL     ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags,
 BOOL     ProcessIsWow( HANDLE hProcess );
 HANDLE   ProcessOpen( DWORD ProcessID, DWORD Access );
 NTSTATUS ProcessSnapShot( PSYSTEM_PROCESS_INFORMATION* Buffer, PSIZE_T Size );
+BOOL     ReadLocalFile( LPCWSTR FileName, PVOID* FileContent, PDWORD FileSize );
 
 PCHAR    TokenGetUserDomain( HANDLE hToken, PDWORD UserSize );
 BOOL     WinScreenshot( PVOID* ImagePointer, PSIZE_T ImageSize );
