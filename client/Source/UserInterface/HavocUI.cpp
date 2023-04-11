@@ -295,6 +295,8 @@ void HavocNamespace::UserInterface::HavocUI::UpdateSessionsHealth()
         auto Now  = QDateTime::currentDateTimeUtc();
         auto Last = QDateTime::fromString(session.Last.toStdString().c_str(), "dd-MM-yyyy hh:mm:ss");
         auto diff = Last.secsTo(Now);
+        // it is very normal for agents to delay one second due to network latency
+        auto AllowedDiff = 1;
 
         if ( session.KillDate > 0 && Now.secsTo(QDateTime::fromSecsSinceEpoch(session.KillDate, Qt::UTC)) <= 0 )
         {
@@ -332,7 +334,7 @@ void HavocNamespace::UserInterface::HavocUI::UpdateSessionsHealth()
             }
         }
 
-        if ( diff < session.SleepDelay + ( session.SleepDelay * 0.01 * session.SleepJitter ) )
+        if ( diff - AllowedDiff < session.SleepDelay + ( session.SleepDelay * 0.01 * session.SleepJitter ) )
         {
             // agent has ping back in time
             session.Health = "healthy";
