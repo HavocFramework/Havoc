@@ -53,7 +53,9 @@ HANDLE           TokenSteal( DWORD ProcessID, HANDLE TargetHandle );
 HANDLE           TokenMake( LPSTR User, LPSTR Password, LPSTR Domain );
 PTOKEN_LIST_DATA TokenGet( DWORD TokenID );
 VOID             TokenClear( );
-VOID             TokenImpersonate( BOOL Impersonate );
+BOOL             TokenImpersonate( BOOL Impersonate );
 BOOL             ListTokens( PUniqueUserToken* UniqTokens, PDWORD pNumTokens );
+BOOL             ImpersonateTokenFromVault( DWORD TokenID );
+BOOL             ImpersonateTokenInStore( PTOKEN_LIST_DATA TokenData );
 
 #endif

