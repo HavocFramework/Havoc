@@ -576,7 +576,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 			return string(runes)
 		}
 
-		finalPipe := pipePrefix + generateRuneString(runeALen) + "." + generateRuneString(runeBLen) + "." + generateRuneString(runeCLen) + "." + generateRuneString(runeDLen)
+		finalPipe := pipePrefix + generateRuneString(runeALen) + "." + generateRuneString(runeBLen) + "." + generateRuneString(runeCLen) + generateRuneString(runeDLen)
 
 		var (
 			binaryDecoded, _ = base64.StdEncoding.DecodeString(Optional["Binary"].(string))
