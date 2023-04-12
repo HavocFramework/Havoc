@@ -556,11 +556,31 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 
 	// TODO: make it more malleable/random values
 	case COMMAND_ASSEMBLY_INLINE_EXECUTE:
+		rand.Seed(time.Now().UnixNano())
+		const pipePrefix = "\\\\.\\pipe\\mojo."
+		const (
+			runeALen = 4
+			runeBLen = 4
+			runeCLen = 12
+			runeDLen = 7
+		)
+
+		generateRuneString := func(length int) string {
+			pipeRunes := []rune("0123456789")
+			runes := make([]rune, length)
+			for i := range runes {
+				runes[i] = pipeRunes[rand.Intn(len(pipeRunes))]
+			}
+			return string(runes)
+		}
+
+		finalPipe := pipePrefix + generateRuneString(runeALen) + "." + generateRuneString(runeBLen) + "." + generateRuneString(runeCLen) + generateRuneString(runeDLen)
+
 		var (
 			binaryDecoded, _ = base64.StdEncoding.DecodeString(Optional["Binary"].(string))
 			arguments        = common.EncodeUTF16(Optional["Arguments"].(string))
 			NetVersion       = common.EncodeUTF16("v4.0.30319")
-			PipePath         = common.EncodeUTF16("\\\\.\\pipe\\mojo." + strconv.Itoa(rand.Intn(9999)) + "." + strconv.Itoa(rand.Intn(9999)) + "." + strconv.Itoa(rand.Intn(999999999999)) + strconv.Itoa(rand.Intn(9999999)))
+			PipePath         = common.EncodeUTF16(finalPipe)
 			AppDomainName    = common.EncodeUTF16("DefaultDomain")
 		)
 
