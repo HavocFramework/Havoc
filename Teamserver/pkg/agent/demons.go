@@ -556,11 +556,40 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 
 	// TODO: make it more malleable/random values
 	case COMMAND_ASSEMBLY_INLINE_EXECUTE:
+		// Seed RNG for unique output per Execution
+		rand.Seed(time.Now().UnixNano())
+
+		const pipePrefix = "\\\\.\\pipe\\mojo."
+		var pipeRunes = []rune("0123456789")
+
+		runeA := make([]rune, 4)
+		runeB := make([]rune, 4)
+		runeC := make([]rune, 12)
+		runeD := make([]rune, 7)
+
+		for i := range runeA {
+			runeA[i] = pipeRunes[rand.Intn(len(pipeRunes))]
+		}
+
+		for i := range runeB {
+			runeB[i] = pipeRunes[rand.Intn(len(pipeRunes))]
+		}
+
+		for i := range runeC {
+			runeC[i] = pipeRunes[rand.Intn(len(pipeRunes))]
+		}
+
+		for i := range runeD {
+			runeD[i] = pipeRunes[rand.Intn(len(pipeRunes))]
+		}
+
+		finalPipe := pipePrefix + string(runeA) + string(runeB) + string(runeC) + string(runeD)
+
 		var (
 			binaryDecoded, _ = base64.StdEncoding.DecodeString(Optional["Binary"].(string))
 			arguments        = common.EncodeUTF16(Optional["Arguments"].(string))
 			NetVersion       = common.EncodeUTF16("v4.0.30319")
-			PipePath         = common.EncodeUTF16("\\\\.\\pipe\\mojo." + strconv.Itoa(rand.Intn(9999)) + "." + strconv.Itoa(rand.Intn(9999)) + "." + strconv.Itoa(rand.Intn(999999999999)) + strconv.Itoa(rand.Intn(9999999)))
+			PipePath         = common.EncodeUTF16(finalPipe)
 			AppDomainName    = common.EncodeUTF16("DefaultDomain")
 		)
 
