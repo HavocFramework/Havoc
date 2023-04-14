@@ -4833,10 +4833,9 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					)
 
 					DemonId = Parser.ParseInt32()
+					NamedPipe = Parser.ParseUTF16String()
 
-					NamedPipe = Parser.ParseString()
-
-					Data += fmt.Sprintf(" %-10x  %s\n", DemonId, NamedPipe)
+					Data += fmt.Sprintf(" %-10x  %v\n", DemonId, NamedPipe)
 					Count++
 				}
 

