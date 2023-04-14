@@ -26,9 +26,11 @@ BOOL PivotAdd( BUFFER NamedPipe, PVOID* Output, PSIZE_T BytesSize )
     PPIVOT_DATA Data    = NULL;
     HANDLE      Handle  = NULL;
 
+    PRINTF( "Connecting to named pipe: %ls\n", NamedPipe.Buffer );
+
     Handle = Instance.Win32.CreateFileW( NamedPipe.Buffer, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL );
 
-    if ( ! Handle )
+    if ( Handle == INVALID_HANDLE_VALUE )
     {
         PRINTF( "CreateFileW: Failed[%d]\n", NtGetLastError() );
         return FALSE;
@@ -62,6 +64,7 @@ BOOL PivotAdd( BUFFER NamedPipe, PVOID* Output, PSIZE_T BytesSize )
                 else
                 {
                     PRINTF( "ReadFile: Failed[%d]\n", NtGetLastError() );
+                    Instance.Win32.NtClose( Handle );
                     return FALSE;
                 }
             }
@@ -69,6 +72,7 @@ BOOL PivotAdd( BUFFER NamedPipe, PVOID* Output, PSIZE_T BytesSize )
         else
         {
             PRINTF( "PeekNamedPipe: Failed[%d]\n", NtGetLastError() );
+            Instance.Win32.NtClose( Handle );
             return FALSE;
         }
     } while ( TRUE );
