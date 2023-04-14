@@ -3,38 +3,59 @@
 Havoc is a modern and malleable post-exploitation command and control framework.
 
 #### Table of Contents
-- [Version History](#vhistory)
-- [Known Issues](#kissues)
-- [Installation](#install)
-	- [Local](#il)
-	- [Docker Container](#idc)
-	- [Jenkins Docker Container](#ijd)
-	- [Building the Client](#bclient)
-	- [Building the Teamserver](#bteam)
-	- [Creating a Listener and Spawning an Agent](#aquick)
-- [Teamserver](#teamserver)
-	- [Starting the Teamserver](#stt)
-	- [Arguments](#targ)
-	- [Profiles](#profiles)
-		- [Teamserver](#pteam)
-		- [Operators](#pops)
-	- [Demon](#pdemon)
-	- [Listeners](#plisten)
-- [Client](#client)
-	- [Starting the client](#cstc)
-	- [Connecting to the Teamserver](#cctt)
-- [Agents](#agents)
-	- [Demon](#ademon)
-		- [Generating a Demon Payload](#adgen)
-		- [Layout](#adlay)
-		- [Features](#adft)
-		- [Commands](#adcmds)
-- [External C2](#extc2)
-- [Custom Agents](#ca)
-- [Python API](#pyapi)
-- [Modules](#modules)
-- [FAQ](#faq)
-- [TODO](#todo)
+- [Havoc](#havoc)
+      - [Table of Contents](#table-of-contents)
+  - [ Version History](#-version-history)
+    - [0.2 / Magicians Red](#02--magicians-red)
+  - [Known Issues](#known-issues)
+    - [Kali Linux Font/Formatting Issues](#kali-linux-fontformatting-issues)
+    - [Build Errors](#build-errors)
+      - [`fatal error: Python.h: No such file or directory`](#fatal-error-pythonh-no-such-file-or-directory)
+      - [`incomplete type ‘QTime’ used in nested name specifier`](#incomplete-type-qtime-used-in-nested-name-specifier)
+      - [`Known compiler issue: [-] Couldn't compile implant: exit status 1`](#known-compiler-issue---couldnt-compile-implant-exit-status-1)
+  - [Installation](#installation)
+    - [ Local](#-local)
+      - [Pre-requisites](#pre-requisites)
+      - [Ubuntu 20.04 / 22.04](#ubuntu-2004--2204)
+      - [Debian 10/11](#debian-1011)
+      - [MacOS](#macos)
+    - [Building the Client](#building-the-client)
+    - [Building the Teamserver](#building-the-teamserver)
+    - [ Docker](#-docker)
+    - [ Jenkins Docker Build](#-jenkins-docker-build)
+    - [ Creating a Listener, and Spawning an Agent](#-creating-a-listener-and-spawning-an-agent)
+  - [Teamserver](#teamserver)
+    - [ Starting the Teamserver](#-starting-the-teamserver)
+    - [Arguments](#arguments)
+      - [Enabling DEBUG Output](#enabling-debug-output)
+    - [Profiles](#profiles)
+      - [Teamserver](#teamserver-1)
+      - [Operators](#operators)
+      - [Demon](#demon)
+      - [Listeners](#listeners)
+  - [Client](#client)
+    - [Starting the Client](#starting-the-client)
+    - [Connecting to the Teamserver](#connecting-to-the-teamserver)
+  - [Agents](#agents)
+    - [Demon](#demon-1)
+      - [Generating a Demon Payload](#generating-a-demon-payload)
+      - [Layout](#layout)
+      - [ Features](#-features)
+        - [Indirect Syscalls](#indirect-syscalls)
+      - [Commands](#commands)
+        - [`checkin`](#checkin)
+        - [`sleep`](#sleep)
+        - [`job`](#job)
+        - [`proc`](#proc)
+        - [`token`](#token)
+        - [`shellcode`](#shellcode)
+        - [`dotnet`](#dotnet)
+  - [ExternalC2](#externalc2)
+  - [Custom Agents](#custom-agents)
+  - [Python API](#python-api)
+  - [Modules](#modules)
+  - [FAQ](#faq)
+    - [Why does Havoc not perform sleep obfuscation when jobs are running?](#why-does-havoc-not-perform-sleep-obfuscation-when-jobs-are-running)
 --------------------
 
 ## <a name="vhistory"></a> Version History
@@ -200,30 +221,30 @@ Visit Jenkins at `localhost:8080` and create a pipeline to build the Havoc Teams
 ### <a name="aquick"></a> Creating a Listener, and Spawning an Agent
 This part assumes you have a Teamserver running, with a Teamserver-client connected to the running instance.
 - Creating a Listener:
-	1. To create a new listener, we must first open the `Listeners` subwindow.
-		* To do this, in the upper left hand corner, click on the `View` button, and then on the `Listeners` button in the drop down menu.
-		* ![Listeners-select](./assets/Screenshots/Listeners-select.png)	
-	2. You should see a new sub window in the bottom of the server window, with the title of `Listeners` on the header tab.
-	3. You should also now see three(3) buttons on the bottom of the server window, `Add`, `Remove` and `Edit`.
-		* ![Listeners-Add-select](./assets/Screenshots/Listeners-Add-select.png)
-	4. We want to click the `Add` button.
-	5. Once we click the `Add` button, you should see a new window come up, with the title of `Create Listener`.
-		* ![Listeners-New](./assets/Screenshots/Listeners-new.png)
-	6. We will want to fill out the appropriate information for each field in the `Create Listener` window.
-	7. After entering the appropriate information into each field, then click the `Save` button.
-	8. The window will close, and you will now see a new line in the `Listeners` sub-window.
-		* ![Listener-created](./assets/Screenshots/Listener-created)
-	9. We now have an active Listener, and are ready to receive an incoming agent's communications!
+    1. To create a new listener, we must first open the `Listeners` subwindow.
+        * To do this, in the upper left hand corner, click on the `View` button, and then on the `Listeners` button in the drop down menu.
+        * ![Listeners-select](./assets/Screenshots/Listeners-select.png)    
+    2. You should see a new sub window in the bottom of the server window, with the title of `Listeners` on the header tab.
+    3. You should also now see three(3) buttons on the bottom of the server window, `Add`, `Remove` and `Edit`.
+        * ![Listeners-Add-select](./assets/Screenshots/Listeners-Add-New-Remove.png)
+    4. We want to click the `Add` button.
+    5. Once we click the `Add` button, you should see a new window come up, with the title of `Create Listener`.
+        * ![Listeners-New](./assets/Screenshots/Listener-new.png)
+    6. We will want to fill out the appropriate information for each field in the `Create Listener` window.
+    7. After entering the appropriate information into each field, then click the `Save` button.
+    8. The window will close, and you will now see a new line in the `Listeners` sub-window.
+        * ![Listener-created](./assets/Screenshots/Listener-created.png)
+    9. We now have an active Listener, and are ready to receive an incoming agent's communications!
 - Spawning an Agent:
-	1. To create an Agent Payload, we must first open the `Payload` window.
-		* We can do so by going up to the upper left hand corner, and clicking on the `Attack` button. 
-	2. Doing so, we see the `Payload` button appear in the drop down menu. We want to then click on it.
-		* ![Agent-select](./assets/Screenshots/Agent-select.png)
-	3. This will open the `Payload` window, where we may then configure the various options for generating our payload.
-		* ![Agent-creation](./assets/Screenshots/Agent-create.png)
-	4. Once we have selected the appropriate options, we then click on the `Generate` button.
-	5. It might take a little bit for the compilation to take place. Once it has completed, it will prompt you as to where to save the resulting file output.
-	6. After selecting where to save the file, you will now have a generated agent ready for execution or injection!
+    1. To create an Agent Payload, we must first open the `Payload` window.
+        * We can do so by going up to the upper left hand corner, and clicking on the `Attack` button. 
+    2. Doing so, we see the `Payload` button appear in the drop down menu. We want to then click on it.
+        * ![Agent-select](./assets/Screenshots/Agent-select.png)
+    3. This will open the `Payload` window, where we may then configure the various options for generating our payload.
+        * ![Agent-creation](./assets/Screenshots/Agent-create.png)
+    4. Once we have selected the appropriate options, we then click on the `Generate` button.
+    5. It might take a little bit for the compilation to take place. Once it has completed, it will prompt you as to where to save the resulting file output.
+    6. After selecting where to save the file, you will now have a generated agent ready for execution or injection!
 
 
 ---
@@ -286,13 +307,13 @@ Multiple users can be added to the Teamserver with the Operators directive:
 
 ```hcl
 Operators {
-	user "5pider" {
-		Password = "password1234"
-	}
+    user "5pider" {
+        Password = "password1234"
+    }
 
-	user "Neo" {
-		Password = "password1234"
-	}
+    user "Neo" {
+        Password = "password1234"
+    }
 }
 ```
 
@@ -681,3 +702,4 @@ Official Modules:
 Jobs are ran in their own threads, and sleep obfuscation requires that all threads are suspended in order to encrypt the heap, otherwise the process would crash. 
 
 ---
+
