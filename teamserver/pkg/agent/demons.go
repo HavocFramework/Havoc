@@ -3974,7 +3974,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_STEAL, User: %s, TokenID: %v, TargetPID: %v", AgentID, User, TokenID, TargetPID))
 
 					Output["Type"] = "Good"
-					Output["Message"] = fmt.Sprintf("Successful stole token from %v User:[%v] TokenID:[%v]", TargetPID, User, TokenID)
+					Output["Message"] = fmt.Sprintf("Successful stole and impersonated token from %v User:[%v] TokenID:[%v]", TargetPID, User, TokenID)
 					a.RequestCompleted(RequestID)
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_STEAL, Invalid packet", AgentID))

