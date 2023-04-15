@@ -316,8 +316,8 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 		[ AES IV       ] 16 bytes
 		AES Encrypted {
 			[ Agent ID     ] 4 bytes <-- this is needed to check if we successfully decrypted the data
-			[ User Name    ] size + bytes
 			[ Host Name    ] size + bytes
+			[ User Name    ] size + bytes
 			[ Domain       ] size + bytes
 			[ IP Address   ] 16 bytes?
 			[ Process Name ] size + bytes

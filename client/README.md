@@ -33,7 +33,7 @@ Havoc Gui Client source code.
 		2. (Optionally) Create a data volume for persistence:
 			* `sudo docker volume create havoc-c2-client`
 		2. Next, we want to run the container:
-                        * `sudo docker run -p 443:443 -p 40056:40056-it -d -v havoc-c2-client:/data havoc-client`
+                        * `sudo docker run -p 443:443 -p 40056:40056 -it -d -v havoc-c2-client:/data havoc-client`
                 3. We can now enter the built container and execute the client.
 			* Currently, there is no remote viewing of the container, so, good luck with that.
 - **Jenkins Docker Build**

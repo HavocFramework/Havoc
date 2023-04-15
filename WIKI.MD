@@ -136,6 +136,13 @@ echo 'deb http://ftp.de.debian.org/debian bookworm main' >> /etc/apt/sources.lis
 sudo apt update
 sudo apt install python3-dev python3.10-dev libpython3.10 libpython3.10-dev python3.10
 ```
+
+#### Arch-based Distros
+
+```
+sudo pacman -S git gcc base-devel cmake fontconfig glu gtest spdlog boost boost-libs ncurses gdbm openssl readline libffi sqlite bzip2 mesa qt5-base qt5-websockets python3 nasm mingw-w64-gcc
+```
+
 #### MacOS
 
 > You must have [`homebrew`](https://brew.sh) installed.
@@ -162,6 +169,8 @@ make client-build
 ```
 
 > On macOS, run `brew unlink qt && brew link qt` after cmake build is done.
+
+> On WSL navigate to https://learn.microsoft.com/en-us/windows/wsl/tutorials/gui-apps and download the needed driver for the GUI to launch.
 
 ### <a name="bteam"></a>Building the Teamserver
 
@@ -192,7 +201,7 @@ Create data volume for persistence (optional):
 `sudo docker volume create havoc-c2-client`
 
 Run the container:
-`sudo docker run -p 443:443 -p 40056:40056-it -d -v havoc-c2-client:/data havoc-client`
+`sudo docker run -p 443:443 -p 40056:40056 -it -d -v havoc-c2-client:/data havoc-client`
 
 Enter the container and run the Client:
 - NOT COMPLETE
