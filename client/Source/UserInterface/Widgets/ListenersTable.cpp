@@ -216,7 +216,10 @@ void HavocNamespace::UserInterface::Widgets::ListenersTable::ListenerAdd( Util::
     {
         item_Host->setText( any_cast<Listener::HTTP>( item.Info ).HostBind );
         item_PortBind->setText( any_cast<Listener::HTTP>( item.Info ).PortBind );
-        item_PortConn->setText( any_cast<Listener::HTTP>( item.Info ).PortConn );
+        if ( any_cast<Listener::HTTP>( item.Info ).PortConn == "0" )
+            item_PortConn->setText( any_cast<Listener::HTTP>( item.Info ).PortBind );
+        else
+            item_PortConn->setText( any_cast<Listener::HTTP>( item.Info ).PortConn );
     }
     else if ( item.Protocol == Listener::PayloadExternal.toStdString() )
     {
@@ -234,7 +237,11 @@ void HavocNamespace::UserInterface::Widgets::ListenersTable::ListenerAdd( Util::
 
         item_Host->setText( Host );
         item_PortBind->setText( PortBind );
-        item_PortConn->setText( PortConn );
+
+        if ( PortConn == "0" )
+            item_PortConn->setText( PortBind );
+        else
+            item_PortConn->setText( PortConn );
     }
 
     item_Host->setFlags( item_Host->flags() ^ Qt::ItemIsEditable );
