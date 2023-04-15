@@ -91,11 +91,9 @@ VOID CommandDispatcher( VOID )
 
 /* SMB */
 #else
+        // if an SMB agent can't communicate, don't die
         if ( ! PackageTransmit( Package, &DataBuffer, &DataBufferSize ) )
-        {
-            PackageDestroy( Package );
-            CommandExit( NULL );
-        }
+            continue;
 #endif
 
         if ( DataBuffer && DataBufferSize > 0 )

@@ -5024,8 +5024,10 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 								// TODO: does it even make sense for the Pivot to send this message?
 								if Command == COMMAND_GET_JOB {
 									PivotAgent.UpdateLastCallback(teamserver)
+								} else if Command == COMMAND_PIVOT {
+									PivotAgent.TaskDispatch(uint32(Request), uint32(Command), AgentHdr.Data, teamserver)
 								} else {
-									logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PIVOT - DEMON_PIVOT_SMB_COMMAND, Linked Agent: %s, Command: %d", AgentID, PivotAgent.NameID, Command))
+									//logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PIVOT - DEMON_PIVOT_SMB_COMMAND, Linked Agent: %s, Command: %d", AgentID, PivotAgent.NameID, Command))
 									PivotAgent.TaskDispatch(uint32(Request), uint32(Command), AgentHdr.Data, teamserver)
 								}
 							} else {
