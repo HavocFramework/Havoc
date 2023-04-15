@@ -949,9 +949,9 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 				if val, ok = Optional["Arguments"].(string); ok {
 
 					var (
-						Domain   []byte
-						User     []byte
-						Password []byte
+						Domain   string
+						User     string
+						Password string
 
 						ArrayData []string
 					)
@@ -961,19 +961,19 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 					if val, err := base64.StdEncoding.DecodeString(ArrayData[0]); err != nil {
 						return job, errors.New("Failed to decode Domain: " + err.Error())
 					} else {
-						Domain = val
+						Domain = string(val)
 					}
 
 					if val, err := base64.StdEncoding.DecodeString(ArrayData[1]); err != nil {
 						return job, errors.New("Failed to decode User: " + err.Error())
 					} else {
-						User = val
+						User = string(val)
 					}
 
 					if val, err := base64.StdEncoding.DecodeString(ArrayData[2]); err != nil {
 						return job, errors.New("Failed to decode Password: " + err.Error())
 					} else {
-						Password = val
+						Password = string(val)
 					}
 
 					job.Data = []interface{}{
