@@ -157,8 +157,9 @@ git clone https://github.com/HavocFramework/Havoc.git
 
 Build and Run:
 ```
-cd Havoc/Client
-make 
+# Build Binary (From Havoc Root Directory)
+make client-build
+cd client 
 ./Havoc 
 ```
 
@@ -176,17 +177,12 @@ go mod download github.com/ugorji/go
 
 Build and Run:
 ```
-cd Teamserver
-
-# Install MUSL C Compiler
-./Install.sh
-
-# Build Binary
-make
-./teamserver -h
+# Install musl Compiler & Build Binary (From Havoc Root Directory)
+make ts-build
+./havoc -h
 
 # Run the teamserver
-sudo ./teamserver server --profile ./profiles/havoc.yaotl -v --debug
+sudo ./havoc server --profile ./profiles/havoc.yaotl -v --debug
 ``` 
 
 All files created during interaction with the Teamserver are stored within the `/Havoc/Teamserver/data/*` folder.
