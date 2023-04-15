@@ -127,7 +127,7 @@ func (h *HTTP) request(ctx *gin.Context) {
 	}
 
 	// check that the URI is defined on the profile
-	if len(h.Config.Uris) > 0 {
+	if len(h.Config.Uris) > 0 && ! (len(h.Config.Uris) == 1 && h.Config.Uris[0] == "") {
 		valid = false
 		for _, Uri := range h.Config.Uris {
 			if ctx.Request.RequestURI == Uri {
