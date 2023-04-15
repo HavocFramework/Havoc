@@ -147,9 +147,6 @@ brew link --overwrite qt@5
 
 ### <a name="bclient"></a>Building the Client
 
-> If you are using a debian-based distro, you can use the bundled installation script at `/Havoc/Client/Install.sh`. 
-
-
 Clone the repository:
 ```
 git clone https://github.com/HavocFramework/Havoc.git
@@ -157,10 +154,11 @@ git clone https://github.com/HavocFramework/Havoc.git
 
 Build and Run:
 ```
-# Build Binary (From Havoc Root Directory)
+# Build the client Binary (From Havoc Root Directory)
 make client-build
-cd client 
-./Havoc 
+
+# Run the client
+./havoc client
 ```
 
 > On macOS, run `brew unlink qt && brew link qt` after cmake build is done.
@@ -169,8 +167,6 @@ cd client
 
 Install additional Go dependencies:
 ```
-cd Havoc/Teamserver
-
 go mod download golang.org/x/sys  
 go mod download github.com/ugorji/go
 ```
@@ -179,13 +175,12 @@ Build and Run:
 ```
 # Install musl Compiler & Build Binary (From Havoc Root Directory)
 make ts-build
-./havoc -h
 
 # Run the teamserver
 sudo ./havoc server --profile ./profiles/havoc.yaotl -v --debug
 ``` 
 
-All files created during interaction with the Teamserver are stored within the `/Havoc/Teamserver/data/*` folder.
+All files created during interaction with the Teamserver are stored within the `/Havoc/data/*` folder.
 
 
 ### <a name="idc"></a> Docker
@@ -412,10 +407,10 @@ The Havoc Client is written in C++ and Qt.
 ### <a name="cstc"></a>Starting the Client
 
 ```
-cd Havoc/Client
-./Havoc
+cd Havoc
+./havoc client
 ```
-Running `./Havoc` will start the Client.
+Running `./havoc client` will start the Client.
 
 
 ### <a name="cctt"></a>Connecting to the Teamserver
@@ -437,7 +432,7 @@ Then hit 'Connect' to connect your configured teamserver.
 
 ### <a name="ademon"></a>Demon
 
-Demon is the primary Havoc agent, written in C/ASM. The source-code is located at `Havoc/Teamserver/data/implants/Demon`.
+Demon is the primary Havoc agent, written in C/ASM. The source-code is located at `Havoc/payloads/Demon`.
 
 #### <a name="adgen"></a>Generating a Demon Payload
 
