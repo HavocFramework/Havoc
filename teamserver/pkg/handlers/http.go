@@ -115,7 +115,7 @@ func (h *HTTP) request(ctx *gin.Context) {
 	valid := true
 	for _, Header := range h.Config.Headers {
 		NameValue := strings.Split(Header, ": ")
-		if ctx.Request.Header.Get(NameValue[0]) != NameValue[1] {
+		if len(NameValue) > 1 && ctx.Request.Header.Get(NameValue[0]) != NameValue[1] {
 			valid = false
 			break
 		}
