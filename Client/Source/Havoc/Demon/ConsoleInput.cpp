@@ -1123,19 +1123,17 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             }
             else if ( InputCommands[ 1 ].compare( "inline-execute" ) == 0 )
             {
-                auto File = InputCommands[ 2 ];
                 auto Args = QString();
 
                 // dotnet inline-execute assembly.exe (args)
-                if ( InputCommands.size() > 3 )
+                if ( InputCommands.size() < 3 )
                 {
-                    InputCommands[ 0 ] = "";
-                    InputCommands[ 1 ] = "";
-                    InputCommands[ 2 ] = "";
-
-                    Args = InputCommands.join( " " );
+		            CONSOLE_ERROR( "Not enough arguments" );
+		            return false;
                 }
-
+                
+                auto File = InputCommands[ 2 ];
+                
                 if ( ! QFile::exists( File ) )
                 {
                     CONSOLE_ERROR( "Couldn't find assembly file: " + File );
