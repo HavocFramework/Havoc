@@ -10,6 +10,15 @@
 
 #define STYP_TEXT 0x20
 
+#define COFF_PAGE_NOACCESS          0x0
+#define COFF_PAGE_EXECUTE           0x1
+#define COFF_PAGE_READONLY          0x2
+#define COFF_PAGE_EXECUTE_READ      0x3
+#define COFF_PAGE_WRITECOPY         0x4
+#define COFF_PAGE_EXECUTE_WRITECOPY 0x5
+#define COFF_PAGE_READWRITE         0x6
+#define COFF_PAGE_EXECUTE_READWRITE 0x7
+
 typedef struct _COFFEE_PARAMS
 {
     PCHAR  EntryName;
