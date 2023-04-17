@@ -56,6 +56,9 @@ typedef struct
     /* The last RequestID recieved by the TS */
     UINT32 CurrentRequestID;
 
+    /* wheather WSAStartup has been called yet */
+    BOOL WSAWasInitialised;
+
     struct {
         UINT32  AgentID;
         BOOL    Connected;

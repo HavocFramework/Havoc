@@ -3162,6 +3162,10 @@ VOID CommandExit( PPARSER Parser )
     // clear all stolen tokens
     TokenClear();
 
+    // terminate the use of the Winsock 2 DLL (Ws2_32.dll)
+    if ( Instance.WSAWasInitialised )
+        Instance.Win32.WSACleanup();
+
     /* NOTE:
      *      Credit goes to Austin (@ilove2pwn_) for sharing this code with me.
      * TODO:

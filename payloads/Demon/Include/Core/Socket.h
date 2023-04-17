@@ -59,6 +59,13 @@ typedef struct _SOCKET_DATA
 } SOCKET_DATA, *PSOCKET_DATA;
 
 /*!
+ * Initiates the use of the Winsock DLL.
+ * This is needed for Socks5 and HTTP(S) agents.
+ * @return TRUE or FALSE
+ */
+BOOL InitWSA( VOID );
+
+/*!
  * Create a new socket and insert it into the linked list.
  * if Type param is not SOCKET_TYPE_NONE then it is going to bind
  * to the specified Address and Port.

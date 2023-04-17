@@ -590,7 +590,14 @@ func (a *Agent) RequestCompleted(RequestID uint32) {
 }
 
 func (a *Agent) AddJobToQueue(job Job) []Job {
-	a.JobQueue = append(a.JobQueue, job)
+	// if it's a pivot agent then add the job to the parent
+	if a.Pivots.Parent != nil {
+		//logger.Debug("Prepare command for pivot demon: " + a.NameID)
+		a.PivotAddJob(job)
+	// if it's a direct agent add the job to the direct agent
+	} else {
+		a.JobQueue = append(a.JobQueue, job)
+	}
 	return a.JobQueue
 }
 
@@ -669,7 +676,7 @@ func (a *Agent) PivotAddJob(job Job) {
 	// add this job to pivot queue.
 	// tho it's not going to be used besides for the task size calculator
 	// which is going to be displayed to the operator.
-	a.AddJobToQueue(job)
+	a.JobQueue = append(a.JobQueue, job)
 
 	PivotJob = Job{
 		Command: COMMAND_PIVOT,
@@ -713,7 +720,7 @@ func (a *Agent) PivotAddJob(job Job) {
 		pivots = &pivots.Parent.Pivots
 	}
 
-	pivots.Parent.AddJobToQueue(PivotJob)
+	pivots.Parent.JobQueue = append(pivots.Parent.JobQueue, PivotJob)
 }
 
 func (a *Agent) DownloadAdd(FileID int, FilePath string, FileSize int) error {

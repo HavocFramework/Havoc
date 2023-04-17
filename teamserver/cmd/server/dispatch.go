@@ -198,27 +198,14 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 
 									if job != nil {
 										t.Agents.Agents[i].AddRequest(*job)
+										t.Agents.Agents[i].AddJobToQueue(*job)
 									}
 
 									if t.Agents.Agents[i].Pivots.Parent != nil {
-										// if it's a pivot agent then add the job to the parent
-
-										logger.Debug("Prepare command for pivot demon: " + t.Agents.Agents[i].NameID)
-
-										if job != nil {
-											t.Agents.Agents[i].PivotAddJob(*job)
-										}
-
 										logr.LogrInstance.AddAgentInput("Demon", t.Agents.Agents[i].NameID, pk.Head.User, pk.Body.Info["TaskID"].(string), pk.Body.Info["CommandLine"].(string), time.Now().UTC().Format("02/01/2006 15:04:05"))
 
 									} else {
-										// if it's a direct agent add the job to the direct agent.
-										if job != nil {
-											t.Agents.Agents[i].AddJobToQueue(*job)
-										}
-
 										logr.LogrInstance.AddAgentInput("Demon", pk.Body.Info["DemonID"].(string), pk.Head.User, pk.Body.Info["TaskID"].(string), pk.Body.Info["CommandLine"].(string), time.Now().UTC().Format("02/01/2006 15:04:05"))
-
 									}
 
 									if pk.Head.OneTime == "true" {
