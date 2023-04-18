@@ -181,6 +181,7 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
     BOOL  Success        = FALSE;
     ULONG FunctionLength = StringLengthA( Function );
     ULONG Protection     = 0;
+    ULONG BitMask        = 0;
 
     if ( Instance.Config.Implant.CoffeeVeh )
     {
@@ -200,39 +201,30 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
         Coffee->Section = U_PTR( Coffee->Data ) + sizeof( COFF_FILE_HEADER ) + U_PTR( sizeof( COFF_SECTION ) * SectionCnt );
         if ( Coffee->Section->SizeOfRawData > 0 )
         {
-            Protection = 0;
-            switch ( Coffee->Section->Characteristics >> 29 )
+            BitMask = Coffee->Section->Characteristics & ( IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE );
+            if ( BitMask == 0 )
+                Protection = PAGE_NOACCESS;
+            else if ( BitMask == IMAGE_SCN_MEM_EXECUTE )
+                Protection = PAGE_EXECUTE;
+            else if ( BitMask == IMAGE_SCN_MEM_READ )
+                Protection = PAGE_READONLY;
+            else if ( BitMask == ( IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_EXECUTE ) )
+                Protection = PAGE_EXECUTE_READ;
+            else if ( BitMask == IMAGE_SCN_MEM_WRITE )
+                Protection = PAGE_WRITECOPY;
+            else if ( BitMask == ( IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_MEM_WRITE ) )
+                Protection = PAGE_EXECUTE_WRITECOPY;
+            else if ( BitMask == ( IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE ) )
+                Protection = PAGE_READWRITE;
+            else if ( BitMask == ( IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE ) )
+                Protection = PAGE_EXECUTE_READWRITE;
+            else
             {
-                case COFF_PAGE_NOACCESS:
-                    Protection = PAGE_NOACCESS;
-                    break;
-                case COFF_PAGE_EXECUTE:
-                    Protection = PAGE_EXECUTE;
-                    break;
-                case COFF_PAGE_READONLY:
-                    Protection = PAGE_READONLY;
-                    break;
-                case COFF_PAGE_EXECUTE_READ:
-                    Protection = PAGE_EXECUTE_READ;
-                    break;
-                case COFF_PAGE_WRITECOPY:
-                    Protection = PAGE_WRITECOPY;
-                    break;
-                case COFF_PAGE_EXECUTE_WRITECOPY:
-                    Protection = PAGE_EXECUTE_WRITECOPY;
-                    break;
-                case COFF_PAGE_READWRITE:
-                    Protection = PAGE_READWRITE;
-                    break;
-                case COFF_PAGE_EXECUTE_READWRITE:
-                    Protection = PAGE_EXECUTE_READWRITE;
-                    break;
-                default:
-                    PRINTF( "Unknown protection index: %x", Protection );
-                    Protection = PAGE_EXECUTE_READWRITE;
+                PRINTF( "Unknown protection: %x", Coffee->Section->Characteristics );
+                Protection = PAGE_EXECUTE_READWRITE;
             }
 
-            if ( Coffee->Section->Characteristics & IMAGE_SCN_MEM_NOT_CACHED != 0 )
+            if ( ( Coffee->Section->Characteristics & IMAGE_SCN_MEM_NOT_CACHED ) == IMAGE_SCN_MEM_NOT_CACHED  )
                 Protection |= PAGE_NOCACHE;
 
             Success = MemoryProtect( DX_MEM_SYSCALL, NtCurrentProcess(), Coffee->SecMap[ SectionCnt ].Ptr, Coffee->SecMap[ SectionCnt ].Size, Protection );
@@ -245,7 +237,7 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
     }
 
     // set the FunctionMap section to READONLY
-    Success = MemoryProtect( DX_MEM_SYSCALL, NtCurrentProcess(), Coffee->FunMap, Coffee->FunMapSize, COFF_PAGE_READONLY );
+    Success = MemoryProtect( DX_MEM_SYSCALL, NtCurrentProcess(), Coffee->FunMap, Coffee->FunMapSize, PAGE_READONLY );
     if ( ! Success )
     {
         PUTS( "Failed to protect memory" )
@@ -289,7 +281,7 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
         if ( CoffeeMain >= Coffee->SecMap[ SectionCnt ].Ptr && CoffeeMain < Coffee->SecMap[ SectionCnt ].Ptr + Coffee->SecMap[ SectionCnt ].Size )
         {
             Coffee->Section = U_PTR( Coffee->Data ) + sizeof( COFF_FILE_HEADER ) + U_PTR( sizeof( COFF_SECTION ) * SectionCnt );
-            if ( Coffee->Section->Characteristics & STYP_TEXT )
+            if ( ( Coffee->Section->Characteristics & IMAGE_SCN_MEM_EXECUTE ) == IMAGE_SCN_MEM_EXECUTE )
                 Success = TRUE;
 
             break;

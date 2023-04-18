@@ -6,18 +6,12 @@
 #define DEMON_DOF_H
 
 #define PAGE_SIZE 4096
-#define PAGE_ALLIGN( x ) U_PTR( x ) + ( ( PAGE_SIZE - ( U_PTR( x ) & (PAGE_SIZE - 1) ) ) % PAGE_SIZE )
+#define PAGE_ALLIGN( x ) U_PTR( x ) + ( ( PAGE_SIZE - ( U_PTR( x ) & ( PAGE_SIZE - 1 ) ) ) % PAGE_SIZE )
 
-#define STYP_TEXT 0x20
-
-#define COFF_PAGE_NOACCESS          0x0
-#define COFF_PAGE_EXECUTE           0x1
-#define COFF_PAGE_READONLY          0x2
-#define COFF_PAGE_EXECUTE_READ      0x3
-#define COFF_PAGE_WRITECOPY         0x4
-#define COFF_PAGE_EXECUTE_WRITECOPY 0x5
-#define COFF_PAGE_READWRITE         0x6
-#define COFF_PAGE_EXECUTE_READWRITE 0x7
+#define IMAGE_SCN_MEM_NOT_CACHED 0x04000000
+#define IMAGE_SCN_MEM_EXECUTE    0x20000000
+#define IMAGE_SCN_MEM_READ       0x40000000
+#define IMAGE_SCN_MEM_WRITE      0x80000000
 
 typedef struct _COFFEE_PARAMS
 {

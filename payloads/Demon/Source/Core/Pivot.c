@@ -311,7 +311,6 @@ VOID PivotPush()
     } while ( TRUE );
 }
 
-
 UINT32 PivotParseDemonID( PVOID Response, SIZE_T Size )
 {
     PARSER Parser  = { 0 };
