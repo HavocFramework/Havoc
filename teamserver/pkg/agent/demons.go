@@ -4884,6 +4884,11 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 										Message["MiscType"] = "reconnect"
 										Message["MiscData"] = fmt.Sprintf("%v;%x", a.NameID, AgentHdr.AgentID)
 
+										if DemonInfo.Pivots.Parent == nil {
+											//logger.Warn(fmt.Sprintf("SMB agent [%x] does not have a Parent!", AgentHdr.AgentID))
+											DemonInfo.Pivots.Parent = a
+										}
+
 										for i := range DemonInfo.Pivots.Parent.Pivots.Links {
 											if DemonInfo.Pivots.Parent.Pivots.Links[i].NameID == fmt.Sprintf("%x", AgentHdr.AgentID) {
 												DemonInfo.Pivots.Parent.Pivots.Links = append(DemonInfo.Pivots.Parent.Pivots.Links[:i], DemonInfo.Pivots.Parent.Pivots.Links[i+1:]...)
