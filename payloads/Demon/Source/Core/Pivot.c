@@ -240,6 +240,12 @@ VOID PivotPush()
     DWORD       BytesSize = 0;
     DWORD       Length    = 0;
     PVOID       Output    = NULL;
+    ULONG32     NumLoops  = 0;
+
+    /*
+     * For each pivot, we loop up to MAX_SMB_PACKETS_PER_LOOP times
+     * this is to avoid potentially blocking the parent agent
+     */
 
     do
     {
@@ -248,6 +254,7 @@ VOID PivotPush()
 
         if ( TempList->Handle )
         {
+            NumLoops = 0;
             do {
 
                 if ( Instance.Win32.PeekNamedPipe( TempList->Handle, NULL, 0, NULL, &BytesSize, NULL ) )
@@ -302,7 +309,8 @@ VOID PivotPush()
                     break;
                 }
 
-            } while ( TRUE );
+                NumLoops++;
+            } while ( NumLoops < MAX_SMB_PACKETS_PER_LOOP );
         }
 
         // select the next pivot

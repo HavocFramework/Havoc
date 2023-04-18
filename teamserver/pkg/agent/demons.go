@@ -5020,16 +5020,8 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 							PivotAgent = teamserver.AgentInstance(AgentHdr.AgentID)
 							if PivotAgent != nil {
-								// if the command is a COMMAND_GET_JOB, ignore it
-								// TODO: does it even make sense for the Pivot to send this message?
-								if Command == COMMAND_GET_JOB {
-									PivotAgent.UpdateLastCallback(teamserver)
-								} else if Command == COMMAND_PIVOT {
-									PivotAgent.TaskDispatch(uint32(Request), uint32(Command), AgentHdr.Data, teamserver)
-								} else {
-									//logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PIVOT - DEMON_PIVOT_SMB_COMMAND, Linked Agent: %s, Command: %d", AgentID, PivotAgent.NameID, Command))
-									PivotAgent.TaskDispatch(uint32(Request), uint32(Command), AgentHdr.Data, teamserver)
-								}
+								//logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PIVOT - DEMON_PIVOT_SMB_COMMAND, Linked Agent: %s, Command: %d", AgentID, PivotAgent.NameID, Command))
+								PivotAgent.TaskDispatch(uint32(Request), uint32(Command), AgentHdr.Data, teamserver)
 							} else {
 								Message["Type"] = "Error"
 								Message["Message"] = fmt.Sprintf("Can't process output for %x: Agent not found", AgentHdr.AgentID)

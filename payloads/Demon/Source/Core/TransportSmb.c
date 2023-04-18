@@ -58,6 +58,7 @@ BOOL SmbSend( PBUFFER Send )
             }
 
             Instance.Session.Connected = FALSE;
+            return FALSE;
         }
     }
 

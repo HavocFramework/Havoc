@@ -21,4 +21,12 @@ BOOL TransportInit();
  */
 BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T RecvSize );
 
+/*!
+ * Try get a Job by reading from the pipe
+ * @param Data Data we want to read
+ * @param Size Size of Data we want to read
+ * @return Return if functions ran successful
+ */
+BOOL SMBGetJob( PVOID* RecvData, PSIZE_T RecvSize );
+
 #endif

