@@ -34,6 +34,12 @@ namespace HavocNamespace::UserInterface::Widgets
 
         protected:
             bool event(QEvent *) override;
+
+        private:
+            bool handleKeyPress(QKeyEvent* eventKey);
+            void handleTabKey();
+            void handleUpKey();
+            void handleDownKey();
         };
         DemonInput* lineEdit;
 
