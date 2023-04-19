@@ -18,57 +18,73 @@ DemonInteracted::DemonInput::DemonInput( QWidget* parent ) : QLineEdit( parent )
     CommandHistoryIndex = 0;
 }
 
-/* TODO: refactor this */
-bool DemonInteracted::DemonInput::event( QEvent *e )
+bool DemonInteracted::DemonInput::handleKeyPress(QKeyEvent* eventKey)
 {
-    if ( e->type() == e->KeyPress )
+    switch (eventKey->key())
     {
-        auto eventKey = dynamic_cast<QKeyEvent*>( e );
-        if ( eventKey->key() == Qt::Key_Tab )
-        {
-            auto CompletedString = completer()->currentCompletion();
-            if ( ! CompletedString.isEmpty() )
-                this->setText( completer()->currentCompletion() );
-            return true;
-        }
-        else if ( eventKey->key() == Qt::Key_Up )
-        {
-            if ( CommandHistoryIndex == 0 )
-            {
-                setText( "" );
-                return true;
-            }
+    case Qt::Key_Tab:
+        handleTabKey();
+        return true;
+    case Qt::Key_Up:
+        handleUpKey();
+        return true;
+    case Qt::Key_Down:
+        handleDownKey();
+        return true;
+    default:
+        return false;
+    }
+}
 
-            CommandHistoryIndex--;
+void DemonInteracted::DemonInput::handleTabKey()
+{
+    auto CompletedString = completer()->currentCompletion();
+    if (!CompletedString.isEmpty())
+        this->setText(CompletedString);
+}
 
-            if ( CommandHistoryIndex >= 1 )
-            {
-                setText( CommandHistory.at( CommandHistoryIndex ) );
-            }
-            else
-            {
-                if ( ! CommandHistory.empty() )
-                    setText( CommandHistory.at( CommandHistoryIndex ) );
-                else
-                    setText( "" );
-            }
-            return true;
-        }
-        else if ( eventKey->key() == Qt::Key_Down )
-        {
-            if ( CommandHistoryIndex < CommandHistory.size() )
-            {
-                CommandHistoryIndex++;
-                setText( CommandHistory.at( CommandHistoryIndex - 1 ) );
-            }
-            else
-                setText( "" );
-
-            return true;
-        }
+void DemonInteracted::DemonInput::handleUpKey()
+{
+    if (CommandHistoryIndex == 0)
+    {
+        setText("");
+        return;
     }
 
-    return QLineEdit::event( e );
+    CommandHistoryIndex--;
+
+    if (CommandHistoryIndex >= 1)
+        setText(CommandHistory.at(CommandHistoryIndex));
+    else
+    {
+        if (!CommandHistory.empty())
+            setText(CommandHistory.at(CommandHistoryIndex));
+        else
+            setText("");
+    }
+}
+
+void DemonInteracted::DemonInput::handleDownKey()
+{
+    if (CommandHistoryIndex < CommandHistory.size())
+    {
+        CommandHistoryIndex++;
+        setText(CommandHistory.at(CommandHistoryIndex - 1));
+    }
+    else
+        setText("");
+}
+
+bool DemonInteracted::DemonInput::event(QEvent* e)
+{
+    if (e->type() == e->KeyPress)
+    {
+        auto eventKey = dynamic_cast<QKeyEvent*>(e);
+        if (handleKeyPress(eventKey))
+            return true;
+    }
+
+    return QLineEdit::event(e);
 }
 
 void DemonInteracted::DemonInput::AddCommand( const QString &Command )
