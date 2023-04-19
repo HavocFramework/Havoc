@@ -303,7 +303,7 @@ VOID PivotPush()
                         PackageAddInt32( Package, DemonID );
                         PackageTransmit( Package, NULL, NULL );
 
-                        continue;
+                        break;
                     }
 
                     CALLBACK_GETLASTERROR
