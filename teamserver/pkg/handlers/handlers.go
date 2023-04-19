@@ -166,7 +166,7 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header, External
 
 									// Socks5 over SMB agents yield a CommandID equal to 0
 									if CommandID != agent.COMMAND_PIVOT && CommandID != 0 {
-										CallbackSizes[uint32(PivotAgentID)] = append(CallbackSizes[job[j].Data[1].(uint32)], TaskBuffer...)
+										//CallbackSizes[uint32(PivotAgentID)] = append(CallbackSizes[job[j].Data[1].(uint32)], TaskBuffer...)
 										break
 									}
 
@@ -214,6 +214,10 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header, External
 							break
 
 						case agent.COMMAND_FS:
+
+							break
+
+						case agent.COMMAND_MEM_FILE:
 
 							break
 

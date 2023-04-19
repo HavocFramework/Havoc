@@ -84,7 +84,7 @@ BOOL DownloadRemove( DWORD FileID )
         Last     = Download;
         Download = Download->Next;
     }
-    
+
     return Success;
 }
 
@@ -220,4 +220,173 @@ VOID DownloadPush()
     /* Reset memory. */
     if ( Instance.DownloadChunk.Buffer )
         MemSet( Instance.DownloadChunk.Buffer, 0, Instance.DownloadChunk.Length );
+}
+
+BOOL MemFileIsNew( ULONG32 ID )
+{
+    PMEM_FILE MemFile = Instance.MemFiles;
+
+    while ( MemFile )
+    {
+        if ( MemFile->ID == ID )
+            return FALSE;
+
+        MemFile = MemFile->Next;
+    }
+
+    return TRUE;
+}
+
+/* Add MemFile to linked list */
+PMEM_FILE NewMemFile( ULONG32 ID, SIZE_T Size, PVOID Data, ULONG32 ReadSize )
+{
+    PMEM_FILE MemFile = NULL;
+
+    MemFile           = NtHeapAlloc( sizeof( MEM_FILE ) );
+    MemFile->ID       = ID;
+    MemFile->Size     = Size;
+    MemFile->Data     = NtHeapAlloc( MemFile->Size );
+    MemFile->ReadSize = 0;
+    MemFile->Next     = Instance.MemFiles;
+
+    if ( ! MemFile->Data )
+    {
+        PRINTF( "Failed to allocate %lx bytes\n", MemFile->Size );
+        return NULL;
+    }
+
+    PRINTF( "Copying %x bytes at 0x%p\n", ReadSize, MemFile->Data )
+    MemCopy( MemFile->Data, Data, ReadSize );
+
+    MemFile->ReadSize += ReadSize;
+
+    MemFile->IsCompleted = MemFile->Size == MemFile->ReadSize;
+
+    PRINTF( "Bytes missing: 0x%lx\n", MemFile->Size - MemFile->ReadSize )
+
+    /* Push to linked list */
+    Instance.MemFiles = MemFile;
+
+    PRINTF( "Added a MemFile [%x]\n", MemFile->ID )
+
+    return MemFile;
+}
+
+PMEM_FILE GetMemFile( ULONG32 ID )
+{
+    PMEM_FILE MemFile = Instance.MemFiles;
+
+    while ( MemFile )
+    {
+        if ( MemFile->ID == ID )
+            return MemFile;
+
+        MemFile = MemFile->Next;
+    }
+
+    return NULL;
+}
+
+PMEM_FILE ProcessMemFileChunk( ULONG32 ID, SIZE_T Size, PVOID Data, ULONG32 ReadSize )
+{
+    PMEM_FILE MemFile = NULL;
+
+    if ( MemFileIsNew( ID ) )
+    {
+        MemFile = NewMemFile( ID, Size, Data, ReadSize );
+    }
+    else
+    {
+        MemFile = MemFileReadChunk( ID, Size, Data, ReadSize );
+    }
+
+    return MemFile;
+}
+
+PMEM_FILE MemFileReadChunk( ULONG32 ID, SIZE_T Size, PVOID Data, ULONG32 ReadSize )
+{
+    PMEM_FILE MemFile = NULL;
+
+    MemFile = GetMemFile( ID );
+    if ( ! MemFile )
+    {
+        PRINTF( "MemFile with the id %x was not found\n", ID );
+        return NULL;
+    }
+
+    PRINTF( "Copying %x bytes at 0x%p\n", ReadSize, U_PTR( MemFile->Data ) + MemFile->ReadSize )
+    MemCopy( U_PTR( MemFile->Data ) + MemFile->ReadSize, Data, ReadSize );
+
+    MemFile->ReadSize += ReadSize;
+
+    MemFile->IsCompleted = MemFile->Size == MemFile->ReadSize;
+
+    PRINTF( "Bytes missing: 0x%lx\n", MemFile->Size - MemFile->ReadSize )
+
+    return MemFile;
+}
+
+VOID MemFileFree( PMEM_FILE MemFile )
+{
+    if ( MemFile->Data && MemFile->Size )
+        MemSet( MemFile->Data, 0, MemFile->Size );
+
+    if ( MemFile->Data )
+        NtHeapFree( MemFile->Data );
+
+    MemFile->Data = NULL;
+    MemFile->Size = 0;
+
+    MemSet( MemFile, 0, sizeof( MEM_FILE ) );
+    NtHeapFree( MemFile );
+    MemFile = NULL;
+}
+
+BOOL RemoveMemFile( ULONG32 ID )
+{
+    PMEM_FILE MemFile = NULL;
+    PMEM_FILE Last    = NULL;
+    BOOL      Success = FALSE;
+
+    if ( Instance.MemFiles && Instance.MemFiles->Next == NULL )
+    {
+        if ( Instance.MemFiles->ID == ID )
+        {
+            MemFileFree( Instance.MemFiles );
+            Instance.MemFiles = NULL;
+            PRINTF( "Removed MemFile [%x] : %d\n", ID, Success )
+            return TRUE;
+        }
+
+        return FALSE;
+    }
+
+    MemFile = Instance.MemFiles;
+    Last    = Instance.MemFiles;
+
+    for ( ;; )
+    {
+        if ( ! MemFile )
+            break;
+
+        if ( MemFile->ID == ID )
+        {
+            /* Remove it from the list. */
+            Last->Next = MemFile->Next;
+
+            MemFileFree( MemFile );
+
+            /* return that we succeeded. */
+            Success = TRUE;
+
+            break;
+        }
+
+        Last    = MemFile;
+        MemFile = MemFile->Next;
+    }
+
+    PRINTF( "Removed MemFile [%x] : %d\n", ID, Success )
+
+    return Success;
 }

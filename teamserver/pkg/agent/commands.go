@@ -5,6 +5,18 @@ const (
 )
 
 const (
+	/*
+	 * https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-writefile
+	 * Pipe write operations across a network are limited in size per write.
+	 * The amount varies per platform. For x86 platforms it's 63.97 MB.
+	 * For x64 platforms it's 31.97 MB. For Itanium it's 63.95 MB.
+	 */
+	// we are using 30 MB
+	//DEMON_MAX_RESPONSE_LENGTH = 0x1e00000
+	DEMON_MAX_RESPONSE_LENGTH = 0x2800
+)
+
+const (
 	PROCESS_ARCH_UNKNOWN = 0
 	PROCESS_ARCH_X86     = 1
 	PROCESS_ARCH_X64     = 2
@@ -38,6 +50,7 @@ const (
 	COMMAND_TRANSFER                = 2530
 	COMMAND_SOCKET                  = 2540
 	COMMAND_KERBEROS                = 2550
+	COMMAND_MEM_FILE                = 2560
 
 	DEMON_INFO = 89
 

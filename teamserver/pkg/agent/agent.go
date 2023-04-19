@@ -60,7 +60,7 @@ func BuildPayloadMessage(Jobs []Job, AesKey []byte, AesIv []byte) []byte {
 			case uint64:
 				var integer64 = make([]byte, 8)
 
-				binary.LittleEndian.PutUint64(integer64, uint64(job.Data[i].(int64)))
+				binary.LittleEndian.PutUint64(integer64, uint64(job.Data[i].(uint64)))
 
 				DataPayload = append(DataPayload, integer64...)
 
@@ -590,6 +590,8 @@ func (a *Agent) RequestCompleted(RequestID uint32) {
 }
 
 func (a *Agent) AddJobToQueue(job Job) []Job {
+	// store the RequestID									
+	a.AddRequest(job)
 	// if it's a pivot agent then add the job to the parent
 	if a.Pivots.Parent != nil {
 		//logger.Debug("Prepare command for pivot demon: " + a.NameID)
@@ -602,9 +604,79 @@ func (a *Agent) AddJobToQueue(job Job) []Job {
 }
 
 func (a *Agent) GetQueuedJobs() []Job {
-	var Jobs = a.JobQueue
+	//var Jobs = a.JobQueue
+	var Jobs     []Job
+	var JobsSize = 0
+	var NumJobs  = 0
 
-	a.JobQueue = nil
+	// make sure we return a number of jobs that doesn't exeed DEMON_MAX_RESPONSE_LENGTH
+
+	for _, job := range a.JobQueue {
+
+		for i := range job.Data {
+
+			switch job.Data[i].(type) {
+			case int:
+				JobsSize += 4
+				break
+
+			case int64:
+				JobsSize += 8
+				break
+
+			case uint64:
+				JobsSize += 8
+				break
+
+			case int32:
+				JobsSize += 4
+				break
+
+			case uint32:
+				JobsSize += 4
+				break
+
+			case int16:
+				JobsSize += 2
+				break
+
+			case uint16:
+				JobsSize += 2
+				break
+
+			case string:
+				JobsSize += 4 + len(job.Data[i].(string))
+				break
+
+			case []byte:
+				JobsSize += 4 + len(job.Data[i].([]byte))
+				break
+
+			case byte:
+				JobsSize += 1
+				break
+
+			default:
+				logger.Error(fmt.Sprintf("Could determine package size, unknown data type: %v", job.Data[i]))
+			}
+		}
+
+		if JobsSize >= DEMON_MAX_RESPONSE_LENGTH {
+			break
+		}
+		NumJobs++
+		break
+	}
+
+	// if there is a very large job, send it anyways
+	if len(a.JobQueue) > 0 && NumJobs == 0 {
+		NumJobs = 1
+	}
+
+	logger.Debug(fmt.Sprintf("TotalJobs: %d, JobsSent: %d", len(a.JobQueue), NumJobs))
+
+	Jobs, a.JobQueue = a.JobQueue[:NumJobs], a.JobQueue[NumJobs:]
+	logger.Debug(fmt.Sprintf("leftOut: %d", len(a.JobQueue)))
 
 	return Jobs
 }

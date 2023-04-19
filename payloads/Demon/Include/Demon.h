@@ -463,6 +463,7 @@ typedef struct
     PPIVOT_DATA          SmbPivots;
     PJOB_DATA            Jobs;
     PDOWNLOAD_DATA       Downloads;
+    PMEM_FILE            MemFiles;
     PSOCKET_DATA         Sockets;
 
 } INSTANCE;

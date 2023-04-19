@@ -197,7 +197,6 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 									}
 
 									if job != nil {
-										t.Agents.Agents[i].AddRequest(*job)
 										t.Agents.Agents[i].AddJobToQueue(*job)
 									}
 

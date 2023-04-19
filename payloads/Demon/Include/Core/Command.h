@@ -27,6 +27,7 @@
 #define DEMON_COMMAND_TRANSFER                  2530
 #define DEMON_COMMAND_SOCKET                    2540
 #define DEMON_COMMAND_KERBEROS                  2550
+#define DEMON_COMMAND_MEM_FILE                  2560
 
 #define DEMON_INFO                      89
 #define DEMON_OUTPUT                    90
@@ -169,5 +170,6 @@ VOID CommandPivot( PPARSER Parser );
 VOID CommandTransfer( PPARSER Parser );
 VOID CommandSocket( PPARSER Parser );
 VOID Commandkerberos( PPARSER Parser );
+VOID CommandMemFile( PPARSER Parser );
 
 #endif

