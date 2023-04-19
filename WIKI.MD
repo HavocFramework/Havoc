@@ -100,7 +100,7 @@ sudo apt install -y git build-essential apt-utils cmake libfontconfig1 libglu1-m
 > You must enable Python 3.10 in your APT repositories before you can run the Client successfully.
 
 ```
-sudo apt install build-essential
+sudo apt install build-essential cmake
 sudo add-apt-repository ppa:deadsnakes/ppa
 sudo apt update
 sudo apt install python3.10 python3.10-dev
