@@ -604,13 +604,11 @@ func (a *Agent) AddJobToQueue(job Job) []Job {
 }
 
 func (a *Agent) GetQueuedJobs() []Job {
-	//var Jobs = a.JobQueue
 	var Jobs     []Job
 	var JobsSize = 0
 	var NumJobs  = 0
 
 	// make sure we return a number of jobs that doesn't exeed DEMON_MAX_RESPONSE_LENGTH
-
 	for _, job := range a.JobQueue {
 
 		for i := range job.Data {
@@ -664,8 +662,8 @@ func (a *Agent) GetQueuedJobs() []Job {
 		if JobsSize >= DEMON_MAX_RESPONSE_LENGTH {
 			break
 		}
+
 		NumJobs++
-		break
 	}
 
 	// if there is a very large job, send it anyways
@@ -673,10 +671,8 @@ func (a *Agent) GetQueuedJobs() []Job {
 		NumJobs = 1
 	}
 
-	logger.Debug(fmt.Sprintf("TotalJobs: %d, JobsSent: %d", len(a.JobQueue), NumJobs))
-
+	// return NumJobs and leave the rest on the JobQueue
 	Jobs, a.JobQueue = a.JobQueue[:NumJobs], a.JobQueue[NumJobs:]
-	logger.Debug(fmt.Sprintf("leftOut: %d", len(a.JobQueue)))
 
 	return Jobs
 }

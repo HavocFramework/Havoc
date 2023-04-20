@@ -76,16 +76,7 @@ BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T RecvSize 
 
     if ( SmbSend( &Send ) )
     {
-        if ( SmbRecv( &Resp ) )
-        {
-            if ( RecvData )
-                *RecvData = Resp.Buffer;
-
-            if ( RecvSize )
-                *RecvSize = Resp.Length;
-
-            return TRUE;
-        }
+        return TRUE;
     }
 
 #endif
@@ -99,8 +90,11 @@ BOOL SMBGetJob( PVOID* RecvData, PSIZE_T RecvSize )
 {
     BUFFER Resp = { 0 };
 
-    *RecvData = NULL;
-    *RecvSize = 0;
+    if ( RecvData )
+        *RecvData = NULL;
+
+    if ( RecvSize )
+        *RecvSize = 0;
 
     if ( SmbRecv( &Resp ) )
     {

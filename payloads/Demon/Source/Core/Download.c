@@ -255,14 +255,13 @@ PMEM_FILE NewMemFile( ULONG32 ID, SIZE_T Size, PVOID Data, ULONG32 ReadSize )
         return NULL;
     }
 
-    PRINTF( "Copying %x bytes at 0x%p\n", ReadSize, MemFile->Data )
     MemCopy( MemFile->Data, Data, ReadSize );
 
     MemFile->ReadSize += ReadSize;
 
     MemFile->IsCompleted = MemFile->Size == MemFile->ReadSize;
 
-    PRINTF( "Bytes missing: 0x%lx\n", MemFile->Size - MemFile->ReadSize )
+    PRINTF( "Copying %x bytes, bytes missing: 0x%x\n", ReadSize, MemFile->Size - MemFile->ReadSize )
 
     /* Push to linked list */
     Instance.MemFiles = MemFile;
@@ -314,14 +313,12 @@ PMEM_FILE MemFileReadChunk( ULONG32 ID, SIZE_T Size, PVOID Data, ULONG32 ReadSiz
         return NULL;
     }
 
-    PRINTF( "Copying %x bytes at 0x%p\n", ReadSize, U_PTR( MemFile->Data ) + MemFile->ReadSize )
+    PRINTF( "Copying %x bytes, bytes missing: 0x%x\n", ReadSize, MemFile->Size - MemFile->ReadSize )
     MemCopy( U_PTR( MemFile->Data ) + MemFile->ReadSize, Data, ReadSize );
 
     MemFile->ReadSize += ReadSize;
 
     MemFile->IsCompleted = MemFile->Size == MemFile->ReadSize;
-
-    PRINTF( "Bytes missing: 0x%lx\n", MemFile->Size - MemFile->ReadSize )
 
     return MemFile;
 }
@@ -354,11 +351,11 @@ BOOL RemoveMemFile( ULONG32 ID )
         {
             MemFileFree( Instance.MemFiles );
             Instance.MemFiles = NULL;
-            PRINTF( "Removed MemFile [%x] : %d\n", ID, Success )
-            return TRUE;
+            Success = TRUE;
         }
 
-        return FALSE;
+        PRINTF( "Removed MemFile [%x] : %d\n", ID, Success )
+        return Success;
     }
 
     MemFile = Instance.MemFiles;

