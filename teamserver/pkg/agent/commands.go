@@ -12,8 +12,7 @@ const (
 	 * For x64 platforms it's 31.97 MB. For Itanium it's 63.95 MB.
 	 */
 	// we are using 30 MB
-	//DEMON_MAX_RESPONSE_LENGTH = 0x1e00000
-	DEMON_MAX_RESPONSE_LENGTH = 0x2800
+	DEMON_MAX_RESPONSE_LENGTH = 0x1e00000
 )
 
 const (

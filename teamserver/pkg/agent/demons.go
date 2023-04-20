@@ -250,9 +250,10 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 
 		case "upload":
 			var (
-				FileName []byte
-				Content  []byte
-				ArgArray []string
+				FileName  []byte
+				Content   []byte
+				ArgArray  []string
+				MemFileId uint32
 			)
 
 			ArgArray = strings.Split(Arguments, ";")
@@ -269,11 +270,13 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 				return nil, err
 			}
 
+			MemFileId = a.UploadMemFileInChunks(Content)
+
 			SubCommand = 3
 			job.Data = []interface{}{
 				SubCommand,
 				FileName,
-				Content,
+				MemFileId,
 			}
 			break
 
@@ -640,13 +643,16 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 			NetVersion       = common.EncodeUTF16("v4.0.30319")
 			PipePath         = common.EncodeUTF16(finalPipe)
 			AppDomainName    = common.EncodeUTF16("DefaultDomain")
+			MemFileId uint32
 		)
+
+		MemFileId = a.UploadMemFileInChunks(binaryDecoded)
 
 		job.Data = []interface{}{
 			PipePath,
 			AppDomainName,
 			NetVersion,
-			binaryDecoded,
+			MemFileId,
 			arguments,
 		}
 

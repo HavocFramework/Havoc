@@ -24,6 +24,9 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
     ULONG          idx[ 1 ]       = { 0 };
     VARIANT        Object         = { 0 };
 
+    if ( ! Assembly.Buffer || ! Assembly.Length )
+        return FALSE;
+
     /* Create a named pipe for our output. try with anon pipes at some point. */
     Instance.Dotnet->Pipe = Instance.Win32.CreateNamedPipeW(
         Instance.Dotnet->PipeName.Buffer,
