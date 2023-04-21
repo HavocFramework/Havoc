@@ -18,8 +18,8 @@
 
 typedef struct _BUFFER
 {
-    PVOID Buffer;
-    ULONG Length;
+    PVOID  Buffer;
+    UINT32 Length;
 } BUFFER, *PBUFFER;
 
 typedef struct _ANONPIPE
@@ -58,13 +58,13 @@ PVOID    LdrModuleLoad( LPSTR ModuleName );
  * @brief Spawns a process with current set settings (ppid spoof, blockdll, token)
  * @return
  */
-BOOL     ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PROCESS_INFORMATION* ProcessInfo, BOOL Piped, PANONPIPE AnonPipes );
+BOOL     ProcessCreate( BOOL EnableWow64, LPWSTR App, LPWSTR CmdLine, DWORD Flags, PROCESS_INFORMATION* ProcessInfo, BOOL Piped, PANONPIPE AnonPipes );
 BOOL     ProcessIsWow( HANDLE hProcess );
 HANDLE   ProcessOpen( DWORD ProcessID, DWORD Access );
 NTSTATUS ProcessSnapShot( PSYSTEM_PROCESS_INFORMATION* Buffer, PSIZE_T Size );
 BOOL     ReadLocalFile( LPCWSTR FileName, PVOID* FileContent, PDWORD FileSize );
 
-PCHAR    TokenGetUserDomain( HANDLE hToken, PDWORD UserSize );
+PCHAR    TokenGetUserDomain( HANDLE hToken, PUINT32 UserSize );
 BOOL     WinScreenshot( PVOID* ImagePointer, PSIZE_T ImageSize );
 
 BOOL     AnonPipesInit( PANONPIPE AnonPipes );

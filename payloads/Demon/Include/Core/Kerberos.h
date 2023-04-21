@@ -197,8 +197,8 @@ typedef struct _LOGON_SESSION_DATA {
     ULONG sessionCount;
 } LOGON_SESSION_DATA, *PLOGON_SESSION_DATA;
 
+BOOL                 Ptt( HANDLE hToken, PBYTE Ticket, DWORD TicketSize, LUID luid );
 BOOL                 Purge( HANDLE hToken, LUID luid );
 PSESSION_INFORMATION Klist( HANDLE hToken, LUID luid );
 LUID*                GetLUID( HANDLE hToken );
-
 #endif

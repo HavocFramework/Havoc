@@ -13,13 +13,15 @@ typedef struct {
     BOOL    Endian;
 } PARSER, *PPARSER;
 
-VOID  ParserNew( PPARSER parser, PCHAR buffer, UINT32 size );
-VOID  ParserDecrypt( PPARSER parser, PBYTE Key, PBYTE IV );
-INT16 ParserGetInt16( PPARSER parser );
-BYTE  ParserGetByte( PPARSER parser );
-INT   ParserGetInt32( PPARSER parser );
-INT64 ParserGetInt64( PPARSER parser );
-PCHAR ParserGetBytes( PPARSER parser, PINT size );
-VOID  ParserDestroy( PPARSER Parser );
+VOID   ParserNew( PPARSER parser, PBYTE buffer, UINT32 size );
+VOID   ParserDecrypt( PPARSER parser, PBYTE Key, PBYTE IV );
+INT16  ParserGetInt16( PPARSER parser );
+BYTE   ParserGetByte( PPARSER parser );
+INT    ParserGetInt32( PPARSER parser );
+INT64  ParserGetInt64( PPARSER parser );
+PBYTE  ParserGetBytes( PPARSER parser, PUINT32 size );
+PCHAR  ParserGetString( PPARSER parser, PUINT32 size );
+PWCHAR ParserGetWString( PPARSER parser, PUINT32 size );
+VOID   ParserDestroy( PPARSER Parser );
 
 #endif //DEMON_PARSER_H

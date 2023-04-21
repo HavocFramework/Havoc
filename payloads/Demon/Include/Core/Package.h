@@ -33,17 +33,32 @@ VOID PackageAddInt64(
         UINT64 dataInt
 );
 
+VOID PackageAddPtr(
+        PPACKAGE Package,
+        PVOID pointer
+);
+
 // PackageAddBytes
 VOID PackageAddBytes(
         PPACKAGE package,
-        PUCHAR data,
+        PBYTE data,
         size_t dataSize
+);
+
+VOID PackageAddString(
+        PPACKAGE package,
+        PCHAR data
+);
+
+VOID PackageAddWString(
+        PPACKAGE package,
+        PWCHAR data
 );
 
 // PackageAddBytes
 VOID PackageAddPad(
         PPACKAGE package,
-        PUCHAR data,
+        PCHAR data,
         size_t dataSize
 );
 

@@ -12,6 +12,7 @@ const (
 	ReadInt32 ReadType = iota
 	ReadInt64
 	ReadBytes
+	ReadPointer
 )
 
 type Parser struct {
@@ -40,6 +41,11 @@ func (p *Parser) CanIRead(ReadTypes []ReadType) bool {
 			}
 			BytesRead += 4
 		case ReadInt64:
+			if TotalSize - BytesRead < 8 {
+				return false
+			}
+			BytesRead += 8
+		case ReadPointer:
 			if TotalSize - BytesRead < 8 {
 				return false
 			}
@@ -113,6 +119,10 @@ func (p *Parser) ParseInt64() int64 {
 	} else {
 		return int64(binary.LittleEndian.Uint64(integer))
 	}
+}
+
+func (p *Parser) ParsePointer() int64 {
+	return p.ParseInt64()
 }
 
 func (p *Parser) SetBigEndian(bigEndian bool) {

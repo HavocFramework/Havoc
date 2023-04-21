@@ -83,6 +83,8 @@ PMEM_FILE GetMemFile( ULONG32 ID );
 
 PMEM_FILE MemFileReadChunk( ULONG32 ID, SIZE_T Size, PVOID Data, ULONG32 ReadSize );
 
+BOOL RemoveMemFile( ULONG32 ID );
+
 /* Add a DataBlock to linked list */
 PMEM_FILE NewMemFile( ULONG32 ID, SIZE_T Size, PVOID Data, ULONG32 ReadSize );
 

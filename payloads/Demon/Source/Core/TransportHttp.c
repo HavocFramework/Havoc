@@ -138,7 +138,7 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
     }
 
     /* Send package to our listener */
-    if ( Instance.Win32.WinHttpSendRequest( hRequest, NULL, 0, Send->Buffer, Send->Length, Send->Length, NULL ) )
+    if ( Instance.Win32.WinHttpSendRequest( hRequest, NULL, 0, Send->Buffer, Send->Length, Send->Length, 0 ) )
     {
         if ( Instance.Win32.WinHttpReceiveResponse( hRequest, NULL ) )
         {

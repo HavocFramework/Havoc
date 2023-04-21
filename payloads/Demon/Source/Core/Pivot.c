@@ -21,7 +21,7 @@
  * pivot order.
  */
 
-BOOL PivotAdd( BUFFER NamedPipe, PVOID* Output, PSIZE_T BytesSize )
+BOOL PivotAdd( BUFFER NamedPipe, PVOID* Output, PDWORD BytesSize )
 {
     PPIVOT_DATA Data    = NULL;
     HANDLE      Handle  = NULL;
@@ -121,7 +121,6 @@ BOOL PivotAdd( BUFFER NamedPipe, PVOID* Output, PSIZE_T BytesSize )
 PPIVOT_DATA PivotGet( DWORD AgentID )
 {
     PPIVOT_DATA TempList = Instance.SmbPivots;
-    DWORD       Counter  = 0;
 
     do {
         if ( TempList )
@@ -134,7 +133,7 @@ PPIVOT_DATA PivotGet( DWORD AgentID )
             break;
     } while ( TRUE );
 
-    return Counter;
+    return NULL;
 }
 
 BOOL PivotRemove( DWORD AgentId )

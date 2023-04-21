@@ -11,6 +11,7 @@ PWCHAR  StringCopyW(PWCHAR String1, PWCHAR String2);
 SIZE_T  StringLengthA( LPCSTR String );
 SIZE_T  StringLengthW( LPCWSTR String );
 PCHAR   StringConcatA(PCHAR String, PCHAR String2);
+PWCHAR  StringConcatW(PWCHAR String, PWCHAR String2);
 PCHAR   StringTokenA(PCHAR String, CONST PCHAR Delim);
 
 VOID    MemSet( PVOID Destination, INT Val, SIZE_T Size );

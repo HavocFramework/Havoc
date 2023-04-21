@@ -391,7 +391,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 
 			var (
 				Args           = strings.Split(Arguments, ";")
-				Process        any
+				Process        string
 				ProcessArgs    string
 				ProcessState   int
 				ProcessPiped   int
@@ -414,7 +414,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 				ProcessPiped = 1
 			}
 
-			Process = Args[3]
+			Process = string(Args[3])
 
 			ProcArgs, _ := base64.StdEncoding.DecodeString(Args[4])
 			ProcessArgs = string(ProcArgs)
@@ -422,8 +422,8 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 			job.Data = []interface{}{
 				SubCommand,
 				ProcessState,
-				Process,
-				ProcessArgs,
+				common.EncodeUTF16(Process),
+				common.EncodeUTF16(ProcessArgs),
 				ProcessPiped,
 				ProcessVerbose,
 			}
@@ -1021,9 +1021,9 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 
 					job.Data = []interface{}{
 						SubCommand,
-						Domain,
-						User,
-						Password,
+						common.EncodeUTF16(Domain),
+						common.EncodeUTF16(User),
+						common.EncodeUTF16(Password),
 					}
 
 					logger.Debug(job.Data)
@@ -1220,12 +1220,12 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 
 		case "inject.spawn64":
 			ConfigId = CONFIG_INJECT_SPAWN64
-			Value = ConfigVal
+			Value = common.EncodeUTF16(ConfigVal.(string))
 			break
 
 		case "inject.spawn32":
 			ConfigId = CONFIG_INJECT_SPAWN32
-			Value = ConfigVal
+			Value = common.EncodeUTF16(ConfigVal.(string))
 			break
 
 		case "killdate":
@@ -2364,10 +2364,9 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 			switch InfoID {
 			case DEMON_INFO_MEM_ALLOC:
 
-				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadInt32, parser.ReadInt32}) {
+				if Parser.CanIRead([]parser.ReadType{parser.ReadPointer, parser.ReadInt32, parser.ReadInt32}) {
 					var (
-						// TODO: shouldn't this be a 64 bit value?
-						MemPointer   = Parser.ParseInt32()
+						MemPointer   = Parser.ParsePointer()
 						MemSize      = Parser.ParseInt32()
 						ProtectionId = Parser.ParseInt32()
 						Protection   string
@@ -2390,10 +2389,10 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 			case DEMON_INFO_MEM_EXEC:
 
-				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadInt32}) {
+				if Parser.CanIRead([]parser.ReadType{parser.ReadPointer, parser.ReadInt32}) {
 
 					var (
-						MemFunction = Parser.ParseInt32()
+						MemFunction = Parser.ParsePointer()
 						ThreadId    = Parser.ParseInt32()
 					)
 					
@@ -2408,9 +2407,9 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 			case DEMON_INFO_MEM_PROTECT:
 
-				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32}) {
+				if Parser.CanIRead([]parser.ReadType{parser.ReadPointer, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32}) {
 					var (
-						Memory        = Parser.ParseInt32()
+						Memory        = Parser.ParsePointer()
 						MemorySize    = Parser.ParseInt32()
 						OldProtection = Parser.ParseInt32()
 						Protection    = Parser.ParseInt32()
@@ -3398,13 +3397,13 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					table.SetColumnSeparator("│")
 					table.SetCenterSeparator("+")
 
-					for Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadInt32}) {
+					for Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadPointer}) {
 						var (
 							collum []string
 						)
 
 						ModuleName = Parser.ParseString()
-						ModuleBase = "0x0" + strconv.FormatInt(int64(uint32(Parser.ParseInt32())), 16)
+						ModuleBase = "0x" + strconv.FormatInt(Parser.ParsePointer(), 16)
 
 						collum = []string{strings.ReplaceAll(ModuleName, " ", ""), ModuleBase} // TODO: fix this to avoid new line in the havoc console
 						tableData = append(tableData, collum)
@@ -3466,7 +3465,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32}) {
 					var (
-						Path    = Parser.ParseString()
+						Path    = Parser.ParseUTF16String()
 						PID     = Parser.ParseInt32()
 						Success = Parser.ParseInt32()
 						Piped   = Parser.ParseInt32()
@@ -3552,12 +3551,12 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					table.SetColumnSeparator("│")
 					table.SetCenterSeparator("+")
 
-					for Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32}) {
+					for Parser.CanIRead([]parser.ReadType{parser.ReadPointer, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32}) {
 						var (
 							collum []string
 						)
 
-						BaseAddress = "0x0" + strconv.FormatInt(int64(Parser.ParseInt32()), 16)
+						BaseAddress = "0x" + strconv.FormatInt(Parser.ParsePointer(), 16)
 						RegionSize = utils.ByteCountSI(int64(Parser.ParseInt32()))
 						iProtect = int(Parser.ParseInt32())
 						iState = int(Parser.ParseInt32())
@@ -3938,7 +3937,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 		var Message = make(map[string]string)
 
 		for Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
-			Output += fmt.Sprintf("   - %v\n", Parser.ParseString())
+			Output += fmt.Sprintf("   - %v\n", Parser.ParseUTF16String())
 		}
 
 		Message["Type"] = typeInfo
@@ -4167,7 +4166,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_MAKE", AgentID))
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
 					Output["Type"] = "Good"
-					Output["Message"] = fmt.Sprintf("Successfully created and impersonated token: %s", Parser.ParseString())
+					Output["Message"] = fmt.Sprintf("Successfully created and impersonated token: %s", Parser.ParseUTF16String())
 				} else {
 					Output["Type"] = "Error"
 					Output["Message"] = fmt.Sprintf("Failed to create token")
@@ -4387,7 +4386,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 			case CONFIG_INJECT_SPAWN64:
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CONFIG - CONFIG_INJECT_SPAWN64", AgentID))
-					ConfigData = Parser.ParseString()
+					ConfigData = Parser.ParseUTF16String()
 					Message["Message"] = "Default x64 target process set to " + ConfigData.(string)
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CONFIG - CONFIG_INJECT_SPAWN64, Invalid packet", AgentID))
@@ -4397,7 +4396,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 			case CONFIG_INJECT_SPAWN32:
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CONFIG - CONFIG_INJECT_SPAWN32", AgentID))
-					ConfigData = Parser.ParseString()
+					ConfigData = Parser.ParseUTF16String()
 					Message["Message"] = "Default x86 target process set to " + ConfigData.(string)
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_CONFIG - CONFIG_INJECT_SPAWN32, Invalid packet", AgentID))

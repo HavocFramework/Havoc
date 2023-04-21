@@ -40,7 +40,7 @@ BOOL Win32_DuplicateTokenEx(
         InitializeObjectAttributes(
             &ObjectAttributes,
             NULL,
-            NULL,
+            0,
             NULL,
             NULL
         );

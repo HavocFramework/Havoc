@@ -57,7 +57,7 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, DWORD IPv4, PBYTE IPv6, DWOR
     PSOCKET_DATA    Socket    = NULL;
     SOCKADDR_IN     SockAddr  = { 0 };
     SOCKADDR_IN6_LH SockAddr6 = { 0 };
-    BOOL            IoBlock   = TRUE;
+    u_long          IoBlock   = 1;
 
     if ( ! IPv4 && ! IPv6 )
     {
@@ -78,7 +78,7 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, DWORD IPv4, PBYTE IPv6, DWOR
 
         if ( IPv4 )
         {
-            WinSock = Instance.Win32.WSASocketA( AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, NULL, NULL );
+            WinSock = Instance.Win32.WSASocketA( AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, NULL );
             if ( WinSock == INVALID_SOCKET )
             {
                 PRINTF( "WSASocketA Failed: %d\n", NtGetLastError() )
@@ -126,7 +126,7 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, DWORD IPv4, PBYTE IPv6, DWOR
             if ( IPv4 )
             {
                 /* connect to host:port */
-                if ( Instance.Win32.connect( WinSock, &SockAddr, sizeof( SOCKADDR_IN ) ) == SOCKET_ERROR )
+                if ( Instance.Win32.connect( WinSock, ( struct sockaddr * ) &SockAddr, sizeof( SOCKADDR_IN ) ) == SOCKET_ERROR )
                 {
                     PRINTF( "connect failed: %d\n", NtGetLastError() )
                     goto CLEANUP;
@@ -135,7 +135,7 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, DWORD IPv4, PBYTE IPv6, DWOR
             else
             {
                 /* connect to host:port */
-                if ( Instance.Win32.connect( WinSock, &SockAddr6, sizeof( SOCKADDR_IN6_LH ) ) == SOCKET_ERROR )
+                if ( Instance.Win32.connect( WinSock, ( struct sockaddr * ) &SockAddr6, sizeof( SOCKADDR_IN6_LH ) ) == SOCKET_ERROR )
                 {
                     PRINTF( "connect failed: %d\n", NtGetLastError() )
                     goto CLEANUP;
@@ -163,7 +163,7 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, DWORD IPv4, PBYTE IPv6, DWOR
             }
 
             /* bind the socket */
-            if ( Instance.Win32.bind( WinSock, &SockAddr, sizeof( SOCKADDR_IN ) ) == SOCKET_ERROR )
+            if ( Instance.Win32.bind( WinSock, ( struct sockaddr * ) &SockAddr, sizeof( SOCKADDR_IN ) ) == SOCKET_ERROR )
             {
                 PRINTF( "bind failed: %d\n", NtGetLastError() )
                 goto CLEANUP;
@@ -213,8 +213,8 @@ VOID SocketClients()
     PPACKAGE     Package = NULL;
     PSOCKET_DATA Socket  = NULL;
     PSOCKET_DATA Client  = NULL;
-    SOCKET       WinSock = NULL;
-    BOOL         IoBlock = TRUE;
+    SOCKET       WinSock = 0;
+    u_long       IoBlock = 1;
 
     Socket = Instance.Sockets;
 
@@ -393,7 +393,7 @@ VOID SocketFree( PSOCKET_DATA Socket )
     if ( Socket->Socket )
     {
         Instance.Win32.closesocket( Socket->Socket );
-        Socket->Socket = NULL;
+        Socket->Socket = 0;
     }
 
     MemSet( Socket, 0, sizeof( SOCKET_DATA ) );
@@ -496,7 +496,6 @@ PBYTE DnsQueryIPv6( LPSTR Domain )
 {
     ADDRINFOA   hints     = { 0 };
     PADDRINFOA  res       = NULL;
-    DWORD       IP        = 0;
     INT         Ret       = 0;
     PBYTE       IPv6      = NULL;
 

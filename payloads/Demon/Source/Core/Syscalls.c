@@ -47,7 +47,7 @@ PVOID SyscallLdrNtdll()
     if ( hFile )
         Instance.Win32.NtClose( hFile );
 
-    return ( ULONG_PTR ) NULL;
+    return NULL;
 }
 
 ULONG_PTR BuildSyscallStub( ULONG_PTR StubRegion, DWORD dwSyscallNo )
@@ -78,7 +78,7 @@ BOOL SyscallsInit()
     DWORD                 SysNtOpenFile         = 0;
     DWORD                 SysNtCreateSection    = 0;
     DWORD                 SysNtMapViewOfSection = 0;
-    ULONG_PTR             DataSectionAddress    = NULL;
+    ULONG_PTR             DataSectionAddress    = 0;
     DWORD                 DataSectionSize       = 0;
     LPVOID                SyscallRegion         = NULL;
     DWORD                 OldProtection         = 0;
@@ -90,7 +90,7 @@ BOOL SyscallsInit()
     {
         if ( ! MemCompare( SectionHeader[ i ].Name, ".data", 5 ) )
         {
-            DataSectionAddress = Instance.Modules.Ntdll + SectionHeader[ i ].VirtualAddress;
+            DataSectionAddress = ( ULONG_PTR )( U_PTR( Instance.Modules.Ntdll ) + SectionHeader[ i ].VirtualAddress );
             DataSectionSize    = SectionHeader[ i ].Misc.VirtualSize;
             break;
         }
@@ -114,13 +114,13 @@ BOOL SyscallsInit()
         }
     }
 
-    SyscallRegion = ( ULONG_PTR ) Instance.Win32.VirtualAllocEx( NtCurrentProcess(), NULL, 3 * MAX_SYSCALL_STUB_SIZE, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
+    SyscallRegion = Instance.Win32.VirtualAllocEx( NtCurrentProcess(), NULL, 3 * MAX_SYSCALL_STUB_SIZE, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
     if ( ! SyscallRegion )
         return FALSE;
 
-    Instance.Syscall.NtOpenFile         = BuildSyscallStub( SyscallRegion, SysNtOpenFile );
+    Instance.Syscall.NtOpenFile         = BuildSyscallStub( ( ULONG_PTR ) SyscallRegion, SysNtOpenFile );
     Instance.Syscall.NtCreateSection    = BuildSyscallStub( SyscallRegion + MAX_SYSCALL_STUB_SIZE, SysNtCreateSection );
-    Instance.Syscall.NtMapViewOfSection = BuildSyscallStub( SyscallRegion + ( 2 * MAX_SYSCALL_STUB_SIZE ), SysNtMapViewOfSection );
+    Instance.Syscall.NtMapViewOfSection = BuildSyscallStub( ( ULONG_PTR ) SyscallRegion + ( 2 * MAX_SYSCALL_STUB_SIZE ), SysNtMapViewOfSection );
 
     Instance.Win32.VirtualProtectEx( NtCurrentProcess(), SyscallRegion, 3 * MAX_SYSCALL_STUB_SIZE, PAGE_EXECUTE_READ, &OldProtection );
 
@@ -143,21 +143,21 @@ ULONG_PTR RVAToFileOffsetPointer( ULONG_PTR pModule, DWORD dwRVA )
         }
     }
 
-    return NULL;
+    return 0;
 }
 
 ULONG_PTR FindBytes( ULONG_PTR Source, DWORD SourceLength, ULONG_PTR Search, DWORD SearchLength )
 {
     while ( SearchLength <= SourceLength )
     {
-        if ( ! MemCompare( Source, Search, SearchLength ) )
+        if ( ! MemCompare( (PVOID)Source, (PVOID)Search, SearchLength ) )
             return Source;
 
         Source++;
         SourceLength--;
     }
 
-    return NULL;
+    return 0;
 }
 
 UINT SyscallsExtract( ULONG_PTR pNtdll, PSYSCALL_STUB Syscalls )
@@ -172,7 +172,6 @@ UINT SyscallsExtract( ULONG_PTR pNtdll, PSYSCALL_STUB Syscalls )
     UINT    uiCount         = 0;
     CHAR    Name[ PATH_MAX ]= { 0 };
     PVOID   pStubs          = NULL;
-    DWORD   OldProtection   = 0;
 
     *( LPVOID* )( jumpAddress ) = syscallAddress;
 

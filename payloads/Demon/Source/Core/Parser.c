@@ -4,7 +4,7 @@
 #include <Core/MiniStd.h>
 #include <Crypt/AesCrypt.h>
 
-VOID ParserNew( PPARSER parser, PCHAR Buffer, UINT32 size )
+VOID ParserNew( PPARSER parser, PBYTE Buffer, UINT32 size )
 {
     if ( parser == NULL )
         return;
@@ -26,7 +26,7 @@ VOID ParserDecrypt( PPARSER parser, PBYTE Key, PBYTE IV )
         return;
 
     AesInit( &AesCtx, Key, IV );
-    AesXCryptBuffer( &AesCtx, parser->Buffer, parser->Length );
+    AesXCryptBuffer( &AesCtx, (PUINT8)parser->Buffer, parser->Length );
 }
 
 
@@ -103,10 +103,10 @@ INT64 ParserGetInt64( PPARSER parser )
         return ( INT64 ) __builtin_bswap64( intBytes );
 }
 
-PCHAR ParserGetBytes( PPARSER parser, PINT size )
+PBYTE ParserGetBytes( PPARSER parser, PUINT32 size )
 {
-    UINT32  Length  = 0;
-    PCHAR   outdata = NULL;
+    UINT32 Length  = 0;
+    PBYTE  outdata = NULL;
 
     if ( ! parser )
         return NULL;
@@ -120,7 +120,7 @@ PCHAR ParserGetBytes( PPARSER parser, PINT size )
     if ( parser->Endian )
         Length = __builtin_bswap32( Length );
 
-    outdata = parser->Buffer;
+    outdata = ( PBYTE ) parser->Buffer;
     if ( outdata == NULL )
         return NULL;
 
@@ -132,6 +132,16 @@ PCHAR ParserGetBytes( PPARSER parser, PINT size )
         *size = Length;
 
     return outdata;
+}
+
+PCHAR  ParserGetString( PPARSER parser, PUINT32 size )
+{
+    return ( PCHAR ) ParserGetBytes( parser, size );
+}
+
+PWCHAR  ParserGetWString( PPARSER parser, PUINT32 size )
+{
+    return ( PWCHAR ) ParserGetBytes( parser, size );
 }
 
 VOID ParserDestroy( PPARSER Parser )

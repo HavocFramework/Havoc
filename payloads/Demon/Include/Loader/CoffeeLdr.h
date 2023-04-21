@@ -5,8 +5,8 @@
 #ifndef DEMON_DOF_H
 #define DEMON_DOF_H
 
-#define PAGE_SIZE 4096
-#define PAGE_ALLIGN( x ) U_PTR( x ) + ( ( PAGE_SIZE - ( U_PTR( x ) & ( PAGE_SIZE - 1 ) ) ) % PAGE_SIZE )
+#define SIZE_OF_PAGE 4096
+#define PAGE_ALLIGN( x ) ( PVOID )( U_PTR( x ) + ( ( SIZE_OF_PAGE - ( U_PTR( x ) & ( SIZE_OF_PAGE - 1 ) ) ) % SIZE_OF_PAGE ) )
 
 #define IMAGE_SCN_MEM_NOT_CACHED 0x04000000
 #define IMAGE_SCN_MEM_EXECUTE    0x20000000

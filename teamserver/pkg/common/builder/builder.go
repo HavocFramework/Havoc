@@ -239,6 +239,7 @@ func (b *Builder) Build() bool {
 			if path.Ext(f.Name()) == ".asm" {
 				AsmObj = "/tmp/" + utils.GenerateID(10) + ".o"
 				b.Cmd(fmt.Sprintf(b.compilerOptions.Config.Nasm+" -f win64 %s -o %s", FilePath, AsmObj))
+				logger.Debug(fmt.Sprintf(b.compilerOptions.Config.Nasm+" -f win64 %s -o %s", FilePath, AsmObj))
 				CompileCommand += AsmObj + " "
 			} else if path.Ext(f.Name()) == ".c" {
 				CompileCommand += FilePath + " "
@@ -338,6 +339,8 @@ func (b *Builder) Build() bool {
 		b.SendConsoleMessage("Info", "Compiling source")
 	}
 
+	//b.SendConsoleMessage("Info", CompileCommand)
+	logger.Debug(CompileCommand)
 	Successful := b.CompileCmd(CompileCommand)
 
 	if AsmObj != "" {
@@ -562,8 +565,8 @@ func (b *Builder) PatchConfig() ([]byte, error) {
 
 	DemonConfig.AddInt(ConfigAlloc)
 	DemonConfig.AddInt(ConfigExecute)
-	DemonConfig.AddString(ConfigSpawn64)
-	DemonConfig.AddString(ConfigSpawn32)
+	DemonConfig.AddWString(ConfigSpawn64)
+	DemonConfig.AddWString(ConfigSpawn32)
 
 	DemonConfig.AddInt(ConfigObfTechnique)
 
@@ -635,14 +638,14 @@ func (b *Builder) PatchConfig() ([]byte, error) {
 				}
 
 				/* Adding Host:Port */
-				DemonConfig.AddString(common.EncodeUTF16(Host))
+				DemonConfig.AddWString(Host)
 				DemonConfig.AddInt(Port)
 			} else {
 				/* seems like we specified host only. append the listener bind port to it */
 				logger.Debug("host only")
 
 				/* Adding Host:Port */
-				DemonConfig.AddString(common.EncodeUTF16(HostPort[0]))
+				DemonConfig.AddWString(HostPort[0])
 				DemonConfig.AddInt(Port)
 			}
 		}
@@ -652,16 +655,16 @@ func (b *Builder) PatchConfig() ([]byte, error) {
 		} else {
 			DemonConfig.AddInt(win32.FALSE)
 		}
-		DemonConfig.AddString(common.EncodeUTF16(Config.Config.UserAgent))
+		DemonConfig.AddWString(Config.Config.UserAgent)
 
 		if len(Config.Config.Headers) == 0 {
 			if len(Config.Config.HostHeader) > 0 {
 				DemonConfig.AddInt(2)
-				DemonConfig.AddString(common.EncodeUTF16("Content-type: */*"))
-				DemonConfig.AddString(common.EncodeUTF16("Host: " + Config.Config.HostHeader))
+				DemonConfig.AddWString("Content-type: */*")
+				DemonConfig.AddWString("Host: " + Config.Config.HostHeader)
 			} else {
 				DemonConfig.AddInt(1)
-				DemonConfig.AddString(common.EncodeUTF16("Content-type: */*"))
+				DemonConfig.AddWString("Content-type: */*")
 			}
 		} else {
 			if len(Config.Config.HostHeader) > 0 {
@@ -671,18 +674,18 @@ func (b *Builder) PatchConfig() ([]byte, error) {
 			DemonConfig.AddInt(len(Config.Config.Headers))
 			for _, headers := range Config.Config.Headers {
 				logger.Debug(headers)
-				DemonConfig.AddString(common.EncodeUTF16(headers))
+				DemonConfig.AddWString(headers)
 			}
 		}
 
 		if len(Config.Config.Uris) == 0 {
 			DemonConfig.AddInt(1)
-			DemonConfig.AddString(common.EncodeUTF16("/"))
+			DemonConfig.AddWString("/")
 		} else {
 			DemonConfig.AddInt(len(Config.Config.Uris))
 			for _, uri := range Config.Config.Uris {
 				logger.Debug(uri)
-				DemonConfig.AddString(common.EncodeUTF16(uri))
+				DemonConfig.AddWString(uri)
 			}
 		}
 
@@ -691,9 +694,9 @@ func (b *Builder) PatchConfig() ([]byte, error) {
 			DemonConfig.AddInt(win32.TRUE)
 			var ProxyUrl = fmt.Sprintf("%v://%v:%v", Config.Config.Proxy.Type, Config.Config.Proxy.Host, Config.Config.Proxy.Port)
 
-			DemonConfig.AddString(common.EncodeUTF16(ProxyUrl))
-			DemonConfig.AddString(common.EncodeUTF16(Config.Config.Proxy.Username))
-			DemonConfig.AddString(common.EncodeUTF16(Config.Config.Proxy.Password))
+			DemonConfig.AddWString(ProxyUrl)
+			DemonConfig.AddWString(Config.Config.Proxy.Username)
+			DemonConfig.AddWString(Config.Config.Proxy.Password)
 		} else {
 			DemonConfig.AddInt(win32.FALSE)
 		}

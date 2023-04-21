@@ -4,6 +4,7 @@ import (
     "bytes"
     "encoding/binary"
 
+    "Havoc/pkg/common"
     "Havoc/pkg/common/crypt"
     "Havoc/pkg/logger"
 )
@@ -66,6 +67,10 @@ func (p *Packer) AddString(data string) {
 
     p.size += 4
     p.size += len(data)
+}
+
+func (p *Packer) AddWString(data string) {
+    p.AddString(common.EncodeUTF16(data))
 }
 
 func (p *Packer) AddBytes(data []byte) {

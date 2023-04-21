@@ -77,7 +77,12 @@ VOID PackageAddInt64( PPACKAGE Package, UINT64 dataInt )
     Package->Length += sizeof( UINT64 );
 }
 
-VOID PackageAddPad( PPACKAGE Package, PUCHAR Data, SIZE_T Size )
+VOID PackageAddPtr( PPACKAGE Package, PVOID pointer)
+{
+    PackageAddInt64( Package, ( UINT64 ) pointer );
+}
+
+VOID PackageAddPad( PPACKAGE Package, PCHAR Data, SIZE_T Size )
 {
     if ( ! Package )
         return;
@@ -95,7 +100,7 @@ VOID PackageAddPad( PPACKAGE Package, PUCHAR Data, SIZE_T Size )
 }
 
 
-VOID PackageAddBytes( PPACKAGE Package, PUCHAR Data, SIZE_T Size )
+VOID PackageAddBytes( PPACKAGE Package, PBYTE Data, SIZE_T Size )
 {
     if ( ! Package && Size )
         return;
@@ -117,6 +122,16 @@ VOID PackageAddBytes( PPACKAGE Package, PUCHAR Data, SIZE_T Size )
         Package->Size   =   Package->Length;
         Package->Length +=  Size;
     }
+}
+
+VOID PackageAddString( PPACKAGE package, PCHAR data )
+{
+    PackageAddBytes( package, (PBYTE) data, StringLengthA( data ) );
+}
+
+VOID PackageAddWString( PPACKAGE package, PWCHAR data )
+{
+    PackageAddBytes( package, (PBYTE) data, StringLengthW( data ) * 2 );
 }
 
 // For callback to server

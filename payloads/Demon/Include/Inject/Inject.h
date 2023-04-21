@@ -49,7 +49,7 @@ typedef struct INJECTION_CTX
 
     BOOL    SuspendAwake;
     LPVOID  Parameter;
-    SIZE_T  ParameterSize;
+    UINT32  ParameterSize;
 
     SHORT   Technique;
 } INJECTION_CTX, *PINJECTION_CTX ;

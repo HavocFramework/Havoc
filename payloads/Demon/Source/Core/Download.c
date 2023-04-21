@@ -314,7 +314,7 @@ PMEM_FILE MemFileReadChunk( ULONG32 ID, SIZE_T Size, PVOID Data, ULONG32 ReadSiz
     }
 
     PRINTF( "Copying %x bytes, bytes missing: 0x%x\n", ReadSize, MemFile->Size - MemFile->ReadSize )
-    MemCopy( U_PTR( MemFile->Data ) + MemFile->ReadSize, Data, ReadSize );
+    MemCopy( C_PTR( U_PTR( MemFile->Data ) + MemFile->ReadSize ), Data, ReadSize );
 
     MemFile->ReadSize += ReadSize;
 

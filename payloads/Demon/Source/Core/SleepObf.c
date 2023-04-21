@@ -502,7 +502,7 @@ UINT32 SleepTime( VOID )
 
             Instance.Win32.GetLocalTime(&SystemTime);
 
-            if ( SystemTime.wHour >= EndHour )
+            if ( SystemTime.wHour == EndHour && SystemTime.wMinute > EndMinute || SystemTime.wHour > EndHour )
             {
                 // seconds until 00:00
                 SleepTime += ( 24 - SystemTime.wHour - 1 ) * 60 + ( 60 - SystemTime.wMinute );

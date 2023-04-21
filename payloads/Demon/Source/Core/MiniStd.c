@@ -88,6 +88,13 @@ PCHAR StringConcatA(PCHAR String, PCHAR String2)
     return String;
 }
 
+PWCHAR StringConcatW(PWCHAR String, PWCHAR String2)
+{
+    StringCopyW( &String[ StringLengthW( String ) ], String2 );
+
+    return String;
+}
+
 VOID MemSet(PVOID Destination, int Val, SIZE_T Size)
 {
     PULONG Dest = ( PULONG )Destination;
@@ -152,7 +159,6 @@ SIZE_T CharStringToWCharString( PWCHAR Destination, PCHAR Source, SIZE_T Maximum
 
 PCHAR StringTokenA(PCHAR String, CONST PCHAR Delim)
 {
-    PCHAR Last;
     PCHAR SpanP, Token;
     INT C, SC;
 
@@ -169,7 +175,8 @@ CONTINUE:
             goto CONTINUE;
     }
 
-    if (C == ERROR_SUCCESS) { Last = NULL; return NULL; }
+    if (C == ERROR_SUCCESS)
+        return NULL;
 
     Token = String - 1;
 
@@ -186,7 +193,6 @@ CONTINUE:
                 else
                     String[-1] = '\0';
 
-                Last = String;
                 return Token;
             }
         } while (SC != ERROR_SUCCESS);
@@ -196,7 +202,7 @@ CONTINUE:
 
 }
 
-UINT64 GetSystemTimeAsUnixTime( )
+UINT64 GetEpochTime( )
 {
    //Get the number of seconds since January 1, 1970 12:00am UTC
    //Code released into public domain; no attribution required.

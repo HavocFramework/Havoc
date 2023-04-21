@@ -30,14 +30,14 @@ typedef struct _UniqueUserToken
 typedef struct _TOKEN_LIST_DATA
 {
     HANDLE  Handle;
-    PCHAR   DomainUser;
+    LPWSTR  DomainUser;
     DWORD   dwProcessID;
     SHORT   Type;
 
     // Make data
-    LPSTR   lpUser;
-    LPSTR   lpPassword;
-    LPSTR   lpDomain;
+    LPWSTR   lpUser;
+    LPWSTR   lpPassword;
+    LPWSTR   lpDomain;
 
     struct _TOKEN_LIST_DATA* NextToken;
 } TOKEN_LIST_DATA, *PTOKEN_LIST_DATA ;
@@ -47,10 +47,10 @@ HANDLE           TokenCurrentHandle( );
 BOOL             TokenSetPrivilege( LPSTR Privilege, BOOL Enable );
 
 // Token Vault
-DWORD            TokenAdd( HANDLE hToken, LPSTR DomainUser, SHORT Type, DWORD dwProcessID, LPSTR User, LPSTR Domain, LPSTR Password );
+DWORD            TokenAdd( HANDLE hToken, LPWSTR DomainUser, SHORT Type, DWORD dwProcessID, LPWSTR User, LPWSTR Domain, LPWSTR Password );
 BOOL             TokenRemove( DWORD TokenID );
 HANDLE           TokenSteal( DWORD ProcessID, HANDLE TargetHandle );
-HANDLE           TokenMake( LPSTR User, LPSTR Password, LPSTR Domain );
+HANDLE           TokenMake( LPWSTR User, LPWSTR Password, LPWSTR Domain );
 PTOKEN_LIST_DATA TokenGet( DWORD TokenID );
 VOID             TokenClear( );
 BOOL             TokenImpersonate( BOOL Impersonate );

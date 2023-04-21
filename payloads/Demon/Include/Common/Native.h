@@ -20856,6 +20856,7 @@ DebugService2 (
     );
 
 
+/*
 __inline
 LARGE_INTEGER
 NTAPI
@@ -20895,7 +20896,6 @@ NTAPI
 RtlLargeIntegerNegate (
     LARGE_INTEGER Subtrahend
     );
-
 __inline
 LARGE_INTEGER
 NTAPI
@@ -20903,7 +20903,7 @@ RtlLargeIntegerSubtract (
     LARGE_INTEGER Minuend,
     LARGE_INTEGER Subtrahend
     );
-
+*/
 LARGE_INTEGER
 NTAPI
 RtlExtendedMagicDivide (
@@ -20935,6 +20935,7 @@ RtlExtendedIntegerMultiply (
     LONG Multiplier
     );
 
+/*
 __inline
 LARGE_INTEGER
 NTAPI
@@ -20966,7 +20967,6 @@ RtlLargeIntegerShiftRight (
     CCHAR ShiftCount
     );
 
-
 __inline
 LARGE_INTEGER
 NTAPI
@@ -20974,8 +20974,6 @@ RtlLargeIntegerArithmeticShift (
     LARGE_INTEGER LargeInteger,
     CCHAR ShiftCount
     );
-
-
 __inline
 BOOLEAN
 NTAPI
@@ -20983,7 +20981,7 @@ RtlCheckBit (
     PRTL_BITMAP BitMapHeader,
     ULONG BitPosition
     );
-
+*/
 
 BOOLEAN
 NTAPI

