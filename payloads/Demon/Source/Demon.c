@@ -109,7 +109,6 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
 
         /* Do not destroy this package if we fail to connect to the listener. */
         ( *MetaData )->Destroy = FALSE;
-        Instance.IsMetadataEncrypted = FALSE;
     }
 
     // create AES Keys/IV

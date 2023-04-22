@@ -53,15 +53,11 @@ typedef struct
     /* MetaData */
     PPACKAGE MetaData;
 
-<<<<<<< HEAD:Teamserver/data/implants/Demon/Include/Demon.h
-    BOOL IsMetadataEncrypted;
-=======
     /* The last RequestID recieved by the TS */
     UINT32 CurrentRequestID;
 
     /* wheather WSAStartup has been called yet */
     BOOL WSAWasInitialised;
->>>>>>> dev:payloads/Demon/Include/Demon.h
 
     struct {
         UINT32  AgentID;
