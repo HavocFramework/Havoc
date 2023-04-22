@@ -333,14 +333,14 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             }
             else
             {
-                int TotalSize = 19;
+                int TotalSize = 25;
 
                 DemonConsole->Console->append( "" );
                 DemonConsole->Console->append( "Demon Commands" );
                 DemonConsole->Console->append( "==============" );
                 DemonConsole->Console->append( "" );
-                DemonConsole->Console->append( "  Command            Type         Description" );
-                DemonConsole->Console->append( "  -------            -------      -----------" );
+                DemonConsole->Console->append( "  Command                  Type         Description" );
+                DemonConsole->Console->append( "  -------                  -------      -----------" );
 
                 for ( auto & i : DemonCommandList )
                 {
