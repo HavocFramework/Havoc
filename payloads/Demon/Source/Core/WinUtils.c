@@ -50,6 +50,8 @@ PVOID LdrModulePeb( DWORD Hash )
     PPEB			      Peb = NULL;
 
     /* Get pointer to list */
+    if ( ! Instance.Teb )
+        Instance.Teb = NtCurrentTeb();
     Peb = Instance.Teb->ProcessEnvironmentBlock;
     Hdr = & Peb->Ldr->InLoadOrderModuleList;
     Ent = Hdr->Flink;

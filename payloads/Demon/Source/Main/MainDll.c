@@ -9,7 +9,14 @@ HINSTANCE hAppInstance = NULL;
 DLLEXPORT VOID Start(  )
 {
     /* prevent exiting if started using rundll32 or something */
-    for (;;);
+    PVOID Kernel32  = LdrModulePeb( HASH_KERNEL32 );
+    VOID ( WINAPI *DoSleep ) (
+            DWORD
+    ) = LdrFunctionAddr( Kernel32, FuncHash_Sleep );
+
+    // calling sleep lowers the CPU consumed in this loop
+    while ( TRUE )
+        DoSleep( 24 * 60 * 60 * 1000 );
 }
 
 /* this is our entrypoint for the Dll (also for shellcode) */

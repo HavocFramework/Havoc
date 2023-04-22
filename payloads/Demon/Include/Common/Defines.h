@@ -223,11 +223,12 @@
 #define FuncHash_LsaGetLogonSessionData              0x417c2162
 #define FuncHash_LsaEnumerateLogonSessions           0x9f1343e1
 
+#define FuncHash_Sleep                               0xe19e5fe
+
 //#define FuncHash_GetTokenInformation        881854923972837164
 //#define FuncHash_CreatePipe                 8244700854143020775
 //#define FuncHash_ReadFile                   7571513842702625
 //#define FuncHash_RevertToSelf               14100625964972061354
-//#define FuncHash_Sleep                      210689975806
 //#define FuncHash_TerminateProcess           3268205303374481261
 //#define FuncHash_GetUserNameA               13544547492196232006
 //#define FuncHash_ExitProcess                13824059171100242846
