@@ -30,7 +30,6 @@ Listeners {
         PortConn     = 443
         Secure       = true
         KillDate     = "2024-01-02 12:00:00"
-        WorkingHours = "8:00-17:00"
         UserAgent    = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
 
         Uris = [
