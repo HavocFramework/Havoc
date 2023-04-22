@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1347</width>
+    <height>924</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout_3">
+    <item row="0" column="0">
+     <widget class="QTabWidget" name="TeamserverTabWidget">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="TeamserverSession">
+       <attribute name="title">
+        <string>Tab 1</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="0" column="0">
+         <widget class="QSplitter" name="Splitter_TopBot">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <widget class="QSplitter" name="Splitter_SessionWithSmallTab">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <widget class="QStackedWidget" name="StackedSessionViews">
+            <property name="currentIndex">
+             <number>0</number>
+            </property>
+            <widget class="QWidget" name="SessionTablePage">
+             <layout class="QGridLayout" name="gridLayout">
+              <item row="0" column="0">
+               <widget class="QTableWidget" name="tableWidget">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
+                <column>
+                 <property name="text">
+                  <string>ID</string>
+                 </property>
+                </column>
+                <column>
+                 <property name="text">
+                  <string>External</string>
+                 </property>
+                </column>
+                <column>
+                 <property name="text">
+                  <string>Internal</string>
+                 </property>
+                </column>
+                <column>
+                 <property name="text">
+                  <string>Listener</string>
+                 </property>
+                </column>
+                <column>
+                 <property name="text">
+                  <string>User</string>
+                 </property>
+                </column>
+                <column>
+                 <property name="text">
+                  <string>Computer</string>
+                 </property>
+                </column>
+                <column>
+                 <property name="text">
+                  <string>OS</string>
+                 </property>
+                </column>
+                <column>
+                 <property name="text">
+                  <string>Process</string>
+                 </property>
+                </column>
+                <column>
+                 <property name="text">
+                  <string>PID</string>
+                 </property>
+                </column>
+                <column>
+                 <property name="text">
+                  <string>Last</string>
+                 </property>
+                </column>
+                <column>
+                 <property name="text">
+                  <string>Health</string>
+                 </property>
+                </column>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+            <widget class="QWidget" name="SessionGraphPage"/>
+           </widget>
+           <widget class="QTabWidget" name="tabWidget">
+            <property name="currentIndex">
+             <number>0</number>
+            </property>
+            <widget class="QWidget" name="tab">
+             <attribute name="title">
+              <string>Tab 1</string>
+             </attribute>
+            </widget>
+           </widget>
+          </widget>
+          <widget class="QTabWidget" name="BottomTabWidget">
+           <property name="currentIndex">
+            <number>-1</number>
+           </property>
+          </widget>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="TeamserverSession_2">
+       <attribute name="title">
+        <string>Tab 2</string>
+       </attribute>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1347</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuHavoc">
+    <property name="title">
+     <string>Havoc</string>
+    </property>
+    <addaction name="actionNew_Connection"/>
+    <addaction name="actionChat"/>
+    <addaction name="separator"/>
+    <addaction name="actionPreferences"/>
+    <addaction name="separator"/>
+    <addaction name="actionDisconnect"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <addaction name="actionListeners"/>
+    <addaction name="actionSessions"/>
+    <addaction name="separator"/>
+    <addaction name="actionScreenshots"/>
+    <addaction name="actionCredentials"/>
+    <addaction name="separator"/>
+    <addaction name="actionLogs"/>
+   </widget>
+   <widget class="QMenu" name="menuAttack">
+    <property name="title">
+     <string>Attack</string>
+    </property>
+    <widget class="QMenu" name="menuGates">
+     <property name="title">
+      <string>Gates</string>
+     </property>
+     <addaction name="actionWindows_MS_Office"/>
+     <addaction name="actionWindows"/>
+     <addaction name="actionWindows_Staged_Executable"/>
+    </widget>
+    <addaction name="menuGates"/>
+    <addaction name="actionModules"/>
+   </widget>
+   <widget class="QMenu" name="menuScripts">
+    <property name="title">
+     <string>Yaotl</string>
+    </property>
+    <addaction name="actionLoad_Script"/>
+    <addaction name="actionLoad_Module"/>
+    <addaction name="actionPythonConsole"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionAbout"/>
+    <addaction name="separator"/>
+    <addaction name="actionOpen_Help_Documentation"/>
+    <addaction name="actionOpen_API_Reference"/>
+    <addaction name="separator"/>
+    <addaction name="actionGithub_Repository"/>
+   </widget>
+   <addaction name="menuHavoc"/>
+   <addaction name="menuView"/>
+   <addaction name="menuAttack"/>
+   <addaction name="menuScripts"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionNew_Connection">
+   <property name="text">
+    <string>New Connection</string>
+   </property>
+  </action>
+  <action name="actionChat">
+   <property name="text">
+    <string>Event Log</string>
+   </property>
+  </action>
+  <action name="actionPreferences">
+   <property name="text">
+    <string>Preferences</string>
+   </property>
+  </action>
+  <action name="actionDisconnect">
+   <property name="text">
+    <string>Disconnect</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionModules">
+   <property name="text">
+    <string>Modules</string>
+   </property>
+  </action>
+  <action name="actionWindows">
+   <property name="text">
+    <string>Windows Executable</string>
+   </property>
+  </action>
+  <action name="actionWindows_Staged_Executable">
+   <property name="text">
+    <string>Windows Staged Executable</string>
+   </property>
+  </action>
+  <action name="actionWindows_MS_Office">
+   <property name="text">
+    <string>Windows MS Office</string>
+   </property>
+  </action>
+  <action name="actionWindows_Dropper">
+   <property name="text">
+    <string>Windows Dropper</string>
+   </property>
+  </action>
+  <action name="actionLoad_Script">
+   <property name="text">
+    <string>Load Script</string>
+   </property>
+  </action>
+  <action name="actionLoad_Module">
+   <property name="text">
+    <string>Load Module</string>
+   </property>
+  </action>
+  <action name="actionPythonConsole">
+   <property name="text">
+    <string>Interpreter</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About</string>
+   </property>
+  </action>
+  <action name="actionOpen_Help_Documentation">
+   <property name="text">
+    <string>Open Help Documentation</string>
+   </property>
+  </action>
+  <action name="actionOpen_API_Reference">
+   <property name="text">
+    <string>Open API Reference</string>
+   </property>
+  </action>
+  <action name="actionGithub_Repository">
+   <property name="text">
+    <string>Github Repository</string>
+   </property>
+  </action>
+  <action name="actionListeners">
+   <property name="text">
+    <string>Listeners</string>
+   </property>
+  </action>
+  <action name="actionSessions">
+   <property name="text">
+    <string>Sessions</string>
+   </property>
+  </action>
+  <action name="actionScreenshots">
+   <property name="text">
+    <string>Screenshots</string>
+   </property>
+  </action>
+  <action name="actionCredentials">
+   <property name="text">
+    <string>Credentials</string>
+   </property>
+  </action>
+  <action name="actionLogs">
+   <property name="text">
+    <string>Logs</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

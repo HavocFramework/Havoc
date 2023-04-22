@@ -3,38 +3,59 @@
 Havoc is a modern and malleable post-exploitation command and control framework.
 
 #### Table of Contents
-- [Version History](#vhistory)
-- [Known Issues](#kissues)
-- [Installation](#install)
-	- [Local](#il)
-	- [Docker Container](#idc)
-	- [Jenkins Docker Container](#ijd)
-	- [Building the Client](#bclient)
-	- [Building the Teamserver](#bteam)
-	- [Creating a Listener and Spawning an Agent](#aquick)
-- [Teamserver](#teamserver)
-	- [Starting the Teamserver](#stt)
-	- [Arguments](#targ)
-	- [Profiles](#profiles)
-		- [Teamserver](#pteam)
-		- [Operators](#pops)
-	- [Demon](#pdemon)
-	- [Listeners](#plisten)
-- [Client](#client)
-	- [Starting the client](#cstc)
-	- [Connecting to the Teamserver](#cctt)
-- [Agents](#agents)
-	- [Demon](#ademon)
-		- [Generating a Demon Payload](#adgen)
-		- [Layout](#adlay)
-		- [Features](#adft)
-		- [Commands](#adcmds)
-- [External C2](#extc2)
-- [Custom Agents](#ca)
-- [Python API](#pyapi)
-- [Modules](#modules)
-- [FAQ](#faq)
-- [TODO](#todo)
+- [Havoc](#havoc)
+      - [Table of Contents](#table-of-contents)
+  - [ Version History](#-version-history)
+    - [0.2 / Magicians Red](#02--magicians-red)
+  - [Known Issues](#known-issues)
+    - [Kali Linux Font/Formatting Issues](#kali-linux-fontformatting-issues)
+    - [Build Errors](#build-errors)
+      - [`fatal error: Python.h: No such file or directory`](#fatal-error-pythonh-no-such-file-or-directory)
+      - [`incomplete type ‘QTime’ used in nested name specifier`](#incomplete-type-qtime-used-in-nested-name-specifier)
+      - [`Known compiler issue: [-] Couldn't compile implant: exit status 1`](#known-compiler-issue---couldnt-compile-implant-exit-status-1)
+  - [Installation](#installation)
+    - [ Local](#-local)
+      - [Pre-requisites](#pre-requisites)
+      - [Ubuntu 20.04 / 22.04](#ubuntu-2004--2204)
+      - [Debian 10/11](#debian-1011)
+      - [MacOS](#macos)
+    - [Building the Client](#building-the-client)
+    - [Building the Teamserver](#building-the-teamserver)
+    - [ Docker](#-docker)
+    - [ Jenkins Docker Build](#-jenkins-docker-build)
+    - [ Creating a Listener, and Spawning an Agent](#-creating-a-listener-and-spawning-an-agent)
+  - [Teamserver](#teamserver)
+    - [ Starting the Teamserver](#-starting-the-teamserver)
+    - [Arguments](#arguments)
+      - [Enabling DEBUG Output](#enabling-debug-output)
+    - [Profiles](#profiles)
+      - [Teamserver](#teamserver-1)
+      - [Operators](#operators)
+      - [Demon](#demon)
+      - [Listeners](#listeners)
+  - [Client](#client)
+    - [Starting the Client](#starting-the-client)
+    - [Connecting to the Teamserver](#connecting-to-the-teamserver)
+  - [Agents](#agents)
+    - [Demon](#demon-1)
+      - [Generating a Demon Payload](#generating-a-demon-payload)
+      - [Layout](#layout)
+      - [ Features](#-features)
+        - [Indirect Syscalls](#indirect-syscalls)
+      - [Commands](#commands)
+        - [`checkin`](#checkin)
+        - [`sleep`](#sleep)
+        - [`job`](#job)
+        - [`proc`](#proc)
+        - [`token`](#token)
+        - [`shellcode`](#shellcode)
+        - [`dotnet`](#dotnet)
+  - [ExternalC2](#externalc2)
+  - [Custom Agents](#custom-agents)
+  - [Python API](#python-api)
+  - [Modules](#modules)
+  - [FAQ](#faq)
+    - [Why does Havoc not perform sleep obfuscation when jobs are running?](#why-does-havoc-not-perform-sleep-obfuscation-when-jobs-are-running)
 --------------------
 
 ## <a name="vhistory"></a> Version History
@@ -100,7 +121,6 @@ sudo apt install -y git build-essential apt-utils cmake libfontconfig1 libglu1-m
 > You must enable Python 3.10 in your APT repositories before you can run the Client successfully.
 
 ```
-sudo apt install build-essential
 sudo add-apt-repository ppa:deadsnakes/ppa
 sudo apt update
 sudo apt install python3.10 python3.10-dev
@@ -115,6 +135,13 @@ echo 'deb http://ftp.de.debian.org/debian bookworm main' >> /etc/apt/sources.lis
 sudo apt update
 sudo apt install python3-dev python3.10-dev libpython3.10 libpython3.10-dev python3.10
 ```
+
+#### Arch-based Distros
+
+```
+sudo pacman -S git gcc base-devel cmake fontconfig glu gtest spdlog boost boost-libs ncurses gdbm openssl readline libffi sqlite bzip2 mesa qt5-base qt5-websockets python3 nasm mingw-w64-gcc
+```
+
 #### MacOS
 
 > You must have [`homebrew`](https://brew.sh) installed.
@@ -123,10 +150,8 @@ brew install --cask cmake
 brew install python@3.10 qt@5 spdlog golang
 brew link --overwrite qt@5
 ```
+
 ### <a name="bclient"></a>Building the Client
-
-> If you are using a debian-based distro, you can use the bundled installation script at `/Havoc/Client/Install.sh`. 
-
 
 Clone the repository:
 ```
@@ -135,42 +160,35 @@ git clone https://github.com/HavocFramework/Havoc.git
 
 Build and Run:
 ```
-cd Havoc/Client
-make 
-./Havoc 
+# Build the client Binary (From Havoc Root Directory)
+make client-build
+
+# Run the client
+./havoc client
 ```
 
 > On macOS, run `brew unlink qt && brew link qt` after cmake build is done.
 
-
-
+> On WSL navigate to https://learn.microsoft.com/en-us/windows/wsl/tutorials/gui-apps and download the needed driver for the GUI to launch.
 
 ### <a name="bteam"></a>Building the Teamserver
 
 Install additional Go dependencies:
 ```
-cd Havoc/Teamserver
-
 go mod download golang.org/x/sys  
 go mod download github.com/ugorji/go
 ```
 
 Build and Run:
 ```
-cd Teamserver
-
-# Install MUSL C Compiler
-./Install.sh
-
-# Build Binary
-make
-./teamserver -h
+# Install musl Compiler & Build Binary (From Havoc Root Directory)
+make ts-build
 
 # Run the teamserver
-sudo ./teamserver server --profile ./profiles/havoc.yaotl -v --debug
+sudo ./havoc server --profile ./profiles/havoc.yaotl -v --debug
 ``` 
 
-All files created during interaction with the Teamserver are stored within the `/Havoc/Teamserver/data/*` folder.
+All files created during interaction with the Teamserver are stored within the `/Havoc/data/*` folder.
 
 
 ### <a name="idc"></a> Docker
@@ -182,7 +200,7 @@ Create data volume for persistence (optional):
 `sudo docker volume create havoc-c2-client`
 
 Run the container:
-`sudo docker run -p 443:443 -p 40056:40056-it -d -v havoc-c2-client:/data havoc-client`
+`sudo docker run -p 443:443 -p 40056:40056 -it -d -v havoc-c2-client:/data havoc-client`
 
 Enter the container and run the Client:
 - NOT COMPLETE
@@ -196,36 +214,36 @@ Run the container:
 `sudo docker run -p8080:8080 -it -d -v havoc-c2-data:/data havoc-client`
 
 Visit Jenkins at `localhost:8080` and create a pipeline to build the Havoc Teamserver.
-- See `Havoc-Teamserver.groovy` in the `Assets` folder.
+- See `Havoc-Teamserver.groovy` in the `assets` folder.
 
 
 ### <a name="aquick"></a> Creating a Listener, and Spawning an Agent
 This part assumes you have a Teamserver running, with a Teamserver-client connected to the running instance.
 - Creating a Listener:
-	1. To create a new listener, we must first open the `Listeners` subwindow.
-		* To do this, in the upper left hand corner, click on the `View` button, and then on the `Listeners` button in the drop down menu.
-		* ![Listeners-select](./Assets/Screenshots/Listeners-select.png)	
-	2. You should see a new sub window in the bottom of the server window, with the title of `Listeners` on the header tab.
-	3. You should also now see three(3) buttons on the bottom of the server window, `Add`, `Remove` and `Edit`.
-		* ![Listeners-Add-select](./Assets/Screenshots/Listeners-Add-select.png)
-	4. We want to click the `Add` button.
-	5. Once we click the `Add` button, you should see a new window come up, with the title of `Create Listener`.
-		* ![Listeners-New](./Assets/Screenshots/Listeners-new.png)
-	6. We will want to fill out the appropriate information for each field in the `Create Listener` window.
-	7. After entering the appropriate information into each field, then click the `Save` button.
-	8. The window will close, and you will now see a new line in the `Listeners` sub-window.
-		* ![Listener-created](./Assets/Screenshots/Listener-created)
-	9. We now have an active Listener, and are ready to receive an incoming agent's communications!
+    1. To create a new listener, we must first open the `Listeners` subwindow.
+        * To do this, in the upper left hand corner, click on the `View` button, and then on the `Listeners` button in the drop down menu.
+        * ![Listeners-select](./assets/Screenshots/Listeners-select.png)    
+    2. You should see a new sub window in the bottom of the server window, with the title of `Listeners` on the header tab.
+    3. You should also now see three(3) buttons on the bottom of the server window, `Add`, `Remove` and `Edit`.
+        * ![Listeners-Add-select](./assets/Screenshots/Listeners-Add-New-Remove.png)
+    4. We want to click the `Add` button.
+    5. Once we click the `Add` button, you should see a new window come up, with the title of `Create Listener`.
+        * ![Listeners-New](./assets/Screenshots/Listener-new.png)
+    6. We will want to fill out the appropriate information for each field in the `Create Listener` window.
+    7. After entering the appropriate information into each field, then click the `Save` button.
+    8. The window will close, and you will now see a new line in the `Listeners` sub-window.
+        * ![Listener-created](./assets/Screenshots/Listener-created.png)
+    9. We now have an active Listener, and are ready to receive an incoming agent's communications!
 - Spawning an Agent:
-	1. To create an Agent Payload, we must first open the `Payload` window.
-		* We can do so by going up to the upper left hand corner, and clicking on the `Attack` button. 
-	2. Doing so, we see the `Payload` button appear in the drop down menu. We want to then click on it.
-		* ![Agent-select](./Assets/Screenshots/Agent-select.png)
-	3. This will open the `Payload` window, where we may then configure the various options for generating our payload.
-		* ![Agent-creation](./Assets/Screenshots/Agent-create.png)
-	4. Once we have selected the appropriate options, we then click on the `Generate` button.
-	5. It might take a little bit for the compilation to take place. Once it has completed, it will prompt you as to where to save the resulting file output.
-	6. After selecting where to save the file, you will now have a generated agent ready for execution or injection!
+    1. To create an Agent Payload, we must first open the `Payload` window.
+        * We can do so by going up to the upper left hand corner, and clicking on the `Attack` button. 
+    2. Doing so, we see the `Payload` button appear in the drop down menu. We want to then click on it.
+        * ![Agent-select](./assets/Screenshots/Agent-select.png)
+    3. This will open the `Payload` window, where we may then configure the various options for generating our payload.
+        * ![Agent-creation](./assets/Screenshots/Agent-create.png)
+    4. Once we have selected the appropriate options, we then click on the `Generate` button.
+    5. It might take a little bit for the compilation to take place. Once it has completed, it will prompt you as to where to save the resulting file output.
+    6. After selecting where to save the file, you will now have a generated agent ready for execution or injection!
 
 
 ---
@@ -238,7 +256,7 @@ The Havoc Teamserver is written in Golang. It handles the listeners, teamserver 
 
 Running `./teamserver server --profile ./profiles/havoc.yaotl -v --debug` will launch the built Teamserver with verbosity and debugging enabled.
 
-Data collected by the Teamserver is stored in the `/Havoc/Teamserver/data/*` directory.
+Data collected by the Teamserver is stored in the `/Havoc/data/*` directory.
 
 ### <a name="targ"></a>Arguments
 
@@ -288,13 +306,13 @@ Multiple users can be added to the Teamserver with the Operators directive:
 
 ```hcl
 Operators {
-	user "5pider" {
-		Password = "password1234"
-	}
+    user "5pider" {
+        Password = "password1234"
+    }
 
-	user "Neo" {
-		Password = "password1234"
-	}
+    user "Neo" {
+        Password = "password1234"
+    }
 }
 ```
 
@@ -306,6 +324,8 @@ The primary Demon agent accepts a number of configuration options such as:
 Demon {
     Sleep   = 2
     Jitter  = 20
+
+    TrustXForwardedFor = false
 
     Implant {
         SleepMask = 1
@@ -320,7 +340,9 @@ Demon {
 ```
 
 - `Sleep` - The default interval to sleep between check-ins for commands.
-- `Jitter` - The amount of jitter to be applied to sleep intervals (in milliseconds).
+- `Jitter` - The amount of jitter to be applied to sleep intervals (in percentage).
+
+- `TrustXForwardedFor` - If true, the public IP of every agent will be set to the value of the X-Forwarded-For header. Only enable if the teamserver is behind a redirector
 
 - `Implant\SleepMask` - Enables the Sleep Mask obfuscation
 - `Implant\SleepMaskTechnique` - Chose from a variety of built-in sleep mask techniques:
@@ -340,25 +362,28 @@ Havoc supports multiple listener profiles and a variety of configuration options
 ```hcl
 Listeners {
     Http {
-        Name        = "HTTPS Listener"
-        Host        = "10.0.0.10"
-        Port        = 443
-        Method      = "POST"
-        Secure      = true
-        UserAgent   = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
-        Uris        = [
+        Name         = "HTTPS Listener"
+        KillDate     = "2006-01-02 15:04:05"
+        WorkingHours = "8:00-17:00"
+        Hosts        = ["10.0.0.10"]
+        PortBind     = 443
+        PortConn     = 443
+        Method       = "POST"
+        Secure       = true
+        UserAgent    = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
+        Uris         = [
             "/funny_cat.gif",
             "/index.php",
             "/test.txt",
             "/helloworld.js"
         ]
-        Headers     = [
+        Headers      = [
             "X-Havoc: true",
             "X-Havoc-Agent: Demon",
         ]
 
         Response {
-            Headers = [
+            Headers  = [
                 "Content-type: text/plain",
                 "X-IsHavocFramework: true",
             ]
@@ -367,6 +392,19 @@ Listeners {
     }
 }
 ```
+
+- `Name` - Name of the listener
+- `KillDate` - (Optional) Date in which the Demon will terminate itself in UTC
+- `WorkingHours` - (Optional) The hours in which Demon will check in
+- `Hosts` - The list of domains that Demon will use to reach the teamserver
+- `PortBind` - Port that the teamserver will bind to
+- `PortConn` - Port used by Demon to access the teamserver, if not set, PortBind is used
+- `Method` - Method to use while checking in (GET or POST)
+- `Secure` - true for HTTPS, false for HTTP
+- `UserAgent` - The User Agent that Demon will use
+- `Uris` - The paths that Demon will use. If more than one is provided, Demon chooses one at random each time
+- `Headers` - Request headers that Demon will include in all requests
+- `Response-Headers` - Response headers that the server will include in all responses
 
 ---
 
@@ -377,22 +415,22 @@ The Havoc Client is written in C++ and Qt.
 ### <a name="cstc"></a>Starting the Client
 
 ```
-cd Havoc/Client
-./Havoc
+cd Havoc
+./havoc client
 ```
-Running `./Havoc` will start the Client.
+Running `./havoc client` will start the Client.
 
 
 ### <a name="cctt"></a>Connecting to the Teamserver
 
 When the client opens, you will be presented with a profile window similar to that in other C2 frameworks like Cobalt Strike. 
 
-![teamserver-client](./Assets/Screenshots/Teamserver-Client-Fresh.png)
+![teamserver-client](./assets/Screenshots/Teamserver-Client-Fresh.png)
 
 Enter the profile name, teamserver bind address (`Host`) and `Port`, along with your defined username/password in the teamserver profile. 
 Then hit 'Connect' to connect your configured teamserver.
 
-![teamserver-and-client](./Assets/Screenshots/Teamserver-LoggedIn.png)
+![teamserver-and-client](./assets/Screenshots/Teamserver-LoggedIn.png)
 
 
 
@@ -402,7 +440,7 @@ Then hit 'Connect' to connect your configured teamserver.
 
 ### <a name="ademon"></a>Demon
 
-Demon is the primary Havoc agent, written in C/ASM. The source-code is located at `Havoc/Teamserver/data/implants/Demon`.
+Demon is the primary Havoc agent, written in C/ASM. The source-code is located at `Havoc/payloads/Demon`.
 
 #### <a name="adgen"></a>Generating a Demon Payload
 
@@ -506,7 +544,8 @@ Demon implements a token management vault that allows for token theft, impersona
 
 - `token getuid` - Prints the current user id from the token
 - `token list` - List all stolen tokens in the token vault
-- `token steal [pid]` - Steal the token from the specified PID and save it to the token vault
+- `token find-tokens` - Find all tokens that can be stolen on the system
+- `token steal [pid] (handle)` - Steal the token from the specified PID and save it to the token vault
 - `token impersonate [id]` - Impersonate a token from the token vault
 - `token make [domain] [username] [password]` - Creates a token from the specified credentials and adds it to the vault
 - `token privs-get` - Attempt to acquire all privileges from the current token
@@ -662,3 +701,4 @@ Official Modules:
 Jobs are ran in their own threads, and sleep obfuscation requires that all threads are suspended in order to encrypt the heap, otherwise the process would crash. 
 
 ---
+

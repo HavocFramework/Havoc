@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1082</width>
+    <height>632</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0">
+    <widget class="QTableWidget" name="SessionTableWidget">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="showGrid">
+      <bool>false</bool>
+     </property>
+     <property name="sortingEnabled">
+      <bool>false</bool>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+     <property name="cornerButtonEnabled">
+      <bool>true</bool>
+     </property>
+     <attribute name="horizontalHeaderVisible">
+      <bool>true</bool>
+     </attribute>
+     <attribute name="horizontalHeaderCascadingSectionResizes">
+      <bool>false</bool>
+     </attribute>
+     <attribute name="verticalHeaderVisible">
+      <bool>false</bool>
+     </attribute>
+     <row>
+      <property name="text">
+       <string>0</string>
+      </property>
+     </row>
+     <column>
+      <property name="text">
+       <string>ID</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>External</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Internal</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Listener</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>User</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Computer</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>OS</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Process</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Last</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Health</string>
+      </property>
+     </column>
+     <item row="0" column="0">
+      <property name="text">
+       <string>asdaqwesd</string>
+      </property>
+     </item>
+     <item row="0" column="1">
+      <property name="text">
+       <string>156.342.123.10</string>
+      </property>
+     </item>
+     <item row="0" column="2">
+      <property name="text">
+       <string>192.168.0.129</string>
+      </property>
+     </item>
+     <item row="0" column="3">
+      <property name="text">
+       <string>demon - tcp</string>
+      </property>
+     </item>
+     <item row="0" column="4">
+      <property name="text">
+       <string>5pider</string>
+      </property>
+     </item>
+     <item row="0" column="5">
+      <property name="text">
+       <string>DEMIGOD</string>
+      </property>
+     </item>
+     <item row="0" column="6">
+      <property name="text">
+       <string>Windows 11</string>
+      </property>
+     </item>
+     <item row="0" column="7">
+      <property name="text">
+       <string>chrome.exe/3343</string>
+      </property>
+     </item>
+     <item row="0" column="8">
+      <property name="text">
+       <string>x64</string>
+      </property>
+     </item>
+     <item row="0" column="9">
+      <property name="text">
+       <string>1ms</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

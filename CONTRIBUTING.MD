@@ -1,6 +1,6 @@
 # Guide to Contributing
 
-### Pushing Changes to Master/Main
+### Pushing Changes to `dev`
 - It is preferred that new changes are pushed to a new branch, and then a pull request is made to merge that new branch back into Main/Master
 - Steps:
 	1. Create a new local branch:
