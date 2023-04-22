@@ -304,7 +304,7 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 		SleepJitter  int
 		KillDate     int64
 		WorkingHours int32
-		AesKeyEmpty = make([]byte, 32)
+		AesKeyEmpty  = make([]byte, 32)
 	)
 
 	/*
@@ -331,7 +331,7 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 		}
 	*/
 
-	if Parser.Length() >= 32 + 16 {
+	if Parser.Length() >= 32+16 {
 
 		var Session = &Agent{
 			Encryption: struct {
@@ -345,13 +345,8 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 			Active:     false,
 			SessionDir: "",
 
-<<<<<<< HEAD:Teamserver/pkg/agent/agent.go
-	logger.Debug("AES KEY:\n" + hex.Dump(Session.Encryption.AESKey))
-	logger.Debug("AES IV :\n" + hex.Dump(Session.Encryption.AESIv))
-=======
 			Info: new(AgentInfo),
 		}
->>>>>>> dev:teamserver/pkg/agent/agent.go
 
 		// check if there is aes key/iv.
 		if bytes.Compare(Session.Encryption.AESKey, AesKeyEmpty) != 0 {
@@ -371,8 +366,8 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 				logger.Debug(fmt.Sprintf("AgentID (%x) == DemonID (%x)\n", AgentID, DemonID))
 			}
 
-			Hostname   = Parser.ParseString()
-			Username   = Parser.ParseString()
+			Hostname = Parser.ParseString()
+			Username = Parser.ParseString()
 			DomainName = Parser.ParseString()
 			InternalIP = Parser.ParseString()
 
@@ -390,10 +385,10 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 				Hostname, Username, DomainName, InternalIP, ExternalIP))
 
 			ProcessName = Parser.ParseString()
-			ProcessPID  = Parser.ParseInt32()
+			ProcessPID = Parser.ParseInt32()
 			ProcessPPID = Parser.ParseInt32()
 			ProcessArch = Parser.ParseInt32()
-			Elevated    = Parser.ParseInt32()
+			Elevated = Parser.ParseInt32()
 
 			logger.Debug(fmt.Sprintf(
 				"\n"+
@@ -419,17 +414,17 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 
 			Session.Active = true
 
-			Session.NameID            = fmt.Sprintf("%x", DemonID)
-			Session.Info.MagicValue   = MagicValue
-			Session.Info.FirstCallIn  = time.Now().Format("02/01/2006 15:04:05")
-			Session.Info.LastCallIn   = time.Now().Format("02-01-2006 15:04:05.999")
-			Session.Info.Hostname     = Hostname
-			Session.Info.DomainName   = DomainName
-			Session.Info.Username     = Username
-			Session.Info.InternalIP   = InternalIP
-			Session.Info.SleepDelay   = SleepDelay
-			Session.Info.SleepJitter  = SleepJitter
-			Session.Info.KillDate     = KillDate
+			Session.NameID = fmt.Sprintf("%x", DemonID)
+			Session.Info.MagicValue = MagicValue
+			Session.Info.FirstCallIn = time.Now().Format("02/01/2006 15:04:05")
+			Session.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05.999")
+			Session.Info.Hostname = Hostname
+			Session.Info.DomainName = DomainName
+			Session.Info.Username = Username
+			Session.Info.InternalIP = InternalIP
+			Session.Info.SleepDelay = SleepDelay
+			Session.Info.SleepJitter = SleepJitter
+			Session.Info.KillDate = KillDate
 			Session.Info.WorkingHours = WorkingHours
 
 			// Session.Info.Listener 	= t.Name
@@ -483,10 +478,10 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 			process := strings.Split(ProcessName, "\\")
 
 			Session.Info.ProcessName = process[len(process)-1]
-			Session.Info.ProcessPID  = ProcessPID
+			Session.Info.ProcessPID = ProcessPID
 			Session.Info.ProcessPPID = ProcessPPID
 			Session.Info.ProcessPath = ProcessName
-			Session.BackgroundCheck  = false
+			Session.BackgroundCheck = false
 
 			/*for {
 			    if Parser.Length() >= 4 {
@@ -601,7 +596,7 @@ func (a *Agent) AddJobToQueue(job Job) []Job {
 	if a.Pivots.Parent != nil {
 		//logger.Debug("Prepare command for pivot demon: " + a.NameID)
 		a.PivotAddJob(job)
-	// if it's a direct agent add the job to the direct agent
+		// if it's a direct agent add the job to the direct agent
 	} else {
 		a.JobQueue = append(a.JobQueue, job)
 	}
@@ -609,9 +604,9 @@ func (a *Agent) AddJobToQueue(job Job) []Job {
 }
 
 func (a *Agent) GetQueuedJobs() []Job {
-	var Jobs     []Job
+	var Jobs []Job
 	var JobsSize = 0
-	var NumJobs  = 0
+	var NumJobs = 0
 
 	// make sure we return a number of jobs that doesn't exeed DEMON_MAX_RESPONSE_LENGTH
 	for _, job := range a.JobQueue {
