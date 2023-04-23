@@ -339,8 +339,6 @@ func (b *Builder) Build() bool {
 		b.SendConsoleMessage("Info", "Compiling source")
 	}
 
-	//b.SendConsoleMessage("Info", CompileCommand)
-	logger.Debug(CompileCommand)
 	Successful := b.CompileCmd(CompileCommand)
 
 	if AsmObj != "" {
