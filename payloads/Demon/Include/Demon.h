@@ -355,6 +355,7 @@ typedef struct
         WIN_FUNC( WSAStartup )
         WIN_FUNC( WSACleanup )
         WIN_FUNC( WSASocketA )
+        WIN_FUNC( WSAGetLastError )
         WIN_FUNC( ioctlsocket )
         WIN_FUNC( bind )
         WIN_FUNC( listen )

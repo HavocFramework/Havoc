@@ -58,6 +58,7 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, DWORD IPv4, PBYTE IPv6, DWOR
     SOCKADDR_IN     SockAddr  = { 0 };
     SOCKADDR_IN6_LH SockAddr6 = { 0 };
     u_long          IoBlock   = 1;
+    UINT32          ErrorCode = 0;
 
     if ( ! IPv4 && ! IPv6 )
     {
@@ -200,9 +201,12 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, DWORD IPv4, PBYTE IPv6, DWOR
 
 CLEANUP:
     if ( WinSock && WinSock != INVALID_SOCKET )
+    {
+        // close the socket preserving the last error code
+        ErrorCode = NtGetLastError();
         Instance.Win32.closesocket( WinSock );
-    Instance.Win32.WSACleanup();
-    Instance.WSAWasInitialised = FALSE;
+        NtSetLastError(ErrorCode);
+    }
 
     return NULL;
 }

@@ -201,6 +201,7 @@
 #define FuncHash_WSAStartup                          0x6128c683
 #define FuncHash_WSACleanup                          0x7f1aab78
 #define FuncHash_WSASocketA                          0x559f159a
+#define FuncHash_WSAGetLastError                     0x3b3fbe4e
 #define FuncHash_ioctlsocket                         0x06dcd609
 #define FuncHash_bind                                0x7c9499e2
 #define FuncHash_listen                              0x0b794014

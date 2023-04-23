@@ -5666,7 +5666,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						ErrorCode = Parser.ParseInt32()
 					)
 
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CONNECT, Success: %d, SocketId: %x", AgentID, Success, SocketId))
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CONNECT, Success: %d, SocketId: %x, ErrorCode: %d", AgentID, Success, SocketId, ErrorCode))
 
 					if Client := a.SocksClientGet(SocketId); Client != nil {
 

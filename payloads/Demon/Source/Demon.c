@@ -791,19 +791,20 @@ VOID DemonInit( VOID )
 
     if ( Instance.Modules.Ws2_32 )
     {
-        Instance.Win32.WSAStartup   = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_WSAStartup );
-        Instance.Win32.WSACleanup   = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_WSACleanup );
-        Instance.Win32.WSASocketA   = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_WSASocketA );
-        Instance.Win32.ioctlsocket  = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_ioctlsocket  );
-        Instance.Win32.bind         = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_bind );
-        Instance.Win32.listen       = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_listen  );
-        Instance.Win32.accept       = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_accept );
-        Instance.Win32.closesocket  = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_closesocket );
-        Instance.Win32.recv         = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_recv );
-        Instance.Win32.send         = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_send );
-        Instance.Win32.connect      = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_connect );
-        Instance.Win32.getaddrinfo  = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_getaddrinfo );
-        Instance.Win32.freeaddrinfo = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_freeaddrinfo );
+        Instance.Win32.WSAStartup      = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_WSAStartup );
+        Instance.Win32.WSACleanup      = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_WSACleanup );
+        Instance.Win32.WSASocketA      = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_WSASocketA );
+        Instance.Win32.WSAGetLastError = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_WSAGetLastError );
+        Instance.Win32.ioctlsocket     = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_ioctlsocket  );
+        Instance.Win32.bind            = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_bind );
+        Instance.Win32.listen          = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_listen  );
+        Instance.Win32.accept          = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_accept );
+        Instance.Win32.closesocket     = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_closesocket );
+        Instance.Win32.recv            = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_recv );
+        Instance.Win32.send            = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_send );
+        Instance.Win32.connect         = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_connect );
+        Instance.Win32.getaddrinfo     = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_getaddrinfo );
+        Instance.Win32.freeaddrinfo    = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_freeaddrinfo );
 
         PUTS( "Loaded Ws2_32 functions" )
     }
