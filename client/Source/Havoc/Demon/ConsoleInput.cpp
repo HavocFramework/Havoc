@@ -70,6 +70,90 @@ auto ParseQuotes( QString commandline ) -> QStringList
     return InputCommands;
 }
 
+// parse double quotes and backslashes
+auto ParseCommandLine( QString commandline ) -> QStringList
+{
+    auto cmdline       = commandline.toStdString();
+    auto InputCommands = QStringList();
+    auto in_quotes     = false;
+    char c;
+    char next_c;
+    std::string parsed;
+
+    for( size_t i = 0; i < cmdline.length(); i++)
+    {
+        c = cmdline[ i ];
+        if ( i + 1 < cmdline.length() )
+            next_c = cmdline[ i + 1 ];
+        else
+            next_c = 0;
+
+        if ( c == '"' && ! in_quotes )
+        {
+            // we are entering a quoted string
+            in_quotes = true;
+        }
+        else if ( c == '"' && in_quotes )
+        {
+            in_quotes = false;
+
+            if ( next_c != ' ' )
+            {
+                // we got out of quotes and the next char is not a space, break word
+                InputCommands << QString(parsed.c_str());
+                parsed = "";
+            }
+        }
+        // handle a backslash
+        else if ( c == '\\' )
+        {
+            // if the next char is a backslack, enter it
+            if ( next_c == '\\' )
+            {
+                parsed += '\\';
+                i++;
+            }
+            // if the next char is a space, enter it
+            else if ( next_c == ' ' )
+            {
+                parsed += ' ';
+                i++;
+            }
+            // if the next char is a double quote, enter it
+            else if ( next_c == '"' )
+            {
+                parsed += '"';
+                i++;
+            }
+            else
+            {
+                // if the next char some other value, enter a backslash
+                parsed += '\\';
+            }
+        }
+        else if ( c == ' ' && ! in_quotes )
+        {
+            // we have a space while not in quotes, break word
+            InputCommands << QString(parsed.c_str());
+            parsed = "";
+        }
+        else
+        {
+            // If we encounter any other character, add it to the parsed string
+            parsed += c;
+        }
+    }
+
+    // add the end of the last string
+    if ( parsed.size() > 0 )
+    {
+        InputCommands << QString(parsed.c_str());
+        parsed = "";
+    }
+
+    return InputCommands;
+}
+
 DemonCommands::DemonCommands( )
 {
     Execute.DemonCommandInstance = this;
@@ -82,7 +166,7 @@ auto DemonCommands::SetDemonConsole( UserInterface::Widgets::DemonInteracted* pI
 
 auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& commandline ) -> bool
 {
-    auto InputCommands = commandline.split(" ");
+    auto InputCommands = ParseCommandLine(commandline);
     auto IsDemonAgent  = false;
     auto AgentData     = ServiceAgent();
 
@@ -743,7 +827,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
 
                     Index++;
 
-                    Args = Program;
+                    Args = "\"" + Program + "\"";
                     for (int i = Index; i < InputCommands.length(); ++i)
                     {
                         Args += " " + InputCommands[ i ];
