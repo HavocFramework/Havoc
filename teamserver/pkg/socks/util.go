@@ -227,11 +227,9 @@ func ReadSocksHeader(conn net.Conn) (SocksHeader, error) {
  * +----+-----+-------+------+----------+----------+
  */
 
-func SendConnectSuccess(conn net.Conn, ATYP byte, IpDomain []byte, Port uint16) error {
-	var err error
-
-	// version, success message, reserved byte and the address type
-	response := []byte{Version, Succeeded, 0x00, ATYP}
+func CreateResponsePackage(ErrorType byte, ATYP byte, IpDomain []byte, Port uint16) []byte {
+	// version, reply type, reserved byte and the address type
+	response := []byte{Version, ErrorType, 0x00, ATYP}
 	// if the address type is FQDN, first add the size of the domain
 	if ATYP == FQDN {
 		response = append(response, byte(len(IpDomain)))
@@ -242,8 +240,11 @@ func SendConnectSuccess(conn net.Conn, ATYP byte, IpDomain []byte, Port uint16) 
 	response = append(response, byte((Port >> 8) & 0xff))
 	response = append(response, byte((Port >> 0) & 0xff))
 
-	_, err = conn.Write(response)
+	return response
+}
 
+func SendConnectSuccess(conn net.Conn, ATYP byte, IpDomain []byte, Port uint16) error {
+	_, err := conn.Write(CreateResponsePackage(Succeeded, ATYP, IpDomain, Port))
 	return err
 }
 
@@ -257,25 +258,28 @@ func SendCommandNotSupported(conn net.Conn) error {
 	return err
 }
 
-func SendConnectFailure(conn net.Conn, ErrorCode uint32) error {
+func SendConnectFailure(conn net.Conn, ErrorCode uint32, ATYP byte, IpDomain []byte, Port uint16) error {
 	var err error
+	var Response byte
 
 	if ErrorCode == 10060 {
 		// Connection Time-out
-		_, err = conn.Write([]byte{Version, TTLExpired, 0x00, IPv4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+		Response = TTLExpired
 	} else if ErrorCode == 10061 {
 		// ConnectionRefused
-		_, err = conn.Write([]byte{Version, ConnectionRefused, 0x00, IPv4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+		Response = ConnectionRefused
 	} else if ErrorCode == 10065 {
 		// HostUnreachable
-		_, err = conn.Write([]byte{Version, HostUnreachable, 0x00, IPv4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+		Response = HostUnreachable
 	} else if ErrorCode == 10051 {
 		// NetworkUnreachable
-		_, err = conn.Write([]byte{Version, NetworkUnreachable, 0x00, IPv4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+		Response = NetworkUnreachable
 	} else {
 		// some other generic error
-		_, err = conn.Write([]byte{Version, GeneralSocksServerFailure, 0x00, IPv4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+		Response = GeneralSocksServerFailure
 	}
+
+	_, err = conn.Write(CreateResponsePackage(Response, ATYP, IpDomain, Port))
 
 	return err
 }

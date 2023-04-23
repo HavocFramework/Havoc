@@ -5681,7 +5681,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						} else {
 							a.SocksClientClose(int32(SocketId))
 
-							err := socks.SendConnectFailure(Client.Conn, uint32(ErrorCode))
+							err := socks.SendConnectFailure(Client.Conn, uint32(ErrorCode), Client.ATYP, Client.IpDomain, Client.Port)
 							if err != nil {
 								return
 							}
