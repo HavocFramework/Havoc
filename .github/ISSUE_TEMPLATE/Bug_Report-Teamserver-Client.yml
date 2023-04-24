@@ -35,6 +35,16 @@ body:
         - "Anything else (You didn't pull...)"
     validations: 
       required: true
+  - type: dropdown
+    id: branch
+    attributes: 
+      label: Did You Try With the Dev Branch?
+      description: "This branch has the latest features and fixes so it might solve your problem"
+      options: 
+        - "Yes (You tried using the dev branch but the problem persist)"
+        - "No (You only tried the main branch...)"
+    validations: 
+      required: true
   - type: textarea
     id: logs
     attributes: 
