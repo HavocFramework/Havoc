@@ -103,7 +103,7 @@ void KeyExpansion(UINT8* RoundKey, const UINT8* Key)
 void AesInit( PAESCTX ctx, const PUINT8 key, const PUINT8 iv)
 {
   KeyExpansion( ctx->RoundKey, key );
-  memcpy( ctx->Iv, iv, AES_BLOCKLEN );
+  MemCopy( ctx->Iv, iv, AES_BLOCKLEN );
 }
 
 // This function adds the round key to state.
