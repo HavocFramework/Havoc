@@ -6,6 +6,8 @@ import (
 	"errors"
 	"net"
 	"fmt"
+
+	"Havoc/pkg/logger"
 )
 
 type Socks5AuthTypes byte
@@ -41,6 +43,13 @@ const (
 
 const (
 	ConnectCommand = 0x1
+)
+
+const (
+	WSAETIMEDOUT    = 10060
+	WSAECONNREFUSED = 10061
+	WSAEHOSTUNREACH = 10065
+	WSAENETUNREACH  = 10051
 )
 
 type SocksHeader struct {
@@ -262,20 +271,21 @@ func SendConnectFailure(conn net.Conn, ErrorCode uint32, ATYP byte, IpDomain []b
 	var err error
 	var Response byte
 
-	if ErrorCode == 10060 {
+	if ErrorCode == WSAETIMEDOUT {
 		// Connection Time-out
 		Response = TTLExpired
-	} else if ErrorCode == 10061 {
+	} else if ErrorCode == WSAECONNREFUSED {
 		// ConnectionRefused
 		Response = ConnectionRefused
-	} else if ErrorCode == 10065 {
+	} else if ErrorCode == WSAEHOSTUNREACH {
 		// HostUnreachable
 		Response = HostUnreachable
-	} else if ErrorCode == 10051 {
+	} else if ErrorCode == WSAENETUNREACH {
 		// NetworkUnreachable
 		Response = NetworkUnreachable
 	} else {
 		// some other generic error
+		logger.Debug(fmt.Sprintf("Unknown Socks5 error code: %d", ErrorCode))
 		Response = GeneralSocksServerFailure
 	}
 

