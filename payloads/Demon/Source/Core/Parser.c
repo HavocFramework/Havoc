@@ -37,7 +37,7 @@ INT16 ParserGetInt16( PPARSER parser )
     if ( parser->Length < 2 )
         return 0;
 
-    memcpy( &intBytes, parser->Buffer, 2 );
+    MemCopy( &intBytes, parser->Buffer, 2 );
 
     parser->Buffer += 2;
     parser->Length -= 2;
@@ -52,7 +52,7 @@ BYTE ParserGetByte( PPARSER parser )
     if ( parser->Length < 1 )
         return 0;
 
-    memcpy( &intBytes, parser->Buffer, 1 );
+    MemCopy( &intBytes, parser->Buffer, 1 );
 
     parser->Buffer += 1;
     parser->Length -= 1;
