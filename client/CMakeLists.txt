@@ -151,8 +151,6 @@ set(
         Source/Havoc/Service.cpp
 
         Source/Havoc/DBManger/DBManager.cpp
-        Source/Havoc/DBManger/Credentials.cpp
-        Source/Havoc/DBManger/Sessions.cpp
         Source/Havoc/DBManger/Teamserver.cpp
         Source/Havoc/DBManger/Scripts.cpp
 
