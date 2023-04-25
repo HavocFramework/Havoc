@@ -12,7 +12,6 @@
 #include <UserInterface/Widgets/SessionTable.hpp>
 #include <UserInterface/Widgets/Chat.hpp>
 #include <UserInterface/Widgets/ListenerTable.hpp>
-#include <UserInterface/Widgets/CredentialsTable.hpp>
 
 #include <Havoc/DBManager/DBManager.hpp>
 
