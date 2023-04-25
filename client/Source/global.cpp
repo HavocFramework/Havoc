@@ -19,14 +19,6 @@ Util::ConnectionInfo       HavocX::Teamserver;
 HavocNamespace::Connector* HavocX::Connector;
 bool                       HavocX::DebugMode = false;
 
-// Static Variables
-string Util::CredentialsItem::PasswordTypes::Cleartext = "cleartext";
-string Util::CredentialsItem::PasswordTypes::Hashed    = "hashed";
-
-string Util::CredentialsItem::SourceTypes::Mimikatz    = "mimikatz";
-string Util::CredentialsItem::SourceTypes::Hashdump    = "hashdump";
-string Util::CredentialsItem::SourceTypes::Manuel      = "manuel";
-
 QString HavocSpace::Listener::PayloadHTTPS    = "Https";
 QString HavocSpace::Listener::PayloadHTTP     = "Http";
 QString HavocSpace::Listener::PayloadSMB      = "Smb";

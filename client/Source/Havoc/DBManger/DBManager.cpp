@@ -8,29 +8,23 @@ int DBManager::CreateSqlFile = 2;
 
 DBManager::DBManager( const QString& FilePath, int OpenFlag )
 {
-    bool dbExists = false;
-    if ( QFileInfo::exists( FilePath ) )
-        dbExists = true;
+    auto exists = false;
+    if ( QFileInfo::exists( FilePath ) ) {
+        exists = true;
+    }
 
     this->DB = QSqlDatabase::addDatabase( "QSQLITE" );
     this->DB.setDatabaseName( FilePath );
 
-    if ( this->DB.open() )
-    {
-        if ( OpenFlag == DBManager::CreateSqlFile && !dbExists )
-        {
-            if ( this->createNewDatabase() )
-            {
+    if ( this->DB.open() ) {
+        if ( OpenFlag == DBManager::CreateSqlFile && ! exists ) {
+            if ( this->createNewDatabase() ) {
                 spdlog::info( "Successful created database" );
-            }
-            else
-            {
+            } else {
                 spdlog::error( "Failed to create a new database" );
             }
         }
-    }
-    else
-    {
+    } else {
         spdlog::error( "[DB] Failed to open database" );
     }
 }

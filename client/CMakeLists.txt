@@ -82,7 +82,6 @@ set(
 
         # widgets
         Include/UserInterface/Widgets/Chat.hpp
-        Include/UserInterface/Widgets/CredentialsTable.hpp
         Include/UserInterface/Widgets/DemonInteracted.h
         Include/UserInterface/Widgets/ListenerTable.hpp
         Include/UserInterface/Widgets/ProcessList.hpp
@@ -117,7 +116,6 @@ set(
         Source/UserInterface/Widgets/SessionGraph.cpp
         Source/UserInterface/Widgets/Chat.cpp
         Source/UserInterface/Widgets/ListenersTable.cpp
-        Source/UserInterface/Widgets/CredentialsTable.cpp
         Source/UserInterface/Widgets/DemonInteracted.cpp
         Source/UserInterface/Widgets/TeamserverTabSession.cpp
         Source/UserInterface/Widgets/PythonScript.cpp

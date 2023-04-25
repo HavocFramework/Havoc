@@ -38,19 +38,15 @@ public:
     Widgets::SessionTable*              SessionTableWidget      = nullptr;
     GraphWidget*                        SessionGraphWidget      = nullptr;
     Widgets::ListenersTable*            ListenerTableWidget     = nullptr;
-    Widgets::CredentialsTable*          CredentialsTableWidget  = nullptr;
     Widgets::PythonScriptInterpreter*   PythonScriptWidget      = nullptr;
     Widgets::ScriptManager*             ScriptManagerWidget     = nullptr;
     Payload*                            PayloadDialog           = nullptr;
     LootWidget*                         LootWidget              = nullptr;
-
     QStackedWidget*                     MainViewWidget          = nullptr;
     QWidget*                            SessionTablePage        = nullptr;
     HavocSpace::DBManager*              dbManager               = nullptr;
-
     QString                             TeamserverName          = "";
     QWidget*                            PageWidget              = nullptr;
-
     SmallAppWidgets_t*                  SmallAppWidgets         = nullptr;
 
     void setupUi( QWidget* Page, QString TeamserverName );
