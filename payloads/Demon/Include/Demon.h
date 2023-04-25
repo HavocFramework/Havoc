@@ -468,6 +468,7 @@ typedef struct
     PDOWNLOAD_DATA       Downloads;
     PMEM_FILE            MemFiles;
     PSOCKET_DATA         Sockets;
+    PCOFFEE              Coffees;
 
 } INSTANCE;
 

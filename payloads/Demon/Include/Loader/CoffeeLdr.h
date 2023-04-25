@@ -21,6 +21,7 @@ typedef struct _COFFEE_PARAMS
     SIZE_T CoffeeDataSize;
     PVOID  ArgData;
     SIZE_T ArgSize;
+    UINT32 RequestID;
 } COFFEE_PARAMS, *PCOFFEE_PARAMS;
 
 typedef struct _COFF_FILE_HEADER
@@ -90,10 +91,13 @@ typedef struct _COFFEE
     PCOFF_SYMBOL      Symbol;
     PVOID             ImageBase;
     SIZE_T            BofSize;
+    UINT32            RequestID;
 
     PSECTION_MAP      SecMap;
     PCHAR             FunMap;
     SIZE_T            FunMapSize;
+
+    struct _COFFEE*   Next;
 } COFFEE, *PCOFFEE;
 
 /*!
@@ -103,9 +107,10 @@ typedef struct _COFFEE
  * @param CoffeeData
  * @param ArgData
  * @param ArgSize
+ * @param RequestID
  * @return
  */
-VOID CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSize );
+VOID CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSize, UINT32 RequestID );
 
 /*!
  * CoffeeRunner
@@ -115,8 +120,9 @@ VOID CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSize
  * @param CoffeeData
  * @param ArgData
  * @param ArgSize
+ * @param RequestID
  * @return
  */
-VOID  CoffeeRunner( PCHAR EntryName, DWORD EntryNameSize, PVOID CoffeeData, SIZE_T CoffeeDataSize, PVOID ArgData, SIZE_T ArgSize );
+VOID  CoffeeRunner( PCHAR EntryName, DWORD EntryNameSize, PVOID CoffeeData, SIZE_T CoffeeDataSize, PVOID ArgData, SIZE_T ArgSize, UINT32 RequestID );
 
 #endif

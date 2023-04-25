@@ -167,14 +167,53 @@ PCHAR BeaconDataExtract( PDATA parser, PINT size )
     return Data;
 }
 
+/*
+ * This function is called by BeaconPrintf and BeaconOutput.
+ * It loops over all the COFFEE structs saved on the Instance object
+ * trying to find which BOF called BeaconPrintf/BeaconOutput
+ * once it finds it, it returns the RequestID
+ * this is so that the TS can identify which BOF is sending the output data.
+ * This is needed because you can have more than one BOF mapped in memory at the same time
+ */
+BOOL GetRequestIDForCallingObjectFile( PVOID CoffeeFunctionReturn, PUINT32 RequestID )
+{
+    PCOFFEE Entry = Instance.Coffees;
+
+    if ( ! CoffeeFunctionReturn || ! RequestID )
+        return FALSE;
+
+    while ( Entry )
+    {
+        if ( ( ULONG_PTR ) CoffeeFunctionReturn >= ( ULONG_PTR ) Entry->ImageBase && ( ULONG_PTR ) CoffeeFunctionReturn < ( ( ULONG_PTR ) Entry->ImageBase + Entry->BofSize ) )
+        {
+            PRINTF( "Found the RequestID for the calling BOF: %x\n", Entry->RequestID )
+            *RequestID = Entry->RequestID;
+            return TRUE;
+        }
+
+        Entry = Entry->Next;
+    }
+
+    PUTS( "Failed to find the RequestID for the calling BOF" )
+
+    return FALSE;
+}
+
 VOID BeaconPrintf( INT Type, PCHAR fmt, ... )
 {
     PRINTF( "BeaconPrintf( %d, %x, ... )\n", Type, fmt )
 
-    PPACKAGE    package         = PackageCreate( BEACON_OUTPUT );
-    va_list     VaListArg       = 0;
-    PVOID       CallbackOutput  = NULL;
-    INT         CallbackSize    = 0;
+    PPACKAGE    package              = NULL;
+    va_list     VaListArg            = 0;
+    PVOID       CallbackOutput       = NULL;
+    INT         CallbackSize         = 0;
+    UINT32      RequestID            = 0;
+    PVOID       CoffeeFunctionReturn = __builtin_return_address( 0 );
+
+    if ( GetRequestIDForCallingObjectFile( CoffeeFunctionReturn, &RequestID ) )
+        package = PackageCreateWithRequestID( RequestID, BEACON_OUTPUT );
+    else
+        package = PackageCreate( BEACON_OUTPUT );
 
     va_start( VaListArg, fmt );
 
@@ -199,7 +238,14 @@ VOID BeaconOutput( INT Type, PCHAR data, INT len )
 {
     PRINTF( "BeaconOutput( %d, %p, %d )\n", Type, data, len )
 
-    PPACKAGE Package = PackageCreate( BEACON_OUTPUT );
+    UINT32   RequestID            = 0;
+    PPACKAGE Package              = NULL;
+    PVOID    CoffeeFunctionReturn = __builtin_return_address( 0 );
+
+    if ( GetRequestIDForCallingObjectFile( CoffeeFunctionReturn, &RequestID ) )
+        Package = PackageCreateWithRequestID( RequestID, BEACON_OUTPUT );
+    else
+        Package = PackageCreate( BEACON_OUTPUT );
 
     PackageAddInt32( Package, Type );
 
