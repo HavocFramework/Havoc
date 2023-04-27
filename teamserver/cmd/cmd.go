@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	VersionNumber = "0.5"
-	VersionName   = "Emperor"
+	VersionNumber = "0.6"
+	VersionName   = "Hierophant Green"
 	DatabasePath  = "data/teamserver.db"
 
 	HavocCli = &cobra.Command{
