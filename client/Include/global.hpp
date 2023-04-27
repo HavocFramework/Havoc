@@ -121,7 +121,6 @@ namespace HavocNamespace
         namespace Dialogs {
             class Connect;
             class NewListener;
-            class Preferences;
         }
 
         // Widgets

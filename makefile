@@ -22,14 +22,12 @@ ts-cleanup:
 	@ rm -rf ./teamserver/.idea
 	@ rm -rf ./havoc
 
-
 # client building and cleanup targets 
 client-build: 
 	@ echo "[*] building client"
 	@ mkdir client/Build; cd client/Build; cmake ..
 	@ if [ -d "client/Modules" ]; then echo "Modules installed"; else git clone https://github.com/HavocFramework/Modules client/Modules; fi
 	@ cmake --build client/Build -- -j 4
-	@ rm -rf ./client/Build 
 
 client-cleanup:
 	@ echo "[*] client cleanup"

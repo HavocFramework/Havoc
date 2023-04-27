@@ -55,7 +55,6 @@ set(
         HAVOC_INCLUDE
 
         # Misc
-        Include/Havoc/Arguments.hpp
         Include/Havoc/Connector.hpp
         Include/Havoc/DBManager/DBManager.hpp
         Include/Havoc/DemonCmdDispatch.h
@@ -68,15 +67,15 @@ set(
         Include/Havoc/PythonApi/PythonApi.h
         Include/Havoc/PythonApi/Event.h
         Include/Havoc/PythonApi/HavocUi.h
+        Include/Havoc/PythonApi/PyAgentClass.hpp
 
         # Dialogs
         Include/UserInterface/Dialogs/Payload.hpp
         Include/UserInterface/Dialogs/About.hpp
         Include/UserInterface/Dialogs/Connect.hpp
         Include/UserInterface/Dialogs/Listener.hpp
-        Include/UserInterface/Dialogs/Preferences.hpp
 
-        # small wigets
+        # small widgets
         Include/UserInterface/SmallWidgets/EventViewer.hpp
         Include/UserInterface/SmallWidgets/EventViewer.hpp
 
@@ -109,7 +108,6 @@ set(
         Source/UserInterface/Dialogs/Connect.cpp
         Source/UserInterface/Dialogs/Listener.cpp
         Source/UserInterface/Dialogs/Payload.cpp
-        Source/UserInterface/Dialogs/Preference.cpp
 
         # Widgets
         Source/UserInterface/Widgets/SessionTable.cpp
@@ -123,10 +121,10 @@ set(
         Source/UserInterface/Widgets/LootWidget.cpp
         Source/UserInterface/Widgets/FileBrowser.cpp
         Source/UserInterface/Widgets/Teamserver.cpp
+        Source/UserInterface/Widgets/ProcessList.cpp
 
         # SmallWidgets
         Source/UserInterface/SmallWidgets/EventViewer.cpp
-        Source/UserInterface/Widgets/ProcessList.cpp Source/UserInterface/SmallWidgets/TextComplete.cpp
 )
 
 set(
@@ -139,49 +137,39 @@ set(
 
 # Source for Havoc
 set(
-        HAVOC_SOURCE
-        Source/Main.cpp
+    HAVOC_SOURCE
+    Source/Main.cpp
 
-        # src/Havoc/Arguments/Arguments.cpp
+    Source/Havoc/Packager.cpp
+    Source/Havoc/Connector.cpp
+    Source/Havoc/Service.cpp
+    Source/Havoc/DBManger/DBManager.cpp
+    Source/Havoc/DBManger/Teamserver.cpp
+    Source/Havoc/DBManger/Scripts.cpp
+    Source/Havoc/Demon/ConsoleInput.cpp
+    Source/Havoc/Demon/CommandSend.cpp
+    Source/Havoc/Demon/CommandOutput.cpp
+    Source/Havoc/Demon/Commands.cpp
+    Source/Havoc/PythonApi/PythonApi.cpp
+    Source/Havoc/PythonApi/Havoc.cpp
+    Source/Havoc/PythonApi/HavocUi.cpp
+    Source/Havoc/PythonApi/PyDemonClass.cpp
+    Source/Havoc/PythonApi/Event.cpp
+    Source/Havoc/Havoc.cpp
 
-        Source/Havoc/Packager.cpp
-        Source/Havoc/Connector.cpp
-        Source/Havoc/Service.cpp
+    ${HAVOC_UI}
 
-        Source/Havoc/DBManger/DBManager.cpp
-        Source/Havoc/DBManger/Teamserver.cpp
-        Source/Havoc/DBManger/Scripts.cpp
-
-        Source/Havoc/Demon/ConsoleInput.cpp
-        Source/Havoc/Demon/CommandSend.cpp
-        Source/Havoc/Demon/CommandOutput.cpp
-        Source/Havoc/Demon/Commands.cpp
-
-        Source/Havoc/PythonApi/PythonApi.cpp
-        Source/Havoc/PythonApi/Havoc.cpp
-        Source/Havoc/PythonApi/HavocUi.cpp
-        Source/Havoc/PythonApi/PyDemonClass.cpp
-        Source/Havoc/PythonApi/Event.cpp
-
-        Source/Havoc/Havoc.cpp
-
-        ${HAVOC_UI}
-        Include/Havoc/PythonApi/PyAgentClass.hpp Source/Havoc/PythonApi/PyAgentClass.cpp Include/json.hpp)
+    Source/Havoc/PythonApi/PyAgentClass.cpp
+    Include/json.hpp
+)
 
 add_executable( ${PROJECT_NAME} ${HAVOC_INCLUDE} ${HAVOC_SOURCE} ${HAVOC_UTIL} ${APP_ICON_RESOURCE_WINDOWS} Data/Havoc.rc )
 add_definitions( -DQT_NO_DEBUG_OUTPUT )
-# Boost libary
-# set(Boost_USE_STATIC_LIBS OFF)
-# set(Boost_USE_MULTITHREADED ON)
-# set(Boost_USE_STATIC_RUNTIME OFF)
-# find_package(Boost COMPONENTS program_options python)
-# include_directories(${Boost_INCLUDE_DIRS})
 
 target_link_libraries(
-        ${PROJECT_NAME}
-        ${REQUIRED_LIBS_QUALIFIED}
-        ${PYTHON_LIBRARIES}
-        # ${Boost_LIBRARIES}
-        spdlog::spdlog
-        spdlog::spdlog_header_only
+    ${PROJECT_NAME}
+    ${REQUIRED_LIBS_QUALIFIED}
+    ${PYTHON_LIBRARIES}
+    spdlog::spdlog
+    spdlog::spdlog_header_only
 )

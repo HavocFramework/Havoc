@@ -683,47 +683,6 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
             {
                 if ( Session.Name.compare( Package->Body.Info[ "DemonID" ].c_str() ) == 0 )
                 {
-                    /*
-                    if ( Session.Marked.compare( "Dead" ) == 0 )
-                    {
-                        auto Package = new Util::Packager::Package;
-
-                        Package->Head = Util::Packager::Head_t {
-                                .Event= Util::Packager::Session::Type,
-                                .User = HavocX::Teamserver.User.toStdString(),
-                                .Time = QTime::currentTime().toString( "hh:mm:ss" ).toStdString(),
-                        };
-
-                        for ( int i = 0; i < HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->rowCount(); i++ )
-                        {
-                            auto Row = HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, 0 )->text();
-
-                            if ( Row.compare( Session.Name ) == 0 )
-                            {
-                                HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, 0 )->setIcon( WinVersionIcon( Session.OS, true ) );
-
-                                for ( int j = 0; j < HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->columnCount(); j++ )
-                                {
-                                    HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, j )->setBackground( QColor( Util::ColorText::Colors::Hex::Background ) );
-                                    HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, j )->setForeground( QColor( Util::ColorText::Colors::Hex::Foreground ) );
-                                }
-                            }
-                        }
-
-                        Package->Body = Util::Packager::Body_t {
-                                .SubEvent = Util::Packager::Session::MarkAs,
-                                .Info = {
-                                    { "AgentID", Session.Name.toStdString() },
-                                    { "Marked",  "Alive" },
-                                }
-                        };
-
-                        Session.Marked = "Alive";
-
-                        HavocX::Connector->SendPackage( Package );
-                    }
-                    */
-
                     Session.InteractedWidget->DemonCommands->OutputDispatch.DemonCommandInstance = Session.InteractedWidget->DemonCommands;
 
                     int CommandID = QString( Package->Body.Info[ "CommandID" ].c_str() ).toInt();
