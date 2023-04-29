@@ -116,6 +116,15 @@ BOOL PipeRead(
     OUT PBUFFER Buffer
 );
 
+BOOL CfgQueryEnforced(
+    VOID
+);
+
+VOID CfgAddressAdd(
+    IN PVOID ImageBase,
+    IN PVOID Function
+);
+
 BOOL BypassPatchAMSI(
     VOID
 );

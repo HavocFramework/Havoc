@@ -11208,6 +11208,28 @@ typedef struct _RTL_PROCESS_VERIFIER_OPTIONS
 	UCHAR OptionData[1];
 } RTL_PROCESS_VERIFIER_OPTIONS, *PRTL_PROCESS_VERIFIER_OPTIONS;
 
+typedef enum _VIRTUAL_MEMORY_INFORMATION_CLASS
+{
+    VmPrefetchInformation,
+    VmPagePriorityInformation,
+    VmCfgCallTargetInformation
+} VIRTUAL_MEMORY_INFORMATION_CLASS;
+
+typedef struct _VM_INFORMATION
+{
+    DWORD					dwNumberOfOffsets;
+    PULONG					plOutput;
+    PCFG_CALL_TARGET_INFO	ptOffsets;
+    PVOID					pMustBeZero;
+    PVOID					pMoarZero;
+} VM_INFORMATION, * PVM_INFORMATION;
+
+typedef struct _MEMORY_RANGE_ENTRY
+{
+    PVOID  VirtualAddress;
+    SIZE_T NumberOfBytes;
+} MEMORY_RANGE_ENTRY, *PMEMORY_RANGE_ENTRY;
+
 typedef struct _RTL_PROCESS_LOCKS {
 	ULONG NumberOfLocks;
 	RTL_PROCESS_LOCK_INFORMATION Locks[ 1 ];
@@ -16887,6 +16909,14 @@ NtSetInformationThread (
     IN ULONG ThreadInformationLength
     );
 
+NTSTATUS NtSetInformationVirtualMemory(
+    IN HANDLE                           ProcessHandle,
+    IN VIRTUAL_MEMORY_INFORMATION_CLASS VmInformationClass,
+    IN ULONG_PTR                        NumberOfEntries,
+    IN PMEMORY_RANGE_ENTRY              VirtualAddresses,
+    IN PVOID                            VmInformation,
+    IN ULONG                            VmInformationLength
+);
 
 NTSTATUS
 NTAPI

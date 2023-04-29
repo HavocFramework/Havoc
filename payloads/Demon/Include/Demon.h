@@ -166,6 +166,7 @@ typedef struct
         WIN_FUNC( NtSetEvent );
         WIN_FUNC( NtCreateEvent );
         WIN_FUNC( NtSetInformationThread );
+        WIN_FUNC( NtSetInformationVirtualMemory );
 
         // Kernel32
         WIN_FUNC( CreateRemoteThread )
