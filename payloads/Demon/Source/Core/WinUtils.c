@@ -853,7 +853,7 @@ VOID CfgAddressAdd(
     VmInfo.pMoarZero         = FALSE;
 
     if ( ! NT_SUCCESS( NtStatus = Instance.Win32.NtSetInformationVirtualMemory( NtCurrentProcess(), VmCfgCallTargetInformation, 1, &MemRange, &VmInfo, sizeof( VmInfo ) ) ) ) {
-        printf( "NtSetInformationVirtualMemory Failed => %p", NtStatus );
+        PRINTF( "NtSetInformationVirtualMemory Failed => %p", NtStatus );
     }
 }
 
