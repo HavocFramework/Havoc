@@ -95,27 +95,15 @@ PWCHAR StringConcatW(PWCHAR String, PWCHAR String2)
     return String;
 }
 
-VOID MemSet(PVOID Destination, int Val, SIZE_T Size)
-{
-    PULONG Dest = ( PULONG )Destination;
-    SIZE_T Count = Size / sizeof( ULONG );
-
-    while ( Count > 0 )
-    {
-        *Dest = Val;
-        Dest++;
-        Count--;
-    }
-}
-
 INT MemCompare( PVOID s1, PVOID s2, INT len)
 {
     PUCHAR p = s1;
     PUCHAR q = s2;
     INT charCompareStatus = 0;
 
-    if (s1 == s2)
+    if ( s1 == s2 ) {
         return charCompareStatus;
+    }
 
     while (len > 0)
     {

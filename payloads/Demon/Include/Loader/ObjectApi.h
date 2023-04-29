@@ -44,7 +44,6 @@ VOID    BeaconOutput( INT Type, PCHAR data, INT len );
 
 /* Token Functions */
 BOOL    BeaconUseToken( HANDLE token );
-VOID    BeaconRevertToken();
 BOOL    BeaconIsAdmin();
 
 /* Spawn+Inject Functions */

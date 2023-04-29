@@ -2,9 +2,14 @@
 #define DEMON_TOKEN_H
 
 #include <windows.h>
+#include <Core/Win32.h>
 
 #define TOKEN_TYPE_STOLEN       0x1
 #define TOKEN_TYPE_MAKE_NETWORK 0x2
+
+#define TOKEN_OWNER_FLAG_DEFAULT 0x0 /* query domain/user */
+#define TOKEN_OWNER_FLAG_USER    0x1 /* query user only */
+#define TOKEN_OWNER_FLAG_DOMAIN  0x2 /* query domain only */
 
 #define BUF_SIZE 4096
 #define MAX_USERNAME 512
@@ -27,6 +32,7 @@ typedef struct _UniqueUserToken
     BOOL impersonation_available;
 } UniqueUserToken, *PUniqueUserToken;
 
+/* use union for STOLEN and MAKE tokens */
 typedef struct _TOKEN_LIST_DATA
 {
     HANDLE  Handle;
@@ -42,20 +48,89 @@ typedef struct _TOKEN_LIST_DATA
     struct _TOKEN_LIST_DATA* NextToken;
 } TOKEN_LIST_DATA, *PTOKEN_LIST_DATA ;
 
-// Utils
-HANDLE           TokenCurrentHandle( );
-BOOL             TokenSetPrivilege( LPSTR Privilege, BOOL Enable );
+typedef SECURITY_IMPERSONATION_LEVEL SEC_IMP_LEVEL;
 
-// Token Vault
-DWORD            TokenAdd( HANDLE hToken, LPWSTR DomainUser, SHORT Type, DWORD dwProcessID, LPWSTR User, LPWSTR Domain, LPWSTR Password );
-BOOL             TokenRemove( DWORD TokenID );
-HANDLE           TokenSteal( DWORD ProcessID, HANDLE TargetHandle );
-HANDLE           TokenMake( LPWSTR User, LPWSTR Password, LPWSTR Domain );
-PTOKEN_LIST_DATA TokenGet( DWORD TokenID );
-VOID             TokenClear( );
-BOOL             TokenImpersonate( BOOL Impersonate );
-BOOL             ListTokens( PUniqueUserToken* UniqTokens, PDWORD pNumTokens );
-BOOL             ImpersonateTokenFromVault( DWORD TokenID );
-BOOL             ImpersonateTokenInStore( PTOKEN_LIST_DATA TokenData );
+/* Token Object Functions */
+HANDLE TokenCurrentHandle(
+    VOID
+);
+
+BOOL TokenElevated(
+    IN HANDLE Token
+);
+
+BOOL TokenSetPrivilege(
+    IN LPSTR Privilege,
+    IN BOOL Enable
+);
+
+BOOL TokenDuplicate(
+    IN  HANDLE        TokenOriginal,
+    IN  DWORD         Access,
+    IN  SEC_IMP_LEVEL ImpersonateLevel,
+    IN  TOKEN_TYPE    TokenType,
+    OUT PHANDLE       TokenNew
+);
+
+BOOL TokenRevSelf(
+    VOID
+);
+
+BOOL TokenQueryOwner(
+    IN  HANDLE  Token,
+    OUT PBUFFER UserDomain,
+    IN  DWORD   Flags
+);
+
+/* Token Vault Functions */
+DWORD TokenAdd(
+    IN HANDLE hToken,
+    IN LPWSTR DomainUser,
+    IN SHORT  Type,
+    IN DWORD  dwProcessID,
+    IN LPWSTR User,
+    IN LPWSTR Domain,
+    IN LPWSTR Password
+);
+
+BOOL TokenRemove(
+    IN DWORD TokenID
+);
+
+HANDLE TokenSteal(
+    IN DWORD  ProcessID,
+    IN HANDLE TargetHandle
+);
+
+HANDLE TokenMake(
+    IN LPWSTR User,
+    IN LPWSTR Password,
+    IN LPWSTR Domain
+);
+
+PTOKEN_LIST_DATA TokenGet(
+    IN DWORD TokenID
+);
+
+VOID TokenClear(
+    VOID
+);
+
+BOOL TokenImpersonate(
+    IN BOOL Impersonate
+);
+
+BOOL ListTokens(
+    OUT PUniqueUserToken* UniqTokens,
+    OUT PDWORD            pNumTokens
+);
+
+BOOL ImpersonateTokenFromVault(
+    IN DWORD TokenID
+);
+
+BOOL ImpersonateTokenInStore(
+    IN PTOKEN_LIST_DATA TokenData
+);
 
 #endif

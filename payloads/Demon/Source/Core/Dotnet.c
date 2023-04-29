@@ -41,7 +41,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
     if ( ! Instance.Dotnet->Pipe )
     {
         PRINTF( "CreateNamedPipeW Failed: Error[%d]\n", NtGetLastError() )
-        CALLBACK_GETLASTERROR;
+        PACKAGE_ERROR_WIN32;
 
         return FALSE;
     }
@@ -49,7 +49,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
     if ( ! ( Instance.Dotnet->File = Instance.Win32.CreateFileW( Instance.Dotnet->PipeName.Buffer, GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL ) ) )
     {
         PRINTF( "CreateFileW Failed: Error[%d]\n", NtGetLastError() )
-        CALLBACK_GETLASTERROR;
+        PACKAGE_ERROR_WIN32;
 
         return FALSE;
     }

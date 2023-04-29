@@ -31,6 +31,7 @@ set( COMMON_SOURCE
         Source/Core/Download.c
         Source/Core/Dotnet.c
         Source/Core/Socket.c
+        Source/Core/Kerberos.c
 
         Source/Extra/KaynLdr.c
 )
@@ -72,6 +73,7 @@ add_compile_definitions( CONFIG_SIZE=1024 )
 add_compile_definitions( CONFIG_KEY_BYTES={} )
 add_compile_definitions( CONFIG_KEY_SIZE=16 )
 add_compile_definitions( SERVICE_NAME="DemonService" )
+add_compile_definitions( OBF_SYSCALL )
 
 add_compile_definitions( TRANSPORT_HTTP )
 add_compile_definitions( TRANSPORT_SMB )

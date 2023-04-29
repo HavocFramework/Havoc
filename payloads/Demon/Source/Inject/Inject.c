@@ -1,13 +1,15 @@
 #include <Demon.h>
+#include <ntstatus.h>
 
 #include <Core/WinUtils.h>
 #include <Core/Syscalls.h>
-#include "Common/Macros.h"
 #include <Core/Package.h>
+#include <Core/MiniStd.h>
 
 #include <Inject/Inject.h>
 #include <Inject/InjectUtil.h>
-#include <ntstatus.h>
+
+#include <Common/Macros.h>
 
 BOOL ShellcodeInjectDispatch( BOOL Inject, SHORT Method, LPVOID lpShellcodeBytes, SIZE_T ShellcodeSize, PINJECTION_CTX ctx )
 {

@@ -21850,6 +21850,10 @@ RtlCreateTimer(
     IN ULONG Flags
     );
 
+NTSTATUS NTAPI RtlCreateTimerQueue(
+    PHANDLE TimerQueueHandle
+);
+
 NTSTATUS
 NTAPI
 RtlUpdateTimer(

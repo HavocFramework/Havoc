@@ -16,7 +16,6 @@ typedef struct {
 /* Package generator */
 PPACKAGE PackageCreate( UINT32 CommandID );
 PPACKAGE PackageCreateWithRequestID( UINT32 RequestID, UINT32 CommandID );
-PPACKAGE PackageNew();
 
 /* PackageAddInt32
  * package => pointer to package response struct
@@ -24,60 +23,62 @@ PPACKAGE PackageNew();
  * Description: Add unsigned 32-bit integer to the response buffer
  */
 VOID PackageAddInt32(
-        PPACKAGE package,
-        UINT32 iData
+    PPACKAGE package,
+    UINT32 iData
 );
 
 VOID PackageAddInt64(
-        PPACKAGE Package,
-        UINT64 dataInt
+    PPACKAGE Package,
+    UINT64 dataInt
 );
 
 VOID PackageAddPtr(
-        PPACKAGE Package,
-        PVOID pointer
+    PPACKAGE Package,
+    PVOID pointer
 );
 
 // PackageAddBytes
 VOID PackageAddBytes(
-        PPACKAGE package,
-        PBYTE data,
-        size_t dataSize
+    PPACKAGE package,
+    PBYTE data,
+    size_t dataSize
 );
 
 VOID PackageAddString(
-        PPACKAGE package,
-        PCHAR data
+    PPACKAGE package,
+    PCHAR data
 );
 
 VOID PackageAddWString(
-        PPACKAGE package,
-        PWCHAR data
+    PPACKAGE package,
+    PWCHAR data
 );
 
 // PackageAddBytes
 VOID PackageAddPad(
-        PPACKAGE package,
-        PCHAR data,
-        size_t dataSize
+    PPACKAGE package,
+    PCHAR data,
+    size_t dataSize
 );
 
 // PackageDestroy
 VOID PackageDestroy(
-        PPACKAGE package
+    PPACKAGE package
 );
 
 // PackageTransmit
 BOOL PackageTransmit(
-        PPACKAGE Package,
-        PVOID*   Response,
-        PSIZE_T  Size
+    PPACKAGE Package,
+    PVOID*   Response,
+    PSIZE_T  Size
 );
 
-// PackageTransmitError
 VOID PackageTransmitError(
-        UINT32 CommandID,
-        UINT32 ErrorCode
+    UINT32 CommandID,
+    UINT32 ErrorCode
 );
+
+#define PACKAGE_ERROR_WIN32         PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+#define PACKAGE_ERROR_NTSTATUS( s ) PackageTransmitError( CALLBACK_ERROR_WIN32, Instance.Win32.RtlNtStatusToDosError( s ) );
 
 #endif

@@ -305,7 +305,7 @@ VOID PivotPush()
                         break;
                     }
 
-                    CALLBACK_GETLASTERROR
+                    PACKAGE_ERROR_WIN32
                     break;
                 }
 

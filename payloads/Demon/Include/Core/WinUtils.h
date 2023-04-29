@@ -39,44 +39,94 @@ typedef struct _ANONPIPE
 #define MAX( a, b ) ( ( a ) > ( b ) ? ( a ) : ( b ) )
 #define MIN( a, b ) ( ( a ) < ( b ) ? ( a ) : ( b ) )
 
-DWORD    HashStringA( PCHAR String );
+DWORD HashStringA(
+    IN PCHAR String
+);
 
-PVOID    LdrFunctionAddr( HMODULE DllModuleBase, DWORD FunctionHash );
-PVOID    LdrModulePeb( DWORD hash );
-PVOID    LdrModuleLoad( LPSTR ModuleName );
+ULONG HashEx(
+    IN PVOID String,
+    IN ULONG Length,
+    IN BOOL  Upper
+);
 
-/*!
- * Starts a Process
- *
- * @param EnableWow64 start 32-bit/wow64 process
- * @param App App path
- * @param CmdLine Process to run
- * @param Flags Process Flags
- * @param ProcessInfo Process Information struct
- * @param Piped Send output back
- * @param AnonPipes Uses Anon pipe struct as default pipe. only works if Piped is to False
- * @brief Spawns a process with current set settings (ppid spoof, blockdll, token)
- * @return
- */
-BOOL     ProcessCreate( BOOL EnableWow64, LPWSTR App, LPWSTR CmdLine, DWORD Flags, PROCESS_INFORMATION* ProcessInfo, BOOL Piped, PANONPIPE AnonPipes );
-BOOL     ProcessIsWow( HANDLE hProcess );
-HANDLE   ProcessOpen( DWORD ProcessID, DWORD Access );
-NTSTATUS ProcessSnapShot( PSYSTEM_PROCESS_INFORMATION* Buffer, PSIZE_T Size );
-BOOL     ReadLocalFile( LPCWSTR FileName, PVOID* FileContent, PDWORD FileSize );
+PVOID LdrFunctionAddr(
+    IN PVOID Module,
+    IN ULONG   Hash
+);
 
-PCHAR    TokenGetUserDomain( HANDLE hToken, PUINT32 UserSize );
-BOOL     WinScreenshot( PVOID* ImagePointer, PSIZE_T ImageSize );
+PVOID LdrModulePeb(
+    IN DWORD hash
+);
 
-BOOL     AnonPipesInit( PANONPIPE AnonPipes );
-VOID     AnonPipesRead( PANONPIPE AnonPipes, UINT32 RequestID );
-VOID     AnonPipesClose( PANONPIPE AnonPipes );
+PVOID LdrModuleLoad(
+    IN LPSTR ModuleName
+);
 
-BOOL     PipeWrite( HANDLE Handle, PBUFFER Buffer );
-BOOL     PipeRead(  HANDLE Handle, PBUFFER Buffer );
+BOOL ProcessCreate(
+    IN  BOOL                 x86,
+    IN  LPWSTR               App,
+    IN  LPWSTR               CmdLine,
+    IN  DWORD                Flags,
+    OUT PROCESS_INFORMATION* ProcessInfo,
+    IN  BOOL                 Piped,
+    IN  PANONPIPE            AnonPipes
+);
 
-BOOL     BypassPatchAMSI( );
-ULONG    RandomNumber32( VOID );
-BOOL     RandomBool( VOID );
-UINT_PTR HashEx( LPVOID String, UINT_PTR Length, BOOL Upper );
+BOOL ProcessIsWow(
+    IN HANDLE hProcess
+);
+
+HANDLE ProcessOpen(
+    IN DWORD Pid,
+    IN DWORD Access
+);
+
+NTSTATUS ProcessSnapShot(
+    OUT PSYSTEM_PROCESS_INFORMATION* Buffer,
+    OUT PSIZE_T Size
+);
+
+BOOL ReadLocalFile(
+    IN  LPCWSTR FileName,
+    OUT PVOID*  FileContent,
+    OUT PDWORD  FileSize
+);
+
+BOOL WinScreenshot(
+    OUT PVOID*  ImagePointer,
+    OUT PSIZE_T ImageSize
+);
+
+BOOL AnonPipesInit(
+    OUT PANONPIPE AnonPipes
+);
+
+VOID AnonPipesRead(
+    IN PANONPIPE AnonPipes,
+    IN UINT32    RequestID
+);
+
+BOOL PipeWrite(
+    IN HANDLE Handle,
+    IN PBUFFER Buffer
+);
+
+BOOL PipeRead(
+    IN  HANDLE Handle,
+    OUT PBUFFER Buffer
+);
+
+BOOL BypassPatchAMSI(
+    VOID
+);
+
+ULONG RandomNumber32(
+    VOID
+);
+
+BOOL RandomBool(
+    VOID
+);
+
 
 #endif

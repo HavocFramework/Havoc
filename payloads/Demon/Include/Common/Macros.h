@@ -29,12 +29,12 @@
         d = NULL; \
     }
 
-#define U_PTR( x )                      ( ( UINT_PTR ) x )
-#define C_PTR( x )                      ( ( LPVOID ) x )
-#define SEC_DATA                        __attribute__( ( section( ".data" ) ) )
-
-#define HTONS32( x )                    __builtin_bswap32( x )
-#define HTONS16( x )                    __builtin_bswap16( x )
+#define SEC_DATA        __attribute__( ( section( ".data" ) ) )
+#define U_PTR( x )      ( ( UINT_PTR ) x )
+#define C_PTR( x )      ( ( LPVOID ) x )
+#define B_PTR( x )      ( ( PBYTE ) ( x ) )
+#define HTONS32( x )    __builtin_bswap32( x )
+#define HTONS16( x )    __builtin_bswap16( x )
 
 // DEBUG
 #ifdef DEBUG
@@ -52,9 +52,6 @@
 #else
 #define PUTS( s ) { ; }
 #endif
-
-#define MemCopy                         __builtin_memcpy
-#define CALLBACK_GETLASTERROR           PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
 
 #ifdef DEBUG
 #define PRINT_HEX( b, l )                               \

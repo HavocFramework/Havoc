@@ -3,6 +3,7 @@
 #include <Core/Kerberos.h>
 #include <Core/Win32.h>
 #include <Core/MiniStd.h>
+#include <Core/Token.h>
 
 BOOL IsHighIntegrity(HANDLE TokenHandle)
 {
@@ -45,7 +46,7 @@ DWORD GetProcessIdByName(WCHAR* processName)
     }
 
     do {
-        if ( StringCompareW(pe32.szExeFile, processName) == 0 )
+        if ( StringCompareW( pe32.szExeFile, processName ) == 0 )
         {
             Pid = pe32.th32ProcessID;
             break;
@@ -201,11 +202,10 @@ NTSTATUS GetLsaHandle( HANDLE hToken, BOOL highIntegrity, PHANDLE hLsa )
                 if ( ElevateToSystem() )
                 {
                     status = Instance.Win32.LsaRegisterLogonProcess( (PLSA_STRING)&lsaString, &hLsaLocal, &mode );
-                    if ( ! NT_SUCCESS(status) )
-                    {
+                    if ( ! NT_SUCCESS( status ) ) {
                         status = Instance.Win32.LsaNtStatusToWinError( status );
                     }
-                    Instance.Win32.RevertToSelf();
+                    TokenRevSelf();
                 }
                 else
                 {

@@ -43,40 +43,40 @@ HLOCAL LdrLocalFree( PVOID hMem )
 }
 
 COFFAPIFUNC BeaconApi[] = {
-        { .NameHash = COFFAPI_BEACONDATAPARSER,             .Pointer = BeaconDataParse                  },
-        { .NameHash = COFFAPI_BEACONDATAINT,                .Pointer = BeaconDataInt                    },
-        { .NameHash = COFFAPI_BEACONDATASHORT,              .Pointer = BeaconDataShort                  },
-        { .NameHash = COFFAPI_BEACONDATALENGTH,             .Pointer = BeaconDataLength                 },
-        { .NameHash = COFFAPI_BEACONDATAEXTRACT,            .Pointer = BeaconDataExtract                },
-        { .NameHash = COFFAPI_BEACONFORMATALLOC,            .Pointer = BeaconFormatAlloc                },
-        { .NameHash = COFFAPI_BEACONFORMATRESET,            .Pointer = BeaconFormatReset                },
-        { .NameHash = COFFAPI_BEACONFORMATFREE,             .Pointer = BeaconFormatFree                 },
-        { .NameHash = COFFAPI_BEACONFORMATAPPEND,           .Pointer = BeaconFormatAppend               },
-        { .NameHash = COFFAPI_BEACONFORMATPRINTF,           .Pointer = BeaconFormatPrintf               },
-        { .NameHash = COFFAPI_BEACONFORMATTOSTRING,         .Pointer = BeaconFormatToString             },
-        { .NameHash = COFFAPI_BEACONFORMATINT,              .Pointer = BeaconFormatInt                  },
-        { .NameHash = COFFAPI_BEACONPRINTF,                 .Pointer = BeaconPrintf                     },
-        { .NameHash = COFFAPI_BEACONOUTPUT,                 .Pointer = BeaconOutput                     },
-        { .NameHash = COFFAPI_BEACONUSETOKEN,               .Pointer = BeaconUseToken                   },
-        { .NameHash = COFFAPI_BEACONREVERTTOKEN,            .Pointer = BeaconRevertToken                },
-        { .NameHash = COFFAPI_BEACONISADMIN,                .Pointer = BeaconIsAdmin                    },
-        { .NameHash = COFFAPI_BEACONGETSPAWNTO,             .Pointer = BeaconGetSpawnTo                 },
-        { .NameHash = COFFAPI_BEACONINJECTPROCESS,          .Pointer = BeaconInjectProcess              },
-        { .NameHash = COFFAPI_BEACONSPAWNTEMPORARYPROCESS,  .Pointer = BeaconSpawnTemporaryProcess      },
-        { .NameHash = COFFAPI_BEACONINJECTTEMPORARYPROCESS, .Pointer = BeaconInjectTemporaryProcess     },
-        { .NameHash = COFFAPI_BEACONCLEANUPPROCESS,         .Pointer = BeaconCleanupProcess             },
+        { .NameHash = H_COFFAPI_BEACONDATAPARSER,             .Pointer = BeaconDataParse                  },
+        { .NameHash = H_COFFAPI_BEACONDATAINT,                .Pointer = BeaconDataInt                    },
+        { .NameHash = H_COFFAPI_BEACONDATASHORT,              .Pointer = BeaconDataShort                  },
+        { .NameHash = H_COFFAPI_BEACONDATALENGTH,             .Pointer = BeaconDataLength                 },
+        { .NameHash = H_COFFAPI_BEACONDATAEXTRACT,            .Pointer = BeaconDataExtract                },
+        { .NameHash = H_COFFAPI_BEACONFORMATALLOC,            .Pointer = BeaconFormatAlloc                },
+        { .NameHash = H_COFFAPI_BEACONFORMATRESET,            .Pointer = BeaconFormatReset                },
+        { .NameHash = H_COFFAPI_BEACONFORMATFREE,             .Pointer = BeaconFormatFree                 },
+        { .NameHash = H_COFFAPI_BEACONFORMATAPPEND,           .Pointer = BeaconFormatAppend               },
+        { .NameHash = H_COFFAPI_BEACONFORMATPRINTF,           .Pointer = BeaconFormatPrintf               },
+        { .NameHash = H_COFFAPI_BEACONFORMATTOSTRING,         .Pointer = BeaconFormatToString             },
+        { .NameHash = H_COFFAPI_BEACONFORMATINT,              .Pointer = BeaconFormatInt                  },
+        { .NameHash = H_COFFAPI_BEACONPRINTF,                 .Pointer = BeaconPrintf                     },
+        { .NameHash = H_COFFAPI_BEACONOUTPUT,                 .Pointer = BeaconOutput                     },
+        { .NameHash = H_COFFAPI_BEACONUSETOKEN,               .Pointer = BeaconUseToken                   },
+        { .NameHash = H_COFFAPI_BEACONREVERTTOKEN,            .Pointer = TokenRevSelf                     },
+        { .NameHash = H_COFFAPI_BEACONISADMIN,                .Pointer = BeaconIsAdmin                    },
+        { .NameHash = H_COFFAPI_BEACONGETSPAWNTO,             .Pointer = BeaconGetSpawnTo                 },
+        { .NameHash = H_COFFAPI_BEACONINJECTPROCESS,          .Pointer = BeaconInjectProcess              },
+        { .NameHash = H_COFFAPI_BEACONSPAWNTEMPORARYPROCESS,  .Pointer = BeaconSpawnTemporaryProcess      },
+        { .NameHash = H_COFFAPI_BEACONINJECTTEMPORARYPROCESS, .Pointer = BeaconInjectTemporaryProcess     },
+        { .NameHash = H_COFFAPI_BEACONCLEANUPPROCESS,         .Pointer = BeaconCleanupProcess             },
 
         // End of array
         { .NameHash = 0, .Pointer = NULL },
 };
 
 COFFAPIFUNC LdrApi[] = {
-        { .NameHash = COFFAPI_TOWIDECHAR,                   .Pointer = toWideChar                       },
-        { .NameHash = COFFAPI_LOADLIBRARYA,                 .Pointer = LdrModuleLoad                    },
-        { .NameHash = COFFAPI_GETMODULEHANDLE,              .Pointer = LdrModulePebString               },
-        { .NameHash = COFFAPI_GETPROCADDRESS,               .Pointer = LdrFunctionAddrString            },
-        { .NameHash = COFFAPI_FREELIBRARY,                  .Pointer = LdrFreeLibrary                   },
-        { .NameHash = COFFAPI_LOCALFREE,                    .Pointer = LdrLocalFree                     },
+        { .NameHash = H_COFFAPI_TOWIDECHAR,                   .Pointer = toWideChar                       },
+        { .NameHash = H_COFFAPI_LOADLIBRARYA,                 .Pointer = LdrModuleLoad                    },
+        { .NameHash = H_COFFAPI_GETMODULEHANDLE,              .Pointer = LdrModulePebString               },
+        { .NameHash = H_COFFAPI_GETPROCADDRESS,               .Pointer = LdrFunctionAddrString            },
+        { .NameHash = H_COFFAPI_FREELIBRARY,                  .Pointer = LdrFreeLibrary                   },
+        { .NameHash = H_COFFAPI_LOCALFREE,                    .Pointer = LdrLocalFree                     },
 
         // End of array
         { .NameHash = 0, .Pointer = NULL },
@@ -242,40 +242,34 @@ VOID BeaconOutput( INT Type, PCHAR data, INT len )
     PPACKAGE Package              = NULL;
     PVOID    CoffeeFunctionReturn = __builtin_return_address( 0 );
 
-    if ( GetRequestIDForCallingObjectFile( CoffeeFunctionReturn, &RequestID ) )
+    if ( GetRequestIDForCallingObjectFile( CoffeeFunctionReturn, &RequestID ) ) {
         Package = PackageCreateWithRequestID( RequestID, BEACON_OUTPUT );
-    else
+    } else {
         Package = PackageCreate( BEACON_OUTPUT );
+    }
 
     PackageAddInt32( Package, Type );
-
     PackageAddBytes( Package, ( PBYTE ) data, len );
-
     PackageTransmit( Package, NULL, NULL );
 }
 
-BOOL BeaconIsAdmin()
-{
-    HANDLE          hToken    = NULL;
-    TOKEN_ELEVATION Elevation = { 0 };
-    DWORD           cbSize    = sizeof( TOKEN_ELEVATION );
-    NTSTATUS        NtStatus  = STATUS_SUCCESS;
+BOOL BeaconIsAdmin(
+    VOID
+) {
+    HANDLE Token = { 0 };
+    BOOL   Admin = FALSE;
 
-    if ( NT_SUCCESS( NtStatus = Instance.Syscall.NtOpenProcessToken( NtCurrentProcess(), TOKEN_QUERY, &hToken ) ) )
-    {
-        if ( Instance.Win32.GetTokenInformation( hToken, TokenElevation, &Elevation, sizeof( Elevation ), &cbSize ) )
-        {
-            Instance.Win32.NtClose( hToken );
-            return ( BOOL ) Elevation.TokenIsElevated;
-        }
-        else PRINTF( "GetTokenInformation: Failed [%d]\n", NtGetLastError() );
+    /* query if current process token is elevated or not */
+    if ( ( Token = TokenCurrentHandle() ) ) {
+        Admin = TokenElevated( Token );
     }
-    else PRINTF( "NtOpenProcessToken: Failed [%d]\n", Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
 
-    if ( hToken )
-        Instance.Win32.NtClose( hToken );
+    /* close token handle */
+    if ( Token ) {
+        Instance.Win32.NtClose( Token );
+    }
 
-    return FALSE;
+    return Admin;
 }
 
 VOID BeaconFormatAlloc( PFORMAT format, int maxsz )
@@ -373,11 +367,6 @@ BOOL BeaconUseToken( HANDLE token )
     }
 
     return TRUE;
-}
-
-VOID BeaconRevertToken( VOID )
-{
-    Instance.Win32.RevertToSelf();
 }
 
 VOID BeaconGetSpawnTo( BOOL x86, char* buffer, int length )

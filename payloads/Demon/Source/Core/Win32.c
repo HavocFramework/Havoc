@@ -1,7 +1,3 @@
-/*
-    All custom win32 apis here in this file
-*/
-
 #include <Core/Win32.h>
 
 #include <ntstatus.h>

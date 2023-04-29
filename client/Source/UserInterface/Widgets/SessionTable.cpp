@@ -34,32 +34,29 @@ void HavocNamespace::UserInterface::Widgets::SessionTable::setupUi(QWidget *Form
         "}"
     );
 
-    TitleAgentID     = new QTableWidgetItem( "ID" );
-    TitleExternal    = new QTableWidgetItem( "External" );
-    TitleInternal    = new QTableWidgetItem( "Internal" );
-    TitleUser        = new QTableWidgetItem( "User" );
-    TitleComputer    = new QTableWidgetItem( "Computer" );
-    TitleOperating   = new QTableWidgetItem( "OS" );
-    TitleProcess     = new QTableWidgetItem( "Process" );
-    TitleProcessId   = new QTableWidgetItem( "PID" );
-    //TitleArch        = new QTableWidgetItem( "Arch" );
-    TitleLast        = new QTableWidgetItem( "Last" );
-    TitleHealth      = new QTableWidgetItem( "Health" );
+    TitleAgentID   = new QTableWidgetItem( "ID"       );
+    TitleExternal  = new QTableWidgetItem( "External" );
+    TitleInternal  = new QTableWidgetItem( "Internal" );
+    TitleUser      = new QTableWidgetItem( "User"     );
+    TitleComputer  = new QTableWidgetItem( "Computer" );
+    TitleOperating = new QTableWidgetItem( "OS"       );
+    TitleProcess   = new QTableWidgetItem( "Process"  );
+    TitleProcessId = new QTableWidgetItem( "PID"      );
+    TitleLast      = new QTableWidgetItem( "Last"     );
+    TitleHealth    = new QTableWidgetItem( "Health"   );
 
-    SessionTableWidget->setHorizontalHeaderItem( 0, TitleAgentID );
-    SessionTableWidget->setHorizontalHeaderItem( 1, TitleExternal );
-    SessionTableWidget->setHorizontalHeaderItem( 2, TitleInternal );
-    SessionTableWidget->setHorizontalHeaderItem( 3, TitleUser );
-    SessionTableWidget->setHorizontalHeaderItem( 4, TitleComputer );
+    SessionTableWidget->setHorizontalHeaderItem( 0, TitleAgentID   );
+    SessionTableWidget->setHorizontalHeaderItem( 1, TitleExternal  );
+    SessionTableWidget->setHorizontalHeaderItem( 2, TitleInternal  );
+    SessionTableWidget->setHorizontalHeaderItem( 3, TitleUser      );
+    SessionTableWidget->setHorizontalHeaderItem( 4, TitleComputer  );
     SessionTableWidget->setHorizontalHeaderItem( 5, TitleOperating );
-    SessionTableWidget->setHorizontalHeaderItem( 6, TitleProcess );
+    SessionTableWidget->setHorizontalHeaderItem( 6, TitleProcess   );
     SessionTableWidget->setHorizontalHeaderItem( 7, TitleProcessId );
-    //SessionTableWidget->setHorizontalHeaderItem( 8, TitleArch );
-    SessionTableWidget->setHorizontalHeaderItem( 8, TitleLast );
-    SessionTableWidget->setHorizontalHeaderItem( 9, TitleHealth );
+    SessionTableWidget->setHorizontalHeaderItem( 8, TitleLast      );
+    SessionTableWidget->setHorizontalHeaderItem( 9, TitleHealth    );
     SessionTableWidget->horizontalHeader()->resizeSection( 5, 150 );
 
-    SessionTableWidget->setObjectName( QString::fromUtf8( "tableWidget" ) );
     SessionTableWidget->setEnabled( true );
     SessionTableWidget->setShowGrid( false );
     SessionTableWidget->setSortingEnabled( false );
@@ -68,10 +65,9 @@ void HavocNamespace::UserInterface::Widgets::SessionTable::setupUi(QWidget *Form
     SessionTableWidget->horizontalHeader()->setVisible( true );
     SessionTableWidget->setSelectionBehavior( QAbstractItemView::SelectRows );
     SessionTableWidget->setContextMenuPolicy( Qt::CustomContextMenu );
-    SessionTableWidget->horizontalHeader()->setSectionResizeMode( QHeaderView::Stretch );
-    SessionTableWidget->verticalHeader()->setVisible(false);
-    SessionTableWidget->verticalHeader()->setStretchLastSection( false );
-    SessionTableWidget->verticalHeader()->setDefaultSectionSize( 12 );
+    SessionTableWidget->horizontalHeader()->setSectionResizeMode( QHeaderView::ResizeMode::Stretch );
+    SessionTableWidget->horizontalHeader()->setStretchLastSection( true );
+    SessionTableWidget->verticalHeader()->setVisible( false );
     SessionTableWidget->setFocusPolicy( Qt::NoFocus );
 
     SessionTableWidget->horizontalHeaderItem( 0 )->setSizeHint( QSize( 0, 0 ) );
@@ -85,43 +81,43 @@ void HavocNamespace::UserInterface::Widgets::SessionTable::setupUi(QWidget *Form
 
 void HavocNamespace::UserInterface::Widgets::SessionTable::NewSessionItem( Util::SessionItem item ) const
 {
-    for ( auto& session : HavocX::Teamserver.Sessions )
-    {
-        if ( session.Name.compare( item.Name ) == 0 )
-        {
-            // it seems that a session with that name already exists. do not add
+    /* check if the session already exists */
+    for ( auto& session : HavocX::Teamserver.Sessions ) {
+        if ( session.Name.compare( item.Name ) == 0 ) {
             return;
         }
     }
 
     HavocX::Teamserver.Sessions.push_back( item );
 
-    if ( SessionTableWidget->rowCount() < 1 )
+    if ( SessionTableWidget->rowCount() < 1 ) {
         SessionTableWidget->setRowCount( 1 );
-    else
+    } else {
         SessionTableWidget->setRowCount( SessionTableWidget->rowCount() + 1 );
+    }
 
-    const bool isSortingEnabled = SessionTableWidget->isSortingEnabled();
+    auto isSortingEnabled = SessionTableWidget->isSortingEnabled();
+
     SessionTableWidget->setSortingEnabled( false );
 
-    auto *item_ID        = new QTableWidgetItem();
-    auto *item_External  = new QTableWidgetItem();
-    auto *item_Internal  = new QTableWidgetItem();
-    auto *item_User      = new QTableWidgetItem();
-    auto *item_Computer  = new QTableWidgetItem();
-    auto *item_OS        = new QTableWidgetItem();
-    auto *item_Process   = new QTableWidgetItem();
-    auto *item_ProcessID = new QTableWidgetItem();
-    //auto *item_Arch      = new QTableWidgetItem();
-    auto *item_Last      = new QTableWidgetItem();
-    auto *item_Health    = new QTableWidgetItem();
-    auto Icon            = QIcon();
+    auto item_ID        = new QTableWidgetItem();
+    auto item_External  = new QTableWidgetItem();
+    auto item_Internal  = new QTableWidgetItem();
+    auto item_User      = new QTableWidgetItem();
+    auto item_Computer  = new QTableWidgetItem();
+    auto item_OS        = new QTableWidgetItem();
+    auto item_Process   = new QTableWidgetItem();
+    auto item_ProcessID = new QTableWidgetItem();
+    auto item_Last      = new QTableWidgetItem();
+    auto item_Health    = new QTableWidgetItem();
+    auto Icon           = QIcon();
 
-    if ( item.Elevated.compare( "true" ) == 0 )
-    {
+    if ( item.Elevated.compare( "true" ) == 0 ) {
         item_ID->setForeground( QColor( 255, 85, 85 ) );
         Icon = WinVersionIcon( item.OS, true );
-    } else Icon = WinVersionIcon( item.OS, false );
+    } else {
+        Icon = WinVersionIcon( item.OS, false );
+    }
 
     item_ID->setText( item.Name );
     item_ID->setIcon( Icon );
@@ -164,11 +160,6 @@ void HavocNamespace::UserInterface::Widgets::SessionTable::NewSessionItem( Util:
     item_ProcessID->setFlags( item_ProcessID->flags() ^ Qt::ItemIsEditable );
     SessionTableWidget->setItem( SessionTableWidget->rowCount()-1, 7, item_ProcessID );
 
-    //item_Arch->setText( item.Arch );
-    //item_Arch->setTextAlignment( Qt::AlignCenter );
-    //item_Arch->setFlags( item_Arch->flags() ^ Qt::ItemIsEditable );
-    //SessionTableWidget->setItem( SessionTableWidget->rowCount()-1, 8, item_Arch );
-
     item_Last->setText( item.Last );
     item_Last->setTextAlignment( Qt::AlignCenter );
     item_Last->setFlags( item_Last->flags() ^ Qt::ItemIsEditable );
@@ -195,13 +186,10 @@ void HavocNamespace::UserInterface::Widgets::SessionTable::NewSessionItem( Util:
             Session.InteractedWidget->TeamserverName = this->TeamserverName;
             Session.InteractedWidget->setupUi( new QWidget );
 
-            if ( item.PivotParent.size() > 0 )
-            {
+            if ( item.PivotParent.size() > 0 ) {
                 PivotStream = "[Pivot: " + item.PivotParent + Util::ColorText::Cyan( "-<>-<>-" ) + item.Name + "]";
                 HavocX::Teamserver.TabSession->SessionGraphWidget->GraphPivotNodeAdd( item.PivotParent, item );
-            }
-            else
-            {
+            } else {
                 PivotStream = "[Pivot: "+ Util::ColorText::Cyan( "Direct" ) +"]";
                 HavocX::Teamserver.TabSession->SessionGraphWidget->GraphNodeAdd( item );
             }
@@ -222,10 +210,10 @@ void HavocNamespace::UserInterface::Widgets::SessionTable::NewSessionItem( Util:
 
 void UserInterface::Widgets::SessionTable::ChangeSessionValue( QString DemonID, int key, QString value )
 {
-    for ( int i = 0; i < SessionTableWidget->rowCount(); i++ )
-    {
-        if ( SessionTableWidget->item( i, 0 )->text() == DemonID )
+    for ( int i = 0; i < SessionTableWidget->rowCount(); i++ ) {
+        if ( SessionTableWidget->item( i, 0 )->text() == DemonID ) {
             SessionTableWidget->item( i, key )->setText( value );
+        }
     }
 }
 
