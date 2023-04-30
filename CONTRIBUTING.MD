@@ -9,3 +9,7 @@
 		* `git branch -a`
 	3. Confirm the upstream branch you'll be committing to and make a push:
 		* `git push -set-upstream origin <new_branch_name>`
+
+2023-05-01 Kali linux user need (fix error)
+1.)  sudo apt install libqt5websockets5-dev
+2.)  sudo make
