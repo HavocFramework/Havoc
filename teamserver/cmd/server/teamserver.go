@@ -120,6 +120,7 @@ func (t *Teamserver) Start() {
 		}
 	})
 
+	// start the teamserver websocket connection
 	go func(Host, Port string) {
 		var (
 			certPath = TeamserverPath + "/data/server.cert"
@@ -153,6 +154,7 @@ func (t *Teamserver) Start() {
 		}
 
 		ServerFinished <- true
+
 		os.Exit(0)
 	}(t.Flags.Server.Host, t.Flags.Server.Port)
 
@@ -166,9 +168,7 @@ func (t *Teamserver) Start() {
 
 	/* if we specified a webhook then lets use it. */
 	if t.Profile.Config.WebHook != nil {
-
 		if t.Profile.Config.WebHook.Discord != nil {
-
 			var (
 				AvatarUrl string
 				UserName  string
@@ -185,9 +185,7 @@ func (t *Teamserver) Start() {
 			if len(t.Profile.Config.WebHook.Discord.WebHook) > 0 {
 				t.WebHooks.SetDiscord(AvatarUrl, UserName, t.Profile.Config.WebHook.Discord.WebHook)
 			}
-
 		}
-
 	}
 
 	// start teamserver service
@@ -324,26 +322,17 @@ func (t *Teamserver) Start() {
 	}
 
 	if ListenerCount > 0 {
-
 		var TotalCount = 0
-
 		if DbName := t.DB.ListenerNames(); len(DbName) > 0 {
-
 			TotalCount = ListenerCount
-
 			for _, name := range DbName {
-
 				for _, listener := range t.Listeners {
-
 					if listener.Name == name {
 						TotalCount--
 						break
 					}
-
 				}
-
 			}
-
 		}
 
 		if TotalCount > 0 {
@@ -634,31 +623,37 @@ func (t *Teamserver) ClientAuthenticate(pk packager.Package) bool {
 					var (
 						UserPassword string
 						UserName     string
+						PassHash     = sha3.New256()
+						UserFound    = false
 					)
+
+					// search for operator
 					for _, User := range t.Profile.Config.Operators.Users {
 						if User.Name == pk.Head.User {
-							logger.Debug("Found User: " + User.Name)
 							UserName = User.Name
-							if User.Hashed {
-								UserPassword = User.Password
-								break
-							} else {
-								var hash = sha3.New256()
-								hash.Write([]byte(User.Password))
-								UserPassword = hex.EncodeToString(hash.Sum(nil))
-								break
-							}
+							UserFound = true
+
+							PassHash.Write([]byte(User.Password))
+							UserPassword = hex.EncodeToString(PassHash.Sum(nil))
+
+							logger.Debug("Found User: " + User.Name)
 						}
 					}
-					if pk.Body.Info["Password"].(string) == UserPassword {
-						logger.Debug("User " + colors.Red(UserName) + " is authenticated")
-						return true
+
+					// check if the operator was even found
+					if UserFound {
+						if pk.Body.Info["Password"].(string) == UserPassword {
+							logger.Debug("User " + colors.Red(UserName) + " is authenticated")
+							return true
+						}
+					} else {
+						logger.Debug("User not found")
 					}
-					logger.Debug("User is not authenticated...")
-					return false
-				} else {
-					return false
+
+					logger.Debug("User not authenticated")
 				}
+
+				return false
 			} else {
 				return false
 			}
