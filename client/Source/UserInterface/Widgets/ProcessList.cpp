@@ -270,8 +270,19 @@ void HavocNamespace::UserInterface::Widgets::ProcessList::NewTableProcess(std::m
     Arch->setFlags(Arch->flags() ^ Qt::ItemIsEditable);
     this->ProcessTable->setItem(this->ProcessTable->rowCount()-1, 4, Arch);
 
+    // TODO: Identify source of Null-chars being parsed into ProcessInfo["User"]
+    // This is a band-aid to null char rendering symbols in the User string
     auto User = new QTableWidgetItem();
-    User->setText(ProcessInfo["User"]);
+    QString userText = ProcessInfo["User"];
+    QString cleanedUserText;
+
+    for (const QChar &c : userText) {
+        if (!c.isNull()) {
+            cleanedUserText.append(c);
+        }
+    }
+
+    User->setText(cleanedUserText);
     User->setFlags(User->flags() ^ Qt::ItemIsEditable);
     this->ProcessTable->setItem(this->ProcessTable->rowCount()-1, 5, User);
 }
