@@ -4,7 +4,9 @@
 
 #include <windows.h>
 
+#if _WIN64
 VOID WINAPI CfgAddressAdd( LPVOID ImageBase, LPVOID Function );
+#endif
 VOID        SleepObf( );
 
 #endif

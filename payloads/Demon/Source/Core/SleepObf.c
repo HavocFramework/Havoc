@@ -11,6 +11,8 @@
 #include <rpcndr.h>
 #include <ntstatus.h>
 
+#if _WIN64
+
 typedef struct
 {
     DWORD	Length;
@@ -444,6 +446,8 @@ VOID EkkoObf( DWORD TimeOut )
     }
 }
 
+#endif
+
 UINT32 SleepTime(
     VOID
 ) {
@@ -524,6 +528,8 @@ VOID SleepObf(
         Technique = 0;
     }
 
+#if _WIN64
+
     switch ( Technique )
     {
         case 1: // Austins Sleep Obf
@@ -558,5 +564,13 @@ VOID SleepObf(
             SpoofFunc( Instance.Win32.WaitForSingleObjectEx, Instance.Modules.KernelBase, IMAGE_SIZE( Instance.Modules.KernelBase ), NtCurrentProcess(), TimeOut, FALSE );
         }
     }
+
+#else
+
+    // TODO: add support for sleep obf and spoofing
+
+    Instance.Win32.WaitForSingleObjectEx( NtCurrentProcess(), TimeOut, FALSE );
+
+#endif
 
 }

@@ -157,7 +157,7 @@ BOOL ThreadCreate( DX_THREAD CreateThreadMethode, HANDLE hProcess, LPVOID EntryP
             NT_PROC_THREAD_ATTRIBUTE_LIST ThreadAttr = { 0 };
             CLIENT_ID                     ClientId   = { 0 };
 
-            MemSet( &ThreadAttr, 0, sizeof( PROC_THREAD_ATTRIBUTE_NUM ) );
+            MemSet( &ThreadAttr, 0, sizeof( NT_PROC_THREAD_ATTRIBUTE_LIST ) );
             MemSet( &ClientId, 0, sizeof( CLIENT_ID ) );
 
             ThreadAttr.Entry.Attribute  = ProcThreadAttributeValue( PsAttributeClientId, TRUE, FALSE, FALSE );
@@ -351,8 +351,6 @@ DWORD GetReflectiveLoaderOffset( PVOID ReflectiveLdrAddr )
     return 0;
 }
 
-#ifdef _WIN64
-
 DWORD GetPeArch( PVOID PeBytes )
 {
     PIMAGE_NT_HEADERS NtHeader = NULL;
@@ -371,5 +369,3 @@ DWORD GetPeArch( PVOID PeBytes )
 
     return DllArch;
 }
-
-#endif /* _WIN64 */

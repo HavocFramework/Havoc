@@ -7,8 +7,8 @@ typedef struct {
     UINT32  RequestID;
     UINT32  CommandID;
     PVOID   Buffer;
-    size_t  Length;
-    size_t  Size;
+    SIZE_T  Length;
+    SIZE_T  Size;
     BOOL    Encrypt;
     BOOL    Destroy; /* destroy this package after Transmit */
 } PACKAGE, *PPACKAGE;
@@ -41,7 +41,7 @@ VOID PackageAddPtr(
 VOID PackageAddBytes(
     PPACKAGE package,
     PBYTE data,
-    size_t dataSize
+    SIZE_T dataSize
 );
 
 VOID PackageAddString(
@@ -58,7 +58,7 @@ VOID PackageAddWString(
 VOID PackageAddPad(
     PPACKAGE package,
     PCHAR data,
-    size_t dataSize
+    SIZE_T dataSize
 );
 
 // PackageDestroy

@@ -5,6 +5,8 @@
 
 // NOTE: this code is taken from AceLdr by kyleavery. So huge credit goes to him. https://github.com/kyleavery/AceLdr
 
+#if _WIN64
+
 typedef struct
 {
     const PVOID trampoline;
@@ -28,5 +30,7 @@ static ULONG_PTR Spoof();
 #define SpoofFunc(...) SPOOF_MACRO_CHOOSER(__VA_ARGS__)(__VA_ARGS__)
 
 PVOID SpoofRetAddr( PVOID function, HANDLE module, ULONG size, PVOID a, PVOID b, PVOID c, PVOID d, PVOID e, PVOID f, PVOID g, PVOID h );
+
+#endif
 
 #endif

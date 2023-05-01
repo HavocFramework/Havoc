@@ -3290,6 +3290,8 @@ VOID CommandExit( PPARSER Parser )
     if ( Instance.WSAWasInitialised )
         Instance.Win32.WSACleanup();
 
+#if _WIN64
+
     /* NOTE:
      *      Credit goes to Austin (@ilove2pwn_) for sharing this code with me.
      * TODO:
@@ -3317,4 +3319,16 @@ VOID CommandExit( PPARSER Parser )
 
     RopExit.ContextFlags = CONTEXT_FULL;
     Instance.Syscall.NtContinue( &RopExit, FALSE );
+
+#else
+
+    // TODO: cleanup memory
+
+    if ( ExitMethod == 1 )
+        Instance.Win32.RtlExitUserThread( STATUS_SUCCESS );
+
+    else if ( ExitMethod == 2 )
+        Instance.Win32.RtlExitUserProcess( STATUS_SUCCESS );
+
+#endif
 }

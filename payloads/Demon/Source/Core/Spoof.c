@@ -1,6 +1,8 @@
 #include <Core/Spoof.h>
 #include <Core/MiniStd.h>
 
+#if _WIN64
+
 PVOID FindGadget( LPBYTE Module, ULONG Size )
 {
     for ( int x = 0; x < Size; x++ )
@@ -30,3 +32,5 @@ PVOID SpoofRetAddr( PVOID Function, HANDLE Module, ULONG Size, PVOID a, PVOID b,
 
     return NULL;
 }
+
+#endif

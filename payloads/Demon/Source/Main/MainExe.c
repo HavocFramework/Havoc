@@ -7,3 +7,11 @@ INT WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
     DemonMain( NULL );
     return 0;
 }
+
+
+int main()
+{
+    PUTS("main")
+    DemonMain( NULL );
+    return 0;
+}
