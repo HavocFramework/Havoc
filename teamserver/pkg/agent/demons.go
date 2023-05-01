@@ -3026,7 +3026,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 			Process.PPID = strconv.Itoa(Parser.ParseInt32())
 			Process.Session = strconv.Itoa(Parser.ParseInt32())
 			Process.Threads = strconv.Itoa(Parser.ParseInt32())
-			Process.User = Parser.ParseString()
+			Process.User = Parser.ParseUTF16String()
 
 			var ProcessArch = "x64"
 			if Process.IsWow == win32.TRUE {
