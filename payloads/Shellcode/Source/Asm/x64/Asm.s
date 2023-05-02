@@ -26,14 +26,14 @@ section .text$F
            xor rbx, rbx
            mov ebx, 0x5A4D
            inc rcx
-           cmp bx,  word ds:[ rcx ]
+           cmp bx,  [ rcx ]
            jne loop
            xor rax, rax
            mov ax,  [ rcx + 0x3C ]
            add rax, rcx
            xor rbx, rbx
            add bx,  0x4550
-           cmp bx,  word ds:[ rax ]
+           cmp bx,  [ rax ]
            jne loop
            mov rax, rcx
        ret
