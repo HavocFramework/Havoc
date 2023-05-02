@@ -4,7 +4,11 @@
 
 #include <windows.h>
 
-VOID WINAPI CfgAddressAdd( LPVOID ImageBase, LPVOID Function );
-VOID        SleepObf( );
+#define SLEEPOBF_NO_OBF  0x0
+#define SLEEPOBF_EKKO    0x1
+#define SLEEPOBF_ZILEAN  0x2
+#define SLEEPOBF_FOLIAGE 0x3
+
+VOID SleepObf( );
 
 #endif

