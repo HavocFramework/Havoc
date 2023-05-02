@@ -590,16 +590,13 @@ func (b *Builder) PatchConfig() ([]byte, error) {
 			Port, err = strconv.Atoi(Config.Config.PortConn)
 		)
 
-		if err != nil {
-			return nil, err
-		}
-
-		if Port == 0 {
+		if Config.Config.PortConn != "" && err != nil {
+			return nil, errors.New("Failed to parse the PortConn: " + Config.Config.PortConn)
+		} else  if Config.Config.PortConn == "" {
 			Port, err = strconv.Atoi(Config.Config.PortBind)
-		}
-
-		if err != nil {
-			return nil, err
+			if err != nil {
+				return nil, errors.New("Failed to parse the PortBind: " + Config.Config.PortBind)
+			}
 		}
 
 		DemonConfig.AddInt64(Config.Config.KillDate)

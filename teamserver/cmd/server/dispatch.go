@@ -820,22 +820,27 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 					}
 
 					var Ext string
+					if Arch == "x64" {
+						Ext = ".x64"
+					} else {
+						Ext = ".x86"
+					}
 					logger.Debug(Format)
 					if Format == "Windows Exe" {
 						PayloadBuilder.SetFormat(builder.FILETYPE_WINDOWS_EXE)
-						Ext = ".exe"
+						Ext += ".exe"
 					} else if Format == "Windows Service Exe" {
 						PayloadBuilder.SetFormat(builder.FILETYPE_WINDOWS_SERVICE_EXE)
-						Ext = ".exe"
+						Ext += ".exe"
 					} else if Format == "Windows Dll" {
 						PayloadBuilder.SetFormat(builder.FILETYPE_WINDOWS_DLL)
-						Ext = ".dll"
+						Ext += ".dll"
 					} else if Format == "Windows Reflective Dll" {
 						PayloadBuilder.SetFormat(builder.FILETYPE_WINDOWS_REFLECTIVE_DLL)
-						Ext = ".dll"
+						Ext += ".dll"
 					} else if Format == "Windows Shellcode" {
 						PayloadBuilder.SetFormat(builder.FILETYPE_WINDOWS_RAW_BINARY)
-						Ext = ".bin"
+						Ext += ".bin"
 					} else {
 						logger.Error("Unknown Format: " + Format)
 						return
