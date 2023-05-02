@@ -19,7 +19,7 @@ DLLEXPORT VOID Start(  )
 }
 
 /* this is our entrypoint for the Dll (also for shellcode) */
-BOOL WINAPI DllMain(
+DLLEXPORT BOOL WINAPI DllMain(
     IN     HINSTANCE hDllBase,
     IN     DWORD     Reason,
     IN OUT LPVOID    Reserved

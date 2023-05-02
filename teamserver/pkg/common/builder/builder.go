@@ -266,33 +266,30 @@ func (b *Builder) Build() bool {
 	switch b.FileType {
 	case FILETYPE_WINDOWS_EXE:
 		logger.Debug("Compile exe")
-		// TODO: make the -e flag work for x86
 		if b.config.Arch == ARCHITECTURE_X64 {
 			CompileCommand += "-D MAIN_THREADED -e WinMain "
 		} else {
-			CompileCommand += "-D MAIN_THREADED "
+			CompileCommand += "-D MAIN_THREADED -e _WinMain "
 		}
 		CompileCommand += b.compilerOptions.Main.Exe + " "
 		break
 
 	case FILETYPE_WINDOWS_SERVICE_EXE:
 		logger.Debug("Compile Service exe")
-		// TODO: make the -e flag work for x86
 		if b.config.Arch == ARCHITECTURE_X64 {
 			CompileCommand += "-D MAIN_THREADED -D SVC_EXE -lntdll -e WinMain "
 		} else {
-			CompileCommand += "-D MAIN_THREADED -D SVC_EXE -lntdll "
+			CompileCommand += "-D MAIN_THREADED -D SVC_EXE -lntdll -e _WinMain "
 		}
 		CompileCommand += b.compilerOptions.Main.Svc + " "
 		break
 
 	case FILETYPE_WINDOWS_DLL:
 		logger.Debug("Compile dll")
-		// TODO: make the -e flag work for x86
 		if b.config.Arch == ARCHITECTURE_X64 {
 			CompileCommand += "-shared -e DllMain "
 		} else {
-			CompileCommand += "-shared "
+			CompileCommand += "-shared -e _DllMain "
 		}
 		CompileCommand += b.compilerOptions.Main.Dll + " "
 		break
