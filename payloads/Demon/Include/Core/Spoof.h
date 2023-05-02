@@ -27,6 +27,18 @@ static ULONG_PTR Spoof();
 #define SPOOF_MACRO_CHOOSER(...) SETUP_ARGS(__VA_ARGS__, SPOOF_H, SPOOF_G, SPOOF_F, SPOOF_E, SPOOF_D, SPOOF_C, SPOOF_B, SPOOF_A, SPOOF_X, )
 #define SpoofFunc(...) SPOOF_MACRO_CHOOSER(__VA_ARGS__)(__VA_ARGS__)
 
-PVOID SpoofRetAddr( PVOID function, HANDLE module, ULONG size, PVOID a, PVOID b, PVOID c, PVOID d, PVOID e, PVOID f, PVOID g, PVOID h );
+PVOID SpoofRetAddr(
+    IN     PVOID  Module,
+    IN     ULONG  Size,
+    IN     HANDLE Function,
+    IN OUT PVOID  a,
+    IN OUT PVOID  b,
+    IN OUT PVOID  c,
+    IN OUT PVOID  d,
+    IN OUT PVOID  e,
+    IN OUT PVOID  f,
+    IN OUT PVOID  g,
+    IN OUT PVOID  h
+);
 
 #endif
