@@ -11215,17 +11215,6 @@ typedef enum _VIRTUAL_MEMORY_INFORMATION_CLASS
     VmCfgCallTargetInformation
 } VIRTUAL_MEMORY_INFORMATION_CLASS;
 
-#if _M_IX86
-
-#define CFG_CALL_TARGET_VALID 1
-
-typedef struct _CFG_CALL_TARGET_INFO {
-  ULONG_PTR Offset;
-  ULONG_PTR Flags;
-} CFG_CALL_TARGET_INFO, *PCFG_CALL_TARGET_INFO;
-
-#endif
-
 typedef struct _VM_INFORMATION
 {
     DWORD					dwNumberOfOffsets;
@@ -22493,24 +22482,6 @@ WSAAPI
 freeaddrinfo(
 	IN PADDRINFOA pAddrInfo
 	);
-
-#if _M_IX86
-BOOL AddMandatoryAce(
-	IN OUT PACL  pAcl,
-	IN     DWORD dwAceRevision,
-	IN     DWORD AceFlags,
-	IN     DWORD MandatoryPolicy,
-	IN     PSID  pLabelSid
-	);
-
-BOOL SetProcessValidCallTargets(
-	IN      HANDLE                hProcess,
-	IN      PVOID                 VirtualAddress,
-	IN      SIZE_T                RegionSize,
-	IN      ULONG                 NumberOfOffsets,
-	IN OUT  PCFG_CALL_TARGET_INFO OffsetInformation
-	);
-#endif
 
 //
 // end non-crt prototypes

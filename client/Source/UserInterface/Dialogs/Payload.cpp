@@ -164,6 +164,7 @@ auto Payload::retranslateUi() -> void
     ComboFormat->addItem( "Windows Shellcode" );
 
     ComboArch->addItem( "x64" );
+    ComboArch->addItem( "x86" );
 
     ComboAgentType->addItem( "Demon" );
 
@@ -349,6 +350,7 @@ auto Payload::CtxAgentPayloadChange( const QString& AgentType ) -> void
 
             ComboArch->clear();
             ComboArch->addItem( "x64" );
+            ComboArch->addItem( "x86" );
         }
     }
 }

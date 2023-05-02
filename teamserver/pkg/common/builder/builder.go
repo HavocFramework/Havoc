@@ -30,7 +30,7 @@ const (
 
 const (
 	FILETYPE_WINDOWS_EXE            = 1
-	FILETYPE_WINDOWS_SERVICE_EXE    = 2 // TODO: implement.
+	FILETYPE_WINDOWS_SERVICE_EXE    = 2
 	FILETYPE_WINDOWS_DLL            = 3
 	FILETYPE_WINDOWS_REFLECTIVE_DLL = 4
 	FILETYPE_WINDOWS_RAW_BINARY     = 5
@@ -38,7 +38,7 @@ const (
 
 const (
 	ARCHITECTURE_X64 = 1
-	ARCHITECTURE_X86
+	ARCHITECTURE_X86 = 2
 )
 
 type BuilderConfig struct {
@@ -236,7 +236,8 @@ func (b *Builder) Build() bool {
 		for _, f := range files {
 			var FilePath = dir + "/" + f.Name()
 
-			if path.Ext(f.Name()) == ".asm" {
+			// only add the assembly if the demon is x64
+			if path.Ext(f.Name()) == ".asm" && b.config.Arch == ARCHITECTURE_X64 {
 				AsmObj = "/tmp/" + utils.GenerateID(10) + ".o"
 				b.Cmd(fmt.Sprintf(b.compilerOptions.Config.Nasm+" -f win64 %s -o %s", FilePath, AsmObj))
 				logger.Debug(fmt.Sprintf(b.compilerOptions.Config.Nasm+" -f win64 %s -o %s", FilePath, AsmObj))
@@ -265,19 +266,34 @@ func (b *Builder) Build() bool {
 	switch b.FileType {
 	case FILETYPE_WINDOWS_EXE:
 		logger.Debug("Compile exe")
-		CompileCommand += "-D MAIN_THREADED -e WinMain "
+		// TODO: make the -e flag work for x86
+		if b.config.Arch == ARCHITECTURE_X64 {
+			CompileCommand += "-D MAIN_THREADED -e WinMain "
+		} else {
+			CompileCommand += "-D MAIN_THREADED "
+		}
 		CompileCommand += b.compilerOptions.Main.Exe + " "
 		break
 
 	case FILETYPE_WINDOWS_SERVICE_EXE:
 		logger.Debug("Compile Service exe")
-		CompileCommand += "-D MAIN_THREADED -D SVC_EXE -lntdll -e WinMain "
+		// TODO: make the -e flag work for x86
+		if b.config.Arch == ARCHITECTURE_X64 {
+			CompileCommand += "-D MAIN_THREADED -D SVC_EXE -lntdll -e WinMain "
+		} else {
+			CompileCommand += "-D MAIN_THREADED -D SVC_EXE -lntdll "
+		}
 		CompileCommand += b.compilerOptions.Main.Svc + " "
 		break
 
 	case FILETYPE_WINDOWS_DLL:
 		logger.Debug("Compile dll")
-		CompileCommand += "-shared -e DllMain "
+		// TODO: make the -e flag work for x86
+		if b.config.Arch == ARCHITECTURE_X64 {
+			CompileCommand += "-shared -e DllMain "
+		} else {
+			CompileCommand += "-shared "
+		}
 		CompileCommand += b.compilerOptions.Main.Dll + " "
 		break
 
@@ -456,7 +472,8 @@ func (b *Builder) PatchConfig() ([]byte, error) {
 	}
 
 	if val, ok := b.config.Config["Indirect Syscall"].(bool); ok {
-		if val {
+		// TODO: make OBF_SYSCALL work for x 86
+		if val && b.config.Arch == ARCHITECTURE_X64 {
 			b.compilerOptions.Defines = append(b.compilerOptions.Defines, "OBF_SYSCALL")
 			if !b.silent {
 				b.SendConsoleMessage("Info", "Use indirect syscalls")
