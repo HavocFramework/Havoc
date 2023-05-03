@@ -383,12 +383,16 @@ VOID CoffeeCleanup( PCOFFEE Coffee )
 BOOL CoffeeProcessSections( PCOFFEE Coffee )
 {
     PUTS( "Process Sections" )
-    PVOID  FuncPtr    = NULL;
-    DWORD  FuncCount  = 0;
-    UINT64 OffsetLong = 0;
-    UINT32 Offset     = 0;
-    CHAR   SymName[9] = { 0 };
-    PCHAR  SymbolName = NULL;
+    PVOID  FuncPtr           = NULL;
+    DWORD  FuncCount         = 0;
+    UINT64 OffsetLong        = 0;
+    UINT32 Offset            = 0;
+    CHAR   SymName[9]        = { 0 };
+    PCHAR  SymbolName        = NULL;
+    PVOID  RelocAddr         = NULL;
+    PVOID  FunMapAddr        = NULL;
+    PVOID  SymbolSectionAddr = NULL;
+    UINT32 SymbolValue       = 0;
 
     for ( UINT16 SectionCnt = 0; SectionCnt < Coffee->Header->NumberOfSections; SectionCnt++ )
     {
@@ -418,121 +422,116 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
                 return FALSE;
             }
 
+            // address where the reloc must be written to
+            RelocAddr = Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress;
+            // address where the resolved function address will be stored
+            FunMapAddr = Coffee->FunMap + ( FuncCount * sizeof( PVOID ) );
+            // the address of the section where the symbol is stored
+            SymbolSectionAddr = Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr;
+            // value of the symbol
+            SymbolValue = Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
+
 #if _WIN64
             if ( Coffee->Reloc->Type == IMAGE_REL_AMD64_REL32 && FuncPtr != NULL )
             {
-                MemCopy( Coffee->FunMap + ( FuncCount * sizeof( PVOID ) ), &FuncPtr, sizeof( PVOID ) );
+                *( ( PVOID* ) FunMapAddr ) = FuncPtr;
 
-                Offset  = ( UINT32 ) ( ( Coffee->FunMap + ( FuncCount * sizeof( PVOID ) ) ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) );
-                Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
+                Offset = ( UINT32 ) ( U_PTR( FunMapAddr ) - U_PTR( RelocAddr ) - sizeof( UINT32 ) + SymbolValue );
 
-                MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
+                *( ( PUINT32 ) RelocAddr ) = Offset;
 
                 FuncCount++;
             }
             else if ( Coffee->Reloc->Type == IMAGE_REL_AMD64_REL32 && FuncPtr == NULL )
             {
-                MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
+                Offset = *( PUINT32 ) ( RelocAddr );
 
-                Offset  = ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) );
-                Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
+                Offset += U_PTR( SymbolSectionAddr ) - U_PTR( RelocAddr ) - sizeof( UINT32 ) + SymbolValue;
 
-                MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
+                *( ( PUINT32 ) RelocAddr ) = Offset;
             }
             else if ( Coffee->Reloc->Type == IMAGE_REL_AMD64_REL32_1 && FuncPtr == NULL )
             {
-                MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
+                Offset = *( PUINT32 ) ( RelocAddr );
 
-                Offset  = ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) + 1 ) );
-                Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
+                Offset += U_PTR( SymbolSectionAddr ) - U_PTR( RelocAddr ) - sizeof( UINT32 ) + SymbolValue - 1;
 
-                MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
+                *( ( PUINT32 ) RelocAddr ) = Offset;
             }
             else if ( Coffee->Reloc->Type == IMAGE_REL_AMD64_REL32_2 && FuncPtr == NULL )
             {
-                MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
- 
-                Offset  = ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) + 2 ) );
-                Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
+                Offset = *( PUINT32 ) ( RelocAddr );
 
-                MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
+                Offset += U_PTR( SymbolSectionAddr ) - U_PTR( RelocAddr ) - sizeof( UINT32 ) + SymbolValue - 2;
+
+                *( ( PUINT32 ) RelocAddr ) = Offset;
             }
             else if ( Coffee->Reloc->Type == IMAGE_REL_AMD64_REL32_3 && FuncPtr == NULL )
             {
-                MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
+                Offset = *( PUINT32 ) ( RelocAddr );
 
-                Offset  = ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) + 3 ) );
-                Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
+                Offset += U_PTR( SymbolSectionAddr ) - U_PTR( RelocAddr ) - sizeof( UINT32 ) + SymbolValue - 3;
 
-                MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
+                *( ( PUINT32 ) RelocAddr ) = Offset;
             }
             else if ( Coffee->Reloc->Type == IMAGE_REL_AMD64_REL32_4 && FuncPtr == NULL )
             {
-                MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
+                Offset = *( PUINT32 ) ( RelocAddr );
 
-                Offset  = ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) + 4 ) );
-                Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
+                Offset += U_PTR( SymbolSectionAddr ) - U_PTR( RelocAddr ) - sizeof( UINT32 ) + SymbolValue - 4;
 
-                MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
+                *( ( PUINT32 ) RelocAddr ) = Offset;
             }
             else if ( Coffee->Reloc->Type == IMAGE_REL_AMD64_REL32_5 && FuncPtr == NULL )
             {
-                MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
+                Offset = *( PUINT32 ) ( RelocAddr );
 
-                Offset  = ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) );
-                Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
-                Offset += 5;
+                Offset += U_PTR( SymbolSectionAddr ) - U_PTR( RelocAddr ) - sizeof( UINT32 ) + SymbolValue - 5;
 
-                MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
+                *( ( PUINT32 ) RelocAddr ) = Offset;
             }
             else if ( Coffee->Reloc->Type == IMAGE_REL_AMD64_ADDR32NB && FuncPtr == NULL )
             {
-                MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
+                Offset = *( PUINT32 ) ( RelocAddr );
 
-                Offset  = ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) );
-                Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
+                Offset += U_PTR( SymbolSectionAddr ) - U_PTR( RelocAddr ) - sizeof( UINT32 ) + SymbolValue;
 
-                MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
+                *( ( PUINT32 ) RelocAddr ) = Offset;
             }
             else if ( Coffee->Reloc->Type == IMAGE_REL_AMD64_ADDR64 && FuncPtr == NULL )
             {
-                MemCopy( &OffsetLong, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT64 ) );
+                OffsetLong = *( PUINT64 ) ( RelocAddr );
 
-                // TODO: this reloc is not right
-                OffsetLong  = U_PTR( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr ) + OffsetLong;
-                OffsetLong += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
+                OffsetLong += U_PTR( SymbolSectionAddr ) + SymbolValue;
 
-                MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &OffsetLong, sizeof( UINT64 ) );
+                *( ( PUINT64 ) RelocAddr ) = OffsetLong;
             }
 #else
             if ( Coffee->Reloc->Type == IMAGE_REL_I386_REL32 && FuncPtr == NULL )
             {
-                MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
+                Offset = *( PUINT32 ) ( RelocAddr );
 
-                Offset  = ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset )  - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) );
-                Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
+                Offset += U_PTR( SymbolSectionAddr ) - U_PTR( RelocAddr ) - sizeof( UINT32 ) + SymbolValue;
 
-                MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
+                *( ( PUINT32 ) RelocAddr ) = Offset;
             }
             else if ( Coffee->Reloc->Type == IMAGE_REL_I386_DIR32 && FuncPtr != NULL )
             {
-                MemCopy( Coffee->FunMap + ( FuncCount * sizeof( PVOID ) ), &FuncPtr, sizeof( PVOID ) );
+                *( ( PVOID* ) FunMapAddr ) = FuncPtr;
 
-                Offset  = Coffee->FunMap + ( FuncCount * sizeof( PVOID ) );
-                Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
+                Offset = U_PTR( FunMapAddr ) + SymbolValue;
 
-                MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
+                *( ( PUINT32 ) RelocAddr ) = Offset;
 
                 FuncCount++;
             }
             else if ( Coffee->Reloc->Type == IMAGE_REL_I386_DIR32 && FuncPtr == NULL )
             {
-                MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
+                Offset = *( PUINT32 ) ( RelocAddr );
 
-                Offset  = Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset;
-                Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
+                Offset += U_PTR( SymbolSectionAddr ) + SymbolValue;
 
-                MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
+                *( ( PUINT32 ) RelocAddr ) = Offset;
             }
 #endif
             else
