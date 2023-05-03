@@ -46,7 +46,6 @@ type OperatorsBlock struct {
 type UsersBlock struct {
 	Name     string `yaotl:"Name,label"`
 	Password string `yaotl:"Password"`
-	Hashed   bool   `yaotl:"Hashed,optional"`
 }
 
 type Listeners struct {
@@ -59,7 +58,7 @@ type ListenerHTTP struct {
 	Name string `yaotl:"Name"`
 
 	// 2006-01-02 15:04:05
-	KillDate     string `yaotl:"KillDate,optional"`
+	KillDate string `yaotl:"KillDate,optional"`
 	// 8:00-17:00
 	WorkingHours string `yaotl:"WorkingHours,optional"`
 
@@ -67,9 +66,9 @@ type ListenerHTTP struct {
 	HostBind     string   `yaotl:"HostBind"`
 	HostRotation string   `yaotl:"HostRotation"`
 	/* Port used by the TS */
-	PortBind     int      `yaotl:"PortBind"`
+	PortBind int `yaotl:"PortBind"`
 	/* Port used by the agent */
-	PortConn     int      `yaotl:"PortConn,optional"`
+	PortConn int `yaotl:"PortConn,optional"`
 
 	/* Methode string `yaotl:"Method,optional"` */
 
@@ -90,7 +89,7 @@ type ListenerSMB struct {
 	PipeName string `yaotl:"PipeName"`
 
 	// 2006-01-02 15:04:05
-	KillDate     string `yaotl:"KillDate,optional"`
+	KillDate string `yaotl:"KillDate,optional"`
 	// 8:00-17:00
 	WorkingHours string `yaotl:"WorkingHours,optional"`
 }

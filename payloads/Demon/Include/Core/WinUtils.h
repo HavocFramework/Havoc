@@ -16,6 +16,13 @@
 #include <iphlpapi.h>
 #include <lm.h>
 
+typedef struct
+{
+    PVOID TebInformation;
+    ULONG TebOffset;
+    ULONG BytesToRead;
+} THREAD_TEB_INFORMATION;
+
 typedef struct _BUFFER
 {
     PVOID  Buffer;
@@ -123,6 +130,15 @@ BOOL CfgQueryEnforced(
 VOID CfgAddressAdd(
     IN PVOID ImageBase,
     IN PVOID Function
+);
+
+BOOL EventSet(
+    IN HANDLE Event
+);
+
+BOOL ThreadQueryTib(
+    IN  PVOID   Adr,
+    OUT PNT_TIB Tib
 );
 
 BOOL BypassPatchAMSI(

