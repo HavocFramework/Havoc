@@ -13,7 +13,7 @@
 #include <Loader/CoffeeLdr.h>
 #include <Loader/ObjectApi.h>
 
-#if defined( __x86_64__ ) || defined( _WIN64 )
+#if _WIN64
     // __imp_
     #define COFF_PREP_SYMBOL        0xec6ba2a8
     #define COFF_PREP_SYMBOL_SIZE   6
@@ -21,11 +21,11 @@
     #define COFF_PREP_BEACON        0xd0a409b0
     #define COFF_PREP_BEACON_SIZE   ( COFF_PREP_SYMBOL_SIZE + 6 )
 #else
-    // __imp_
-    #define COFF_PREP_SYMBOL        0xec6ba2a8
-    #define COFF_PREP_SYMBOL_SIZE   6
-    // __imp_Beacon
-    #define COFF_PREP_BEACON        0xd0a409b0
+    // __imp__
+    #define COFF_PREP_SYMBOL        0x79dff807
+    #define COFF_PREP_SYMBOL_SIZE   7
+    // __imp__Beacon
+    #define COFF_PREP_BEACON        0x4c20aa4f
     #define COFF_PREP_BEACON_SIZE   ( COFF_PREP_SYMBOL_SIZE + 6 )
 #endif
 
@@ -33,6 +33,9 @@ PVOID CoffeeFunctionReturn = NULL;
 
 LONG WINAPI VehDebugger( PEXCEPTION_POINTERS Exception )
 {
+    UINT32 RequestID = 0;
+    PPACKAGE Package = NULL;
+
     PRINTF( "Exception: %p\n", Exception->ExceptionRecord->ExceptionCode )
 
     // Leave faulty function
@@ -42,7 +45,14 @@ LONG WINAPI VehDebugger( PEXCEPTION_POINTERS Exception )
     Exception->ContextRecord->Eip = (DWORD64)(ULONG_PTR)CoffeeFunctionReturn;
 #endif
 
-    PPACKAGE Package = PackageCreate( DEMON_COMMAND_INLINE_EXECUTE );
+    // TODO: obtaining the RequestID this way is almost surely not correct
+    //       given that CoffeeFunctionReturn won't point to BOF code but Demon code
+    //       also, if two BOFs are running at the same time, this VEH impl won't work
+    if ( GetRequestIDForCallingObjectFile( CoffeeFunctionReturn, &RequestID ) )
+        Package = PackageCreateWithRequestID( RequestID, DEMON_COMMAND_INLINE_EXECUTE );
+    else
+        Package = PackageCreate( DEMON_COMMAND_INLINE_EXECUTE );
+
     PackageAddInt32( Package, DEMON_COMMAND_INLINE_EXECUTE_EXCEPTION );
     PackageAddInt32( Package, Exception->ExceptionRecord->ExceptionCode );
     PackageAddInt64( Package, (UINT64)(ULONG_PTR)Exception->ExceptionRecord->ExceptionAddress );
@@ -77,13 +87,14 @@ BOOL SymbolIsImport( LPSTR Symbol )
 
 BOOL CoffeeProcessSymbol( LPSTR Symbol, PVOID* pFuncAddr )
 {
-    CHAR        Bak[ 1024 ] = { 0 };
-    PCHAR       SymLibrary  = NULL;
-    PCHAR       SymFunction = NULL;
-    HMODULE     hLibrary    = NULL;
-    DWORD       SymBeacon   = HashEx( Symbol, COFF_PREP_BEACON_SIZE, FALSE );
-    ANSI_STRING AnsiString  = { 0 };
-    PPACKAGE    Package     = NULL;
+    CHAR        Bak[ 1024 ]     = { 0 };
+    CHAR        SymName[ 1024 ] = { 0 };
+    PCHAR       SymLibrary      = NULL;
+    PCHAR       SymFunction     = NULL;
+    HMODULE     hLibrary        = NULL;
+    DWORD       SymBeacon       = HashEx( Symbol, COFF_PREP_BEACON_SIZE, FALSE );
+    ANSI_STRING AnsiString      = { 0 };
+    PPACKAGE    Package         = NULL;
 
     *pFuncAddr = NULL;
 
@@ -114,13 +125,28 @@ BOOL CoffeeProcessSymbol( LPSTR Symbol, PVOID* pFuncAddr )
         // this is an import symbol without library: __imp_FUNCNAME
         SymFunction = Symbol + COFF_PREP_SYMBOL_SIZE;
 
+        // in x86, symbols can have this form: __imp__LoadLibraryA@4
+        // we need to make sure there is no '@' in the function name
+        StringCopyA( SymName, SymFunction );
+        for ( DWORD i = 0 ;; ++i )
+        {
+            if ( ! SymName[i] )
+                break;
+
+            if ( SymName[i] == '@' )
+            {
+                SymName[i] = 0;
+                break;
+            }
+        }
+
         // we support a handful of functions that don't usually have the DLL
         for ( DWORD i = 0 ;; i++ )
         {
             if ( ! LdrApi[ i ].NameHash )
                 break;
 
-            if ( HashStringA( SymFunction ) == LdrApi[ i ].NameHash )
+            if ( HashStringA( SymName ) == LdrApi[ i ].NameHash )
             {
                 *pFuncAddr = LdrApi[ i ].Pointer;
                 return TRUE;
@@ -143,9 +169,24 @@ BOOL CoffeeProcessSymbol( LPSTR Symbol, PVOID* pFuncAddr )
             goto SymbolNotFound;
         }
 
-        AnsiString.Length        = StringLengthA( SymFunction );
+        // in x86, symbols can have this form: __imp__KERNEL32$GetProcessHeap@0
+        // we need to make sure there is no '@' in the function name
+        StringCopyA( SymName, SymFunction );
+        for ( DWORD i = 0 ;; ++i )
+        {
+            if ( ! SymName[i] )
+                break;
+
+            if ( SymName[i] == '@' )
+            {
+                SymName[i] = 0;
+                break;
+            }
+        }
+
+        AnsiString.Length        = StringLengthA( SymName );
         AnsiString.MaximumLength = AnsiString.Length + sizeof( CHAR );
-        AnsiString.Buffer        = SymFunction;
+        AnsiString.Buffer        = SymName;
 
         if ( ! NT_SUCCESS( Instance.Win32.LdrGetProcedureAddress( hLibrary, &AnsiString, 0, pFuncAddr ) ) )
             goto SymbolNotFound;
@@ -175,7 +216,7 @@ VOID CoffeeFunction( PVOID Address, PVOID Argument, SIZE_T Size )
     PUTS( "Finished" )
 }
 
-BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE_T Size )
+BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE_T Size, UINT32 RequestID )
 {
     PVOID CoffeeMain     = NULL;
     PVOID VehHandle      = NULL;
@@ -254,6 +295,12 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
         else
             SymbolName = ( ( PCHAR ) ( Coffee->Symbol + Coffee->Header->NumberOfSymbols ) ) + Coffee->Symbol[ SymCounter ].First.Value[ 1 ];
 
+#if _M_IX86
+        // in x86, the "go" function might actaully be named _go
+        if ( SymbolName[0] == '_' )
+            SymbolName++;
+#endif
+
         if ( MemCompare( SymbolName, Function, FunctionLength ) == 0 )
         {
             CoffeeMain = ( Coffee->SecMap[ Coffee->Symbol[ SymCounter ].SectionNumber - 1 ].Ptr + Coffee->Symbol[ SymCounter ].Value );
@@ -265,9 +312,8 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
     if ( ! CoffeeMain )
     {
         PRINTF( "[!] Couldn't find function => %s\n", Function );
-        PRINTF( "Function => %s [%d]\n", Function, StringLengthA( Function ) );
 
-        PPACKAGE Package = PackageCreate( DEMON_COMMAND_INLINE_EXECUTE );
+        PPACKAGE Package = PackageCreateWithRequestID( RequestID, DEMON_COMMAND_INLINE_EXECUTE );
 
         PackageAddInt32( Package, DEMON_COMMAND_INLINE_EXECUTE_SYMBOL_NOT_FOUND );
         PackageAddString( Package, Function );
@@ -372,39 +418,18 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
                 return FALSE;
             }
 
+#if _WIN64
             if ( Coffee->Reloc->Type == IMAGE_REL_AMD64_REL32 && FuncPtr != NULL )
             {
-                MemCopy( Coffee->FunMap + ( FuncCount * sizeof( UINT64 ) ), &FuncPtr, sizeof( UINT64 ) );
+                MemCopy( Coffee->FunMap + ( FuncCount * sizeof( PVOID ) ), &FuncPtr, sizeof( PVOID ) );
 
-                Offset  = ( UINT32 ) ( ( Coffee->FunMap + ( FuncCount * sizeof( UINT64 ) ) ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) );
+                Offset  = ( UINT32 ) ( ( Coffee->FunMap + ( FuncCount * sizeof( PVOID ) ) ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) );
                 Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
 
                 MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
 
                 FuncCount++;
             }
-            /*
-            else if ( Coffee->Reloc->Type == IMAGE_REL_I386_DIR32 && FuncPtr != NULL )
-            {
-                MemCopy( Coffee->FunMap + ( FuncCount * sizeof( UINT64 ) ), &FuncPtr, sizeof( UINT32 ) );
-
-                Offset  = ( UINT32 ) ( Coffee->FunMap + ( FuncCount * sizeof( UINT64 ) ) );
-                Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
-
-                MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
-
-                FuncCount++;
-            }
-            else if ( Coffee->Reloc->Type == IMAGE_REL_I386_DIR32 && FuncPtr == NULL )
-            {
-                MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
-
-                Offset  = Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset;
-                Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
-
-                MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
-            }
-            */
             else if ( Coffee->Reloc->Type == IMAGE_REL_AMD64_REL32 && FuncPtr == NULL )
             {
                 MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
@@ -418,19 +443,17 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
             {
                 MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
 
-                Offset  = ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) );
+                Offset  = ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) + 1 ) );
                 Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
-                Offset += 1;
 
                 MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
             }
             else if ( Coffee->Reloc->Type == IMAGE_REL_AMD64_REL32_2 && FuncPtr == NULL )
             {
                 MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
-
-                Offset  = ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) );
+ 
+                Offset  = ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) + 2 ) );
                 Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
-                Offset += 2;
 
                 MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
             }
@@ -438,9 +461,8 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
             {
                 MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
 
-                Offset  = ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) );
+                Offset  = ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) + 3 ) );
                 Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
-                Offset += 3;
 
                 MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
             }
@@ -448,9 +470,8 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
             {
                 MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
 
-                Offset  = ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) ) );
+                Offset  = ( ( Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset ) - ( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress + sizeof( UINT32 ) + 4 ) );
                 Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
-                Offset += 4;
 
                 MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
             }
@@ -483,7 +504,8 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
 
                 MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &OffsetLong, sizeof( UINT64 ) );
             }
-            else if ( Coffee->Reloc->Type == IMAGE_REL_I386_REL32 && FuncPtr == NULL )
+#else
+            if ( Coffee->Reloc->Type == IMAGE_REL_I386_REL32 && FuncPtr == NULL )
             {
                 MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
 
@@ -492,6 +514,27 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
 
                 MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
             }
+            else if ( Coffee->Reloc->Type == IMAGE_REL_I386_DIR32 && FuncPtr != NULL )
+            {
+                MemCopy( Coffee->FunMap + ( FuncCount * sizeof( PVOID ) ), &FuncPtr, sizeof( PVOID ) );
+
+                Offset  = Coffee->FunMap + ( FuncCount * sizeof( PVOID ) );
+                Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
+
+                MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
+
+                FuncCount++;
+            }
+            else if ( Coffee->Reloc->Type == IMAGE_REL_I386_DIR32 && FuncPtr == NULL )
+            {
+                MemCopy( &Offset, Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, sizeof( UINT32 ) );
+
+                Offset  = Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr + Offset;
+                Offset += Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
+
+                MemCopy( Coffee->SecMap[ SectionCnt ].Ptr + Coffee->Reloc->VirtualAddress, &Offset, sizeof( UINT32 ) );
+            }
+#endif
             else
             {
                 if ( FuncPtr )
@@ -548,7 +591,7 @@ SIZE_T CoffeeGetFunMapSize( PCOFFEE Coffee )
         }
     }
 
-    return sizeof( UINT64 ) * NumberOfFuncs;
+    return sizeof( PVOID ) * NumberOfFuncs;
 }
 
 VOID RemoveCoffeeFromInstance( PCOFFEE Coffee )
@@ -680,7 +723,7 @@ VOID CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSize
     }
 
     PUTS( "[*] Execute coffee main\n" );
-    Success = CoffeeExecuteFunction( Coffee, EntryName, ArgData, ArgSize );
+    Success = CoffeeExecuteFunction( Coffee, EntryName, ArgData, ArgSize, RequestID );
 
 END:
     PUTS( "[*] Cleanup memory" );

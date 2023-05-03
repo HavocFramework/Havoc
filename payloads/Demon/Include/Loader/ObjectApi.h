@@ -57,4 +57,6 @@ VOID    BeaconCleanupProcess( PROCESS_INFORMATION* pInfo );
 BOOL   toWideChar( PCHAR src, PWCHAR dst, INT max );
 UINT32 swap_endianess( UINT32 indata );
 
+BOOL   GetRequestIDForCallingObjectFile( PVOID CoffeeFunctionReturn, PUINT32 RequestID );
+
 #endif

@@ -112,7 +112,8 @@ PVOID LdrModuleLoad(
      * NOTE: LdrLoadDll needs to be resolved or else we have a problem */
     if ( Instance.Win32.LdrLoadDll ) {
         if ( ! NT_SUCCESS( NtStatus = Instance.Win32.LdrLoadDll( NULL, 0, &UnicodeString, &Module ) ) ) {
-            PRINTF( "LdrLoadDll Failed: %p", NtStatus )
+            PRINTF( "LdrLoadDll Failed: %p\n", NtStatus )
+            NtSetLastError( NtStatus );
         }
     }
 
