@@ -1981,6 +1981,8 @@ VOID CommandScreenshot( PPARSER Parser )
     PVOID    Image   = NULL;
     SIZE_T   Size    = 0;
 
+    // TODO: add error cheking in WinScreenshot and send screenshot in pieces
+
     if ( WinScreenshot( &Image, &Size ) )
     {
         PUTS( "Successful took screenshot" )
