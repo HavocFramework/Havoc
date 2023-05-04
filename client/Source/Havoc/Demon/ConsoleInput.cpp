@@ -10,6 +10,7 @@
 #include <vector>
 #include <iomanip>
 #include <filesystem>
+#include <algorithm>
 
 using namespace HavocNamespace::HavocSpace;
 using namespace Util;
@@ -152,6 +153,11 @@ auto ParseCommandLine( QString commandline ) -> QStringList
     }
 
     return InputCommands;
+}
+
+bool compareQString(const QString &a, const QString &b)
+{
+    return a.toLower() < b.toLower();
 }
 
 DemonCommands::DemonCommands( )
@@ -419,55 +425,70 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             {
                 int TotalSize = 25;
 
-                DemonConsole->Console->append( "" );
-                DemonConsole->Console->append( "Demon Commands" );
-                DemonConsole->Console->append( "==============" );
-                DemonConsole->Console->append( "" );
-                DemonConsole->Console->append( "  Command                  Type         Description" );
-                DemonConsole->Console->append( "  -------                  -------      -----------" );
+                std::vector<QString> commandOutput;
 
-                for ( auto & i : DemonCommandList )
+                for (auto &i : DemonCommandList)
                 {
-                    if ( ! i.SubCommands.empty() || i.Module )
+                    QString currentLine;
+
+                    if (!i.SubCommands.empty() || i.Module)
                     {
-                        std::string Spaces = std::string("&nbsp;") * ( TotalSize - i.CommandString.size() );
-                        if ( i.Module )
+                        if (i.Module)
                         {
-                            DemonConsole->Console->append( "  " + i.CommandString + QString( std::string( ( TotalSize - i.CommandString.size() ), ' ' ).c_str() ) + "Module " + "      " +  i.Description );
+                            currentLine = "  " + i.CommandString + QString(std::string((TotalSize - i.CommandString.size()), ' ').c_str()) + "Module " + "      " + i.Description;
                         }
-                        else if (  i.SubCommands.empty() )
+                        else if (i.SubCommands.empty())
                         {
-                            if ( i.SubCommands[ 0 ].CommandString != nullptr )
+                            if (i.SubCommands[0].CommandString != nullptr)
                             {
-                                DemonConsole->Console->append( "  " + i.CommandString + QString( std::string( ( TotalSize - i.CommandString.size() ), ' ' ).c_str() ) + "Module " + "      " +  i.Description );
+                                currentLine = "  " + i.CommandString + QString(std::string((TotalSize - i.CommandString.size()), ' ').c_str()) + "Module " + "      " + i.Description;
                             }
                         }
                         else
                         {
-                            DemonConsole->Console->append( "  " + i.CommandString + QString( std::string( ( TotalSize - i.CommandString.size() ), ' ' ).c_str() ) + "Command" + "      "  + i.Description );
+                            currentLine = "  " + i.CommandString + QString(std::string((TotalSize - i.CommandString.size()), ' ').c_str()) + "Command" + "      " + i.Description;
                         }
                     }
                     else
                     {
-                        std::string Spaces = std::string( ( TotalSize - i.CommandString.size() ), ' ' );
-                        DemonConsole->Console->append( "  " + i.CommandString + QString( std::string( ( TotalSize - i.CommandString.size() ), ' ' ).c_str() ) + "Command" + "      "  + i.Description );
+                        currentLine = "  " + i.CommandString + QString(std::string((TotalSize - i.CommandString.size()), ' ').c_str()) + "Command" + "      " + i.Description;
+                    }
+
+                    commandOutput.push_back(currentLine);
+                }
+
+                for (auto &Module : HavocX::Teamserver.RegisteredModules)
+                {
+                    if (!Module.Name.empty())
+                    {
+                        QString currentLine = "  " + QString(Module.Name.c_str()) + QString(std::string((TotalSize - Module.Name.size()), ' ').c_str()) + "Module " + "      " + QString(Module.Description.c_str());
+                        commandOutput.push_back(currentLine);
                     }
                 }
 
-                for ( auto& Module : HavocX::Teamserver.RegisteredModules )
+                for (auto &Command : HavocX::Teamserver.RegisteredCommands)
                 {
-                    std::string Spaces = std::string( ( TotalSize - Module.Name.size() ), ' ' );
-
-                    if ( ! Module.Name.empty() )
-                        DemonConsole->Console->append( "  " + QString( Module.Name.c_str() ) + QString( Spaces.c_str() ) + "Module " + "      " + QString( Module.Description.c_str() ) );
+                    if (Command.Module.empty())
+                    {
+                        QString currentLine = "  " + QString(Command.Command.c_str()) + QString(std::string((TotalSize - Command.Command.size()), ' ').c_str()) + "Command" + "      " + QString(Command.Help.c_str());
+                        commandOutput.push_back(currentLine);
+                    }
                 }
 
-                for ( auto& Command : HavocX::Teamserver.RegisteredCommands )
-                {
-                    std::string Spaces = std::string( ( TotalSize - Command.Command.size() ), ' ' );
+                // Sort the commandOutput vector alphabetically
+                std::sort(commandOutput.begin(), commandOutput.end(), compareQString);
 
-                    if ( Command.Module.empty() )
-                        DemonConsole->Console->append( "  " + QString( Command.Command.c_str() ) + QString( Spaces.c_str() ) + "Command" + "      " + QString( Command.Help.c_str() ) );
+                // Append the sorted commands to the console
+                DemonConsole->Console->append("");
+                DemonConsole->Console->append("Demon Commands");
+                DemonConsole->Console->append("==============");
+                DemonConsole->Console->append("");
+                DemonConsole->Console->append("  Command                  Type         Description");
+                DemonConsole->Console->append("  -------                  -------      -----------");
+
+                for (const auto &output : commandOutput)
+                {
+                    DemonConsole->Console->append(output);
                 }
             }
 
@@ -2379,43 +2400,59 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
     }
     else
     {
-        if ( InputCommands[ 0 ].compare( "help" ) == 0 )
+        if (InputCommands[0].compare("help") == 0)
         {
-            if ( InputCommands.size() > 1 && InputCommands[ 1 ] != "" )
+            if (InputCommands.size() > 1 && InputCommands[1] != "")
             {
-                spdlog::info( "show help for command" );
+                spdlog::info("show help for command");
             }
             else
             {
                 int TotalSize = 18;
 
-                DemonConsole->Console->append( "" );
-                DemonConsole->Console->append( "  Command           Type         Description" );
-                DemonConsole->Console->append( "  ---------         -------      -----------" );
+                DemonConsole->Console->append("");
+                DemonConsole->Console->append("  Command           Type         Description");
+                DemonConsole->Console->append("  ---------         -------      -----------");
 
-                for ( auto & command : AgentData.Commands )
+                std::vector<QString> commandOutput;
+
+                for (auto &command : AgentData.Commands)
                 {
-                    if ( ! command.Anonymous )
+                    if (!command.Anonymous)
                     {
-                        auto Spaces = std::string( ( TotalSize - command.Name.size() ), ' ' );
-                        DemonConsole->Console->append( "  " + command.Name + QString( std::string( ( TotalSize - command.Name.size() ), ' ' ).c_str() ) + "Command" + "      "  + command.Description );
+                        commandOutput.push_back("  " + command.Name + QString(std::string((TotalSize - command.Name.size()), ' ').c_str()) + "Command" + "      " + command.Description);
                     }
                     else
                     {
-                        spdlog::debug( "Anonymous command: {}", command.Name.toStdString() );
+                        spdlog::debug("Anonymous command: {}", command.Name.toStdString());
                     }
                 }
 
-                for ( auto & command : HavocX::Teamserver.RegisteredCommands )
+                // Sort the commandOutput vector alphabetically
+                std::sort(commandOutput.begin(), commandOutput.end(), compareQString);
+
+                for (auto &command : HavocX::Teamserver.RegisteredCommands)
                 {
-                    if ( command.Agent == AgentTypeName.toStdString() )
+                    if (command.Agent == AgentTypeName.toStdString())
                     {
-                        auto Spaces = std::string( ( TotalSize - command.Command.size() ), ' ' );
-                        DemonConsole->Console->append( "  " + QString( command.Command.c_str() ) + QString( std::string( ( TotalSize - command.Command.size() ), ' ' ).c_str() ) + "Command" + "      "  + QString( command.Help.c_str() ) );
+                        QString currentCommand = "  " + QString(command.Command.c_str()) + QString(std::string((TotalSize - command.Command.size()), ' ').c_str()) + "Command" + "      " + QString(command.Help.c_str());
+
+                        // Find the position to insert the current command in the sorted commandOutput vector
+                        auto insertPosition = std::lower_bound(commandOutput.begin(), commandOutput.end(), currentCommand, compareQString);
+
+                        // Insert the current command to the commandOutput vector in the proper position
+                        commandOutput.insert(insertPosition, currentCommand);
                     }
+                }
+
+                // Append the sorted commands to the console
+                for (const auto &output : commandOutput)
+                {
+                    DemonConsole->Console->append(output);
                 }
             }
         }
+
         else if ( InputCommands[ 0 ].compare( "clear" ) == 0 )
         {
             auto AgentMessageInfo = QString();
