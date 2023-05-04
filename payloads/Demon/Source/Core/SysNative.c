@@ -246,7 +246,7 @@ NTSTATUS NTAPI SysNtAllocateVirtualMemory(
     return NtStatus;
 }
 
-NTSTATUS NTAPI SysNtWriteVirtualMemory (
+NTSTATUS NTAPI SysNtWriteVirtualMemory(
     IN       HANDLE  ProcessHandle,
     IN OPT   PVOID   BaseAddress,
     IN CONST VOID*   Buffer,

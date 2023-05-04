@@ -91,7 +91,7 @@ BOOL SysExtract(
     SysFunction = Function;
 
     do {
-        /* check if current instruction  */
+        /* check if current instruction is a 'ret' (end of function) */
         if ( DREF_U8( SysFunction + Offset ) == SYS_ASM_RET ) {
             break;
         }
