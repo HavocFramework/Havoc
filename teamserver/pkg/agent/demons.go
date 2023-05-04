@@ -759,6 +759,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 
 		var (
 			TargetArch int
+			x64        int
 			Argument   []byte
 		)
 
@@ -792,16 +793,15 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 					return job, err
 				}
 
+				x64 = win32.FALSE
 				if Optional["Arch"] == "x64" {
-					TargetArch = 2
-				} else {
-					TargetArch = 1
+					x64 = win32.TRUE
 				}
 
 				job.Data = []interface{}{
 					Inject,
 					Technique,
-					TargetArch,
+					x64,
 					Binary,
 					Argument,
 					TargetPid,
@@ -3349,7 +3349,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_INJECT_SHELLCODE, Status: %d", AgentID, Status))
 
-			if Status == win32.TRUE {
+			if Status == 0 {
 				Message["Type"] = "Good"
 				Message["Message"] = "Successful injected shellcode"
 			} else {

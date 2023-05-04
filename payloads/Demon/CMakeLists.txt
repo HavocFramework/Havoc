@@ -32,6 +32,8 @@ set( COMMON_SOURCE
         Source/Core/Dotnet.c
         Source/Core/Socket.c
         Source/Core/Kerberos.c
+        Source/Core/Thread.c
+        Source/Core/Memory.c
 
         Source/Extra/KaynLdr.c
 )

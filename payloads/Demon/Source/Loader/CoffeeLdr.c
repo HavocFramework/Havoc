@@ -812,8 +812,7 @@ VOID CoffeeRunner( PCHAR EntryName, DWORD EntryNameSize, PVOID CoffeeData, SIZE_
 
     Instance.Threads++;
 
-    if ( ! ThreadCreate( DX_THREAD_SYSCALL, NtCurrentProcess(), CoffeeRunnerThread, &InjectionCtx ) )
-    {
+    if ( ! ThreadCreate( THREAD_METHOD_NTCREATEHREADEX, NtCurrentProcess(), CoffeeRunnerThread, CoffeeParams, NULL ) ) {
         PRINTF( "Failed to create new CoffeeRunnerThread thread: %d", NtGetLastError() )
         PACKAGE_ERROR_WIN32
     }
