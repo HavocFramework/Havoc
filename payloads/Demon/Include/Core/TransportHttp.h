@@ -1,7 +1,7 @@
 #ifndef DEMON_TRANSPORTHTTP_H
 #define DEMON_TRANSPORTHTTP_H
 
-#include <Core/WinUtils.h>
+#include <Core/Win32.h>
 
 #include <windows.h>
 #include <winhttp.h>

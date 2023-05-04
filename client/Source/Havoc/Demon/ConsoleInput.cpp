@@ -3,7 +3,6 @@
 #include <Havoc/DemonCmdDispatch.h>
 #include <UserInterface/Widgets/DemonInteracted.h>
 #include <Util/ColorText.h>
-#include <Util/ColorText.h>
 #include <Havoc/Packager.hpp>
 
 #include <sstream>
@@ -2543,7 +2542,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             else
             {
                 CommandFound = false;
-                
+
                 for ( auto & Command : HavocX::Teamserver.RegisteredCommands )
                 {
                     if ( InputCommands[ 0 ].isEmpty() )

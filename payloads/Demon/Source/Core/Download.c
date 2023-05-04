@@ -40,8 +40,9 @@ PDOWNLOAD_DATA DownloadGet( DWORD FileID )
 VOID DownloadFree( PDOWNLOAD_DATA Download )
 {
     /* close file handle. */
-    if ( Download->hFile )
-        Instance.Win32.NtClose( Download->hFile );
+    if ( Download->hFile ) {
+        SysNtClose( Download->hFile );
+    }
 
     PUTS( "Free download object" )
 
@@ -62,9 +63,9 @@ BOOL DownloadRemove( DWORD FileID )
 
     for ( ;; )
     {
-        if ( ! Download )
+        if ( ! Download ) {
             break;
-
+        }
 
         if ( Download->FileID == FileID )
         {

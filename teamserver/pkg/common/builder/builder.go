@@ -444,6 +444,7 @@ func (b *Builder) PatchConfig() ([]byte, error) {
 		ConfigSpawn32      string
 		ConfigObfTechnique int
 		ConfigStackSpoof   = win32.FALSE
+		ConfigSyscall      = win32.FALSE
 		err                error
 	)
 
@@ -476,11 +477,10 @@ func (b *Builder) PatchConfig() ([]byte, error) {
 	}
 
 	if val, ok := b.config.Config["Indirect Syscall"].(bool); ok {
-		// TODO: make OBF_SYSCALL work for x 86
-		if val && b.config.Arch == ARCHITECTURE_X64 {
-			b.compilerOptions.Defines = append(b.compilerOptions.Defines, "OBF_SYSCALL")
+		if val {
+			ConfigSyscall = win32.TRUE
 			if !b.silent {
-				b.SendConsoleMessage("Info", "use indirect syscalls")
+				b.SendConsoleMessage("Info", "indirect syscalls has been enabled")
 			}
 		}
 	}
@@ -630,6 +630,9 @@ func (b *Builder) PatchConfig() ([]byte, error) {
 	DemonConfig.AddInt(ConfigObfTechnique)
 	DemonConfig.AddInt(ConfigStackSpoof)
 
+	// indirect syscall enabled/disabled
+	DemonConfig.AddInt(ConfigSyscall)
+
 	// Listener Config
 	switch b.config.ListenerType {
 	case handlers.LISTENER_HTTP:
@@ -640,7 +643,7 @@ func (b *Builder) PatchConfig() ([]byte, error) {
 
 		if Config.Config.PortConn != "" && err != nil {
 			return nil, errors.New("Failed to parse the PortConn: " + Config.Config.PortConn)
-		} else  if Config.Config.PortConn == "" {
+		} else if Config.Config.PortConn == "" {
 			Port, err = strconv.Atoi(Config.Config.PortBind)
 			if err != nil {
 				return nil, errors.New("Failed to parse the PortBind: " + Config.Config.PortBind)
@@ -839,7 +842,7 @@ func (b *Builder) Cmd(cmd string) bool {
 	if err != nil {
 		logger.Error("Couldn't compile implant: " + err.Error())
 		if !b.silent {
-			b.SendConsoleMessage("Error", "couldn't compile implant: " + err.Error())
+			b.SendConsoleMessage("Error", "couldn't compile implant: "+err.Error())
 			b.SendConsoleMessage("Error", "compile output: "+stderr.String())
 		}
 		logger.Debug(cmd)

