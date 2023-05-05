@@ -441,8 +441,9 @@ BOOL ProcessCreate(
         }
     }
 
-    if ( Piped )
+    if ( Piped ) {
         JobAdd( Instance.CurrentRequestID, ProcessInfo->dwProcessId, JOB_TYPE_TRACK_PROCESS, JOB_STATE_RUNNING, ProcessInfo->hProcess, AnonPipe );
+    }
 
 Cleanup:
     return Return;

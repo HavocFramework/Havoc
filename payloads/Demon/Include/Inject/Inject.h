@@ -50,6 +50,10 @@ typedef struct INJECTION_CTX
 #define INJECT_ERROR_INVALID_PARAM          2   /* invalid param */
 #define INJECT_ERROR_PROCESS_ARCH_MISMATCH  3   /* process arch mismatches the injection arch */
 
+#define INJECT_WAY_SPAWN   0
+#define INJECT_WAY_INJECT  1
+#define INJECT_WAY_EXECUTE 2
+
 DWORD Inject(
     IN BYTE   Method,
     IN HANDLE Handle,

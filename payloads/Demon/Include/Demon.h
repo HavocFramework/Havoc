@@ -107,7 +107,7 @@ typedef struct
 #endif
         } Transport;
 
-        struct {
+        struct _CONFIG {
             DWORD SleepMaskTechnique;
             BOOL  StackSpoof;
             BOOL  SysIndirect;

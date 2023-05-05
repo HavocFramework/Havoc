@@ -121,6 +121,15 @@ HANDLE ThreadCreate(
 
     switch ( Method )
     {
+        case THREAD_METHOD_DEFAULT: {
+            return ThreadCreate( THREAD_METHOD_NTCREATEHREADEX, Process, Entry, Arg, ThreadId );
+        }
+
+        case THREAD_METHOD_CREATEREMOTETHREAD: {
+            Thread = Instance.Win32.CreateRemoteThread( Process, NULL, 0, Entry, Arg, 0, ThreadId );
+            break;
+        }
+
         case THREAD_METHOD_NTCREATEHREADEX: {
             NTSTATUS      NtStatus   = STATUS_SUCCESS;
             THD_ATTR_LIST ThreadAttr = { 0 };
@@ -143,6 +152,11 @@ HANDLE ThreadCreate(
                 NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
             }
 
+            break;
+        }
+
+        case THREAD_METHOD_NTQUEUEAPCTHREAD: {
+            /* TODO: finish implementing it */
             break;
         }
 

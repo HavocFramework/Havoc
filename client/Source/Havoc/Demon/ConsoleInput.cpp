@@ -1033,21 +1033,19 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                     auto TargetPID  = InputCommands[ 3 ];
                     auto Shellcode  = QString( ( InputCommands.begin() + 4 )->toStdString().c_str() );
 
-                    if ( ! QFile::exists( Shellcode ) )
-                    {
+                    if ( ! QFile::exists( Shellcode ) ) {
                         CONSOLE_ERROR( "Specified file not found" )
                         return false;
                     }
 
-                    if ( ! ( TargetArch.compare( "x64" ) == 0 || TargetArch.compare( "x86" ) != 0 ) )
-                    {
+                    if ( ! ( TargetArch.compare( "x64" ) == 0 || TargetArch.compare( "x86" ) != 0 ) ) {
                         CONSOLE_ERROR( "Incorrect process arch specified: " + TargetArch )
                         return false;
                     }
 
                     CommandInputList[ TaskID ] = commandline;
 
-                    SEND( Execute.ShellcodeInject( TaskID, "0", TargetPID, TargetArch, Shellcode, "" ) );
+                    SEND( Execute.ShellcodeInject( TaskID, "default", TargetPID, TargetArch, Shellcode, "" ) );
                 }
                 else
                 {
@@ -1082,7 +1080,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                     }
 
                     CommandInputList[ TaskID ] = commandline;
-                    SEND( Execute.ShellcodeSpawn( TaskID, "0", TargetArch, ShellcodeBinaryPath, "" ); )
+                    SEND( Execute.ShellcodeSpawn( TaskID, "default", TargetArch, ShellcodeBinaryPath, "" ); )
                 }
                 else
                 {
@@ -1117,7 +1115,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                     }
 
                     CommandInputList[ TaskID ] = commandline;
-                    SEND( Execute.ShellcodeExecute( TaskID, "0", TargetArch, ShellcodeBinaryPath, "" ); )
+                    SEND( Execute.ShellcodeExecute( TaskID, "default", TargetArch, ShellcodeBinaryPath, "" ); )
                 }
                 else
                 {

