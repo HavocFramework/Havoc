@@ -13,7 +13,7 @@
  #define SSN_OFFSET_1 0x4
  #define SSN_OFFSET_2 0x5
 #else
- #define SYSCALL_ASM 0x0534
+ #define SYSCALL_ASM  0x340f
  #define SSN_OFFSET_1 0x1
  #define SSN_OFFSET_2 0x2
 #endif
@@ -50,5 +50,7 @@ VOID SysSetConfig(
 NTSTATUS SysInvoke(
     IN OUT /* Args... */
 );
+
+BOOL IsWoW64();
 
 #endif

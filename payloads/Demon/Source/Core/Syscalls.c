@@ -29,6 +29,13 @@ BOOL SysInitialize(
         }
     }
 
+#if _M_IX86
+    if ( IsWoW64() )
+    {
+        Instance.Syscall.SysAddress = __readfsdword(0xC0);
+    }
+#endif
+
     /* Resolve Ssn */
     SYS_EXTRACT( NtOpenThread )
     SYS_EXTRACT( NtOpenProcess )
@@ -101,18 +108,16 @@ BOOL SysExtract(
              DREF_U8( Function + Offset + 0x1 ) == 0x8B &&
              DREF_U8( Function + Offset + 0x2 ) == 0xD1 &&
              DREF_U8( Function + Offset + 0x3 ) == 0xB8 )
-        {
 #else
         /* check current instructions for:
          *   mov eax, [ssn]
-         *   call func
          */
-        if ( DREF_U8( Function + Offset + 0x0 ) == 0xB8 &&
-             DREF_U8( Function + Offset + 0x5 ) == 0xE8 )
-        {
+        if ( DREF_U8( Function + Offset + 0x0 ) == 0xB8 )
 #endif
+        {
             /* if the Ssn param has been specified try to get the Ssn of the function */
-            if ( Ssn ) {
+            if ( Ssn )
+            {
                 SsnLow  = DREF_U8( Function + Offset + SSN_OFFSET_1 );
                 SsnHigh = DREF_U8( Function + Offset + SSN_OFFSET_2 );
                 *Ssn    = ( SsnHigh << 0x08 ) | SsnLow;
@@ -122,6 +127,17 @@ BOOL SysExtract(
             /* if SysAddr has been specified then try to get the native function syscall instruction */
             if ( SysAddr )
             {
+                Success = FALSE;
+
+#if _M_IX86
+                if ( IsWoW64() )
+                {
+                    *SysAddr = __readfsdword(0xC0);
+                    Success  = TRUE;
+                    break;
+                }
+#endif
+
                 for ( int i = 0; i < SYS_RANGE; i++ )
                 {
                     /* check if the current ( function + offset + i ) is 'syscall' instruction */

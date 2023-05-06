@@ -890,6 +890,10 @@ VOID DemonConfig()
         Instance.Config.Implant.SysIndirect ? "TRUE" : "FALSE"
     )
 
+#if _M_IX86
+    PRINTF("Is WoW64: %s\n", IsWoW64() ? "TRUE" : "FALSE")
+#endif
+
 #ifdef TRANSPORT_HTTP
     Instance.Config.Transport.KillDate       = ParserGetInt64( &Parser );
     PRINTF( "KillDate: %d\n", Instance.Config.Transport.KillDate )
