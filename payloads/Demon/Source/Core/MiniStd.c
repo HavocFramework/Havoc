@@ -30,6 +30,7 @@ INT StringCompareW( LPWSTR String1, LPWSTR String2 )
 
 }
 
+/* TODO: replace every func with HashEx */
 DWORD HashStringA( PCHAR String )
 {
     ULONG Hash = HASH_KEY;
