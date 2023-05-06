@@ -13,6 +13,9 @@
 #define IMAGE_SCN_MEM_READ       0x40000000
 #define IMAGE_SCN_MEM_WRITE      0x80000000
 
+// https://courses.cs.washington.edu/courses/cse378/03wi/lectures/LinkerFiles/coff.pdf
+#define SYMBOL_IS_A_FUNCTION 0x20
+
 typedef struct _COFFEE_PARAMS
 {
     PCHAR  EntryName;

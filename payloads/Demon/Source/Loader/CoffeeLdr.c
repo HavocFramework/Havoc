@@ -81,25 +81,25 @@ BOOL SymbolIsImport( LPSTR Symbol )
     return HashEx( Symbol, COFF_PREP_SYMBOL_SIZE, FALSE ) == COFF_PREP_SYMBOL;
 }
 
-BOOL CoffeeProcessSymbol( PCOFFEE Coffee, LPSTR Symbol, PVOID* pFuncAddr )
+BOOL CoffeeProcessSymbol( PCOFFEE Coffee, LPSTR SymbolName, UINT16 SymbolType, PVOID* pFuncAddr )
 {
     CHAR        Bak[ 1024 ]     = { 0 };
     CHAR        SymName[ 1024 ] = { 0 };
     PCHAR       SymLibrary      = NULL;
     PCHAR       SymFunction     = NULL;
     HMODULE     hLibrary        = NULL;
-    DWORD       SymBeacon       = HashEx( Symbol, COFF_PREP_BEACON_SIZE, FALSE );
+    DWORD       SymBeacon       = HashEx( SymbolName, COFF_PREP_BEACON_SIZE, FALSE );
     ANSI_STRING AnsiString      = { 0 };
     PPACKAGE    Package         = NULL;
 
     *pFuncAddr = NULL;
 
-    MemCopy( Bak, Symbol, StringLengthA( Symbol ) + 1 );
+    MemCopy( Bak, SymbolName, StringLengthA( SymbolName ) + 1 );
 
     if ( SymBeacon == COFF_PREP_BEACON )
     {
         // this is an import symbol from Beacon: __imp_BeaconFUNCNAME
-        SymFunction = Symbol + COFF_PREP_SYMBOL_SIZE;
+        SymFunction = SymbolName + COFF_PREP_SYMBOL_SIZE;
 
         for ( DWORD i = 0 ;; i++ )
         {
@@ -116,10 +116,10 @@ BOOL CoffeeProcessSymbol( PCOFFEE Coffee, LPSTR Symbol, PVOID* pFuncAddr )
 
         goto SymbolNotFound;
     }
-    else if ( SymbolIsImport( Symbol ) && ! SymbolIncludesLibrary( Symbol ) )
+    else if ( SymbolIsImport( SymbolName ) && ! SymbolIncludesLibrary( SymbolName ) )
     {
         // this is an import symbol without library: __imp_FUNCNAME
-        SymFunction = Symbol + COFF_PREP_SYMBOL_SIZE;
+        SymFunction = SymbolName + COFF_PREP_SYMBOL_SIZE;
 
         StringCopyA( SymName, SymFunction );
 
@@ -154,7 +154,7 @@ BOOL CoffeeProcessSymbol( PCOFFEE Coffee, LPSTR Symbol, PVOID* pFuncAddr )
 
         goto SymbolNotFound;
     }
-    else if ( SymbolIsImport( Symbol ) )
+    else if ( SymbolIsImport( SymbolName ) )
     {
         // this is a typical import symbol in the form: __imp_LIBNAME$FUNCNAME
         SymLibrary  = Bak + COFF_PREP_SYMBOL_SIZE;
@@ -193,11 +193,9 @@ BOOL CoffeeProcessSymbol( PCOFFEE Coffee, LPSTR Symbol, PVOID* pFuncAddr )
         if ( ! NT_SUCCESS( Instance.Win32.LdrGetProcedureAddress( hLibrary, &AnsiString, 0, pFuncAddr ) ) )
             goto SymbolNotFound;
     }
-    else if ( Symbol[0] != '.' )
+    else if ( SymbolType == SYMBOL_IS_A_FUNCTION)
     {
-        // we can safely ignore symbols like .text, .data, .rdata, etc
-        // TODO: do we *really* want to fail here?
-        //       AFAIK, an unresolved symbol like this one can lead to a crash
+        // TODO: should we also fail if the symbol is not a function?
         goto SymbolNotFound;
     }
 
@@ -206,7 +204,7 @@ BOOL CoffeeProcessSymbol( PCOFFEE Coffee, LPSTR Symbol, PVOID* pFuncAddr )
 SymbolNotFound:
     Package = PackageCreateWithRequestID( Coffee->RequestID, DEMON_COMMAND_INLINE_EXECUTE );
     PackageAddInt32( Package, DEMON_COMMAND_INLINE_EXECUTE_SYMBOL_NOT_FOUND );
-    PackageAddString( Package, Symbol );
+    PackageAddString( Package, SymbolName );
     PackageTransmit( Package, NULL, NULL );
 
     return FALSE;
@@ -402,6 +400,8 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
     PVOID  FunMapAddr        = NULL;
     PVOID  SymbolSectionAddr = NULL;
     UINT32 SymbolValue       = 0;
+    UINT16 SymbolType        = 0;
+    PCOFF_SYMBOL Symbol      = NULL;
 
     for ( UINT16 SectionCnt = 0; SectionCnt < Coffee->Header->NumberOfSections; SectionCnt++ )
     {
@@ -410,11 +410,13 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
 
         for ( DWORD RelocCnt = 0; RelocCnt < Coffee->Section->NumberOfRelocations; RelocCnt++ )
         {
-            if ( Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].First.Value[ 0 ] != 0 )
+            Symbol = &Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ];
+
+            if ( Symbol->First.Value[ 0 ] != 0 )
             {
                 // if the symbol is 8 bytes long, it will not be terminated by a null byte
                 MemSet( SymName, 0, sizeof( SymName ) );
-                MemCopy( SymName, Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].First.Name, 8 );
+                MemCopy( SymName, Symbol->First.Name, 8 );
                 SymbolName = SymName;
                 // TODO: the following symbols take 2 entries: .text, .xdata, .pdata, .rdata
                 //       skip an entry if one of those is found
@@ -422,13 +424,7 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
             else
             {
                 // in this scenario, we can trust that the symbol ends with a null byte
-                SymbolName = ( ( PCHAR ) ( Coffee->Symbol + Coffee->Header->NumberOfSymbols ) ) + Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].First.Value[ 1 ];
-            }
-
-            if ( ! CoffeeProcessSymbol( Coffee, SymbolName, &FuncPtr ) )
-            {
-                PRINTF( "Symbol '%s' couldn't be resolved\n", SymbolName );
-                return FALSE;
+                SymbolName = ( ( PCHAR ) ( Coffee->Symbol + Coffee->Header->NumberOfSymbols ) ) + Symbol->First.Value[ 1 ];
             }
 
             // address where the reloc must be written to
@@ -436,16 +432,29 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
             // address where the resolved function address will be stored
             FunMapAddr = Coffee->FunMap + ( FuncCount * sizeof( PVOID ) );
             // the address of the section where the symbol is stored
-            SymbolSectionAddr = Coffee->SecMap[ Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].SectionNumber - 1 ].Ptr;
+            SymbolSectionAddr = Coffee->SecMap[ Symbol->SectionNumber - 1 ].Ptr;
             // value of the symbol
-            SymbolValue = Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].Value;
+            SymbolValue = Symbol->Value;
+            // type of the symbol
+            SymbolType = Symbol->Type;
+
+            if (SymbolValue)
+            {
+                PRINTF("SymbolName: %s SymbolValue: %d\n", SymbolName, SymbolValue)
+            }
+
+            if ( ! CoffeeProcessSymbol( Coffee, SymbolName, SymbolType, &FuncPtr ) )
+            {
+                PRINTF( "Symbol '%s' couldn't be resolved\n", SymbolName );
+                return FALSE;
+            }
 
 #if _WIN64
             if ( Coffee->Reloc->Type == IMAGE_REL_AMD64_REL32 && FuncPtr != NULL )
             {
                 *( ( PVOID* ) FunMapAddr ) = FuncPtr;
 
-                Offset = ( UINT32 ) ( U_PTR( FunMapAddr ) - U_PTR( RelocAddr ) - sizeof( UINT32 ) + SymbolValue );
+                Offset = ( UINT32 ) ( U_PTR( FunMapAddr ) - U_PTR( RelocAddr ) - sizeof( UINT32 ) );
 
                 *( ( PUINT32 ) RelocAddr ) = Offset;
 
@@ -455,7 +464,7 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
             {
                 Offset = *( PUINT32 ) ( RelocAddr );
 
-                Offset += U_PTR( SymbolSectionAddr ) - U_PTR( RelocAddr ) - sizeof( UINT32 ) + SymbolValue;
+                Offset += U_PTR( SymbolSectionAddr ) - U_PTR( RelocAddr ) - sizeof( UINT32 );
 
                 *( ( PUINT32 ) RelocAddr ) = Offset;
             }
@@ -463,7 +472,7 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
             {
                 Offset = *( PUINT32 ) ( RelocAddr );
 
-                Offset += U_PTR( SymbolSectionAddr ) - U_PTR( RelocAddr ) - sizeof( UINT32 ) + SymbolValue - 1;
+                Offset += U_PTR( SymbolSectionAddr ) - U_PTR( RelocAddr ) - sizeof( UINT32 ) - 1;
 
                 *( ( PUINT32 ) RelocAddr ) = Offset;
             }
@@ -471,7 +480,7 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
             {
                 Offset = *( PUINT32 ) ( RelocAddr );
 
-                Offset += U_PTR( SymbolSectionAddr ) - U_PTR( RelocAddr ) - sizeof( UINT32 ) + SymbolValue - 2;
+                Offset += U_PTR( SymbolSectionAddr ) - U_PTR( RelocAddr ) - sizeof( UINT32 ) - 2;
 
                 *( ( PUINT32 ) RelocAddr ) = Offset;
             }
@@ -479,7 +488,7 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
             {
                 Offset = *( PUINT32 ) ( RelocAddr );
 
-                Offset += U_PTR( SymbolSectionAddr ) - U_PTR( RelocAddr ) - sizeof( UINT32 ) + SymbolValue - 3;
+                Offset += U_PTR( SymbolSectionAddr ) - U_PTR( RelocAddr ) - sizeof( UINT32 ) - 3;
 
                 *( ( PUINT32 ) RelocAddr ) = Offset;
             }
@@ -487,7 +496,7 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
             {
                 Offset = *( PUINT32 ) ( RelocAddr );
 
-                Offset += U_PTR( SymbolSectionAddr ) - U_PTR( RelocAddr ) - sizeof( UINT32 ) + SymbolValue - 4;
+                Offset += U_PTR( SymbolSectionAddr ) - U_PTR( RelocAddr ) - sizeof( UINT32 ) - 4;
 
                 *( ( PUINT32 ) RelocAddr ) = Offset;
             }
@@ -495,7 +504,7 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
             {
                 Offset = *( PUINT32 ) ( RelocAddr );
 
-                Offset += U_PTR( SymbolSectionAddr ) - U_PTR( RelocAddr ) - sizeof( UINT32 ) + SymbolValue - 5;
+                Offset += U_PTR( SymbolSectionAddr ) - U_PTR( RelocAddr ) - sizeof( UINT32 ) - 5;
 
                 *( ( PUINT32 ) RelocAddr ) = Offset;
             }
@@ -503,7 +512,7 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
             {
                 Offset = *( PUINT32 ) ( RelocAddr );
 
-                Offset += U_PTR( SymbolSectionAddr ) - U_PTR( RelocAddr ) - sizeof( UINT32 ) + SymbolValue;
+                Offset += U_PTR( SymbolSectionAddr ) - U_PTR( RelocAddr ) - sizeof( UINT32 );
 
                 *( ( PUINT32 ) RelocAddr ) = Offset;
             }
@@ -511,7 +520,7 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
             {
                 OffsetLong = *( PUINT64 ) ( RelocAddr );
 
-                OffsetLong += U_PTR( SymbolSectionAddr ) + SymbolValue;
+                OffsetLong += U_PTR( SymbolSectionAddr );
 
                 *( ( PUINT64 ) RelocAddr ) = OffsetLong;
             }
@@ -520,7 +529,7 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
             {
                 Offset = *( PUINT32 ) ( RelocAddr );
 
-                Offset += U_PTR( SymbolSectionAddr ) - U_PTR( RelocAddr ) - sizeof( UINT32 ) + SymbolValue;
+                Offset += U_PTR( SymbolSectionAddr ) - U_PTR( RelocAddr ) - sizeof( UINT32 );
 
                 *( ( PUINT32 ) RelocAddr ) = Offset;
             }
@@ -528,7 +537,7 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
             {
                 *( ( PVOID* ) FunMapAddr ) = FuncPtr;
 
-                Offset = U_PTR( FunMapAddr ) + SymbolValue;
+                Offset = U_PTR( FunMapAddr );
 
                 *( ( PUINT32 ) RelocAddr ) = Offset;
 
@@ -538,7 +547,7 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
             {
                 Offset = *( PUINT32 ) ( RelocAddr );
 
-                Offset += U_PTR( SymbolSectionAddr ) + SymbolValue;
+                Offset += U_PTR( SymbolSectionAddr );
 
                 *( ( PUINT32 ) RelocAddr ) = Offset;
             }
@@ -567,9 +576,10 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
 // calculate how many __imp_* function there are
 SIZE_T CoffeeGetFunMapSize( PCOFFEE Coffee )
 {
-    CHAR  SymName[9]    = { 0 };
-    PCHAR SymbolName    = NULL;
-    ULONG NumberOfFuncs = 0;
+    CHAR         SymName[9]    = { 0 };
+    PCHAR        SymbolName    = NULL;
+    ULONG        NumberOfFuncs = 0;
+    PCOFF_SYMBOL Symbol        = NULL;
 
     for ( UINT16 SectionCnt = 0; SectionCnt < Coffee->Header->NumberOfSections; SectionCnt++ )
     {
@@ -578,17 +588,19 @@ SIZE_T CoffeeGetFunMapSize( PCOFFEE Coffee )
 
         for ( DWORD RelocCnt = 0; RelocCnt < Coffee->Section->NumberOfRelocations; RelocCnt++ )
         {
-            if ( Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].First.Value[ 0 ] != 0 )
+            Symbol = &Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ];
+
+            if ( Symbol->First.Value[ 0 ] != 0 )
             {
                 // if the symbol is 8 bytes long, it will not be terminated by a null byte
                 MemSet( SymName, 0, sizeof( SymName ) );
-                MemCopy( SymName, Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].First.Name, 8 );
+                MemCopy( SymName, Symbol->First.Name, 8 );
                 SymbolName = SymName;
             }
             else
             {
                 // in this scenario, we can trust that the symbol ends with a null byte
-                SymbolName = ( ( PCHAR ) ( Coffee->Symbol + Coffee->Header->NumberOfSymbols ) ) + Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].First.Value[ 1 ];
+                SymbolName = ( ( PCHAR ) ( Coffee->Symbol + Coffee->Header->NumberOfSymbols ) ) + Symbol->First.Value[ 1 ];
             }
 
             // if the symbol starts with __imp_, count it
