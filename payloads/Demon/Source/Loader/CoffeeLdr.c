@@ -81,7 +81,7 @@ BOOL SymbolIsImport( LPSTR Symbol )
     return HashEx( Symbol, COFF_PREP_SYMBOL_SIZE, FALSE ) == COFF_PREP_SYMBOL;
 }
 
-BOOL CoffeeProcessSymbol( LPSTR Symbol, PVOID* pFuncAddr )
+BOOL CoffeeProcessSymbol( PCOFFEE Coffee, LPSTR Symbol, PVOID* pFuncAddr )
 {
     CHAR        Bak[ 1024 ]     = { 0 };
     CHAR        SymName[ 1024 ] = { 0 };
@@ -121,9 +121,11 @@ BOOL CoffeeProcessSymbol( LPSTR Symbol, PVOID* pFuncAddr )
         // this is an import symbol without library: __imp_FUNCNAME
         SymFunction = Symbol + COFF_PREP_SYMBOL_SIZE;
 
+        StringCopyA( SymName, SymFunction );
+
+#if _M_IX86
         // in x86, symbols can have this form: __imp__LoadLibraryA@4
         // we need to make sure there is no '@' in the function name
-        StringCopyA( SymName, SymFunction );
         for ( DWORD i = 0 ;; ++i )
         {
             if ( ! SymName[i] )
@@ -135,6 +137,7 @@ BOOL CoffeeProcessSymbol( LPSTR Symbol, PVOID* pFuncAddr )
                 break;
             }
         }
+#endif
 
         // we support a handful of functions that don't usually have the DLL
         for ( DWORD i = 0 ;; i++ )
@@ -165,9 +168,11 @@ BOOL CoffeeProcessSymbol( LPSTR Symbol, PVOID* pFuncAddr )
             goto SymbolNotFound;
         }
 
+        StringCopyA( SymName, SymFunction );
+
+#if _M_IX86
         // in x86, symbols can have this form: __imp__KERNEL32$GetProcessHeap@0
         // we need to make sure there is no '@' in the function name
-        StringCopyA( SymName, SymFunction );
         for ( DWORD i = 0 ;; ++i )
         {
             if ( ! SymName[i] )
@@ -179,6 +184,7 @@ BOOL CoffeeProcessSymbol( LPSTR Symbol, PVOID* pFuncAddr )
                 break;
             }
         }
+#endif
 
         AnsiString.Length        = StringLengthA( SymName );
         AnsiString.MaximumLength = AnsiString.Length + sizeof( CHAR );
@@ -187,11 +193,18 @@ BOOL CoffeeProcessSymbol( LPSTR Symbol, PVOID* pFuncAddr )
         if ( ! NT_SUCCESS( Instance.Win32.LdrGetProcedureAddress( hLibrary, &AnsiString, 0, pFuncAddr ) ) )
             goto SymbolNotFound;
     }
+    else if ( Symbol[0] != '.' )
+    {
+        // we can safely ignore symbols like .text, .data, .rdata, etc
+        // TODO: do we *really* want to fail here?
+        //       AFAIK, an unresolved symbol like this one can lead to a crash
+        goto SymbolNotFound;
+    }
 
     return TRUE;
 
 SymbolNotFound:
-    Package = PackageCreate( DEMON_COMMAND_INLINE_EXECUTE );
+    Package = PackageCreateWithRequestID( Coffee->RequestID, DEMON_COMMAND_INLINE_EXECUTE );
     PackageAddInt32( Package, DEMON_COMMAND_INLINE_EXECUTE_SYMBOL_NOT_FOUND );
     PackageAddString( Package, Symbol );
     PackageTransmit( Package, NULL, NULL );
@@ -412,7 +425,7 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
                 SymbolName = ( ( PCHAR ) ( Coffee->Symbol + Coffee->Header->NumberOfSymbols ) ) + Coffee->Symbol[ Coffee->Reloc->SymbolTableIndex ].First.Value[ 1 ];
             }
 
-            if ( ! CoffeeProcessSymbol( SymbolName, &FuncPtr ) )
+            if ( ! CoffeeProcessSymbol( Coffee, SymbolName, &FuncPtr ) )
             {
                 PRINTF( "Symbol '%s' couldn't be resolved\n", SymbolName );
                 return FALSE;
