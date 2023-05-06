@@ -8,6 +8,15 @@
 /* Syscall functions */
 #define SYS_ASM_RET 0xC3
 #define SYS_RANGE   0x1E
+#if _WIN64
+ #define SYSCALL_ASM  0x050F
+ #define SSN_OFFSET_1 0x4
+ #define SSN_OFFSET_2 0x5
+#else
+ #define SYSCALL_ASM 0x0534
+ #define SSN_OFFSET_1 0x1
+ #define SSN_OFFSET_2 0x2
+#endif
 
 #define SYS_EXTRACT( NtName )                                                       \
     if ( Instance.Win32.NtName ) {                                                  \

@@ -78,37 +78,43 @@ BOOL SysExtract(
     OUT PVOID* SysAddr
 ) {
     ULONG Offset      = { 0 };
-    PVOID SysFunction = { 0 };
     BYTE  SsnLow      = { 0 };
     BYTE  SsnHigh     = { 0 };
     BOOL  Success     = FALSE;
 
     /* check args */
-    if ( ( ! Function ) || ( ( ! Ssn ) && ! ( SysAddr ) ) ) {
+    if ( ! Function )
         return FALSE;
-    }
-
-    SysFunction = Function;
 
     do {
         /* check if current instruction is a 'ret' (end of function) */
-        if ( DREF_U8( SysFunction + Offset ) == SYS_ASM_RET ) {
+        if ( DREF_U8( Function + Offset ) == SYS_ASM_RET ) {
             break;
         }
 
+#if _WIN64
         /* check current instructions for:
          *   mov r10, rcx
          *   mov rcx, [ssn]
          */
-        if ( DREF_U8( SysFunction + Offset + 0x0 ) == 0x4C &&
-             DREF_U8( SysFunction + Offset + 0x1 ) == 0x8B &&
-             DREF_U8( SysFunction + Offset + 0x2 ) == 0xD1 &&
-             DREF_U8( SysFunction + Offset + 0x3 ) == 0xB8 )
+        if ( DREF_U8( Function + Offset + 0x0 ) == 0x4C &&
+             DREF_U8( Function + Offset + 0x1 ) == 0x8B &&
+             DREF_U8( Function + Offset + 0x2 ) == 0xD1 &&
+             DREF_U8( Function + Offset + 0x3 ) == 0xB8 )
         {
+#else
+        /* check current instructions for:
+         *   mov eax, [ssn]
+         *   call func
+         */
+        if ( DREF_U8( Function + Offset + 0x0 ) == 0xB8 &&
+             DREF_U8( Function + Offset + 0x5 ) == 0xE8 )
+        {
+#endif
             /* if the Ssn param has been specified try to get the Ssn of the function */
             if ( Ssn ) {
-                SsnLow  = DREF_U8( SysFunction + Offset + 0x4 );
-                SsnHigh = DREF_U8( SysFunction + Offset + 0x5 );
+                SsnLow  = DREF_U8( Function + Offset + SSN_OFFSET_1 );
+                SsnHigh = DREF_U8( Function + Offset + SSN_OFFSET_2 );
                 *Ssn    = ( SsnHigh << 0x08 ) | SsnLow;
                 Success = TRUE;
             }
@@ -119,8 +125,8 @@ BOOL SysExtract(
                 for ( int i = 0; i < SYS_RANGE; i++ )
                 {
                     /* check if the current ( function + offset + i ) is 'syscall' instruction */
-                    if ( DREF_U16( SysFunction + Offset + i ) == 0x50F ) {
-                        *SysAddr = C_PTR( SysFunction + Offset + i );
+                    if ( DREF_U16( Function + Offset + i ) == SYSCALL_ASM ) {
+                        *SysAddr = C_PTR( Function + Offset + i );
                         Success  = TRUE;
                         break;
                     }

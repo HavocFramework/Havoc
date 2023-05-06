@@ -243,11 +243,19 @@ func (b *Builder) Build() bool {
 			var FilePath = dir + "/" + f.Name()
 
 			// only add the assembly if the demon is x64
-			if path.Ext(f.Name()) == ".asm" && b.config.Arch == ARCHITECTURE_X64 {
-				AsmObj = "/tmp/" + utils.GenerateID(10) + ".o"
-				b.Cmd(fmt.Sprintf(b.compilerOptions.Config.Nasm+" -f win64 %s -o %s", FilePath, AsmObj))
-				logger.Debug(fmt.Sprintf(b.compilerOptions.Config.Nasm+" -f win64 %s -o %s", FilePath, AsmObj))
-				CompileCommand += AsmObj + " "
+			if path.Ext(f.Name()) == ".asm" {
+				if (strings.Contains(f.Name(), ".x64.") && b.config.Arch == ARCHITECTURE_X64) || (strings.Contains(f.Name(), ".x86.") && b.config.Arch == ARCHITECTURE_X86) {
+					AsmObj = "/tmp/" + utils.GenerateID(10) + ".o"
+					var AsmCompile string
+					if b.config.Arch == ARCHITECTURE_X64 {
+						AsmCompile = fmt.Sprintf(b.compilerOptions.Config.Nasm+" -f win64 %s -o %s", FilePath, AsmObj)
+					} else {
+						AsmCompile = fmt.Sprintf(b.compilerOptions.Config.Nasm+" -f win32 %s -o %s", FilePath, AsmObj)
+					}
+					logger.Debug(AsmCompile)
+					b.Cmd(AsmCompile)
+					CompileCommand += AsmObj + " "
+				}
 			} else if path.Ext(f.Name()) == ".c" {
 				CompileCommand += FilePath + " "
 			}
@@ -358,6 +366,7 @@ func (b *Builder) Build() bool {
 		b.SendConsoleMessage("Info", "compiling source")
 	}
 
+	//logger.Debug(CompileCommand)
 	Successful := b.CompileCmd(CompileCommand)
 
 	if AsmObj != "" {
