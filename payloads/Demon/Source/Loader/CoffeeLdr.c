@@ -349,6 +349,7 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
         return FALSE;
     }
 
+    PUTS( "[*] Execute coffee main\n" );
     CoffeeFunction( CoffeeMain, Argument, Size );
 
     // Remove our exception handler
@@ -399,7 +400,6 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
     PVOID  RelocAddr         = NULL;
     PVOID  FunMapAddr        = NULL;
     PVOID  SymbolSectionAddr = NULL;
-    UINT32 SymbolValue       = 0;
     UINT16 SymbolType        = 0;
     PCOFF_SYMBOL Symbol      = NULL;
 
@@ -433,15 +433,8 @@ BOOL CoffeeProcessSections( PCOFFEE Coffee )
             FunMapAddr = Coffee->FunMap + ( FuncCount * sizeof( PVOID ) );
             // the address of the section where the symbol is stored
             SymbolSectionAddr = Coffee->SecMap[ Symbol->SectionNumber - 1 ].Ptr;
-            // value of the symbol
-            SymbolValue = Symbol->Value;
             // type of the symbol
             SymbolType = Symbol->Type;
-
-            if (SymbolValue)
-            {
-                PRINTF("SymbolName: %s SymbolValue: %d\n", SymbolName, SymbolValue)
-            }
 
             if ( ! CoffeeProcessSymbol( Coffee, SymbolName, SymbolType, &FuncPtr ) )
             {
@@ -742,7 +735,6 @@ VOID CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSize
         goto END;
     }
 
-    PUTS( "[*] Execute coffee main\n" );
     Success = CoffeeExecuteFunction( Coffee, EntryName, ArgData, ArgSize, RequestID );
 
 END:
