@@ -24,6 +24,7 @@ import (
 	"github.com/gorilla/websocket"
 	"golang.org/x/crypto/sha3"
 
+	"Havoc/pkg/common"
 	"Havoc/pkg/colors"
 	"Havoc/pkg/events"
 	"Havoc/pkg/handlers"
@@ -230,7 +231,7 @@ func (t *Teamserver) Start() {
 					logger.Error("Failed to parse the kill date: " + err.Error())
 					return
 				}
-				KillDate = t.Unix()
+				KillDate = common.EpochTimeToSystemTime(t.Unix())
 			} else {
 				KillDate = 0
 			}
@@ -289,7 +290,7 @@ func (t *Teamserver) Start() {
 					logger.Error("Failed to parse the kill date: " + err.Error())
 					return
 				}
-				KillDate = t.Unix()
+				KillDate = common.EpochTimeToSystemTime(t.Unix())
 			} else {
 				KillDate = 0
 			}

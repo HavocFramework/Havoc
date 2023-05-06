@@ -17,6 +17,7 @@ PCHAR   StringConcatA(PCHAR String, PCHAR String2);
 PWCHAR  StringConcatW(PWCHAR String, PWCHAR String2);
 PCHAR   StringTokenA(PCHAR String, CONST PCHAR Delim);
 INT     MemCompare( PVOID s1, PVOID s2, INT len );
+UINT64  GetSystemFileTime( );
 
 SIZE_T  WCharStringToCharString( PCHAR Destination, PWCHAR Source, SIZE_T MaximumAllowed );
 SIZE_T  CharStringToWCharString( PWCHAR Destination, PCHAR Source, SIZE_T MaximumAllowed );

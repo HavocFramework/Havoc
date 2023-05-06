@@ -195,3 +195,16 @@ func Int32ToIpString(ipInt int64) string {
 
 	return b0 + "." + b1 + "." + b2 + "." + b3
 }
+
+func EpochTimeToSystemTime( EpochTime int64 ) int64 {
+	var (
+		UNIX_TIME_START  int64 = 0x019DB1DED53E8000 //January 1, 1970 (start of Unix epoch) in "ticks"
+		TICKS_PER_SECOND int64 = 10000000 //a tick is 100ns
+	)
+
+	if (EpochTime == 0) {
+		return 0
+	}
+
+	return ( EpochTime * TICKS_PER_SECOND ) + UNIX_TIME_START
+}

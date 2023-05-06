@@ -1286,6 +1286,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 					if KillDate < time.Now().Unix() {
 						return nil, errors.New("The date can't be in the past")
 					}
+					KillDate = common.EpochTimeToSystemTime(KillDate)
 				}
 			} else {
 				KillDate = 0

@@ -275,14 +275,21 @@ void HavocNamespace::UserInterface::HavocUI::UpdateSessionsHealth()
         // it is very normal for agents to delay one second due to network latency
         auto AllowedDiff = 1;
 
-        if ( session.KillDate > 0 && Now.secsTo( QDateTime::fromSecsSinceEpoch( session.KillDate, Qt::UTC ) ) <= 0 )
+        if ( session.KillDate > 0 )
         {
-            // agent reached its killdate
-            session.Health = "killdate";
-            session.Marked = "Dead";
-            HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue( session.Name, 9, session.Health );
-            MarkSessionAs( session, QString( "Dead") );
-            continue;
+            auto UNIX_TIME_START  = 0x019DB1DED53E8000; //January 1, 1970 (start of Unix epoch) in "ticks"
+            auto TICKS_PER_SECOND = 10000000; //a tick is 100ns
+            auto KillDateInEpoch  = ( session.KillDate - UNIX_TIME_START ) / TICKS_PER_SECOND;
+
+            if ( Now.secsTo( QDateTime::fromSecsSinceEpoch( KillDateInEpoch, Qt::UTC ) ) <= 0 )
+            {
+                // agent reached its killdate
+                session.Health = "killdate";
+                session.Marked = "Dead";
+                HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue( session.Name, 9, session.Health );
+                MarkSessionAs( session, QString( "Dead") );
+                continue;
+            }
         }
 
         if ( ( ( session.WorkingHours >> 22 ) & 1 ) == 1 )

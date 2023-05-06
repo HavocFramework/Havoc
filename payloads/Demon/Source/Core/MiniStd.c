@@ -191,23 +191,14 @@ CONTINUE:
 
 }
 
-UINT64 GetEpochTime( )
+UINT64 GetSystemFileTime( )
 {
-   //Get the number of seconds since January 1, 1970 12:00am UTC
-   //Code released into public domain; no attribution required.
+    FILETIME ft;
+    LARGE_INTEGER li;
 
-   UINT64 UNIX_TIME_START = 0x019DB1DED53E8000; //January 1, 1970 (start of Unix epoch) in "ticks"
-   UINT64 TICKS_PER_SECOND = 10000000; //a tick is 100ns
+    Instance.Win32.GetSystemTimeAsFileTime(&ft); //returns ticks in UTC
+    li.LowPart  = ft.dwLowDateTime;
+    li.HighPart = ft.dwHighDateTime;
 
-   FILETIME ft;
-   Instance.Win32.GetSystemTimeAsFileTime(&ft); //returns ticks in UTC
-
-   //Copy the low and high parts of FILETIME into a LARGE_INTEGER
-   //This is so we can access the full 64-bits as an Int64 without causing an alignment fault
-   LARGE_INTEGER li;
-   li.LowPart  = ft.dwLowDateTime;
-   li.HighPart = ft.dwHighDateTime;
-
-   //Convert ticks since 1/1/1970 into seconds
-   return (li.QuadPart - UNIX_TIME_START) / TICKS_PER_SECOND;
+    return li.QuadPart;
 }

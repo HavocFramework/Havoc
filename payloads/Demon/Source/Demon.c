@@ -894,7 +894,7 @@ VOID DemonConfig()
     Instance.Config.Transport.KillDate       = ParserGetInt64( &Parser );
     PRINTF( "KillDate: %d\n", Instance.Config.Transport.KillDate )
     // check if the kill date has already passed
-    if ( Instance.Config.Transport.KillDate && GetEpochTime() >= Instance.Config.Transport.KillDate )
+    if ( Instance.Config.Transport.KillDate && GetSystemFileTime() >= Instance.Config.Transport.KillDate )
     {
         // refuse to run
         // TODO: exit process?
@@ -1019,7 +1019,7 @@ VOID DemonConfig()
     Instance.Config.Transport.KillDate = ParserGetInt64( &Parser );
     PRINTF( "KillDate: %d\n", Instance.Config.Transport.KillDate )
     // check if the kill date has already passed
-    if ( Instance.Config.Transport.KillDate && GetEpochTime() >= Instance.Config.Transport.KillDate )
+    if ( Instance.Config.Transport.KillDate && GetSystemFileTime() >= Instance.Config.Transport.KillDate )
     {
         // refuse to run
         // TODO: exit process?

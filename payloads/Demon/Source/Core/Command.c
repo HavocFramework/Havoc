@@ -3205,7 +3205,7 @@ BOOL InWorkingHours( )
 
 BOOL ReachedKillDate()
 {
-    return Instance.Config.Transport.KillDate && GetEpochTime() >= Instance.Config.Transport.KillDate;
+    return Instance.Config.Transport.KillDate && GetSystemFileTime() >= Instance.Config.Transport.KillDate;
 }
 
 VOID KillDate( )

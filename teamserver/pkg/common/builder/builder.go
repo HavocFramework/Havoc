@@ -295,7 +295,7 @@ func (b *Builder) Build() bool {
 		if b.config.Arch == ARCHITECTURE_X64 {
 			CompileCommand += "-shared -e DllMain "
 		} else {
-			CompileCommand += "-static-libgcc -lgcc -shared -e _DllMain "
+			CompileCommand += "-shared -e _DllMain "
 		}
 		CompileCommand += b.compilerOptions.Main.Dll + " "
 		break
