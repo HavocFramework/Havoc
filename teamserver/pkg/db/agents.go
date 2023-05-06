@@ -269,7 +269,7 @@ func (db *DB) AgentAll() []*agent.Agent {
 			Info: new(agent.AgentInfo),
 		}
 
-		Agent.NameID            = fmt.Sprintf("%x", AgentID)
+		Agent.NameID            = fmt.Sprintf("%08x", AgentID)
 		Agent.SessionDir        = ""
 		Agent.BackgroundCheck   = false
 		Agent.TaskedOnce        = true

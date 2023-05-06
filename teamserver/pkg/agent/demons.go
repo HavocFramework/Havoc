@@ -2243,7 +2243,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 				a.Active = true
 
-				a.NameID = fmt.Sprintf("%x", DemonID)
+				a.NameID = fmt.Sprintf("%08x", DemonID)
 				a.Info.FirstCallIn = a.Info.FirstCallIn
 				a.Info.LastCallIn = a.Info.LastCallIn
 				a.Info.Hostname = Hostname
@@ -4979,7 +4979,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 										}
 
 										for i := range DemonInfo.Pivots.Parent.Pivots.Links {
-											if DemonInfo.Pivots.Parent.Pivots.Links[i].NameID == fmt.Sprintf("%x", AgentHdr.AgentID) {
+											if DemonInfo.Pivots.Parent.Pivots.Links[i].NameID == fmt.Sprintf("%08x", AgentHdr.AgentID) {
 												DemonInfo.Pivots.Parent.Pivots.Links = append(DemonInfo.Pivots.Parent.Pivots.Links[:i], DemonInfo.Pivots.Parent.Pivots.Links[i+1:]...)
 												break
 											}
@@ -5071,7 +5071,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						Message["Message"] = fmt.Sprintf("[SMB] Agent disconnected %x", AgentID)
 
 						Message["MiscType"] = "disconnect"
-						Message["MiscData"] = fmt.Sprintf("%x", AgentID)
+						Message["MiscData"] = fmt.Sprintf("%08x", AgentID)
 
 						AgentInstance := teamserver.AgentInstance(AgentID)
 						if AgentInstance != nil {

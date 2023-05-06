@@ -209,7 +209,7 @@ func RegisterInfoToInstance(Header Header, RegisterInfo map[string]any) *Agent {
 		err error
 	)
 
-	agent.NameID = fmt.Sprintf("%x", Header.AgentID)
+	agent.NameID = fmt.Sprintf("%08x", Header.AgentID)
 	agent.Info.MagicValue = Header.MagicValue
 
 	if val, ok := RegisterInfo["Hostname"]; ok {
@@ -414,7 +414,7 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 
 			Session.Active = true
 
-			Session.NameID = fmt.Sprintf("%x", DemonID)
+			Session.NameID = fmt.Sprintf("%08x", DemonID)
 			Session.Info.MagicValue = MagicValue
 			Session.Info.FirstCallIn = time.Now().Format("02/01/2006 15:04:05")
 			Session.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05.999")
@@ -1205,7 +1205,7 @@ func (a *Agent) ToMap() map[string]interface{} {
 	delete(Info, "JobQueue")
 	delete(Info, "Parent")
 
-	MagicValue = fmt.Sprintf("%x", a.Info.MagicValue)
+	MagicValue = fmt.Sprintf("%08x", a.Info.MagicValue)
 
 	if ParentAgent != nil {
 		Info["PivotParent"] = ParentAgent.NameID
