@@ -149,6 +149,7 @@ public:
 
     auto SetDemonConsole( UserInterface::Widgets::DemonInteracted* pInteracted ) -> void;
     auto DispatchCommand( bool Send, QString TaskID, const QString& commandline ) -> bool;
+    auto PrintModuleCachedMessages() -> void;
 };
 
 #endif

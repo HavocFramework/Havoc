@@ -729,6 +729,9 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                                     }
 
                                     Session.TaskIDToPythonCallbacks.erase( TaskID );
+
+                                    // print messages from the python the module
+                                    Session.InteractedWidget->DemonCommands->PrintModuleCachedMessages();
                                 } else {
                                     spdlog::error( "[PACKAGE] TaskID not found: {}", TaskID.toStdString() );
                                 }

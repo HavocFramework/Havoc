@@ -2259,12 +2259,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                             {
                                 if ( Send )
                                 {
-                                    DemonConsole->Console->append( "" );
-                                    DemonConsole->Console->append( this->Prompt );
-
-                                    /* display any messages that the script made */
-                                    for ( auto& message : DemonConsole->DemonCommands->BufferedMessages )
-                                        DemonConsole->Console->append( message );
+                                    PrintModuleCachedMessages();
 
                                     if ( Py_IsNone( Return ) )
                                         DemonConsole->TaskError( "Failed to execute " + InputCommands[ 0 ] + ". Script return is None" );
@@ -2349,12 +2344,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                         {
                             if ( Send )
                             {
-                                DemonConsole->Console->append( "" );
-                                DemonConsole->Console->append( this->Prompt );
-
-                                /* display any messages that the script made */
-                                for ( auto& message : DemonConsole->DemonCommands->BufferedMessages )
-                                    DemonConsole->Console->append( message );
+                                PrintModuleCachedMessages();
 
                                 if ( Py_IsNone( Return ) )
                                     DemonConsole->TaskError( "Failed to execute " + InputCommands[ 0 ] + ". Script return is None" );
@@ -2649,4 +2639,19 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
     }
 
     return true;
+}
+
+auto DemonCommands::PrintModuleCachedMessages( ) -> void
+{
+    if ( DemonConsole->DemonCommands->BufferedMessages.size() > 0 )
+    {
+        DemonConsole->Console->append( "" );
+        DemonConsole->Console->append( this->Prompt );
+
+        /* display any messages that the script made */
+        for ( auto& message : DemonConsole->DemonCommands->BufferedMessages )
+            DemonConsole->Console->append( message );
+
+        DemonConsole->DemonCommands->BufferedMessages.clear();
+    }
 }
