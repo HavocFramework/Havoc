@@ -2255,7 +2255,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                                 PyErr_Clear();
                             }
 
-                            if ( Py_IsNone( Return ) || Py_IsTrue( Return ) )
+                            if ( Py_IsNone( Return ) || Py_IsFalse( Return ) )
                             {
                                 if ( Send )
                                 {
