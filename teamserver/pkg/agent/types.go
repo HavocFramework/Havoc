@@ -99,6 +99,7 @@ type Download struct {
 type BofCallback struct {
 	TaskID   uint32
 	Output   string
+	Error    string
 	ClientID string
 }
 

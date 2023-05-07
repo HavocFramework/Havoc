@@ -712,6 +712,7 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                                 auto JsonDocument  = QJsonDocument::fromJson( QByteArray::fromBase64( Output.toLocal8Bit( ) ) );
                                 auto Worked        = JsonDocument[ "Worked" ].toString();
                                 auto Output        = JsonDocument[ "Output" ].toString();
+                                auto Error         = JsonDocument[ "Error" ].toString();
                                 auto TaskID        = JsonDocument[ "TaskID" ].toString();
                                 PyObject* Callback = nullptr;
 
@@ -720,7 +721,7 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                                     Callback = it->second;
                                     if ( PyCallable_Check( Callback ) )
                                     {
-                                        PyObject *arglist = Py_BuildValue( "sOs", Session.Name.toStdString().c_str(), Worked == "true" ? Py_True : Py_False, Output.toStdString().c_str() );
+                                        PyObject *arglist = Py_BuildValue( "sOss", Session.Name.toStdString().c_str(), Worked == "true" ? Py_True : Py_False, Output.toStdString().c_str(), Error.toStdString().c_str() );
                                         PyObject_CallObject( Callback, arglist );
                                         Py_XDECREF( Callback );
                                     } else {

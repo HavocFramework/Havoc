@@ -556,6 +556,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 			var bofcallback = &BofCallback{
 				TaskID:   job.RequestID,
 				Output:   "",
+				Error:    "",
 				ClientID: ClientID,
 			}
 
@@ -3209,7 +3210,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					for _, BofCallback := range a.BofCallbacks {
 						if BofCallback.TaskID == RequestID {
 							// store the output and later send it back to the python module
-							BofCallback.Output += Parser.ParseString()
+							BofCallback.Error += Parser.ParseString()
 							found = true
 							break
 						}
@@ -3765,6 +3766,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					// send the output back to the python module
 					OutputMap["Worked"] = "true"
 					OutputMap["Output"] = BofCallback.Output
+					OutputMap["Error"]  = BofCallback.Error
 					OutputMap["TaskID"] = strings.ToUpper(fmt.Sprintf("%08x", RequestID))
 					teamserver.PythonModuleCallback(BofCallback.ClientID, a.NameID, HAVOC_BOF_CALLBACK, OutputMap)
 					a.BofCallbacks = append(a.BofCallbacks[:i], a.BofCallbacks[i+1:]...)
