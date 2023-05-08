@@ -307,7 +307,7 @@ bool Packager::DispatchListener( Util::Packager::PPackage Package )
 
                 for ( const auto& listener : HavocX::Teamserver.RegisteredListeners )
                 {
-                    if ( ListenerInfo.Protocol == listener[ "Name" ] )
+                    if ( ListenerInfo.Protocol == listener[ "Name" ].get<std::string>() )
                     {
                         found = true;
 
