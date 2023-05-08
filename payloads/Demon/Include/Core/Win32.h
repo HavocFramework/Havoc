@@ -70,6 +70,12 @@ typedef struct _PROC_THREAD_ATTRIBUTE_ENTRY
     ULONG_PTR  Unknown;
 } PROC_THREAD_ATTRIBUTE_ENTRY, *PPROC_THREAD_ATTRIBUTE_ENTRY;
 
+typedef struct __attribute__((packed))
+{
+    ULONG ExtendedProcessInfo;
+    ULONG ExtendedProcessInfoBuffer;
+} EXTENDED_PROCESS_INFORMATION, *PEXTENDED_PROCESS_INFORMATION;
+
 typedef struct _PROC_THREAD_ATTRIBUTE_LIST
 {
     ULONG_PTR                   Length;
@@ -100,6 +106,10 @@ PVOID LdrFunctionAddr(
 
 PVOID LdrModulePeb(
     IN DWORD hash
+);
+
+PVOID LdrModulePebByString(
+    IN LPWSTR Module
 );
 
 PVOID LdrModuleLoad(
@@ -183,6 +193,14 @@ ULONG RandomNumber32(
 
 BOOL RandomBool(
     VOID
+);
+
+ULONGLONG SharedTimestamp(
+    VOID
+);
+
+VOID SharedSleep(
+    SIZE_T Delay
 );
 
 #endif

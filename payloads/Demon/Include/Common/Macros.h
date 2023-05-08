@@ -37,6 +37,8 @@
 #define DREF_U16( x )   ( ( WORD ) *( PWORD* )( x ) )
 #define HTONS32( x )    __builtin_bswap32( x )
 #define HTONS16( x )    __builtin_bswap16( x )
+#define IMAGE_SIZE( IM ) \
+    ( ( ( PIMAGE_NT_HEADERS ) ( IM + ( ( PIMAGE_DOS_HEADER ) IM )->e_lfanew ) )->OptionalHeader.SizeOfImage )
 
 // DEBUG
 #ifdef DEBUG

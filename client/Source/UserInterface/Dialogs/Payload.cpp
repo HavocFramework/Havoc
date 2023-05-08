@@ -487,6 +487,7 @@ auto Payload::DefaultConfig() -> void
     auto ConfigIndirectSyscalls  = new QTreeWidgetItem( TreeConfig );
     auto ConfigSleepStackSpoof   = new QTreeWidgetItem( TreeConfig );
     auto ConfigSleepObfTechnique = new QTreeWidgetItem( TreeConfig );
+    auto ConfigProxyLoading      = new QTreeWidgetItem( TreeConfig );
     auto ConfigInjection         = new QTreeWidgetItem( TreeConfig );
     auto ConfigInjectionAlloc    = new QTreeWidgetItem( ConfigInjection );
     auto ConfigInjectionExecute  = new QTreeWidgetItem( ConfigInjection );
@@ -506,6 +507,7 @@ auto Payload::DefaultConfig() -> void
     auto ConfigInjectAlloc       = new QComboBox;
     auto ConfigInjectExecute     = new QComboBox;
     auto ConfigStackSpoof        = new QCheckBox;
+    auto ProxyLoading            = new QComboBox;
     auto ConfigSpawn64LineEdit   = new QLineEdit( DemonConfig[ "ProcessInjection" ].toObject()[ "Spawn64" ].toString() );
     auto ConfigSpawn32LineEdit   = new QLineEdit( DemonConfig[ "ProcessInjection" ].toObject()[ "Spawn32" ].toString() );
 
@@ -519,6 +521,7 @@ auto Payload::DefaultConfig() -> void
 
     ConfigIndirectSyscalls->setFlags( Qt::NoItemFlags );
     ConfigInjection->setFlags( Qt::NoItemFlags );
+    ConfigProxyLoading->setFlags( Qt::NoItemFlags );
     ConfigSleepObfTechnique->setFlags( Qt::NoItemFlags );
     ConfigSleepStackSpoof->setFlags( Qt::NoItemFlags );
     ConfigInjectionSpawn64->setFlags( Qt::NoItemFlags );
@@ -534,12 +537,14 @@ auto Payload::DefaultConfig() -> void
     ConfigSpawn32LineEdit->setObjectName( "ConfigItem" );
     SleepObfTechnique->setObjectName( "ConfigItem" );
     SleepObfSpoofAddress->setObjectName( "ConfigItem" );
+    ProxyLoading->setObjectName( "ConfigItem" );
 
     ConfigIndSyscallCheck->setChecked( true );
 
     ConfigInjectAlloc->addItems( QStringList() << "Win32" << "Native/Syscall" );
     ConfigInjectExecute->addItems( QStringList() << "Win32" << "Native/Syscall" );
     SleepObfTechnique->addItems( QStringList() << "WaitForSingleObjectEx" << "Foliage" << "Ekko" << "Zilean" );
+    ProxyLoading->addItems( QStringList() << "None (LdrLoadDll)" << "RtlRegisterWait" << "RtlCreateTimer" << "RtlQueueWorkItem" );
 
     ConfigInjectAlloc->setCurrentIndex( 1 );
     ConfigInjectExecute->setCurrentIndex( 1 );
@@ -547,13 +552,14 @@ auto Payload::DefaultConfig() -> void
     TreeConfig->setItemWidget( ConfigSleep, 1, ConfigSleepLineEdit );
     TreeConfig->setItemWidget( ConfigJitter, 1, ConfigJitterLineEdit );
     if ( Format.compare( "Windows Service Exe" ) == 0 ) {
-        TreeConfig->setItemWidget( ConfigServiceName, 1, ConfigServiceNameInput );
+        TreeConfig->setItemWidget( ConfigServiceName,  1, ConfigServiceNameInput );
     }
     TreeConfig->setItemWidget( ConfigIndirectSyscalls, 1, ConfigIndSyscallCheck );
     TreeConfig->setItemWidget( ConfigSleepObfTechnique,1, SleepObfTechnique );
-    TreeConfig->setItemWidget( ConfigSleepStackSpoof,1, ConfigStackSpoof );
+    TreeConfig->setItemWidget( ConfigSleepStackSpoof,  1, ConfigStackSpoof );
+    TreeConfig->setItemWidget( ConfigProxyLoading,     1, ProxyLoading );
 
-    TreeConfig->setItemWidget( ConfigInjectionAlloc, 1, ConfigInjectAlloc );
+    TreeConfig->setItemWidget( ConfigInjectionAlloc,   1, ConfigInjectAlloc );
     TreeConfig->setItemWidget( ConfigInjectionExecute, 1, ConfigInjectExecute );
     TreeConfig->setItemWidget( ConfigInjectionSpawn64, 1, ConfigSpawn64LineEdit );
     TreeConfig->setItemWidget( ConfigInjectionSpawn32, 1, ConfigSpawn32LineEdit );
@@ -568,6 +574,7 @@ auto Payload::DefaultConfig() -> void
     ConfigIndirectSyscalls->setText(  0, "Indirect Syscall" );
     ConfigSleepObfTechnique->setText( 0, "Sleep Technique" );
     ConfigSleepStackSpoof->setText( 0, "Stack Duplication" );
+    ConfigProxyLoading->setText( 0, "Proxy Loading" );
 
     ConfigInjection->setText( 0, "Injection" );
     ConfigInjection->setExpanded( true );

@@ -18,7 +18,7 @@
     } else {                                                                    \
         NtStatus = Instance.Win32.SYS_NAME( __VA_ARGS__ );                      \
     }                                                                           \
-    PRINTF( "Syscall Invoke: %s( ... ) = %p\n", #SYS_NAME, NtStatus )
+    PRINTF( "%s( ... ) = %p\n", #SYS_NAME, NtStatus )
 
 NTSTATUS NTAPI SysNtOpenThread(
     OUT    PHANDLE            ThreadHandle,

