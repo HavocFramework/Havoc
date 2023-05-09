@@ -4053,7 +4053,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadInt32, parser.ReadInt32}) {
 					var (
-						User      = Parser.ParseString()
+						User      = Parser.ParseUTF16String()
 						TokenID   = Parser.ParseInt32()
 						TargetPID = Parser.ParseInt32()
 					)
@@ -4083,7 +4083,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					var (
 						TokenIndex    = Parser.ParseInt32()
 						Handle        = fmt.Sprintf("0x%x", Parser.ParseInt32())
-						DomainAndUser = Parser.ParseString()
+						DomainAndUser = Parser.ParseUTF16String()
 						ProcessID     = Parser.ParseInt32()
 						Type          = Parser.ParseInt32()
 						Impersonating = Parser.ParseInt32()
@@ -4223,7 +4223,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 			case DEMON_COMMAND_TOKEN_GET_UID:
 
 				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadBytes}) {
-					logger.Debug(hex.Dump(Parser.Buffer()))
+					//logger.Debug(hex.Dump(Parser.Buffer()))
 
 					var (
 						Elevated = Parser.ParseInt32()
@@ -4294,81 +4294,115 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 			case DEMON_COMMAND_TOKEN_FIND_TOKENS:
 
 				var (
-					Successful    int
-					Buffer        string
-					DomainAndUser string
-					NumDelTokens  int
-					NumImpTokens  int
-					ProcessPID    int
-					localHandle   int
+					Successful          int
+					Buffer              string
+					DomainAndUser       string
+					NumTokens           int
+					ProcessPID          int
+					localHandle         int
+					integrity_level     int
+					integrity           string
+					impersonation_level int
+					impersonation       string
+					TokenType           int
+					Type                string
+					Array               [][]any
+					MaxString           int
+					RemoteAuth          string
+					FmtString           string
+					FoundTokens         bool
 				)
 
 				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32}) {
 
 					Successful = Parser.ParseInt32()
 
+					MaxString = 0
+
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_FIND_TOKENS, Successful: %d", AgentID, Successful))
 
 					if Successful == win32.TRUE {
 
-						Buffer += "Delegation Tokens Available\n"
-						Buffer += "========================================\n"
-
 						if Parser.CanIRead([]parser.ReadType{parser.ReadInt32}) {
 
-							NumDelTokens = Parser.ParseInt32()
+							NumTokens = Parser.ParseInt32()
+							FoundTokens = NumTokens > 0
 
-							if NumDelTokens == 0 {
-								Buffer += "(No tokens found)\n"
-							} else {
-								for NumDelTokens > 0 && Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadInt32, parser.ReadInt32}) {
-									DomainAndUser = Parser.ParseString()
-									ProcessPID = Parser.ParseInt32()
-									localHandle = Parser.ParseInt32()
-									if localHandle != 0 {
-										Buffer += fmt.Sprintf("- User: %s, Process: %d, handle: %x\n", DomainAndUser, ProcessPID, localHandle)
-									} else {
-										Buffer += fmt.Sprintf("- User: %s, Process: %d\n", DomainAndUser, ProcessPID)
-									}
-									NumDelTokens--
+							for NumTokens > 0 && Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32}) {
+								DomainAndUser = Parser.ParseUTF16String()
+								ProcessPID = Parser.ParseInt32()
+								localHandle = Parser.ParseInt32()
+								integrity_level = Parser.ParseInt32()
+								impersonation_level = Parser.ParseInt32()
+								TokenType = Parser.ParseInt32()
+
+								if integrity_level <= SECURITY_MANDATORY_LOW_RID {
+									integrity = "Low"
+								} else if integrity_level >= SECURITY_MANDATORY_MEDIUM_RID && integrity_level < SECURITY_MANDATORY_HIGH_RID {
+									integrity = "Medium"
+								} else if integrity_level >= SECURITY_MANDATORY_HIGH_RID && integrity_level < SECURITY_MANDATORY_SYSTEM_RID {
+									integrity = "High"
+								} else if integrity_level >= SECURITY_MANDATORY_SYSTEM_RID {
+									integrity = "System"
 								}
-							}
 
-							Buffer += "\nImpersonation Tokens Available\n"
-							Buffer += "========================================\n"
+								RemoteAuth = "No"
+								if TokenType == TokenImpersonation {
+									Type = "Impersonation"
 
-							if Parser.CanIRead([]parser.ReadType{parser.ReadInt32}) {
-
-								NumImpTokens = Parser.ParseInt32()
-
-								if NumImpTokens == 0 {
-									Buffer += "(No tokens found)\n"
+									if impersonation_level == SecurityAnonymous {
+										impersonation = "Anonymous"
+									} else if impersonation_level == SecurityIdentification {
+										impersonation = "Identification"
+									} else if impersonation_level == SecurityImpersonation {
+										impersonation = "Impersonation"
+									} else if impersonation_level == SecurityDelegation {
+										impersonation = "Delegation"
+										RemoteAuth = "Yes"
+									}
+								} else if TokenType == TokenPrimary {
+									Type = "Primary"
+									impersonation = "N/A"
+									RemoteAuth = "Yes"
 								} else {
-									for NumImpTokens > 0 && Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadInt32, parser.ReadInt32}) {
-										DomainAndUser = Parser.ParseString()
-										ProcessPID = Parser.ParseInt32()
-										localHandle = Parser.ParseInt32()
-										if localHandle != 0 {
-											Buffer += fmt.Sprintf("- User: %s, Process: %d, handle: %x\n", DomainAndUser, ProcessPID, localHandle)
-										} else {
-											Buffer += fmt.Sprintf("- User: %s, Process: %d\n", DomainAndUser, ProcessPID)
-										}
-										NumImpTokens--
-									}
+									Type = "?"
 								}
 
-								Output["Type"] = "Info"
-								Output["Message"] = "Tokens available:"
-								Output["Output"] = "\n" + Buffer
-								a.RequestCompleted(RequestID)
-							} else {
-								logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_FIND_TOKENS, Invalid packet: %d", AgentID))
+								Array = append(Array, []any{DomainAndUser, integrity, Type, impersonation, "Yes", RemoteAuth, ProcessPID, localHandle})
+
+								if len(DomainAndUser) > MaxString {
+									MaxString = len(DomainAndUser)
+								}
+
+								NumTokens--
 							}
 
+							if FoundTokens == true {
+								if MaxString < 13 {
+									MaxString = 13
+								}
+
+								FmtString = fmt.Sprintf(" %%-%vv  %%-9v  %%-13v  %%-14v  %%-9v %%-10v %%-9v %%-9v\n", MaxString)
+
+								Buffer += fmt.Sprintf(FmtString, " Domain\\User", "Integrity", "TokenType", "Impersonation", "LocalAuth", "RemoteAuth", "ProcessID", "Handle")
+								Buffer += fmt.Sprintf(FmtString, strings.Repeat("-", MaxString), "---------", "-------------", "--------------", "---------", "----------", "---------", "------")
+
+								for _, item := range Array {
+									Buffer += fmt.Sprintf(FmtString, item[0], item[1], item[2], item[3], item[4], item[5], item[6], item[7])
+								}
+
+								Buffer += "\nTo impersonate a user, run: token steal [process id] (handle)"
+							} else {
+								Buffer += "No tokens found"
+							}
+
+							Output["Type"] = "Info"
+							Output["Message"] = "Tokens available:"
+							Output["Output"] = "\n" + Buffer
+							a.RequestCompleted(RequestID)
 						} else {
 							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_FIND_TOKENS, Invalid packet: %d", AgentID))
 						}
-
 					} else {
 						Output["Type"] = typeError
 						Output["Message"] = "Failed to list existing tokens"

@@ -282,6 +282,8 @@ typedef struct
         WIN_FUNC( LsaNtStatusToWinError )
         WIN_FUNC( EqualSid )
         WIN_FUNC( ConvertSidToStringSidW )
+        WIN_FUNC( GetSidSubAuthorityCount )
+        WIN_FUNC( GetSidSubAuthority)
 
         // Thread Management
         WIN_FUNC( Thread32First )
@@ -298,7 +300,6 @@ typedef struct
         WIN_FUNC( LookupAccountSidA )
         WIN_FUNC( LookupAccountSidW )
         WIN_FUNC( LookupPrivilegeNameA )
-        WIN_FUNC( ImpersonateLoggedOnUser )
         WIN_FUNC( LogonUserW )
         WIN_FUNC( AdjustTokenPrivileges )
         WIN_FUNC( OpenProcessToken )

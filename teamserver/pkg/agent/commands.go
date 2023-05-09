@@ -221,3 +221,24 @@ const (
 	THREAD_METHOD_NTCREATEHREADEX    = 2
 	THREAD_METHOD_NTQUEUEAPCTHREAD   = 3
 )
+
+const (
+    SecurityAnonymous      = 0x0
+    SecurityIdentification = 0x1
+    SecurityImpersonation  = 0x2
+    SecurityDelegation     = 0x3
+)
+
+const(
+    SECURITY_MANDATORY_UNTRUSTED_RID         = 0x00000000
+    SECURITY_MANDATORY_LOW_RID               = 0x00001000
+    SECURITY_MANDATORY_MEDIUM_RID            = 0x00002000
+    SECURITY_MANDATORY_HIGH_RID              = 0x00003000
+    SECURITY_MANDATORY_SYSTEM_RID            = 0x00004000
+    SECURITY_MANDATORY_PROTECTED_PROCESS_RID = 0x00005000
+)
+
+const(
+	TokenPrimary       = 1
+    TokenImpersonation = 2
+)

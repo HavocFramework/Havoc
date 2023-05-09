@@ -114,7 +114,6 @@
 #define H_FUNC_DEBUGBREAK                        0xd08caa91
 #define H_FUNC_SYSTEMFUNCTION032                 0xe58c8805
 #define H_FUNC_LOOKUPACCOUNTSIDW                 0xd51fdfa3
-#define H_FUNC_IMPERSONATELOGGEDONUSER           0x47ec82fa
 #define H_FUNC_LOGONUSEREXW                      0x6ba383b7
 #define H_FUNC_VSNPRINTF                         0xe212f2ef
 #define H_FUNC_GETADAPTERSINFO                   0x37cada45
@@ -199,7 +198,6 @@
 #define H_FUNC_LOOKUPACCOUNTSIDW                 0xd51fdfa3
 #define H_FUNC_OPENTHREADTOKEN                   0xe249d070
 #define H_FUNC_OPENPROCESSTOKEN                  0xd9f566f7
-#define H_FUNC_IMPERSONATELOGGEDONUSER           0x47ec82fa
 #define H_FUNC_ADJUSTTOKENPRIVILEGES             0x677fbb8b
 #define H_FUNC_LOOKUPPRIVILEGENAMEA              0x843a85e8
 #define H_FUNC_SYSTEMFUNCTION032                 0xe58c8805
@@ -216,6 +214,8 @@
 #define H_FUNC_LSANTSTATUSTOWINERROR             0x9d5beb66
 #define H_FUNC_EQUALSID                          0x4fa8b17d
 #define H_FUNC_CONVERTSIDTOSTRINGSIDW            0x2fb2f7d7
+#define H_FUNC_GETSIDSUBAUTHORITYCOUNT           0xd4c0dda1
+#define H_FUNC_GETSIDSUBAUTHORITY                0xe5d12f8
 #define H_FUNC_LOOKUPPRIVILEGEVALUEA             0x1e344064
 #define H_FUNC_SAFEARRAYACCESSDATA               0xf6a0d34f
 #define H_FUNC_SAFEARRAYUNACCESSDATA             0xe981b312

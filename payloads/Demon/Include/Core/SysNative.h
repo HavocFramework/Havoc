@@ -18,7 +18,7 @@
     } else {                                                                    \
         NtStatus = Instance.Win32.SYS_NAME( __VA_ARGS__ );                      \
     }                                                                           \
-    PRINTF( "%s( ... ) = %p\n", #SYS_NAME, NtStatus )
+    //PRINTF( "%s( ... ) = %08x\n", #SYS_NAME, NtStatus )
 
 NTSTATUS NTAPI SysNtOpenThread(
     OUT    PHANDLE            ThreadHandle,

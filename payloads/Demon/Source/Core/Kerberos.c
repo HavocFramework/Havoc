@@ -100,7 +100,7 @@ BOOL ElevateToSystem()
                 SecurityImpersonation | SecurityIdentification, TokenPrimary,
                 &hDupToken
             ) ) {
-                if ( Instance.Win32.ImpersonateLoggedOnUser( hDupToken ) )
+                if ( SysImpersonateLoggedOnUser( hDupToken ) )
                 {
                     ReturnValue = TRUE;
                 }
@@ -108,7 +108,7 @@ BOOL ElevateToSystem()
             }
             else
             {
-                PRINTF( "Win32_DuplicateTokenEx: Failed [%d]\n", Instance.Win32.RtlNtStatusToDosError( NtStatus ) )
+                PRINTF( "TokenDuplicate: Failed [%d]\n", Instance.Win32.RtlNtStatusToDosError( NtStatus ) )
             }
             SysNtClose( hToken );
         }

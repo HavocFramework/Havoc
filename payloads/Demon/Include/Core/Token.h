@@ -11,26 +11,70 @@
 #define TOKEN_OWNER_FLAG_USER    0x1 /* query user only */
 #define TOKEN_OWNER_FLAG_DOMAIN  0x2 /* query domain only */
 
-#define BUF_SIZE 4096
-#define MAX_USERNAME 512
+#define MAX_PROCESSES 5000
+#define BUF_SIZE      4096
+#define MAX_USERNAME  512
 
-typedef struct _SavedToken
-{
-    CHAR username[MAX_USERNAME];
-    DWORD dwProcessID;
-    HANDLE localHandle;
-    HANDLE token;
-} SavedToken, *PSavedToken;
+#define RtlOffsetToPointer(B,O)  ((PCHAR)( ((PCHAR)(B)) + ((ULONG_PTR)(O))  ))
 
-typedef struct _UniqueUserToken
+#ifndef ALIGN_UP_TYPE
+#define ALIGN_UP_TYPE(Address, Align) (((ULONG_PTR)(Address) + (Align) - 1) & ~((Align) - 1))
+#endif
+
+#ifndef ALIGN_UP
+#define ALIGN_UP(Address, Type) ALIGN_UP_TYPE(Address, sizeof(Type))
+#endif
+
+#define ObjectTypesInformation 3
+
+#define OBJECT_TYPES_FIRST_ENTRY(ObjectTypes) (POBJECT_TYPE_INFORMATION)\
+    RtlOffsetToPointer(ObjectTypes, ALIGN_UP(sizeof(ULONG), ULONG_PTR))
+
+#define OBJECT_TYPES_NEXT_ENTRY(ObjectType) (POBJECT_TYPE_INFORMATION)\
+    RtlOffsetToPointer(ObjectType, sizeof(OBJECT_TYPE_INFORMATION) + \
+    ALIGN_UP(ObjectType->TypeName.MaximumLength, ULONG_PTR))
+
+typedef struct _PROCESS_LIST
 {
-    char username[MAX_USERNAME];
-    int token_num;
-    DWORD dwProcessID;
+    ULONG Count;
+    ULONG ProcessId[MAX_PROCESSES];
+} PROCESS_LIST, *PPROCESS_LIST;
+
+typedef struct _USER_TOKEN_DATA
+{
+    WCHAR  username[MAX_USERNAME];
+    DWORD  dwProcessID;
     HANDLE localHandle;
-    BOOL delegation_available;
-    BOOL impersonation_available;
-} UniqueUserToken, *PUniqueUserToken;
+    DWORD  integrity_level;
+    DWORD  impersonation_level;
+    DWORD  TokenType;
+} USER_TOKEN_DATA, *PUSER_TOKEN_DATA;
+
+typedef struct _OBJECT_TYPE_INFORMATION_V2 {
+    UNICODE_STRING TypeName;
+    ULONG TotalNumberOfObjects;
+    ULONG TotalNumberOfHandles;
+    ULONG TotalPagedPoolUsage;
+    ULONG TotalNonPagedPoolUsage;
+    ULONG TotalNamePoolUsage;
+    ULONG TotalHandleTableUsage;
+    ULONG HighWaterNumberOfObjects;
+    ULONG HighWaterNumberOfHandles;
+    ULONG HighWaterPagedPoolUsage;
+    ULONG HighWaterNonPagedPoolUsage;
+    ULONG HighWaterNamePoolUsage;
+    ULONG HighWaterHandleTableUsage;
+    ULONG InvalidAttributes;
+    GENERIC_MAPPING GenericMapping;
+    ULONG ValidAccessMask;
+    BOOLEAN SecurityRequired;
+    BOOLEAN MaintainHandleCount;
+    UCHAR TypeIndex;
+    CHAR ReservedByte;
+    ULONG PoolType;
+    ULONG DefaultPagedPoolCharge;
+    ULONG DefaultNonPagedPoolCharge;
+} OBJECT_TYPE_INFORMATION_V2, * POBJECT_TYPE_INFORMATION_V2;
 
 /* use union for STOLEN and MAKE tokens */
 typedef struct _TOKEN_LIST_DATA
@@ -120,10 +164,7 @@ BOOL TokenImpersonate(
     IN BOOL Impersonate
 );
 
-BOOL ListTokens(
-    OUT PUniqueUserToken* UniqTokens,
-    OUT PDWORD            pNumTokens
-);
+BOOL ListTokens( PUSER_TOKEN_DATA* pTokens, PDWORD pNumTokens );
 
 BOOL ImpersonateTokenFromVault(
     IN DWORD TokenID
@@ -132,5 +173,7 @@ BOOL ImpersonateTokenFromVault(
 BOOL ImpersonateTokenInStore(
     IN PTOKEN_LIST_DATA TokenData
 );
+
+BOOL SysImpersonateLoggedOnUser( HANDLE hToken );
 
 #endif
