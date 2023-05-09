@@ -4368,7 +4368,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 									Type = "?"
 								}
 
-								Array = append(Array, []any{DomainAndUser, integrity, Type, impersonation, "Yes", RemoteAuth, ProcessPID, localHandle})
+								Array = append(Array, []any{DomainAndUser, integrity, Type, impersonation, "Yes", RemoteAuth, ProcessPID, fmt.Sprintf("%x", localHandle)})
 
 								if len(DomainAndUser) > MaxString {
 									MaxString = len(DomainAndUser)
