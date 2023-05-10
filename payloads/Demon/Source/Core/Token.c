@@ -592,12 +592,7 @@ BOOL TokenImpersonate(
     if ( Impersonate && ! Instance.Tokens.Impersonate && Instance.Tokens.Token )
     {
         // impersonate the current token.
-        if ( SysImpersonateLoggedOnUser( Instance.Tokens.Token->Handle ) ) {
-            Instance.Tokens.Impersonate = TRUE;
-        } else {
-            Instance.Tokens.Impersonate = FALSE;
-        }
-
+        Instance.Tokens.Impersonate =  SysImpersonateLoggedOnUser( Instance.Tokens.Token->Handle );
         return Instance.Tokens.Impersonate;
     }
     else if ( ! Impersonate && Instance.Tokens.Impersonate ) {
