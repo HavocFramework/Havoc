@@ -691,7 +691,7 @@ BOOL CanTokenBeImpersonated( IN HANDLE hToken )
     // try to open a handle to the current token
     Success = Instance.Win32.OpenThreadToken( NtCurrentThread(), MAXIMUM_ALLOWED, TRUE, &hImp );
 
-    Instance.Win32.RevertToSelf();
+    TokenRevSelf();
 
     if ( ! Success )
         return FALSE;
