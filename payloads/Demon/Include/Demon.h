@@ -235,7 +235,6 @@ typedef struct
         WIN_FUNC( Wow64RevertWow64FsRedirection )
         WIN_FUNC( CopyFileW )
         WIN_FUNC( GetModuleHandleA )
-        WIN_FUNC( SetProcessValidCallTargets )
         WIN_FUNC( GetSystemTimeAsFileTime )
         WIN_FUNC( GetLocalTime )
         WIN_FUNC( DuplicateHandle )
@@ -453,23 +452,18 @@ typedef struct
 
     struct
     {
+        PVOID Ntdll;
         PVOID Kernel32;
         PVOID Advapi32;
-        PVOID Crypt32;
-        PVOID CryptSp;
         PVOID Mscoree;
         PVOID Oleaut32;
-        PVOID Ntdll;
         PVOID User32;
         PVOID Shell32;
         PVOID Msvcrt;
-        PVOID KernelBase;
         PVOID Iphlpapi;
         PVOID Gdi32;
-        PVOID Wkscli;
         PVOID NetApi32;
         PVOID Ws2_32;
-        PVOID Dnsapi;
         PVOID Sspicli;
 
 #ifdef TRANSPORT_HTTP

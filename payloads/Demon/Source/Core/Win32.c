@@ -1131,6 +1131,22 @@ VOID SharedSleep(
     }
 }
 
+VOID ShuffleArray(
+    IN OUT PVOID* array,
+    IN     SIZE_T n
+) {
+    SIZE_T j = 0;
+    PVOID  t = NULL;
+
+    for ( int i = 0; i < n - 1; i++ )
+    {
+        j = i + ( RandomNumber32() & RAND_MAX ) / ( RAND_MAX / ( n - i ) + 1 );
+        t = array[ j ];
+
+        array[ j ] = array[ i ];
+        array[ i]  = t;
+    }
+}
 
 VOID volatile ___chkstk_ms(
         VOID
