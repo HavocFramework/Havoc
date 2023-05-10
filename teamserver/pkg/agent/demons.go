@@ -4098,28 +4098,32 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 				FmtString = fmt.Sprintf(" %%-4v  %%-6v  %%-%vv  %%-4v  %%-14v %%-4v\n", MaxString)
 
-				Buffer += fmt.Sprintf(FmtString, " ID ", "Handle", "Domain\\User", "PID", "Type", "Impersonating")
-				Buffer += fmt.Sprintf(FmtString, "----", "------", "-----------", "---", "--------------", "-------------")
+				if (len(Array) > 0 ) {
+					Buffer += fmt.Sprintf(FmtString, " ID ", "Handle", "Domain\\User", "PID", "Type", "Impersonating")
+					Buffer += fmt.Sprintf(FmtString, "----", "------", "-----------", "---", "--------------", "-------------")
 
-				for _, item := range Array {
+					for _, item := range Array {
 
-					if item[4] == 0x1 {
-						item[4] = "stolen"
-					} else if item[4] == 0x2 {
-						item[4] = "make (local)"
-					} else if item[4] == 0x3 {
-						item[4] = "make (network)"
-					} else {
-						item[4] = "unknown"
+						if item[4] == 0x1 {
+							item[4] = "stolen"
+						} else if item[4] == 0x2 {
+							item[4] = "make (local)"
+						} else if item[4] == 0x3 {
+							item[4] = "make (network)"
+						} else {
+							item[4] = "unknown"
+						}
+
+						if item[5] == win32.TRUE {
+							item[5] = "Yes"
+						} else {
+							item[5] = "No"
+						}
+
+						Buffer += fmt.Sprintf(FmtString, item[0], item[1], item[2], item[3], item[4], item[5])
 					}
-
-					if item[5] == win32.TRUE {
-						item[5] = "Yes"
-					} else {
-						item[5] = "No"
-					}
-
-					Buffer += fmt.Sprintf(FmtString, item[0], item[1], item[2], item[3], item[4], item[5])
+				} else {
+					Buffer = "The token vault is empty"
 				}
 
 				Output["Type"] = "Info"
@@ -4223,14 +4227,12 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 			case DEMON_COMMAND_TOKEN_GET_UID:
 
 				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadBytes}) {
-					//logger.Debug(hex.Dump(Parser.Buffer()))
 
 					var (
 						Elevated = Parser.ParseInt32()
 						User     = Parser.ParseUTF16String()
 					)
 
-					logger.Debug(hex.Dump([]byte(User)))
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_GET_UID, Elevated: %d, User: %v", AgentID, Elevated, User))
 
 					Output["Type"] = typeGood
@@ -4382,10 +4384,10 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 									MaxString = 13
 								}
 
-								FmtString = fmt.Sprintf(" %%-%vv  %%-9v  %%-13v  %%-14v  %%-9v %%-10v %%-9v %%-9v\n", MaxString)
+								FmtString = fmt.Sprintf(" %%-%vv  %%-9v  %%-13v  %%-16v  %%-9v %%-10v %%-9v %%-9v\n", MaxString)
 
-								Buffer += fmt.Sprintf(FmtString, " Domain\\User", "Integrity", "TokenType", "Impersonation", "LocalAuth", "RemoteAuth", "ProcessID", "Handle")
-								Buffer += fmt.Sprintf(FmtString, strings.Repeat("-", MaxString), "---------", "-------------", "--------------", "---------", "----------", "---------", "------")
+								Buffer += fmt.Sprintf(FmtString, " Domain\\User", "Integrity", "TokenType", "Impersonation LV", "LocalAuth", "RemoteAuth", "ProcessID", "Handle")
+								Buffer += fmt.Sprintf(FmtString, strings.Repeat("-", MaxString), "---------", "-------------", "----------------", "---------", "----------", "---------", "------")
 
 								for _, item := range Array {
 									Buffer += fmt.Sprintf(FmtString, item[0], item[1], item[2], item[3], item[4], item[5], item[6], item[7])

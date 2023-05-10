@@ -1364,7 +1364,11 @@ VOID CommandToken( PPARSER Parser )
             NewTokenID = TokenAdd( StolenToken, UserDomain.Buffer, TOKEN_TYPE_STOLEN, TargetPid, NULL, NULL, NULL );
 
             /* when a new token is stolen, we impersonate it automatically */
-            ImpersonateTokenFromVault( NewTokenID );
+            if ( ! ImpersonateTokenFromVault( NewTokenID ) )
+            {
+                PUTS( "Failed to impersonate the token" )
+                return;
+            }
 
             PRINTF( "[^] New Token added to the Vault: %d User:[%ls]\n", NewTokenID, UserDomain.Buffer );
 
