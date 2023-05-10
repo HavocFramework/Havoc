@@ -601,7 +601,11 @@ BOOL TokenImpersonate(
         return Instance.Tokens.Impersonate;
     }
     else if ( ! Impersonate && Instance.Tokens.Impersonate ) {
-        return TokenRevSelf(); // stop impersonating
+    {
+        // stop impersonating
+        Instance.Tokens.Impersonate = FALSE;
+        return TokenRevSelf();
+    }
     } else if ( Impersonate && ! Instance.Tokens.Token ) {
         return TRUE; // there is no token to impersonate in the first place
     } else if ( Impersonate && Instance.Tokens.Impersonate ) {
