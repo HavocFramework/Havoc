@@ -34,6 +34,7 @@ set( COMMON_SOURCE
         Source/Core/Kerberos.c
         Source/Core/Thread.c
         Source/Core/Memory.c
+        Source/Core/Runtime.c
 )
 
 set( INJECT_SOURCE

@@ -203,4 +203,9 @@ VOID SharedSleep(
     SIZE_T Delay
 );
 
+VOID ShuffleArray(
+    IN OUT PVOID* array,
+    IN     SIZE_T n
+);
+
 #endif
