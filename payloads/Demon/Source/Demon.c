@@ -128,6 +128,7 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
         [ SIZE         ] 4 bytes
         [ Magic Value  ] 4 bytes
         [ Agent ID     ] 4 bytes
+        [ Request ID   ] 4 bytes
         [ COMMAND ID   ] 4 bytes
 
      MetaData:
