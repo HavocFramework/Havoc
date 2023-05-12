@@ -202,3 +202,9 @@ UINT64 GetSystemFileTime( )
 
     return li.QuadPart;
 }
+
+/* This is a simple trick to hide strings from memory :^) */
+BYTE NO_INLINE HideChar( BYTE C )
+{
+    return C;
+}

