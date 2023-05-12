@@ -43,6 +43,10 @@ typedef struct
     /* wheather WSAStartup has been called yet */
     BOOL WSAWasInitialised;
 
+#ifdef TRANSPORT_HTTP
+    HANDLE hHttpSession;
+#endif
+
     struct {
         PVOID ModuleBase;
         DWORD AgentID;

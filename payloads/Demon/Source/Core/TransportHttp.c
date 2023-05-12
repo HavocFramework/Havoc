@@ -8,7 +8,6 @@
 BOOL HttpSend( PBUFFER Send, PBUFFER Response )
 {
     HANDLE  hConnect        = NULL;
-    HANDLE  hSession        = NULL;
     HANDLE  hRequest        = NULL;
 
     LPWSTR  HttpHeader      = NULL;
@@ -35,24 +34,27 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
         CommandExit( NULL );
     }
 
-    if ( Instance.Config.Transport.Proxy.Enabled )
+    if ( ! Instance.hHttpSession )
     {
-        HttpAccessType = WINHTTP_ACCESS_TYPE_NAMED_PROXY;
-        HttpProxy      = Instance.Config.Transport.Proxy.Url;
+        if ( Instance.Config.Transport.Proxy.Enabled )
+        {
+            HttpAccessType = WINHTTP_ACCESS_TYPE_NAMED_PROXY;
+            HttpProxy      = Instance.Config.Transport.Proxy.Url;
+        }
+
+        /* PRINTF( "WinHttpOpen( %ls, %x, %ls, WINHTTP_NO_PROXY_BYPASS, 0 )\n", Instance.Config.Transport.UserAgent, HttpAccessType, HttpProxy ) */
+        Instance.hHttpSession = Instance.Win32.WinHttpOpen( Instance.Config.Transport.UserAgent, HttpAccessType, HttpProxy, WINHTTP_NO_PROXY_BYPASS, 0 );
+        if ( ! Instance.hHttpSession )
+        {
+            PRINTF( "WinHttpOpen: Failed => %d\n", NtGetLastError() )
+
+            Successful = FALSE;
+            goto LEAVE;
+        }
     }
 
-    /* PRINTF( "WinHttpOpen( %ls, %x, %ls, WINHTTP_NO_PROXY_BYPASS, 0 )\n", Instance.Config.Transport.UserAgent, HttpAccessType, HttpProxy ) */
-    hSession = Instance.Win32.WinHttpOpen( Instance.Config.Transport.UserAgent, HttpAccessType, HttpProxy, WINHTTP_NO_PROXY_BYPASS, 0 );
-    if ( ! hSession )
-    {
-        PRINTF( "WinHttpOpen: Failed => %d\n", NtGetLastError() )
-
-        Successful = FALSE;
-        goto LEAVE;
-    }
-
-    /* PRINTF( "WinHttpConnect( %x, %ls, %d, 0 )\n", hSession, Instance.Config.Transport.Host->Host, Instance.Config.Transport.Host->Port ) */
-    hConnect = Instance.Win32.WinHttpConnect( hSession, Instance.Config.Transport.Host->Host, Instance.Config.Transport.Host->Port, 0 );
+    /* PRINTF( "WinHttpConnect( %x, %ls, %d, 0 )\n", Instance.hHttpSession, Instance.Config.Transport.Host->Host, Instance.Config.Transport.Host->Port ) */
+    hConnect = Instance.Win32.WinHttpConnect( Instance.hHttpSession, Instance.Config.Transport.Host->Host, Instance.Config.Transport.Host->Port, 0 );
     if ( ! hConnect )
     {
         PRINTF( "WinHttpConnect: Failed => %d\n", NtGetLastError() )
@@ -193,9 +195,6 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
     }
 
     LEAVE:
-    if ( hSession )
-        Instance.Win32.WinHttpCloseHandle( hSession );
-
     if ( hConnect )
         Instance.Win32.WinHttpCloseHandle( hConnect );
 
