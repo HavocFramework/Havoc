@@ -108,6 +108,14 @@ BOOL TokenSetPrivilege(
     IN BOOL Enable
 );
 
+BOOL TokenSetSeDebugPriv(
+    IN BOOL Enable
+);
+
+BOOL TokenSetSeImpersonatePriv(
+    IN BOOL Enable
+);
+
 BOOL TokenDuplicate(
     IN  HANDLE        TokenOriginal,
     IN  DWORD         Access,

