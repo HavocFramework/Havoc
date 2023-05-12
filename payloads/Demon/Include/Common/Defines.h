@@ -98,7 +98,6 @@
 #define H_FUNC_RTLSUBAUTHORITYCOUNTSID           0x4b23c9d3
 
 #define H_FUNC_LOADLIBRARYW                      0xb7072ff1
-#define H_FUNC_GETTICKCOUNT                      0xa28ae999
 #define H_FUNC_GETCOMPUTERNAMEEXA                0xec725c53
 #define H_FUNC_WAITFORSINGLEOBJECTEX             0x512e1b97
 #define H_FUNC_VIRTUALPROTECT                    0xe857500d
@@ -146,14 +145,10 @@
 #define H_FUNC_READFILE                          0x84d15061
 #define H_FUNC_VIRTUALALLOCEX                    0x5775bd54
 #define H_FUNC_WAITFORSINGLEOBJECTEX             0x512e1b97
-#define H_FUNC_THREAD32NEXT                      0x85585ce1
-#define H_FUNC_THREAD32FIRST                     0x2fd54d2a
 #define H_FUNC_GETCOMPUTERNAMEEXA                0xec725c53
 #define H_FUNC_EXITPROCESS                       0xd154167e
 #define H_FUNC_GETEXITCODEPROCESS                0xa7c5fd39
 #define H_FUNC_GETEXITCODETHREAD                 0x538852b2
-#define H_FUNC_GETTICKCOUNT                      0xa28ae999
-#define H_FUNC_READPROCESSMEMORY                 0x5c3f8699
 #define H_FUNC_CONVERTTHREADTOFIBEREX            0xd139cc66
 #define H_FUNC_SWITCHTOFIBER                     0x14fc3cc2
 #define H_FUNC_DELETEFIBER                       0x99beb7a0

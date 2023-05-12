@@ -217,7 +217,6 @@ typedef struct
         WIN_FUNC( GetExitCodeThread )
         WIN_FUNC( TerminateProcess )
         WIN_FUNC( VirtualProtectEx )
-        WIN_FUNC( ReadProcessMemory )
         WIN_FUNC( GetCurrentDirectoryW )
         WIN_FUNC( FindFirstFileW )
         WIN_FUNC( FindNextFileW )
@@ -284,10 +283,6 @@ typedef struct
         WIN_FUNC( GetSidSubAuthorityCount )
         WIN_FUNC( GetSidSubAuthority)
 
-        // Thread Management
-        WIN_FUNC( Thread32First )
-        WIN_FUNC( Thread32Next )
-
         WIN_FUNC( ConvertThreadToFiberEx )
         WIN_FUNC( ConvertFiberToThread )
         WIN_FUNC( SwitchToFiber )
@@ -318,7 +313,6 @@ typedef struct
         WIN_FUNC( ShowWindow )
         WIN_FUNC( GetStdHandle )
         WIN_FUNC( SetStdHandle )
-        WIN_FUNC( GetTickCount )
 
         WIN_FUNC( GetAdaptersInfo )
 

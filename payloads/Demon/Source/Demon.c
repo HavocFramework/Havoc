@@ -405,14 +405,10 @@ VOID DemonInit( VOID )
         Instance.Win32.ReadFile                        = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_READFILE );
         Instance.Win32.VirtualAllocEx                  = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_VIRTUALALLOCEX );
         Instance.Win32.WaitForSingleObjectEx           = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_WAITFORSINGLEOBJECTEX );
-        Instance.Win32.Thread32Next                    = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_THREAD32NEXT );
-        Instance.Win32.Thread32First                   = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_THREAD32FIRST );
         Instance.Win32.GetComputerNameExA              = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_GETCOMPUTERNAMEEXA );
         Instance.Win32.GetExitCodeProcess              = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_GETEXITCODEPROCESS );
         Instance.Win32.GetExitCodeThread               = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_GETEXITCODETHREAD );
         Instance.Win32.TerminateProcess                = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_TERMINATEPROCESS );
-        Instance.Win32.GetTickCount                    = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_GETTICKCOUNT );
-        Instance.Win32.ReadProcessMemory               = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_READPROCESSMEMORY );
         Instance.Win32.ConvertThreadToFiberEx          = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_CONVERTTHREADTOFIBEREX );
         Instance.Win32.SwitchToFiber                   = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_SWITCHTOFIBER );
         Instance.Win32.DeleteFiber                     = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_DELETEFIBER );
