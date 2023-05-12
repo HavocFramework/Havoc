@@ -210,6 +210,14 @@ void UserInterface::Widgets::TeamserverTabSession::handleDemonContextMenu( const
     auto SessionMenu     = QMenu();
     auto SessionExplorer = QMenu( "Explorer" );
     auto ExitMenu        = QMenu( "Exit" );
+    auto ColorMenu       = QMenu( "Color" );
+
+    ColorMenu.addAction( "Reset" );
+    ColorMenu.addAction( "Red" );
+    ColorMenu.addAction( "Blue" );
+    ColorMenu.addAction( "Yellow" );
+    ColorMenu.addAction( "Pink" );
+    ColorMenu.setStyleSheet( MenuStyle );
 
     SessionExplorer.addAction( "Process List" );
     SessionExplorer.addAction( "File Explorer" );
@@ -232,6 +240,8 @@ void UserInterface::Widgets::TeamserverTabSession::handleDemonContextMenu( const
         SessionMenu.addAction( "Mark as Dead" );
     else
         SessionMenu.addAction( "Mark as Alive" );
+
+    SessionMenu.addAction( ColorMenu.menuAction() );
 
     SessionMenu.addAction( "Export" );
     SessionMenu.addAction( seperator3 );
@@ -279,6 +289,36 @@ void UserInterface::Widgets::TeamserverTabSession::handleDemonContextMenu( const
 
                     HavocX::Teamserver.TabSession->NewBottomTab( Session.InteractedWidget->DemonInteractedWidget, tabName.toStdString() );
                     Session.InteractedWidget->lineEdit->setFocus();
+                }
+                else if ( action->text().compare( "Red" ) == 0 || action->text().compare( "Blue" ) == 0 || action->text().compare( "Pink" ) == 0 || action->text().compare( "Yellow" ) == 0 || action->text().compare( "Reset" ) == 0 ){
+
+                    for ( int i = 0; i < HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->rowCount(); ++i ){
+                        auto AgentID = HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item(i, 0)->text();
+
+                        if(AgentID.compare( SessionID ) == 0 )
+                        {
+
+                            QColor CurrentColor;
+
+                            if( action->text().compare("Red") == 0 )
+                                CurrentColor = QColor( Util::ColorText::Colors::Hex::Red );
+                            else if( action->text().compare("Blue") == 0 )
+                                CurrentColor = QColor( Util::ColorText::Colors::Hex::Cyan );
+                            else if( action->text().compare("Pink") == 0 )
+                                CurrentColor = QColor( Util::ColorText::Colors::Hex::Pink );
+                            else if( action->text().compare("Yellow") == 0 )
+                                CurrentColor = QColor( Util::ColorText::Colors::Hex::Yellow );
+                            else
+                                CurrentColor = QColor( Util::ColorText::Colors::Hex::Background );
+
+                            for ( int j = 0; j < HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->columnCount(); j++ )
+                            {
+                                HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item(i, j)->setBackground( CurrentColor );
+                            }
+
+                        }
+                    }
+                    
                 }
                 else if ( action->text().compare( "Mark as Dead" ) == 0 || action->text().compare( "Mark as Alive" ) == 0 )
                 {
