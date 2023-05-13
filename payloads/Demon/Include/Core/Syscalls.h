@@ -25,7 +25,7 @@
             &Instance.Syscall.NtName,                                               \
             NULL                                                                    \
         );                                                                          \
-        PRINTF( "Extracted \"%s\": [Ssn: %x]\n", #NtName, Instance.Syscall.NtName ) \
+        PRINTF( "Extracted \"%s\": [Ssn: %x] Ptr:[%p]\n", #NtName, Instance.Syscall.NtName, Instance.Win32.NtName ) \
     }
 
 typedef struct _SYS_CONFIG {

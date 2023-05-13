@@ -488,6 +488,7 @@ auto Payload::DefaultConfig() -> void
     auto ConfigSleepStackSpoof   = new QTreeWidgetItem( TreeConfig );
     auto ConfigSleepObfTechnique = new QTreeWidgetItem( TreeConfig );
     auto ConfigProxyLoading      = new QTreeWidgetItem( TreeConfig );
+    auto ConfigAmsiEtwPatch      = new QTreeWidgetItem( TreeConfig );
     auto ConfigInjection         = new QTreeWidgetItem( TreeConfig );
     auto ConfigInjectionAlloc    = new QTreeWidgetItem( ConfigInjection );
     auto ConfigInjectionExecute  = new QTreeWidgetItem( ConfigInjection );
@@ -508,6 +509,7 @@ auto Payload::DefaultConfig() -> void
     auto ConfigInjectExecute     = new QComboBox;
     auto ConfigStackSpoof        = new QCheckBox;
     auto ProxyLoading            = new QComboBox;
+    auto AmsiEtwPatch            = new QComboBox;
     auto ConfigSpawn64LineEdit   = new QLineEdit( DemonConfig[ "ProcessInjection" ].toObject()[ "Spawn64" ].toString() );
     auto ConfigSpawn32LineEdit   = new QLineEdit( DemonConfig[ "ProcessInjection" ].toObject()[ "Spawn32" ].toString() );
 
@@ -522,6 +524,7 @@ auto Payload::DefaultConfig() -> void
     ConfigIndirectSyscalls->setFlags( Qt::NoItemFlags );
     ConfigInjection->setFlags( Qt::NoItemFlags );
     ConfigProxyLoading->setFlags( Qt::NoItemFlags );
+    ConfigAmsiEtwPatch->setFlags( Qt::NoItemFlags );
     ConfigSleepObfTechnique->setFlags( Qt::NoItemFlags );
     ConfigSleepStackSpoof->setFlags( Qt::NoItemFlags );
     ConfigInjectionSpawn64->setFlags( Qt::NoItemFlags );
@@ -538,6 +541,7 @@ auto Payload::DefaultConfig() -> void
     SleepObfTechnique->setObjectName( "ConfigItem" );
     SleepObfSpoofAddress->setObjectName( "ConfigItem" );
     ProxyLoading->setObjectName( "ConfigItem" );
+    AmsiEtwPatch->setObjectName( "ConfigItem" );
 
     ConfigIndSyscallCheck->setChecked( true );
 
@@ -545,9 +549,11 @@ auto Payload::DefaultConfig() -> void
     ConfigInjectExecute->addItems( QStringList() << "Win32" << "Native/Syscall" );
     SleepObfTechnique->addItems( QStringList() << "WaitForSingleObjectEx" << "Foliage" << "Ekko" << "Zilean" );
     ProxyLoading->addItems( QStringList() << "None (LdrLoadDll)" << "RtlRegisterWait" << "RtlCreateTimer" << "RtlQueueWorkItem" );
+    AmsiEtwPatch->addItems( QStringList() << "None" << "Hardware breakpoints" );
 
     ConfigInjectAlloc->setCurrentIndex( 1 );
     ConfigInjectExecute->setCurrentIndex( 1 );
+    AmsiEtwPatch->setCurrentIndex( 1 );
 
     TreeConfig->setItemWidget( ConfigSleep, 1, ConfigSleepLineEdit );
     TreeConfig->setItemWidget( ConfigJitter, 1, ConfigJitterLineEdit );
@@ -558,6 +564,7 @@ auto Payload::DefaultConfig() -> void
     TreeConfig->setItemWidget( ConfigSleepObfTechnique,1, SleepObfTechnique );
     TreeConfig->setItemWidget( ConfigSleepStackSpoof,  1, ConfigStackSpoof );
     TreeConfig->setItemWidget( ConfigProxyLoading,     1, ProxyLoading );
+    TreeConfig->setItemWidget( ConfigAmsiEtwPatch,     1, AmsiEtwPatch );
 
     TreeConfig->setItemWidget( ConfigInjectionAlloc,   1, ConfigInjectAlloc );
     TreeConfig->setItemWidget( ConfigInjectionExecute, 1, ConfigInjectExecute );
@@ -575,6 +582,7 @@ auto Payload::DefaultConfig() -> void
     ConfigSleepObfTechnique->setText( 0, "Sleep Technique" );
     ConfigSleepStackSpoof->setText( 0, "Stack Duplication" );
     ConfigProxyLoading->setText( 0, "Proxy Loading" );
+    ConfigAmsiEtwPatch->setText( 0, "Amsi/Etw Patch" );
 
     ConfigInjection->setText( 0, "Injection" );
     ConfigInjection->setExpanded( true );

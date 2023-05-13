@@ -33,6 +33,10 @@
 #define PROXYLOAD_RTLCREATETIMER   2
 #define PROXYLOAD_RTLQUEUEWORKITEM 3
 
+#define AMSIETW_PATCH_NONE   0
+#define AMSIETW_PATCH_HWBP   1
+#define AMSIETW_PATCH_MEMORY 2
+
 /* Win32 Functions */
 #define H_FUNC_LDRLOADDLL                        0x9e456a43
 #define H_FUNC_LDRGETPROCEDUREADDRESS            0xfce76bb6
@@ -46,6 +50,7 @@
 #define H_FUNC_NTOPENPROCESSTOKEN                0x350dca99
 #define H_FUNC_NTOPENTHREADTOKEN                 0x803347d2
 #define H_FUNC_NTQUERYOBJECT                     0xc85dc9b4
+#define H_FUNC_NTTRACEEVENT                      0x70c25cd8
 #define H_FUNC_NTOPENPROCESS                     0x4b82f718
 #define H_FUNC_NTOPENTHREAD                      0x968e0cb1
 #define H_FUNC_NTSETCONTEXTTHREAD                0xffa0bf10
@@ -268,6 +273,8 @@
 #define H_FUNC_LSAENUMERATELOGONSESSIONS         0xbca01141
 #define H_FUNC_SLEEP                             0xe07cd7e
 #define H_FUNC_CREATETHREAD                      0x98baab11
+#define H_FUNC_AMSISCANBUFFER                    0xbab3d02e
+
 
 // Beacon API
 #define H_COFFAPI_BEACONDATAPARSER                0xe2494ba2

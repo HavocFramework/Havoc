@@ -155,11 +155,11 @@ const (
 )
 
 const (
-	DOTNET_INFO_AMSI_PATCHED = 0x1
-	DOTNET_INFO_NET_VERSION  = 0x2
-	DOTNET_INFO_ENTRYPOINT   = 0x3
-	DOTNET_INFO_FINISHED     = 0x4
-	DOTNET_INFO_FAILED       = 0x5
+	DOTNET_INFO_PATCHED     = 0x1
+	DOTNET_INFO_NET_VERSION = 0x2
+	DOTNET_INFO_ENTRYPOINT  = 0x3
+	DOTNET_INFO_FINISHED    = 0x4
+	DOTNET_INFO_FAILED      = 0x5
 )
 
 const (
@@ -223,22 +223,22 @@ const (
 )
 
 const (
-    SecurityAnonymous      = 0x0
-    SecurityIdentification = 0x1
-    SecurityImpersonation  = 0x2
-    SecurityDelegation     = 0x3
+	SecurityAnonymous      = 0x0
+	SecurityIdentification = 0x1
+	SecurityImpersonation  = 0x2
+	SecurityDelegation     = 0x3
 )
 
-const(
-    SECURITY_MANDATORY_UNTRUSTED_RID         = 0x00000000
-    SECURITY_MANDATORY_LOW_RID               = 0x00001000
-    SECURITY_MANDATORY_MEDIUM_RID            = 0x00002000
-    SECURITY_MANDATORY_HIGH_RID              = 0x00003000
-    SECURITY_MANDATORY_SYSTEM_RID            = 0x00004000
-    SECURITY_MANDATORY_PROTECTED_PROCESS_RID = 0x00005000
+const (
+	SECURITY_MANDATORY_UNTRUSTED_RID         = 0x00000000
+	SECURITY_MANDATORY_LOW_RID               = 0x00001000
+	SECURITY_MANDATORY_MEDIUM_RID            = 0x00002000
+	SECURITY_MANDATORY_HIGH_RID              = 0x00003000
+	SECURITY_MANDATORY_SYSTEM_RID            = 0x00004000
+	SECURITY_MANDATORY_PROTECTED_PROCESS_RID = 0x00005000
 )
 
-const(
+const (
 	TokenPrimary       = 1
-    TokenImpersonation = 2
+	TokenImpersonation = 2
 )

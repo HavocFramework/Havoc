@@ -50,6 +50,12 @@ const (
 )
 
 const (
+	AMSIETW_PATCH_NONE   = 0
+	AMSIETW_PATCH_HWBP   = 1
+	AMSIETW_PATCH_MEMORY = 2
+)
+
+const (
 	ARCHITECTURE_X64 = 1
 	ARCHITECTURE_X86 = 2
 )
@@ -460,6 +466,7 @@ func (b *Builder) PatchConfig() ([]byte, error) {
 		ConfigProxyLoading = PROXYLOADING_NONE
 		ConfigStackSpoof   = win32.FALSE
 		ConfigSyscall      = win32.FALSE
+		ConfigAmsiPatch    = AMSIETW_PATCH_NONE
 		err                error
 	)
 
@@ -676,19 +683,40 @@ func (b *Builder) PatchConfig() ([]byte, error) {
 		return nil, errors.New("sleep Obfuscation technique is undefined")
 	}
 
+	if val, ok := b.config.Config["Amsi/Etw Patch"].(string); ok && len(val) > 0 {
+		switch val {
+
+		case "Hardware breakpoints":
+			ConfigAmsiPatch = AMSIETW_PATCH_HWBP
+			if !b.silent {
+				b.SendConsoleMessage("Info", "amsi/etw patching technique: hardware breakpoints")
+			}
+			break
+
+		default:
+			ConfigAmsiPatch = AMSIETW_PATCH_NONE
+			if !b.silent {
+				b.SendConsoleMessage("Info", "amsi/etw patching disabled")
+			}
+			break
+		}
+	} else {
+		return nil, errors.New("sleep Obfuscation technique is undefined")
+	}
+
 	// behaviour configuration (alloc/exec/spawn)
 	DemonConfig.AddInt(ConfigAlloc)
 	DemonConfig.AddInt(ConfigExecute)
 	DemonConfig.AddWString(ConfigSpawn64)
 	DemonConfig.AddWString(ConfigSpawn32)
 
-	// obfuscation configuration
+	// bypass techniques
 	DemonConfig.AddInt(ConfigObfTechnique)
 	DemonConfig.AddInt(ConfigStackSpoof)
 	DemonConfig.AddInt(ConfigProxyLoading)
-
-	// indirect syscall enabled/disabled
 	DemonConfig.AddInt(ConfigSyscall)
+	DemonConfig.AddInt(ConfigAmsiPatch)
+
 	// Listener Config
 	switch b.config.ListenerType {
 	case handlers.LISTENER_HTTP:

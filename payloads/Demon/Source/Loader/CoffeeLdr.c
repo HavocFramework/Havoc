@@ -353,8 +353,9 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
     CoffeeFunction( CoffeeMain, Argument, Size );
 
     // Remove our exception handler
-    if ( VehHandle )
+    if ( VehHandle ) {
         Instance.Win32.RtlRemoveVectoredExceptionHandler( VehHandle );
+    }
 
     return TRUE;
 }

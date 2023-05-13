@@ -176,7 +176,7 @@ NTSTATUS NTAPI SysNtGetContextThread (
     return NtStatus;
 }
 
-NTSTATUS NTAPI SysNtSetContextThread (
+NTSTATUS NTAPI SysNtSetContextThread(
     IN HANDLE   ThreadHandle,
     IN PCONTEXT ThreadContext
 ) {

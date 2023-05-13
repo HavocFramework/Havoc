@@ -35,6 +35,8 @@ set( COMMON_SOURCE
         Source/Core/Thread.c
         Source/Core/Memory.c
         Source/Core/Runtime.c
+        Source/Core/HwBpEngine.c
+        Source/Core/HwBpExceptions.c
 )
 
 set( INJECT_SOURCE

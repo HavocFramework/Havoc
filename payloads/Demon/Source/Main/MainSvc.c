@@ -35,7 +35,7 @@ VOID WINAPI SvcMain( DWORD dwArgc, LPTSTR* Argv )
         return;
 
     /* start our agent */
-    DemonMain( NULL );
+    DemonMain( NULL, NULL );
 }
 
 VOID WINAPI SrvCtrlHandler( DWORD CtrlCode )

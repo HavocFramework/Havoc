@@ -18,7 +18,7 @@
     } else {                                                                    \
         NtStatus = Instance.Win32.SYS_NAME( __VA_ARGS__ );                      \
     }                                                                           \
-    //PRINTF( "%s( ... ) = %08x\n", #SYS_NAME, NtStatus )
+    PRINTF( "%s( ... ) = %08x\n", #SYS_NAME, NtStatus )
 
 NTSTATUS NTAPI SysNtOpenThread(
     OUT    PHANDLE            ThreadHandle,
@@ -100,6 +100,11 @@ NTSTATUS NTAPI SysNtDuplicateObject(
 );
 
 NTSTATUS NTAPI SysNtGetContextThread (
+    IN     HANDLE   ThreadHandle,
+    IN OUT PCONTEXT ThreadContext
+);
+
+NTSTATUS NTAPI SysNtSetContextThread (
     IN     HANDLE   ThreadHandle,
     IN OUT PCONTEXT ThreadContext
 );

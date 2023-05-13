@@ -47,7 +47,6 @@ BOOL RtSspicli(
     VOID
 );
 
-
 #ifdef TRANSPORT_HTTP
 BOOL RtWinHttp(
     VOID

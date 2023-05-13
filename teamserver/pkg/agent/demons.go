@@ -3766,7 +3766,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					// send the output back to the python module
 					OutputMap["Worked"] = "true"
 					OutputMap["Output"] = BofCallback.Output
-					OutputMap["Error"]  = BofCallback.Error
+					OutputMap["Error"] = BofCallback.Error
 					OutputMap["TaskID"] = strings.ToUpper(fmt.Sprintf("%08x", RequestID))
 					teamserver.PythonModuleCallback(BofCallback.ClientID, a.NameID, HAVOC_BOF_CALLBACK, OutputMap)
 					a.BofCallbacks = append(a.BofCallbacks[:i], a.BofCallbacks[i+1:]...)
@@ -3885,33 +3885,10 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 			)
 
 			switch InfoID {
-			case DOTNET_INFO_AMSI_PATCHED:
+			case DOTNET_INFO_PATCHED:
 
-				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32}) {
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_ASSEMBLY_INLINE_EXECUTE - DOTNET_INFO_AMSI_PATCHED", AgentID))
-
-					switch Parser.ParseInt32() {
-					case 0:
-						Message["Type"] = "Good"
-						Message["Message"] = "Successfully Patched Amsi"
-
-						break
-					case 1:
-						Message["Type"] = "Error"
-						Message["Message"] = "Failed to patch Amsi"
-
-						break
-					case 2:
-						Message["Type"] = "Info"
-						Message["Message"] = "Amsi already patched"
-
-						break
-					default:
-						logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_ASSEMBLY_INLINE_EXECUTE - DOTNET_INFO_AMSI_PATCHED, Invalid packet", AgentID))
-					}
-				} else {
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_ASSEMBLY_INLINE_EXECUTE - DOTNET_INFO_AMSI_PATCHED, Invalid packet", AgentID))
-				}
+				Message["Type"] = "Info"
+				Message["Message"] = "[HwBpEngine] Amsi/Etw has been hooked & patched"
 
 				break
 
@@ -4098,7 +4075,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 				FmtString = fmt.Sprintf(" %%-4v  %%-6v  %%-%vv  %%-4v  %%-14v %%-4v\n", MaxString)
 
-				if (len(Array) > 0 ) {
+				if len(Array) > 0 {
 					Buffer += fmt.Sprintf(FmtString, " ID ", "Handle", "Domain\\User", "PID", "Type", "Impersonating")
 					Buffer += fmt.Sprintf(FmtString, "----", "------", "-----------", "---", "--------------", "-------------")
 
