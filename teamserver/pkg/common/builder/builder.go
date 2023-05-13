@@ -341,6 +341,8 @@ func (b *Builder) Build() bool {
 
 			DllPayloadBytes = DllPayload.GetPayloadBytes()
 
+			DllPayload.DeletePayload()
+
 			b.SendConsoleMessage("Info", fmt.Sprintf("compiled core dll [%v bytes]", len(DllPayloadBytes)))
 
 			if b.config.Arch == ARCHITECTURE_X64 {

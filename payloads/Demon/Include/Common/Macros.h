@@ -19,13 +19,7 @@
 #define NtProcessHeap()                 Instance.Teb->ProcessEnvironmentBlock->ProcessHeap
 #define NtHeapAlloc( x )                Instance.Win32.RtlAllocateHeap( NtProcessHeap(), HEAP_ZERO_MEMORY, x );
 #define NtHeapFree( x )                 Instance.Win32.RtlFreeHeap( NtProcessHeap(), 0, x );
-
-#ifndef SHELLCODE
 #define DLLEXPORT                       __declspec( dllexport )
-#else
-// for shellcode, we don't want to export anything as it creates strings in memory
-#define DLLEXPORT
-#endif
 
 #define RVA( TYPE, DLLBASE, RVA )  ( TYPE ) ( ( PBYTE ) DLLBASE + RVA )
 #define DATA_FREE( d, l ) \
