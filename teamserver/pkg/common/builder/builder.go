@@ -326,7 +326,7 @@ func (b *Builder) Build() bool {
 		DllPayload.SetArch(b.config.Arch)
 		DllPayload.SetFormat(FILETYPE_WINDOWS_DLL)
 		DllPayload.SetListener(b.config.ListenerType, b.config.ListenerConfig)
-		DllPayload.SetOutputPath("/tmp/" + utils.GenerateID(10) + ".dll")
+		DllPayload.SetOutputPath("/tmp/" + utils.GenerateString(5, 15) + ".dll")
 		DllPayload.compilerOptions.Defines = append(DllPayload.compilerOptions.Defines, "SHELLCODE")
 
 		b.SendConsoleMessage("Info", "compiling core dll...")

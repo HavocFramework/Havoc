@@ -852,7 +852,7 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 						}
 					}
 
-					OutputPath := "/tmp/" + utils.GenerateID(10) + Ext
+					OutputPath := "/tmp/" + utils.GenerateString(5, 15) + Ext
 
 					PayloadBuilder.SetOutputPath(OutputPath)
 
