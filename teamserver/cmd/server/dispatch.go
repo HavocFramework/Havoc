@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"errors"
-	"os"
 	"fmt"
 	"strconv"
 	"strings"
@@ -870,10 +869,7 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 								logger.Error("Error while sending event: " + err.Error())
 								return
 							}
-							err = os.Remove(OutputPath)
-							if err != nil {
-								logger.Error(fmt.Sprintf("Failed to cleanup binary: %s", OutputPath))
-							}
+							PayloadBuilder.DeletePayload()
 						}
 					}
 				}()

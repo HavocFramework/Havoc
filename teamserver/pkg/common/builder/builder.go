@@ -68,6 +68,8 @@ type Builder struct {
 
 	Payloads []string
 
+	FilesCreated []string
+
 	FileType int
 	ClientId string
 
@@ -260,6 +262,7 @@ func (b *Builder) Build() bool {
 						AsmCompile = fmt.Sprintf(b.compilerOptions.Config.Nasm+" -f win32 %s -o %s", FilePath, AsmObj)
 					}
 					logger.Debug(AsmCompile)
+					b.FilesCreated = append(b.FilesCreated, AsmObj)
 					b.Cmd(AsmCompile)
 					CompileCommand += AsmObj + " "
 				}
@@ -377,13 +380,6 @@ func (b *Builder) Build() bool {
 
 	//logger.Debug(CompileCommand)
 	Successful := b.CompileCmd(CompileCommand)
-
-	if AsmObj != "" {
-		err := os.Remove(AsmObj)
-		if err != nil {
-			logger.Error(fmt.Sprintf("Failed to cleanup binary: %s", AsmObj))
-		}
-	}
 
 	return Successful
 }
@@ -945,7 +941,12 @@ func (b *Builder) GetListenerDefines() []string {
 }
 
 func (b *Builder) DeletePayload() {
-	if err := os.Remove(b.outputPath); err != nil {
-		logger.Error("Couldn't remove " + b.outputPath + ": " + err.Error())
+	b.FilesCreated = append(b.FilesCreated, b.outputPath)
+	for _, FileCreated := range b.FilesCreated {
+		if strings.HasSuffix(FileCreated, ".bin") == false {
+			if err := os.Remove(FileCreated); err != nil {
+				logger.Debug("Couldn't remove " + FileCreated + ": " + err.Error())
+			}
+		}
 	}
 }
