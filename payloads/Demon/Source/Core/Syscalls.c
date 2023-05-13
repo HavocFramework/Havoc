@@ -56,6 +56,7 @@ BOOL SysInitialize(
     SYS_EXTRACT( NtWriteVirtualMemory )
     SYS_EXTRACT( NtReadVirtualMemory )
     SYS_EXTRACT( NtFreeVirtualMemory )
+    SYS_EXTRACT( NtUnmapViewOfSection )
     SYS_EXTRACT( NtProtectVirtualMemory )
     SYS_EXTRACT( NtTerminateThread )
     SYS_EXTRACT( NtAlertResumeThread )

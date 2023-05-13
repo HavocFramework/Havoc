@@ -84,7 +84,7 @@ SEC( text, B ) VOID Entry( VOID )
         // 6. Finally executing our DllMain
         // --------------------------------
         BOOL ( WINAPI *KaynDllMain ) ( PVOID, DWORD, PVOID ) = C_PTR( KVirtualMemory + NtHeaders->OptionalHeader.AddressOfEntryPoint );
-        KaynDllMain( KVirtualMemory, DLL_PROCESS_ATTACH, NULL );
+        KaynDllMain( KVirtualMemory, DLL_PROCESS_ATTACH, KaynLibraryLdr );
     }
 }
 

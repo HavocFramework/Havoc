@@ -166,14 +166,57 @@ BOOL MemoryWrite(
  * Frees virtual memory
  * @param Process
  * @param Memory
- * @param Size
  * @return
  */
 BOOL MemoryFree(
     IN HANDLE Process,
     IN PVOID  Memory
 ) {
-    SIZE_T Length = 0;
+    SIZE_T                   Length   = 0;
+    MEMORY_INFORMATION_CLASS mic      = 0;
+    MEMORY_BASIC_INFORMATION mbi      = { 0 };
+    BOOL                     IsMapped = FALSE;
+    NTSTATUS                 NtStatus = STATUS_UNSUCCESSFUL;
 
-    return NT_SUCCESS( SysNtFreeVirtualMemory( Process, &Memory, &Length, MEM_RELEASE ) );
+    NtStatus = SysNtQueryVirtualMemory(
+        Process,
+        Memory,
+        mic,
+        &mbi,
+        sizeof(mbi),
+        NULL);
+    if ( NT_SUCCESS ( NtStatus ) )
+    {
+        IsMapped = mbi.Type == MEM_MAPPED;
+    }
+
+    if ( IsMapped )
+    {
+        return NT_SUCCESS( SysNtUnmapViewOfSection( NtCurrentProcess(), Memory ) );
+    }
+    else
+    {
+        return NT_SUCCESS( SysNtFreeVirtualMemory( Process, &Memory, &Length, MEM_RELEASE ) );
+    }
 }
+
+#ifdef SHELLCODE
+/*!
+ * Frees the reflective loader
+ * @param BaseAddress
+ * @return
+ */
+BOOL FreeReflectiveLoader(
+    IN PVOID BaseAddress
+) {
+    if ( ! BaseAddress )
+        return TRUE;
+
+    // page allign the address
+    BaseAddress = ( PVOID ) ( ( ( ULONG_PTR )BaseAddress ) & ( ~ ( PAGE_SIZE - 1 ) ) );
+
+    PRINTF( "Freeing the reflective loader at: 0x%p\n", BaseAddress )
+
+    return MemoryFree( NtCurrentProcess(), BaseAddress );
+}
+#endif

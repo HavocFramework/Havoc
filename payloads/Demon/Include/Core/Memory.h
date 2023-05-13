@@ -37,4 +37,8 @@ BOOL MemoryFree(
     OUT PVOID  Memory
 );
 
+BOOL FreeReflectiveLoader(
+    IN PVOID BaseAddress
+);
+
 #endif

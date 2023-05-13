@@ -181,6 +181,7 @@ typedef struct
         WIN_FUNC( NtWriteVirtualMemory )
         WIN_FUNC( NtReadVirtualMemory )
         WIN_FUNC( NtFreeVirtualMemory )
+        WIN_FUNC( NtUnmapViewOfSection )
         WIN_FUNC( NtProtectVirtualMemory )
         WIN_FUNC( NtTerminateThread )
         WIN_FUNC( NtContinue )
@@ -400,6 +401,7 @@ typedef struct
         WIN_FUNC( NtWriteVirtualMemory )
         WIN_FUNC( NtReadVirtualMemory )
         WIN_FUNC( NtFreeVirtualMemory )
+        WIN_FUNC( NtUnmapViewOfSection )
         WIN_FUNC( NtProtectVirtualMemory )
         WIN_FUNC( NtTerminateThread )
         WIN_FUNC( NtContinue )
@@ -432,6 +434,7 @@ typedef struct
         WORD NtWriteVirtualMemory;
         WORD NtReadVirtualMemory;
         WORD NtFreeVirtualMemory;
+        WORD NtUnmapViewOfSection;
         WORD NtProtectVirtualMemory;
         WORD NtTerminateThread;
         WORD NtAlertResumeThread;
@@ -501,7 +504,7 @@ typedef struct
 
 extern INSTANCE Instance;
 
-VOID DemonMain( PVOID ModuleInst );
+VOID DemonMain( PVOID ModuleInst, PVOID ReflectiveLdrAddr );
 VOID DemonRoutine( );
 VOID DemonInit( VOID );
 VOID DemonMetaData( PPACKAGE* Package, BOOL Header );

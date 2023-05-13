@@ -149,6 +149,11 @@ NTSTATUS NTAPI SysNtFreeVirtualMemory(
     IN     ULONG   FreeType
 );
 
+NTSTATUS NTAPI SysNtUnmapViewOfSection(
+    IN HANDLE ProcessHandle,
+    IN PVOID  BaseAddress
+);
+
 NTSTATUS NTAPI SysNtProtectVirtualMemory(
     IN     HANDLE  ProcessHandle,
     IN OUT PVOID*  BaseAddress,

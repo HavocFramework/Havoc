@@ -275,6 +275,18 @@ NTSTATUS NTAPI SysNtFreeVirtualMemory(
     return NtStatus;
 }
 
+NTSTATUS NTAPI SysNtUnmapViewOfSection(
+    IN HANDLE ProcessHandle,
+    IN PVOID  BaseAddress
+) {
+    NTSTATUS   NtStatus  = STATUS_SUCCESS;
+    SYS_CONFIG SysConfig = { 0 };
+
+    SYSCALL_INVOKE( NtUnmapViewOfSection, ProcessHandle, BaseAddress );
+
+    return NtStatus;
+}
+
 NTSTATUS NTAPI SysNtProtectVirtualMemory(
     IN     HANDLE  ProcessHandle,
     IN OUT PVOID*  BaseAddress,
