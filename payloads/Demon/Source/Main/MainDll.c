@@ -2,6 +2,7 @@
 
 #include <Common/Defines.h>
 
+#ifndef SHELLCODE
 /* Export this for rundll32 or any other program that requires and exported functions...
  * TODO: make this function name optional/changeable in the payload generator.*/
 DLLEXPORT VOID Start(  )
@@ -17,6 +18,7 @@ DLLEXPORT VOID Start(  )
         DoSleep( 24 * 60 * 60 * 1000 );
     }
 }
+#endif
 
 /* this is our entrypoint for the Dll (also for shellcode) */
 DLLEXPORT BOOL WINAPI DllMain(
