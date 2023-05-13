@@ -3341,8 +3341,8 @@ VOID CommandExit( PPARSER Parser )
      *      Clear memory by using a gadgets that prepares and executes movsb
      */
 
-    ImageBase = C_PTR( Instance.Session.ModuleBase );
-    ImageSize = IMAGE_SIZE( ImageBase );
+    ImageBase = Instance.Session.ModuleBase;
+    ImageSize = NULL;
 
     RopExit.ContextFlags = CONTEXT_FULL;
     Instance.Win32.RtlCaptureContext( &RopExit );

