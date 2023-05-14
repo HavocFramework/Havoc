@@ -24,7 +24,8 @@ import (
 
 // TODO: move to agent package
 const (
-	PayloadDir = "payloads"
+	PayloadDir  = "payloads"
+	PayloadName = "demon"
 )
 
 const (
@@ -75,6 +76,9 @@ type Builder struct {
 	Payloads []string
 
 	FilesCreated []string
+
+	CompileDir     string
+	FileExtenstion string
 
 	FileType int
 	ClientId string
@@ -175,6 +179,17 @@ func (b *Builder) Build() bool {
 		AsmObj         string
 	)
 
+	b.CompileDir = "/tmp/" + utils.GenerateID(10) + "/"
+	err := os.Mkdir(b.CompileDir, os.ModePerm)
+	if err != nil {
+		logger.Error("Failed to create compile directory: " + err.Error())
+		return false
+	}
+
+	if b.outputPath == "" && b.FileExtenstion != "" {
+		b.SetOutputPath(b.CompileDir + PayloadName + b.FileExtenstion)
+	}
+
 	if b.config.ListenerType == handlers.LISTENER_EXTERNAL {
 		b.SendConsoleMessage("Error", "External listeners are not support for payload build")
 		b.SendConsoleMessage("Error", "Use SMB listener")
@@ -260,7 +275,7 @@ func (b *Builder) Build() bool {
 			// only add the assembly if the demon is x64
 			if path.Ext(f.Name()) == ".asm" {
 				if (strings.Contains(f.Name(), ".x64.") && b.config.Arch == ARCHITECTURE_X64) || (strings.Contains(f.Name(), ".x86.") && b.config.Arch == ARCHITECTURE_X86) {
-					AsmObj = "/tmp/" + utils.GenerateID(10) + ".o"
+					AsmObj = b.CompileDir + utils.GenerateID(10) + ".o"
 					var AsmCompile string
 					if b.config.Arch == ARCHITECTURE_X64 {
 						AsmCompile = fmt.Sprintf(b.compilerOptions.Config.Nasm+" -f win64 %s -o %s", FilePath, AsmObj)
@@ -335,7 +350,11 @@ func (b *Builder) Build() bool {
 		DllPayload.SetArch(b.config.Arch)
 		DllPayload.SetFormat(FILETYPE_WINDOWS_DLL)
 		DllPayload.SetListener(b.config.ListenerType, b.config.ListenerConfig)
-		DllPayload.SetOutputPath("/tmp/" + utils.GenerateString(5, 15) + ".dll")
+		if b.config.Arch == ARCHITECTURE_X64 {
+			DllPayload.SetExtension(".x64.dll")
+		} else {
+			DllPayload.SetExtension(".x86.dll")
+		}
 		DllPayload.compilerOptions.Defines = append(DllPayload.compilerOptions.Defines, "SHELLCODE")
 
 		b.SendConsoleMessage("Info", "compiling core dll...")
@@ -428,6 +447,10 @@ func (b *Builder) SetConfig(Config string) error {
 
 func (b *Builder) SetOutputPath(path string) {
 	b.outputPath = path
+}
+
+func (b *Builder) SetExtension(ext string) {
+	b.FileExtenstion = ext
 }
 
 func (b *Builder) GetOutputPath() string {
@@ -970,6 +993,7 @@ func (b *Builder) GetListenerDefines() []string {
 
 func (b *Builder) DeletePayload() {
 	b.FilesCreated = append(b.FilesCreated, b.outputPath)
+	b.FilesCreated = append(b.FilesCreated, b.CompileDir)
 	for _, FileCreated := range b.FilesCreated {
 		if strings.HasSuffix(FileCreated, ".bin") == false {
 			if err := os.Remove(FileCreated); err != nil {
