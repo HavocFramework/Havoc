@@ -185,7 +185,7 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 										}
 									}
 
-									job, err = t.Agents.Agents[i].TaskPrepare(command, pk.Body.Info, Message, ClientID)
+									job, err = t.Agents.Agents[i].TaskPrepare(command, pk.Body.Info, Message, ClientID, t)
 									if err != nil {
 										Console(t.Agents.Agents[i].NameID, map[string]string{
 											"Type":    "Error",

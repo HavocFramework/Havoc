@@ -3,6 +3,8 @@ package server
 import (
 	"Havoc/pkg/logger"
 	"encoding/json"
+	"math/rand"
+	"time"
 	"fmt"
 	"strconv"
 
@@ -185,4 +187,25 @@ func (t *Teamserver) AgentCallback(DemonID string, Time string) {
 	)
 
 	t.EventBroadcast("", pk)
+}
+
+func (t *Teamserver) GetDotNetPipeTemplate() string {
+	PipeTemplate := t.Profile.Config.Demon.DotNetNamePipe
+
+	// https://gist.github.com/realoriginal/d9178c9b071707fec2d6de89a63e4709
+
+	PipeTemplates := []string{
+		"Winsock2\\\\CatalogChangeListener-$#-0",
+		"mojo.{pid}.{tid}.####################",
+		"crashpad_{pid}_@@@@@@@@@@@@@@@@",
+		"chrome.sync.{pid}.{tid}.########",
+	}
+
+	if PipeTemplate == "" {
+		rand.Seed(time.Now().UnixNano())
+		index := rand.Intn(len(PipeTemplates))
+		PipeTemplate = PipeTemplates[index]
+	}
+
+	return PipeTemplate
 }

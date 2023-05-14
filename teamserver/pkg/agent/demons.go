@@ -27,6 +27,59 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
+func (a *Agent) GetRandomChar(dict string) string {
+    return string(dict[rand.Intn(len(dict))])
+}
+
+// generate a PipeName from a name template
+func (a *Agent) GeneratePipeName(Template string) string {
+	var PipeName = Template
+
+	hexdigits := "0123456789abcdef"
+	digits := "0123456789"
+	ascii_uppercase := "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	ascii_lowercase := "abcdefghijklmnopqrstuvwxyz"
+
+	rand.Seed(time.Now().UnixNano())
+
+	// add the process PID (if specified)
+	PipeName = strings.Replace(PipeName, "{pid}", fmt.Sprintf("%d", a.Info.ProcessPID), -1)
+	PipeName = strings.Replace(PipeName, "{Pid}", fmt.Sprintf("%d", a.Info.ProcessPID), -1)
+	PipeName = strings.Replace(PipeName, "{PID}", fmt.Sprintf("%d", a.Info.ProcessPID), -1)
+
+	// add the process TID (if specified)
+	PipeName = strings.Replace(PipeName, "{tid}", fmt.Sprintf("%d", a.Info.ProcessTID), -1)
+	PipeName = strings.Replace(PipeName, "{Tid}", fmt.Sprintf("%d", a.Info.ProcessTID), -1)
+	PipeName = strings.Replace(PipeName, "{TID}", fmt.Sprintf("%d", a.Info.ProcessTID), -1)
+
+	// #: hex char
+	for strings.Contains(PipeName, "$") {
+		PipeName = strings.Replace(PipeName, "$", a.GetRandomChar(hexdigits), 1)
+	}
+
+	// #: number
+	for strings.Contains(PipeName, "#") {
+		PipeName = strings.Replace(PipeName, "#", a.GetRandomChar(digits), 1)
+	}
+
+	// !: uppercase char
+	for strings.Contains(PipeName, "@") {
+		PipeName = strings.Replace(PipeName, "@", a.GetRandomChar(ascii_uppercase), 1)
+	}
+
+	// !: lowercase char
+	for strings.Contains(PipeName, "!") {
+		PipeName = strings.Replace(PipeName, "!", a.GetRandomChar(ascii_lowercase), 1)
+	}
+
+	// make sure the pipename starts with \\.\pipe\
+	if strings.HasPrefix(PipeName, "\\\\.\\pipe\\") == false {
+		PipeName = "\\\\.\\pipe\\" + PipeName
+	}
+
+	return PipeName
+}
+
 // we upload heavy files to the implant in chunks, so SMB agents can handle the size
 func (a *Agent) UploadMemFileInChunks(FileData []byte) uint32 {
 	var ID uint32
@@ -125,7 +178,7 @@ func (a *Agent) TeamserverTaskPrepare(Command string, Console func(AgentID strin
 	return nil
 }
 
-func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, ClientID string) (*Job, error) {
+func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, ClientID string, teamserver TeamServer) (*Job, error) {
 	var (
 		job = &Job{
 			RequestID: rand.Uint32(),
@@ -616,33 +669,12 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 
 		break
 
-	// TODO: make it more malleable/random values
 	case COMMAND_ASSEMBLY_INLINE_EXECUTE:
-		rand.Seed(time.Now().UnixNano())
-		const pipePrefix = "\\\\.\\pipe\\mojo."
-		const (
-			runeALen = 4
-			runeBLen = 4
-			runeCLen = 12
-			runeDLen = 7
-		)
-
-		generateRuneString := func(length int) string {
-			pipeRunes := []rune("0123456789")
-			runes := make([]rune, length)
-			for i := range runes {
-				runes[i] = pipeRunes[rand.Intn(len(pipeRunes))]
-			}
-			return string(runes)
-		}
-
-		finalPipe := pipePrefix + generateRuneString(runeALen) + "." + generateRuneString(runeBLen) + "." + generateRuneString(runeCLen) + generateRuneString(runeDLen)
-
 		var (
 			binaryDecoded, _ = base64.StdEncoding.DecodeString(Optional["Binary"].(string))
 			arguments        = common.EncodeUTF16(Optional["Arguments"].(string))
 			NetVersion       = common.EncodeUTF16("v4.0.30319")
-			PipePath         = common.EncodeUTF16(finalPipe)
+			PipePath         = common.EncodeUTF16(a.GeneratePipeName(teamserver.GetDotNetPipeTemplate()))
 			AppDomainName    = common.EncodeUTF16("DefaultDomain")
 			MemFileId        uint32
 		)

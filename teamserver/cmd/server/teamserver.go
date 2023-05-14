@@ -294,6 +294,7 @@ func (t *Teamserver) Start() {
 			} else {
 				KillDate = 0
 			}
+
 			var HandlerData = handlers.SMBConfig{
 				Name:         listener.Name,
 				PipeName:     listener.PipeName,
