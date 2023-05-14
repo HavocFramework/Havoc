@@ -64,18 +64,22 @@ NTSTATUS HwBpEngineSetBp(
     IN BYTE  Position,
     IN BYTE  Add
 ) {
-    CLIENT_ID Client  = { 0 };
-    CONTEXT   Context = { 0 };
-    HANDLE    Thread  = NULL;
-    NTSTATUS  Status  = STATUS_SUCCESS;
+    DWORD             Pid     = Instance.Session.PID;
+    CLIENT_ID         Client  = { 0 };
+    CONTEXT           Context = { 0 };
+    HANDLE            Thread  = NULL;
+    NTSTATUS          Status  = STATUS_SUCCESS;
+    OBJECT_ATTRIBUTES ObjAttr = { 0 };
 
-    Client.UniqueProcess = C_PTR( 0   );
+    /* Initialize Object Attributes */
+    InitializeObjectAttributes( &ObjAttr, NULL, 0, NULL, NULL );
+
+    Client.UniqueProcess = C_PTR( Pid );
     Client.UniqueThread  = C_PTR( Tid );
 
     /* try to get open thread handle */
-    if ( ! ( Thread = OpenThread( THREAD_ALL_ACCESS, FALSE, Tid ) ) ) {
+    if ( ! NT_SUCCESS( SysNtOpenProcess( &Thread, THREAD_ALL_ACCESS, &ObjAttr, &Client ) ) )
         goto FAILED;
-    }
 
     Context.ContextFlags = CONTEXT_DEBUG_REGISTERS;
 

