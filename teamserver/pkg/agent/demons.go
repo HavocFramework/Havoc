@@ -2210,6 +2210,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 				InternalIP   string
 				ProcessName  string
 				ProcessPID   int
+				ProcessTID   int
 				OsVersion    []int
 				OsArch       int
 				Elevated     int
@@ -2232,6 +2233,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 				InternalIP = Parser.ParseString()
 				ProcessName = Parser.ParseString()
 				ProcessPID = Parser.ParseInt32()
+				ProcessTID = Parser.ParseInt32()
 				ProcessPPID = Parser.ParseInt32()
 				ProcessArch = Parser.ParseInt32()
 				Elevated = Parser.ParseInt32()
@@ -2308,7 +2310,8 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 				process := strings.Split(ProcessName, "\\")
 
 				a.Info.ProcessName = process[len(process)-1]
-				a.Info.ProcessPID = ProcessPID
+				a.Info.ProcessPID  = ProcessPID
+				a.Info.ProcessTID  = ProcessTID
 				a.Info.ProcessPPID = ProcessPPID
 				a.Info.ProcessPath = ProcessName
 
@@ -2339,6 +2342,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						"  - Process Name       : %v\n"+
 						"  - Process Arch       : %v\n"+
 						"  - Process ID         : %v\n"+
+						"  - Thread ID          : %v\n"+
 						//"  - Process Parent ID  : %v\n" +
 						"  - Process Path       : %v\n"+
 						"  - Process Elevated   : %v\n"+
@@ -2372,6 +2376,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					a.Info.ProcessName,
 					a.Info.ProcessArch,
 					a.Info.ProcessPID,
+					a.Info.ProcessTID,
 					//a.Info.ProcessPPID,
 					a.Info.ProcessPath,
 					a.Info.Elevated,

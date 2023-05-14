@@ -192,6 +192,7 @@ type AgentInfo struct {
 	ProcessArch string
 	ProcessName string
 	ProcessPID  int
+	ProcessTID  int
 	ProcessPPID int
 	ProcessPath string
 

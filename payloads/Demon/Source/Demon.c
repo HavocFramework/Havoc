@@ -236,6 +236,7 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
     } else PackageAddInt32( *MetaData, 0 );
 
     PackageAddInt32( *MetaData, ( DWORD ) ( ULONG_PTR ) Instance.Teb->ClientId.UniqueProcess );
+    PackageAddInt32( *MetaData, ( DWORD ) ( ULONG_PTR ) Instance.Teb->ClientId.UniqueThread );
     PackageAddInt32( *MetaData, Instance.Session.PPID );
     PackageAddInt32( *MetaData, PROCESS_AGENT_ARCH );
     PackageAddInt32( *MetaData, BeaconIsAdmin( ) );
@@ -488,6 +489,7 @@ VOID DemonInit( PVOID ModuleInst )
 
     Instance.Session.OS_Arch   = SystemInfo.ProcessorArchitecture;
     Instance.Session.PID       = U_PTR( Instance.Teb->ClientId.UniqueProcess );
+    Instance.Session.TID       = U_PTR( Instance.Teb->ClientId.UniqueThread );
     Instance.Session.Connected = FALSE;
     Instance.Session.AgentID   = RandomNumber32();
     Instance.Config.AES.Key    = NULL; /* TODO: generate keys here  */

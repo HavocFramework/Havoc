@@ -37,7 +37,7 @@ func (db *DB) AgentAdd(agent *agent.Agent) error {
 	}
 
 	/* prepare some arguments to execute for the sqlite db */
-	stmt, err := db.db.Prepare("INSERT INTO TS_Agents ( AgentID, Active, Reason, AESKey, AESIv, Hostname, Username, DomainName, ExternalIP, InternalIP, ProcessName, ProcessPID, ProcessPPID, ProcessArch, Elevated, OSVersion, OSArch, SleepDelay, SleepJitter, KillDate, WorkingHours, FirstCallIn, LastCallIn) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+	stmt, err := db.db.Prepare("INSERT INTO TS_Agents ( AgentID, Active, Reason, AESKey, AESIv, Hostname, Username, DomainName, ExternalIP, InternalIP, ProcessName, ProcessPID, ProcessTID, ProcessPPID, ProcessArch, Elevated, OSVersion, OSArch, SleepDelay, SleepJitter, KillDate, WorkingHours, FirstCallIn, LastCallIn) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
 	if err != nil {
 		return err
 	}
@@ -56,6 +56,7 @@ func (db *DB) AgentAdd(agent *agent.Agent) error {
 		agent.Info.InternalIP,
 		agent.Info.ProcessName,
 		agent.Info.ProcessPID,
+		agent.Info.ProcessTID,
 		agent.Info.ProcessPPID,
 		agent.Info.ProcessArch,
 		agent.Info.Elevated,
@@ -93,7 +94,7 @@ func (db *DB) AgentUpdate(agent *agent.Agent) error {
 	}
 
 	/* prepare some arguments to execute for the sqlite db */
-	stmt, err := db.db.Prepare("UPDATE TS_Agents SET Active = ?, Reason = ?, AESKey = ?, AESIv = ?, Hostname = ?, Username = ?, DomainName = ?, ExternalIP = ?, InternalIP = ?, ProcessName = ?, ProcessPID = ?, ProcessPPID = ?, ProcessArch = ?, Elevated = ?, OSVersion = ?, OSArch = ?, SleepDelay = ?, SleepJitter = ?, KillDate = ?, WorkingHours = ?, FirstCallIn = ?, LastCallIn = ? WHERE AgentID = ?")
+	stmt, err := db.db.Prepare("UPDATE TS_Agents SET Active = ?, Reason = ?, AESKey = ?, AESIv = ?, Hostname = ?, Username = ?, DomainName = ?, ExternalIP = ?, InternalIP = ?, ProcessName = ?, ProcessPID = ?, ProcessTID = ?, ProcessPPID = ?, ProcessArch = ?, Elevated = ?, OSVersion = ?, OSArch = ?, SleepDelay = ?, SleepJitter = ?, KillDate = ?, WorkingHours = ?, FirstCallIn = ?, LastCallIn = ? WHERE AgentID = ?")
 	if err != nil {
 		return err
 	}
@@ -117,6 +118,7 @@ func (db *DB) AgentUpdate(agent *agent.Agent) error {
 		agent.Info.InternalIP,
 		agent.Info.ProcessName,
 		agent.Info.ProcessPID,
+		agent.Info.ProcessTID,
 		agent.Info.ProcessPPID,
 		agent.Info.ProcessArch,
 		agent.Info.Elevated,
@@ -208,7 +210,7 @@ func (db *DB) AgentAll() []*agent.Agent {
 
 	var Agents []*agent.Agent
 
-	query, err := db.db.Query("SELECT AgentID, Active, Reason, AESKey, AESIv, Hostname, Username, DomainName, ExternalIP, InternalIP, ProcessName, ProcessPID, ProcessPPID, ProcessArch, Elevated, OSVersion, OSArch, SleepDelay, SleepJitter, KillDate, WorkingHours, FirstCallIn, LastCallIn FROM TS_Agents WHERE Active = 1")
+	query, err := db.db.Query("SELECT AgentID, Active, Reason, AESKey, AESIv, Hostname, Username, DomainName, ExternalIP, InternalIP, ProcessName, ProcessPID, ProcessTID, ProcessPPID, ProcessArch, Elevated, OSVersion, OSArch, SleepDelay, SleepJitter, KillDate, WorkingHours, FirstCallIn, LastCallIn FROM TS_Agents WHERE Active = 1")
 	if err != nil {
 		return nil
 	}
@@ -229,6 +231,7 @@ func (db *DB) AgentAll() []*agent.Agent {
 			InternalIP string
 			ProcessName string
 			ProcessPID int
+			ProcessTID int
 			ProcessPPID int
 			ProcessArch string
 			Elevated string
@@ -243,7 +246,7 @@ func (db *DB) AgentAll() []*agent.Agent {
 		)
 
 		/* read the selected items */
-		err = query.Scan(&AgentID, &Active, &Reason, &AESKey, &AESIv, &Hostname, &Username, &DomainName, &ExternalIP, &InternalIP, &ProcessName, &ProcessPID, &ProcessPPID, &ProcessArch, &Elevated, &OSVersion, &OSArch, &SleepDelay, &SleepJitter, &KillDate, &WorkingHours, &FirstCallIn, &LastCallIn)
+		err = query.Scan(&AgentID, &Active, &Reason, &AESKey, &AESIv, &Hostname, &Username, &DomainName, &ExternalIP, &InternalIP, &ProcessName, &ProcessPID, &ProcessTID, &ProcessPPID, &ProcessArch, &Elevated, &OSVersion, &OSArch, &SleepDelay, &SleepJitter, &KillDate, &WorkingHours, &FirstCallIn, &LastCallIn)
 		if err != nil {
 			/* at this point we failed
 			 * just return the collected agents */
@@ -282,6 +285,7 @@ func (db *DB) AgentAll() []*agent.Agent {
 		Agent.Info.InternalIP   = InternalIP
 		Agent.Info.ProcessName  = ProcessName
 		Agent.Info.ProcessPID   = ProcessPID
+		Agent.Info.ProcessTID   = ProcessTID
 		Agent.Info.ProcessPPID  = ProcessPPID
 		Agent.Info.ProcessArch  = ProcessArch
 		Agent.Info.Elevated     = Elevated

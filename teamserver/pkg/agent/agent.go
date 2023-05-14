@@ -295,6 +295,7 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 		InternalIP   string
 		ProcessName  string
 		ProcessPID   int
+		ProcessTID   int
 		OsVersion    []int
 		OsArch       int
 		Elevated     int
@@ -386,7 +387,8 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 				Hostname, Username, DomainName, InternalIP, ExternalIP))
 
 			ProcessName = Parser.ParseString()
-			ProcessPID = Parser.ParseInt32()
+			ProcessPID  = Parser.ParseInt32()
+			ProcessTID  = Parser.ParseInt32()
 			ProcessPPID = Parser.ParseInt32()
 			ProcessArch = Parser.ParseInt32()
 			Elevated = Parser.ParseInt32()
@@ -395,10 +397,11 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 				"\n"+
 					"ProcessName: %v\n"+
 					"ProcessPID : %v\n"+
+					"ProcessTID : %v\n"+
 					"ProcessPPID: %v\n"+
 					"ProcessArch: %v\n"+
 					"Elevated   : %v\n",
-				ProcessName, ProcessPID, ProcessPPID, ProcessArch, Elevated))
+				ProcessName, ProcessPID, ProcessTID, ProcessPPID, ProcessArch, Elevated))
 
 			OsVersion = []int{Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32()}
 			OsArch = Parser.ParseInt32()
@@ -479,7 +482,8 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 			process := strings.Split(ProcessName, "\\")
 
 			Session.Info.ProcessName = process[len(process)-1]
-			Session.Info.ProcessPID = ProcessPID
+			Session.Info.ProcessPID  = ProcessPID
+			Session.Info.ProcessTID  = ProcessTID
 			Session.Info.ProcessPPID = ProcessPPID
 			Session.Info.ProcessPath = ProcessName
 			Session.BackgroundCheck = false

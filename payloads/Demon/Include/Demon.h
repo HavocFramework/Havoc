@@ -53,6 +53,7 @@ typedef struct
         DWORD AgentID;
         BOOL  Connected;
         DWORD PID;
+        DWORD TID;
         DWORD PPID;
         WORD  OS_Arch;
         DWORD OSVersion;
