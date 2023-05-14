@@ -15,7 +15,6 @@ import (
 	"Havoc/pkg/logger"
 	"Havoc/pkg/logr"
 	"Havoc/pkg/packager"
-	"Havoc/pkg/utils"
 )
 
 func (t *Teamserver) DispatchEvent(pk packager.Package) {
@@ -851,14 +850,10 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 						}
 					}
 
-					OutputPath := "/tmp/" + utils.GenerateString(5, 15) + Ext
+					PayloadBuilder.SetExtension(Ext)
 
-					PayloadBuilder.SetOutputPath(OutputPath)
-
-					if t.Profile.Config.Demon != nil {
-						if t.Profile.Config.Demon.Binary != nil {
-							PayloadBuilder.SetPatchConfig(t.Profile.Config.Demon.Binary.Header)
-						}
+					if t.Profile.Config.Demon != nil && t.Profile.Config.Demon.Binary != nil {
+						PayloadBuilder.SetPatchConfig(t.Profile.Config.Demon.Binary)
 					}
 
 					if PayloadBuilder.Build() {

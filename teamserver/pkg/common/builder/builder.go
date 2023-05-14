@@ -86,11 +86,16 @@ type Builder struct {
 	PatchBinary bool
 
 	ProfileConfig struct {
+		Original any
+
 		MagicMzX64 string
 		MagicMzX86 string
 
 		ImageSizeX64 int
 		ImageSizeX86 int
+
+		ReplaceStringsX64 map[string]string
+		ReplaceStringsX86 map[string]string
 	}
 
 	config struct {
@@ -349,6 +354,7 @@ func (b *Builder) Build() bool {
 		DllPayload.config.Config = b.config.Config
 		DllPayload.SetArch(b.config.Arch)
 		DllPayload.SetFormat(FILETYPE_WINDOWS_DLL)
+		DllPayload.SetPatchConfig(b.ProfileConfig.Original)
 		DllPayload.SetListener(b.config.ListenerType, b.config.ListenerConfig)
 		if b.config.Arch == ARCHITECTURE_X64 {
 			DllPayload.SetExtension(".x64.dll")
@@ -418,10 +424,16 @@ func (b *Builder) SetPatchConfig(Config any) {
 	logger.Debug("Set Patch config from Profile")
 	if Config != nil {
 		b.PatchBinary = true
-		b.ProfileConfig.MagicMzX64 = Config.(*profile.HeaderBlock).MagicMzX64
-		b.ProfileConfig.MagicMzX86 = Config.(*profile.HeaderBlock).MagicMzX86
-		b.ProfileConfig.ImageSizeX64 = Config.(*profile.HeaderBlock).ImageSizeX64
-		b.ProfileConfig.ImageSizeX86 = Config.(*profile.HeaderBlock).ImageSizeX86
+		b.ProfileConfig.Original = Config
+		if Config.(*profile.Binary).Header != nil {
+			b.ProfileConfig.MagicMzX64 = Config.(*profile.Binary).Header.MagicMzX64
+			b.ProfileConfig.MagicMzX86 = Config.(*profile.Binary).Header.MagicMzX86
+			b.ProfileConfig.ImageSizeX64 = Config.(*profile.Binary).Header.ImageSizeX64
+			b.ProfileConfig.ImageSizeX86 = Config.(*profile.Binary).Header.ImageSizeX86
+		}
+
+		b.ProfileConfig.ReplaceStringsX64 = Config.(*profile.Binary).ReplaceStringsX64
+		b.ProfileConfig.ReplaceStringsX86 = Config.(*profile.Binary).ReplaceStringsX86
 	}
 }
 
@@ -458,17 +470,46 @@ func (b *Builder) GetOutputPath() string {
 }
 
 func (b *Builder) Patch(ByteArray []byte) []byte {
-
 	if b.config.Arch == ARCHITECTURE_X64 {
 		if b.ProfileConfig.MagicMzX64 != "" {
 			for i := range b.ProfileConfig.MagicMzX64 {
 				ByteArray[i] = b.ProfileConfig.MagicMzX64[i]
 			}
 		}
+
+		if b.ProfileConfig.ReplaceStringsX64 != nil {
+			for old, _ := range b.ProfileConfig.ReplaceStringsX64 {
+				new := []byte(b.ProfileConfig.ReplaceStringsX64[old])
+				// make sure they are the same lenght
+				if len(new) < len(old) {
+					new = append(new, bytes.Repeat([]byte{0}, len(old) - len(new))...)
+				}
+				if len(new) > len(old) {
+					logger.Error(fmt.Sprintf("invalid replacement rule, new value (%s) can be longer than the old value (%s)", string(new), old))
+				} else {
+					ByteArray = bytes.Replace(ByteArray, []byte(old), new, -1)
+				}
+			}
+		}
 	} else {
 		if b.ProfileConfig.MagicMzX86 != "" {
 			for i := range b.ProfileConfig.MagicMzX86 {
 				ByteArray[i] = b.ProfileConfig.MagicMzX86[i]
+			}
+		}
+
+		if b.ProfileConfig.ReplaceStringsX86 != nil {
+			for old, _ := range b.ProfileConfig.ReplaceStringsX86 {
+				new := []byte(b.ProfileConfig.ReplaceStringsX86[old])
+				// make sure they are the same lenght
+				if len(new) < len(old) {
+					new = append(new, bytes.Repeat([]byte{0}, len(old) - len(new))...)
+				}
+				if len(new) > len(old) {
+					logger.Error(fmt.Sprintf("invalid replacement rule, new value (%s) can be longer than the old value (%s)", string(new), old))
+				} else {
+					ByteArray = bytes.Replace(ByteArray, []byte(old), new, -1)
+				}
 			}
 		}
 	}

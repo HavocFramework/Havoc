@@ -115,7 +115,6 @@ type ListenerHttpCerts struct {
 	Key  string `yaotl:"Key"`
 }
 
-/* TODO: remove */
 type HeaderBlock struct {
 	MagicMzX64  string `yaotl:"MagicMz-x64,optional"` // max 2 bytes
 	MagicMzX86  string `yaotl:"MagicMz-x86,optional"` // max 2 bytes
@@ -127,6 +126,9 @@ type HeaderBlock struct {
 
 type Binary struct {
 	Header *HeaderBlock `yaotl:"Header,block"`
+
+	ReplaceStringsX64 map[string]string `yaotl:"ReplaceStrings-x64,optional"`
+	ReplaceStringsX86 map[string]string `yaotl:"ReplaceStrings-x86,optional"`
 }
 
 type ProcessInjectionBlock struct {
