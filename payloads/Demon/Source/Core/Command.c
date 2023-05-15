@@ -3328,10 +3328,12 @@ VOID CommandExit( PPARSER Parser )
         Instance.Win32.WSACleanup();
     }
 
+#if TRANSPORT_HTTP
     // close the HTTP session
     if ( Instance.hHttpSession ) {
         Instance.Win32.WinHttpCloseHandle( Instance.hHttpSession );
     }
+#endif
 
 #if _WIN64
 

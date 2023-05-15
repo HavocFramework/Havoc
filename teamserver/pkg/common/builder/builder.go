@@ -914,7 +914,7 @@ func (b *Builder) PatchConfig() ([]byte, error) {
 	case handlers.LISTENER_PIVOT_SMB:
 		var Config = b.config.ListenerConfig.(*handlers.SMB)
 
-		DemonConfig.AddString("\\\\.\\pipe\\" + Config.Config.PipeName)
+		DemonConfig.AddWString("\\\\.\\pipe\\" + Config.Config.PipeName)
 
 		DemonConfig.AddInt64(Config.Config.KillDate)
 

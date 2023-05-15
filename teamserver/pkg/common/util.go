@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"image/png"
+	"time"
 	"io"
 	"math/rand"
 	"net"
@@ -207,4 +208,61 @@ func EpochTimeToSystemTime( EpochTime int64 ) int64 {
 	}
 
 	return ( EpochTime * TICKS_PER_SECOND ) + UNIX_TIME_START
+}
+
+func GetRandomChar(dict string) string {
+    return string(dict[rand.Intn(len(dict))])
+}
+
+// generate a PipeName from a name template
+func GeneratePipeName(Template string, PID int, TID int) string {
+	var PipeName = Template
+
+	hexdigits := "0123456789abcdef"
+	digits := "0123456789"
+	ascii_uppercase := "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	ascii_lowercase := "abcdefghijklmnopqrstuvwxyz"
+
+	rand.Seed(time.Now().UnixNano())
+
+	// add the process PID (if specified)
+	if PID != 0 {
+		PipeName = strings.Replace(PipeName, "{pid}", fmt.Sprintf("%d", PID), -1)
+		PipeName = strings.Replace(PipeName, "{Pid}", fmt.Sprintf("%d", PID), -1)
+		PipeName = strings.Replace(PipeName, "{PID}", fmt.Sprintf("%d", PID), -1)
+	}
+
+	// add the process TID (if specified)
+	if TID != 0 {
+		PipeName = strings.Replace(PipeName, "{tid}", fmt.Sprintf("%d", TID), -1)
+		PipeName = strings.Replace(PipeName, "{Tid}", fmt.Sprintf("%d", TID), -1)
+		PipeName = strings.Replace(PipeName, "{TID}", fmt.Sprintf("%d", TID), -1)
+	}
+
+	// #: hex char
+	for strings.Contains(PipeName, "$") {
+		PipeName = strings.Replace(PipeName, "$", GetRandomChar(hexdigits), 1)
+	}
+
+	// #: number
+	for strings.Contains(PipeName, "#") {
+		PipeName = strings.Replace(PipeName, "#", GetRandomChar(digits), 1)
+	}
+
+	// !: uppercase char
+	for strings.Contains(PipeName, "@") {
+		PipeName = strings.Replace(PipeName, "@", GetRandomChar(ascii_uppercase), 1)
+	}
+
+	// !: lowercase char
+	for strings.Contains(PipeName, "!") {
+		PipeName = strings.Replace(PipeName, "!", GetRandomChar(ascii_lowercase), 1)
+	}
+
+	// make sure the pipename starts with \\.\pipe\
+	if strings.HasPrefix(PipeName, "\\\\.\\pipe\\") == false {
+		PipeName = "\\\\.\\pipe\\" + PipeName
+	}
+
+	return PipeName
 }
