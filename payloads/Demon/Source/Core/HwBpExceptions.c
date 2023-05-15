@@ -1,6 +1,8 @@
 #include <Demon.h>
 #include <Core/HwBpExceptions.h>
 
+#if _WIN64
+
 VOID HwBpExAmsiScanBuffer(
     IN OUT PEXCEPTION_POINTERS Exception
 ) {
@@ -29,5 +31,4 @@ VOID HwBpExNtTraceEvent(
     EXCEPTION_SET_RIP( Exception, U_PTR( Return ) );
 }
 
-
-
+#endif
