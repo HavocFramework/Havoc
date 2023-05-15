@@ -78,7 +78,7 @@ NTSTATUS HwBpEngineSetBp(
     Client.UniqueThread  = C_PTR( Tid );
 
     /* try to get open thread handle */
-    if ( ! NT_SUCCESS( SysNtOpenProcess( &Thread, THREAD_ALL_ACCESS, &ObjAttr, &Client ) ) )
+    if ( ! NT_SUCCESS( SysNtOpenThread( &Thread, THREAD_ALL_ACCESS, &ObjAttr, &Client ) ) )
         goto FAILED;
 
     Context.ContextFlags = CONTEXT_DEBUG_REGISTERS;

