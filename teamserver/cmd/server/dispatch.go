@@ -793,9 +793,8 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 						Compiler64: t.Settings.Compiler64,
 						Compiler86: t.Settings.Compiler32,
 						Nasm:       t.Settings.Nasm,
+						DebugDev:   t.Flags.Server.DebugDev,
 					})
-
-					PayloadBuilder.DebugMode(t.Flags.Server.DebugDev)
 
 					PayloadBuilder.ClientId = ClientID
 

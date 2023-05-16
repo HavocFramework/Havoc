@@ -65,12 +65,12 @@ type BuilderConfig struct {
 	Compiler64 string
 	Compiler86 string
 	Nasm       string
+	DebugDev   bool
 }
 
 type Builder struct {
 	buildSource bool
 	sourcePath  string
-	debugMode   bool
 	silent      bool
 
 	Payloads []string
@@ -149,13 +149,45 @@ func NewBuilder(config BuilderConfig) *Builder {
 		"Include",
 	}
 
-	builder.compilerOptions.CFlags = []string{
-		"",
-		"-Os -fno-asynchronous-unwind-tables -masm=intel",
-		"-fno-ident -fpack-struct=8 -falign-functions=1",
-		"-s -ffunction-sections -falign-jumps=1 -w",
-		"-falign-labels=1 -fPIC",
-		"-Wl,-s,--no-seh,--enable-stdcall-fixup",
+	/*
+	 * -Os                             Optimize for space rather than speed.
+	 * -fno-asynchronous-unwind-tables Suppresses the generation of static unwind tables (as opposed to complete exception-handling code).
+	 * -masm=intel                     Use the intel assembler dialect
+	 * -fno-ident                      Ignore the #ident directive.
+	 * -fpack-struct=<number>          Set initial maximum structure member alignment.
+	 * -falign-functions=<number>      Align the start of functions to the next power-of-two greater than or equal to n, skipping up to m-1 bytes.
+	 * -s                              Remove all symbols
+	 * -ffunction-sections             Place each function into its own section.
+	 * -falign-jumps=<number>          Align branch targets to a power-of-two boundary.
+	 * -w                              Suppress warnings.
+	 * -falign-labels=<number>         Align all branch targets to a power-of-two boundary.
+	 * -fPIC                           Generate position-independent code if possible (large mode).
+	 * -Wl                             passes a comma-separated list of tokens as a space-separated list of arguments to the linker.
+	 * -s                              Remove all symbol table and relocation information from the executable.
+	 * --no-seh                        Image does not use SEH.
+	 * --enable-stdcall-fixup          Link _sym to _sym@nn without warnings.
+	 */
+
+	logger.Debug(fmt.Sprintf("Payload Builder: Enable Debug Mode %v", config.DebugDev))
+	if config.DebugDev {
+		// debug mode includes symbols
+		builder.compilerOptions.CFlags = []string{
+			"",
+			"-Os -fno-asynchronous-unwind-tables -masm=intel",
+			"-fno-ident -fpack-struct=8 -falign-functions=1",
+			"-ffunction-sections -falign-jumps=1 -w",
+			"-falign-labels=1 -fPIC",
+			"-Wl,--no-seh,--enable-stdcall-fixup",
+		}
+	} else {
+		builder.compilerOptions.CFlags = []string{
+			"",
+			"-Os -fno-asynchronous-unwind-tables -masm=intel",
+			"-fno-ident -fpack-struct=8 -falign-functions=1",
+			"-s -ffunction-sections -falign-jumps=1 -w",
+			"-falign-labels=1 -fPIC",
+			"-Wl,-s,--no-seh,--enable-stdcall-fixup",
+		}
 	}
 
 	builder.compilerOptions.Main.Dll = "Source/Main/MainDll.c"
@@ -167,11 +199,6 @@ func NewBuilder(config BuilderConfig) *Builder {
 	builder.PatchBinary = false
 
 	return builder
-}
-
-func (b *Builder) DebugMode(enable bool) {
-	logger.Debug(fmt.Sprintf("Payload Builder: Enable Debug Mode %v", enable))
-	b.debugMode = enable
 }
 
 func (b *Builder) SetSilent(silent bool) {
@@ -230,7 +257,7 @@ func (b *Builder) Build() bool {
 	b.compilerOptions.Defines = append(b.compilerOptions.Defines, "CONFIG_BYTES="+array)
 
 	// enable debug mode
-	if b.debugMode {
+	if b.compilerOptions.Config.DebugDev {
 		b.compilerOptions.Defines = append(b.compilerOptions.Defines, "DEBUG")
 	} else {
 		if b.FileType == FILETYPE_WINDOWS_SERVICE_EXE {
