@@ -139,8 +139,16 @@ type ProcessInjectionBlock struct {
 type Demon struct {
 	Sleep              int                    `yaotl:"Sleep,optional"`
 	Jitter             int                    `yaotl:"Jitter,optional"`
-	DotNetNamePipe     string                 `yaotl:"DotNetNamePipe,optional"`
-	TrustXForwardedFor bool                   `yaotl:"TrustXForwardedFor,optional"`
-	Binary             *Binary                `yaotl:"Binary,block"`
+	IndirectSyscall    bool                   `yaotl:"IndirectSyscall,optional"`
+	StackDuplication   bool                   `yaotl:"StackDuplication,optional"`
+	SleepTechnique     string                 `yaotl:"SleepTechnique,optional"`
+	ProxyLoading       string                 `yaotl:"ProxyLoading,optional"`
+	AmsiEtwPatching    string                 `yaotl:"AmsiEtwPatching,optional"`
 	ProcessInjection   *ProcessInjectionBlock `yaotl:"Injection,block"`
+
+	DotNetNamePipe     string                 `yaotl:"DotNetNamePipe,optional"`
+
+	Binary             *Binary                `yaotl:"Binary,block"`
+
+	TrustXForwardedFor bool                   `yaotl:"TrustXForwardedFor,optional"`
 }

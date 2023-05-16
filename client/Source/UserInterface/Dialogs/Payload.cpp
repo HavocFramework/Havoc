@@ -512,6 +512,11 @@ auto Payload::DefaultConfig() -> void
     auto AmsiEtwPatch            = new QComboBox;
     auto ConfigSpawn64LineEdit   = new QLineEdit( DemonConfig[ "ProcessInjection" ].toObject()[ "Spawn64" ].toString() );
     auto ConfigSpawn32LineEdit   = new QLineEdit( DemonConfig[ "ProcessInjection" ].toObject()[ "Spawn32" ].toString() );
+    auto DefaultIndSyscallCheck  = DemonConfig[ "IndirectSyscall" ].toBool();
+    auto DefaultStackDuplication = DemonConfig[ "StackDuplication" ].toBool();
+    auto DefaultSleepTechnique   = DemonConfig[ "SleepTechnique" ].toString();
+    auto DefaultProxyLoading     = DemonConfig[ "ProxyLoading" ].toString();
+    auto DefaultAmsiEtwPatching  = DemonConfig[ "AmsiEtwPatching" ].toString();
 
     ConfigSleep->setFlags( Qt::NoItemFlags );
     ConfigJitter->setFlags( Qt::NoItemFlags );
@@ -543,7 +548,8 @@ auto Payload::DefaultConfig() -> void
     ProxyLoading->setObjectName( "ConfigItem" );
     AmsiEtwPatch->setObjectName( "ConfigItem" );
 
-    ConfigIndSyscallCheck->setChecked( true );
+    ConfigIndSyscallCheck->setChecked( DefaultIndSyscallCheck );
+    ConfigStackSpoof->setChecked( DefaultStackDuplication );
 
     ConfigInjectAlloc->addItems( QStringList() << "Win32" << "Native/Syscall" );
     ConfigInjectExecute->addItems( QStringList() << "Win32" << "Native/Syscall" );
@@ -553,7 +559,32 @@ auto Payload::DefaultConfig() -> void
 
     ConfigInjectAlloc->setCurrentIndex( 1 );
     ConfigInjectExecute->setCurrentIndex( 1 );
-    AmsiEtwPatch->setCurrentIndex( 1 );
+
+    SleepObfTechnique->setCurrentIndex( 0 );
+    if ( DefaultSleepTechnique == "WaitForSingleObjectEx" )
+        SleepObfTechnique->setCurrentIndex( 0 );
+    else if ( DefaultSleepTechnique == "Foliage" )
+        SleepObfTechnique->setCurrentIndex( 1 );
+    else if ( DefaultSleepTechnique == "Ekko" )
+        SleepObfTechnique->setCurrentIndex( 2 );
+    else if ( DefaultSleepTechnique == "Zilean" )
+        SleepObfTechnique->setCurrentIndex( 3 );
+
+    ProxyLoading->setCurrentIndex( 0 );
+    if ( DefaultProxyLoading == "None" )
+        ProxyLoading->setCurrentIndex( 0 );
+    else if ( DefaultProxyLoading == "RtlRegisterWait" )
+        ProxyLoading->setCurrentIndex( 1 );
+    else if ( DefaultProxyLoading == "RtlCreateTimer" )
+        ProxyLoading->setCurrentIndex( 2 );
+    else if ( DefaultProxyLoading == "RtlQueueWorkItem" )
+        ProxyLoading->setCurrentIndex( 3 );
+
+    AmsiEtwPatch->setCurrentIndex( 0 );
+    if ( DefaultAmsiEtwPatching == "None" )
+        AmsiEtwPatch->setCurrentIndex( 0 );
+    else if ( DefaultAmsiEtwPatching == "Hardware breakpoints" )
+        AmsiEtwPatch->setCurrentIndex( 1 );
 
     TreeConfig->setItemWidget( ConfigSleep, 1, ConfigSleepLineEdit );
     TreeConfig->setItemWidget( ConfigJitter, 1, ConfigJitterLineEdit );
