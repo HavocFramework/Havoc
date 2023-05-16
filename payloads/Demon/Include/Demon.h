@@ -50,6 +50,7 @@ typedef struct
 
     struct {
         PVOID ModuleBase;
+        DWORD ModuleSize;
         DWORD AgentID;
         BOOL  Connected;
         DWORD PID;

