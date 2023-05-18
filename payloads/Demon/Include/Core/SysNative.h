@@ -27,6 +27,13 @@ NTSTATUS NTAPI SysNtOpenThread(
     IN OPT PCLIENT_ID         ClientId
 );
 
+NTSTATUS NTAPI SysNtOpenThreadToken(
+    IN  HANDLE      ThreadHandle,
+    IN  ACCESS_MASK DesiredAccess,
+    IN  BOOLEAN     OpenAsSelf,
+    OUT PHANDLE     TokenHandle
+);
+
 NTSTATUS NTAPI SysNtOpenProcess(
     OUT    PHANDLE             ProcessHandle,
     IN     ACCESS_MASK         DesiredAccess,

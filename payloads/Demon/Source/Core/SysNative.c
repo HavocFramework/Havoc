@@ -31,6 +31,20 @@ NTSTATUS NTAPI SysNtOpenProcess(
     return NtStatus;
 }
 
+NTSTATUS NTAPI SysNtOpenThreadToken(
+    IN  HANDLE      ThreadHandle,
+    IN  ACCESS_MASK DesiredAccess,
+    IN  BOOLEAN     OpenAsSelf,
+    OUT PHANDLE     TokenHandle
+) {
+    NTSTATUS   NtStatus  = STATUS_SUCCESS;
+    SYS_CONFIG SysConfig = { 0 };
+
+    SYSCALL_INVOKE( NtOpenThreadToken, ThreadHandle, DesiredAccess, OpenAsSelf, TokenHandle );
+
+    return NtStatus;
+}
+
 NTSTATUS NTAPI SysNtOpenProcessToken(
     IN  HANDLE      ProcessHandle,
     IN  ACCESS_MASK DesiredAccess,

