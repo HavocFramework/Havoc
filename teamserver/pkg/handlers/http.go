@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"fmt"
 
 	"Havoc/pkg/colors"
 	"Havoc/pkg/common/certs"
@@ -90,6 +91,7 @@ func (h *HTTP) fake404(ctx *gin.Context) {
 
 func (h *HTTP) request(ctx *gin.Context) {
 	var ExternalIP string
+	var MissingHdr string
 
 	Body, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
@@ -115,13 +117,16 @@ func (h *HTTP) request(ctx *gin.Context) {
 	valid := true
 	for _, Header := range h.Config.Headers {
 		NameValue := strings.Split(Header, ": ")
-		if len(NameValue) > 1 && ctx.Request.Header.Get(NameValue[0]) != NameValue[1] {
+		// NOTE: the header value is case insensitive
+		if len(NameValue) > 1 && strings.ToLower(ctx.Request.Header.Get(NameValue[0])) != strings.ToLower(NameValue[1]) {
+			MissingHdr = NameValue[0] + ": " + ctx.Request.Header.Get(NameValue[0])
 			valid = false
 			break
 		}
 	}
 
 	if valid == false {
+		logger.Warn(fmt.Sprintf("got a request with an invalid header: %s", MissingHdr))
 		h.fake404(ctx)
 		return
 	}
@@ -137,6 +142,7 @@ func (h *HTTP) request(ctx *gin.Context) {
 		}
 
 		if valid == false {
+			logger.Warn(fmt.Sprintf("got a request with an invalid request path: %s", ctx.Request.RequestURI))
 			h.fake404(ctx)
 			return
 		}
@@ -145,6 +151,7 @@ func (h *HTTP) request(ctx *gin.Context) {
 	// check that the User-Agent is valid
 	if h.Config.UserAgent != "" {
 		if h.Config.UserAgent != ctx.Request.UserAgent() {
+			logger.Warn(fmt.Sprintf("got a request with an invalid user agent: %s", ctx.Request.UserAgent()))
 			h.fake404(ctx)
 			return
 		}
@@ -169,6 +176,7 @@ func (h *HTTP) request(ctx *gin.Context) {
 			return
 		}
 	} else {
+		logger.Warn("failed to parse agent request")
 		h.fake404(ctx)
 		return
 	}
