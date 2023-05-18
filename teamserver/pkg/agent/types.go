@@ -197,6 +197,7 @@ type AgentInfo struct {
 	ProcessTID  int
 	ProcessPPID int
 	ProcessPath string
+	BaseAddress int64
 
 	// Call home from Demon
 	FirstCallIn string

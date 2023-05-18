@@ -298,6 +298,7 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 		ProcessTID   int
 		OsVersion    []int
 		OsArch       int
+		BaseAddress  int64
 		Elevated     int
 		ProcessArch  int
 		ProcessPPID  int
@@ -327,6 +328,7 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 			[ Parent  PID  ] 4 bytes
 			[ Process Arch ] 4 bytes
 			[ Elevated     ] 4 bytes
+			[ Base Address ] 8 bytes
 			[ OS Info      ] ( 5 * 4 ) bytes
 			[ OS Arch      ] 4 bytes
 			..... more
@@ -392,16 +394,18 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 			ProcessPPID = Parser.ParseInt32()
 			ProcessArch = Parser.ParseInt32()
 			Elevated = Parser.ParseInt32()
+			BaseAddress = Parser.ParseInt64()
 
 			logger.Debug(fmt.Sprintf(
 				"\n"+
-					"ProcessName: %v\n"+
-					"ProcessPID : %v\n"+
-					"ProcessTID : %v\n"+
-					"ProcessPPID: %v\n"+
-					"ProcessArch: %v\n"+
-					"Elevated   : %v\n",
-				ProcessName, ProcessPID, ProcessTID, ProcessPPID, ProcessArch, Elevated))
+					"ProcessName : %v\n"+
+					"ProcessPID  : %v\n"+
+					"ProcessTID  : %v\n"+
+					"ProcessPPID : %v\n"+
+					"ProcessArch : %v\n"+
+					"Elevated    : %v\n"+
+					"Base Address: 0x%x\n",
+				ProcessName, ProcessPID, ProcessTID, ProcessPPID, ProcessArch, Elevated, BaseAddress))
 
 			OsVersion = []int{Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32()}
 			OsArch = Parser.ParseInt32()
@@ -486,6 +490,7 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 			Session.Info.ProcessTID  = ProcessTID
 			Session.Info.ProcessPPID = ProcessPPID
 			Session.Info.ProcessPath = ProcessName
+			Session.Info.BaseAddress = BaseAddress
 			Session.BackgroundCheck = false
 
 			/*for {

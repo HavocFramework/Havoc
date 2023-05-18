@@ -2193,6 +2193,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 				OsVersion    []int
 				OsArch       int
 				Elevated     int
+				BaseAddress  int64
 				ProcessArch  int
 				ProcessPPID  int
 				SleepDelay   int
@@ -2216,6 +2217,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 				ProcessPPID = Parser.ParseInt32()
 				ProcessArch = Parser.ParseInt32()
 				Elevated = Parser.ParseInt32()
+				BaseAddress = Parser.ParseInt64()
 				OsVersion = []int{Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32()}
 				OsArch = Parser.ParseInt32()
 				SleepDelay = Parser.ParseInt32()
@@ -2293,6 +2295,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 				a.Info.ProcessTID  = ProcessTID
 				a.Info.ProcessPPID = ProcessPPID
 				a.Info.ProcessPath = ProcessName
+				a.Info.BaseAddress = BaseAddress
 
 				a.SessionDir = logr.LogrInstance.AgentPath + "/" + a.NameID
 
@@ -2325,6 +2328,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						//"  - Process Parent ID  : %v\n" +
 						"  - Process Path       : %v\n"+
 						"  - Process Elevated   : %v\n"+
+						"  - Base Address       : 0x%x\n"+
 						"\n"+
 						"Operating System:\n"+
 						"  - Version            : %v\n"+
@@ -2359,6 +2363,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					//a.Info.ProcessPPID,
 					a.Info.ProcessPath,
 					a.Info.Elevated,
+					a.Info.BaseAddress,
 
 					// Operating System Info
 					a.Info.OSVersion,
