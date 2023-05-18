@@ -385,7 +385,7 @@ HANDLE ProcessOpen(
     IN DWORD Pid,
     IN DWORD Access
 ) {
-    HANDLE    Process  = INVALID_HANDLE_VALUE;
+    HANDLE    Process  = NULL;
     CLIENT_ID Client   = { 0 };
     OBJ_ATTR  ObjAttr  = { 0 };
     NTSTATUS  NtStatus = STATUS_SUCCESS;
@@ -397,6 +397,7 @@ HANDLE ProcessOpen(
     if ( ! NT_SUCCESS( NtStatus = SysNtOpenProcess( &Process, Access, &ObjAttr, &Client ) ) ) {
         PRINTF( "NtOpenProcess Failed => %lx\n", NtStatus )
         NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
+        return NULL;
     }
 
     return Process;

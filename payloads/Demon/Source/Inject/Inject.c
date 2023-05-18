@@ -52,7 +52,7 @@ DWORD Inject(
 
     /* if no handle has been specified then get process handle by Pid */
     if ( ! Process ) {
-        if ( ( Process = ProcessOpen( Pid, PROCESS_ALL_ACCESS ) ) == INVALID_HANDLE_VALUE ) {
+        if ( ( Process = ProcessOpen( Pid, PROCESS_ALL_ACCESS ) ) == NULL ) {
             PRINTF( "[INJECT] Failed to open process handle: %d\n", NtGetLastError() )
             Process = NULL;
             goto END;
@@ -160,7 +160,7 @@ END:
 
 DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSize, LPVOID DllBuffer, DWORD DllLength, PVOID Parameter, SIZE_T ParamSize, PINJECTION_CTX ctx )
 {
-    PRINTF( "Params( %x, %x, %d, %x )\n", hTargetProcess, DllBuffer, DllLength, ctx );
+    PRINTF( "DllInjectReflective( %x, %x, %d, %x )\n", hTargetProcess, DllBuffer, DllLength, ctx );
 
     NTSTATUS NtStatus            = STATUS_SUCCESS;
     LPVOID   MemParamsBuffer     = NULL;

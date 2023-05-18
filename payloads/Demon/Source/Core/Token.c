@@ -574,13 +574,13 @@ HANDLE TokenCurrentHandle(
     HANDLE   Token    = NULL;
     NTSTATUS NtStatus = STATUS_UNSUCCESSFUL;
 
-    if ( ! NT_SUCCESS( ( NtStatus = SysNtOpenThreadToken( NtCurrentThread(), TOKEN_QUERY, TRUE, &Token ) ) ) )
+    if ( ! NT_SUCCESS( NtStatus = SysNtOpenThreadToken( NtCurrentThread(), TOKEN_QUERY, TRUE, &Token ) ) )
     {
         if ( NtStatus != STATUS_NO_TOKEN )
         {
             PRINTF( "NtOpenThreadToken: Failed:[%08x : %ld]\n", NtStatus, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
         }
-        if ( ! NT_SUCCESS( ( NtStatus = SysNtOpenProcessToken( NtCurrentProcess(), TOKEN_QUERY, &Token ) ) ) )
+        if ( ! NT_SUCCESS( NtStatus = SysNtOpenProcessToken( NtCurrentProcess(), TOKEN_QUERY, &Token ) ) )
         {
             PRINTF( "NtOpenProcessToken: Failed:[%08x : %ld]\n", NtStatus, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
             return NULL;
