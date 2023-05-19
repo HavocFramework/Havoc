@@ -587,7 +587,7 @@ LEAVE: /* cleanup */
     }
 
     if ( EvntStart ) {
-        SysNtClose( EvntTimer );
+        SysNtClose( EvntStart );
         EvntStart = NULL;
     }
 
