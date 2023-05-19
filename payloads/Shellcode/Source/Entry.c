@@ -35,6 +35,11 @@ SEC( text, B ) VOID Entry( VOID )
 
     if ( NT_SUCCESS( Instance.Win32.NtAllocateVirtualMemory( NtCurrentProcess(), &KVirtualMemory, 0, &KMemSize, MEM_COMMIT, PAGE_READWRITE ) ) )
     {
+        MemCopy(
+            KVirtualMemory,
+            KaynLibraryLdr,
+            NtHeaders->OptionalHeader.SizeOfHeaders);
+
         SecHeader = IMAGE_FIRST_SECTION( NtHeaders );
         for ( DWORD i = 0; i < NtHeaders->FileHeader.NumberOfSections; i++ )
         {
