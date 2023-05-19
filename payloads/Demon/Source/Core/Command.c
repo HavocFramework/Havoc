@@ -2437,16 +2437,16 @@ VOID CommandPivot( PPARSER Parser )
 #ifdef DEBUG
                 PPIVOT_DATA TempList = Instance.SmbPivots;
 
-                printf( "Smb Pivots : [ " );
+                PUTS( "Smb Pivots : [ " );
                 do {
                     if ( TempList )
                     {
-                        printf( "%x ", TempList->DemonID );
+                        PRINTF( "%x ", TempList->DemonID );
                         TempList = TempList->Next;
                     } else
                         break;
                 } while ( TRUE );
-                puts( "]" );
+                PUTS( "]" );
 #endif
             }
             else

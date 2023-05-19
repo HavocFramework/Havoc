@@ -22463,6 +22463,29 @@ DuplicateHandle(
 	IN  DWORD    dwOptions
 	);
 
+BOOL
+WINAPI
+AttachConsole(
+  IN DWORD dwProcessId
+);
+
+HANDLE
+WINAPI
+GetStdHandle(
+  IN DWORD nStdHandle
+);
+
+/*
+BOOL
+WINAPI
+WriteConsoleA(
+  IN  HANDLE  hConsoleOutput,
+  IN  VOID    *lpBuffer,
+  IN  DWORD   nNumberOfCharsToWrite,
+  OUT LPDWORD lpNumberOfCharsWritten,
+  IN  LPVOID  lpReserved
+);
+*/
 typedef struct addrinfo {
   int             ai_flags;
   int             ai_family;

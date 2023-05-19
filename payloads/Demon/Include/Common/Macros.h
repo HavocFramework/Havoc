@@ -44,6 +44,8 @@
 #ifdef DEBUG
 #ifdef SVC_EXE
 #define PRINTF( f, ... )                { DbgPrint( "[DEBUG::%s::%d] " f, __FUNCTION__, __LINE__, __VA_ARGS__ ); }
+#elif SHELLCODE
+#define PRINTF( f, ... )                { LogToConsole( "[DEBUG::%s::%d] " f, __FUNCTION__, __LINE__, __VA_ARGS__ ); }
 #else
 #define PRINTF( f, ... )    { printf( "[DEBUG::%s::%d] " f, __FUNCTION__, __LINE__, __VA_ARGS__ ); }
 #endif
@@ -52,7 +54,11 @@
 #endif
 
 #ifdef DEBUG
+#if SHELLCODE
+#define PUTS( s )           { LogToConsole( "[DEBUG::%s::%d] %s\n", __FUNCTION__, __LINE__, s ); }
+#else
 #define PUTS( s )           { printf( "[DEBUG::%s::%d] %s\n", __FUNCTION__, __LINE__, s ); }
+#endif
 #else
 #define PUTS( s ) { ; }
 #endif

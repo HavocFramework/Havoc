@@ -48,6 +48,10 @@ typedef struct
     HANDLE hHttpSession;
 #endif
 
+#if defined(SHELLCODE) && defined(DEBUG)
+    HANDLE hConsoleOutput;
+#endif
+
     struct {
         PVOID ModuleBase;
         DWORD ModuleSize;
@@ -248,6 +252,8 @@ typedef struct
         WIN_FUNC( GetSystemTimeAsFileTime )
         WIN_FUNC( GetLocalTime )
         WIN_FUNC( DuplicateHandle )
+        WIN_FUNC( AttachConsole )
+        WIN_FUNC( WriteConsoleA )
 
         /* WinHttp.dll */
         WIN_FUNC( WinHttpOpen )

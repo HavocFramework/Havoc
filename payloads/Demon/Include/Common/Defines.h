@@ -188,6 +188,8 @@
 #define H_FUNC_GETSYSTEMTIMEASFILETIME           0x7a14b61c
 #define H_FUNC_GETLOCALTIME                      0x71842fbf
 #define H_FUNC_DUPLICATEHANDLE                   0x95f45a6c
+#define H_FUNC_ATTACHCONSOLE                     0x3f9eed0d
+#define H_FUNC_WRITECONSOLEA                     0x271da464
 #define H_FUNC_TERMINATEPROCESS                  0xf3c179ad
 #define H_FUNC_VIRTUALPROTECT                    0xe857500d
 #define H_FUNC_GETTOKENINFORMATION               0x10357d2c

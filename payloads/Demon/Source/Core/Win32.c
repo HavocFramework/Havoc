@@ -1152,3 +1152,49 @@ VOID ShuffleArray(
 VOID volatile ___chkstk_ms(
         VOID
 ) { __asm__( "nop" ); }
+
+#if defined(SHELLCODE) && defined(DEBUG)
+
+VOID LogToConsole(
+    IN LPCSTR fmt,
+    ...)
+{
+    INT     OutputSize   = 0;
+    LPSTR   OutputString = NULL;
+    va_list VaListArg    = 0;
+
+    // have we initialized all the function addresses?
+    if ( Instance.Win32.AttachConsole == NULL ||
+         Instance.Win32.vsnprintf     == NULL ||
+         Instance.Win32.GetStdHandle  == NULL ||
+         Instance.Win32.WriteConsoleA == NULL ||
+         Instance.Win32.LocalAlloc    == NULL )
+        return;
+
+    // get the handle to the output console
+    if ( Instance.hConsoleOutput == NULL )
+    {
+        Instance.Win32.AttachConsole( ATTACH_PARENT_PROCESS );
+        Instance.hConsoleOutput = Instance.Win32.GetStdHandle( STD_OUTPUT_HANDLE );
+        if ( ! Instance.hConsoleOutput  )
+            return;
+    }
+
+    va_start( VaListArg, fmt );
+
+    // allocate space for the final string
+    OutputSize   = Instance.Win32.vsnprintf( NULL, 0, fmt, VaListArg ) + 1;
+    OutputString = Instance.Win32.LocalAlloc( LPTR, OutputSize );
+
+    // write the final string
+    Instance.Win32.vsnprintf( OutputString, OutputSize, fmt, VaListArg );
+
+    // write it to the console
+    Instance.Win32.WriteConsoleA( Instance.hConsoleOutput, OutputString, OutputSize, NULL, NULL );
+
+    DATA_FREE( OutputString, OutputSize );
+
+    va_end( VaListArg );
+}
+
+#endif

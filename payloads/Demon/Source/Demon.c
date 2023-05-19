@@ -449,6 +449,8 @@ VOID DemonInit( PVOID ModuleInst )
         Instance.Win32.GetSystemTimeAsFileTime         = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_GETSYSTEMTIMEASFILETIME );
         Instance.Win32.GetLocalTime                    = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_GETLOCALTIME );
         Instance.Win32.DuplicateHandle                 = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_DUPLICATEHANDLE );
+        Instance.Win32.AttachConsole                   = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_ATTACHCONSOLE );
+        Instance.Win32.WriteConsoleA                   = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_WRITECONSOLEA );
     }
 
     /* now that we loaded some of the basic apis lets parse the config and see how we load the rest */
@@ -670,7 +672,7 @@ VOID DemonConfig()
         MemSet( Instance.Config.Transport.Headers[ i ], 0, Length );
         MemCopy( Instance.Config.Transport.Headers[ i ], Buffer, Length );
 #ifdef DEBUG
-        printf( "  - %ls\n", Instance.Config.Transport.Headers[ i ] );
+        PRINTF( "  - %ls\n", Instance.Config.Transport.Headers[ i ] );
 #endif
     }
     Instance.Config.Transport.Headers[ J + 1 ] = NULL;
@@ -686,7 +688,7 @@ VOID DemonConfig()
         MemSet( Instance.Config.Transport.Uris[ i ], 0, Length + sizeof( WCHAR ) );
         MemCopy( Instance.Config.Transport.Uris[ i ], Buffer, Length );
 #ifdef DEBUG
-        printf( "  - %ls\n", Instance.Config.Transport.Uris[ i ] );
+        PRINTF( "  - %ls\n", Instance.Config.Transport.Uris[ i ] );
 #endif
     }
     Instance.Config.Transport.Uris[ J + 1 ] = NULL;
