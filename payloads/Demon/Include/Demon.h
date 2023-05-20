@@ -32,6 +32,14 @@
 #include <stdio.h>
 #endif
 
+typedef struct
+{
+    PVOID KaynLdr;
+    PVOID DllCopy;
+    PVOID Demon;
+    DWORD DemonSize;
+} KAYN_ARGS, *PKAYN_ARGS;
+
 // TODO: remove all variables that are not switched/changed after some time
 typedef struct
 {
@@ -525,9 +533,9 @@ typedef struct
 
 extern INSTANCE Instance;
 
-VOID DemonMain( PVOID ModuleInst, PVOID ReflectiveLdrAddr );
+VOID DemonMain( PVOID ModuleInst, PKAYN_ARGS KArgs );
 VOID DemonRoutine( );
-VOID DemonInit( PVOID ModuleInst );
+VOID DemonInit( PVOID ModuleInst, PKAYN_ARGS KArgs );
 VOID DemonMetaData( PPACKAGE* Package, BOOL Header );
 VOID DemonConfig();
 

