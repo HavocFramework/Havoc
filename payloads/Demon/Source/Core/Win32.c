@@ -1099,14 +1099,17 @@ BOOL RandomBool(
 ULONGLONG SharedTimestamp(
     VOID
 ) {
-    SIZE_T        UnixStart     = 0x019DB1DED53E8000; /* Start of Unix epoch in ticks. */
-    SIZE_T        TicksPerMilli = 1000;
+    //SIZE_T        UnixStart     = 0x019DB1DED53E8000; /* Start of Unix epoch in ticks. */
+    //SIZE_T        TicksPerMilli = 1000;
     LARGE_INTEGER Time          = { 0 };
 
     Time.LowPart  = USER_SHARED_DATA->SystemTime.LowPart;
     Time.HighPart = USER_SHARED_DATA->SystemTime.High2Time;
 
-    return ( ULONGLONG ) ( ( Time.QuadPart - UnixStart ) / TicksPerMilli );
+    // NOTE: avoid 64-bit division which doesn't work in x86
+    //return ( ULONGLONG ) ( ( Time.QuadPart - UnixStart ) / TicksPerMilli );
+
+    return Time.QuadPart;
 }
 
 /*!
@@ -1116,8 +1119,11 @@ ULONGLONG SharedTimestamp(
 VOID SharedSleep(
     SIZE_T Delay
 ) {
-    SIZE_T    Rand = { 0 };
-    ULONGLONG End  = { 0 };
+    SIZE_T    Rand          = { 0 };
+    ULONGLONG End           = { 0 };
+    SIZE_T    TicksPerMilli = 1000;
+
+    Delay *= TicksPerMilli;
 
     Rand = RandomNumber32();
     End  = SharedTimestamp() + Delay;
