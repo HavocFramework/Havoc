@@ -195,12 +195,12 @@ BOOL RandomBool(
     VOID
 );
 
-ULONGLONG SharedTimestamp(
+ULONG64 SharedTimestamp(
     VOID
 );
 
 VOID SharedSleep(
-    SIZE_T Delay
+    ULONG64 Delay
 );
 
 VOID ShuffleArray(

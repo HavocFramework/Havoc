@@ -1096,7 +1096,7 @@ BOOL RandomBool(
  * from KUSER_SHARED_DATA
  * @return
  */
-ULONGLONG SharedTimestamp(
+ULONG64 SharedTimestamp(
     VOID
 ) {
     //SIZE_T        UnixStart     = 0x019DB1DED53E8000; /* Start of Unix epoch in ticks. */
@@ -1117,11 +1117,11 @@ ULONGLONG SharedTimestamp(
  * @param Delay
  */
 VOID SharedSleep(
-    SIZE_T Delay
+    ULONG64 Delay
 ) {
-    SIZE_T    Rand          = { 0 };
-    ULONGLONG End           = { 0 };
-    SIZE_T    TicksPerMilli = 1000;
+    SIZE_T  Rand          = { 0 };
+    ULONG64 End           = { 0 };
+    ULONG   TicksPerMilli = 1000;
 
     Delay *= TicksPerMilli;
 
