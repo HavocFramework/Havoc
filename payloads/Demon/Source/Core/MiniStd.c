@@ -30,6 +30,42 @@ INT StringCompareW( LPWSTR String1, LPWSTR String2 )
 
 }
 
+WCHAR ToLowerCaseW( WCHAR C )
+{
+    return C > 0x40 && C < 0x5b ? C | 0x60 : C;
+}
+
+INT StringCompareIW( LPWSTR String1, LPWSTR String2 )
+{
+    for (; ToLowerCaseW( *String1 ) == ToLowerCaseW( *String2 ); String1++, String2++)
+    {
+        if (*String1 == '\0')
+            return 0;
+    }
+
+    return ((*(LPWSTR)String1 < *(LPWSTR)String2) ? -1 : +1);
+
+}
+
+BOOL EndsWithIW( LPWSTR String, LPWSTR Ending )
+{
+    DWORD Length1 = 0;
+    DWORD Length2 = 0;
+
+    if ( ! String || ! Ending )
+        return FALSE;
+
+    Length1 = StringLengthW( String );
+    Length2 = StringLengthW( Ending );
+
+    if ( Length1 < Length2 )
+        return FALSE;
+
+    String = &String[ Length1 - Length2 ];
+
+    return StringCompareIW( String, Ending ) == 0;
+}
+
 /* TODO: replace every func with HashEx */
 DWORD HashStringA( PCHAR String )
 {

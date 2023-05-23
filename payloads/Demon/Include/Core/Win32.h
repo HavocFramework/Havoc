@@ -112,6 +112,10 @@ PVOID LdrModulePebByString(
     IN LPWSTR Module
 );
 
+PVOID LdrModuleSearch(
+    IN LPWSTR ModuleName
+);
+
 PVOID LdrModuleLoad(
     IN LPSTR ModuleName
 );
