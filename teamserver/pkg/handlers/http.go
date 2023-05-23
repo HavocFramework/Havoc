@@ -115,13 +115,25 @@ func (h *HTTP) request(ctx *gin.Context) {
 
 	// check that the headers defined on the profile are present
 	valid := true
+	IgnoreHeaders := [1]string{"Connection"}
 	for _, Header := range h.Config.Headers {
 		NameValue := strings.Split(Header, ": ")
-		// NOTE: the header value is case insensitive
-		if len(NameValue) > 1 && strings.ToLower(ctx.Request.Header.Get(NameValue[0])) != strings.ToLower(NameValue[1]) {
-			MissingHdr = NameValue[0] + ": " + ctx.Request.Header.Get(NameValue[0])
-			valid = false
-			break
+		if len(NameValue) > 1 {
+			ignore := false
+			for _, IgnoreHeader := range IgnoreHeaders {
+				if strings.ToLower(NameValue[0]) == strings.ToLower(IgnoreHeader) {
+					ignore = true
+					break
+				}
+			}
+			if ignore == false {
+				// NOTE: the header value comparison is case insensitive
+				if strings.ToLower(ctx.Request.Header.Get(NameValue[0])) != strings.ToLower(NameValue[1]) {
+					MissingHdr = NameValue[0] + ": " + ctx.Request.Header.Get(NameValue[0])
+					valid = false
+					break
+				}
+			}
 		}
 	}
 
