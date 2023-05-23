@@ -158,6 +158,7 @@ func NewBuilder(config BuilderConfig) *Builder {
 	 * -falign-functions=<number>      Align the start of functions to the next power-of-two greater than or equal to n, skipping up to m-1 bytes.
 	 * -s                              Remove all symbols
 	 * -ffunction-sections             Place each function into its own section.
+	 * -fdata-sections                 Place each global or static variable into .data.variable_name, .rodata.variable_name or .bss.variable_name.
 	 * -falign-jumps=<number>          Align branch targets to a power-of-two boundary.
 	 * -w                              Suppress warnings.
 	 * -falign-labels=<number>         Align all branch targets to a power-of-two boundary.
@@ -166,27 +167,29 @@ func NewBuilder(config BuilderConfig) *Builder {
 	 * -s                              Remove all symbol table and relocation information from the executable.
 	 * --no-seh                        Image does not use SEH.
 	 * --enable-stdcall-fixup          Link _sym to _sym@nn without warnings.
+	 * --gc-sections                   Decides which input sections are used by examining symbols and relocations.
 	 */
 
 	logger.Debug(fmt.Sprintf("Payload Builder: Enable Debug Mode %v", config.DebugDev))
+
 	if config.DebugDev {
 		// debug mode includes symbols
 		builder.compilerOptions.CFlags = []string{
 			"",
 			"-Os -fno-asynchronous-unwind-tables -masm=intel",
 			"-fno-ident -fpack-struct=8 -falign-functions=1",
-			"-ffunction-sections -falign-jumps=1 -w",
+			"-ffunction-sections -fdata-sections -falign-jumps=1 -w",
 			"-falign-labels=1 -fPIC",
-			"-Wl,--no-seh,--enable-stdcall-fixup",
+			"-Wl,--no-seh,--enable-stdcall-fixup,--gc-sections",
 		}
 	} else {
 		builder.compilerOptions.CFlags = []string{
 			"",
 			"-Os -fno-asynchronous-unwind-tables -masm=intel",
 			"-fno-ident -fpack-struct=8 -falign-functions=1",
-			"-s -ffunction-sections -falign-jumps=1 -w",
+			"-s -ffunction-sections -fdata-sections -falign-jumps=1 -w",
 			"-falign-labels=1 -fPIC",
-			"-Wl,-s,--no-seh,--enable-stdcall-fixup",
+			"-Wl,-s,--no-seh,--enable-stdcall-fixup,--gc-sections",
 		}
 	}
 
