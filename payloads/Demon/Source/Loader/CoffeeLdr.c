@@ -286,12 +286,15 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
         }
     }
 
-    // set the FunctionMap section to READONLY
-    Success = MemoryProtect( DX_MEM_SYSCALL, NtCurrentProcess(), Coffee->FunMap, Coffee->FunMapSize, PAGE_READONLY );
-    if ( ! Success )
+    if ( Coffee->FunMapSize )
     {
-        PUTS( "Failed to protect memory" )
-        return FALSE;
+        // set the FunctionMap section to READONLY
+        Success = MemoryProtect( DX_MEM_SYSCALL, NtCurrentProcess(), Coffee->FunMap, Coffee->FunMapSize, PAGE_READONLY );
+        if ( ! Success )
+        {
+            PUTS( "Failed to protect memory" )
+            return FALSE;
+        }
     }
 
     // look for the "go" function
