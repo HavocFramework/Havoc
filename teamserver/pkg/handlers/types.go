@@ -15,6 +15,7 @@ type (
 		WorkingHours string
 		Hosts        []string
 		HostBind     string
+		Methode      string
 		HostRotation string
 		PortBind     string
 		PortConn     string

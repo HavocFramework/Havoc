@@ -834,6 +834,13 @@ func (b *Builder) PatchConfig() ([]byte, error) {
 
 		DemonConfig.AddInt32(WorkingHours)
 
+		if strings.ToLower(Config.Config.Methode) == "get" {
+			//DemonConfig.AddWString("GET")
+			return nil, errors.New("GET method is not supported")
+		} else {
+			DemonConfig.AddWString("POST")
+		}
+
 		switch Config.Config.HostRotation {
 		case "round-robin":
 			DemonConfig.AddInt(0)

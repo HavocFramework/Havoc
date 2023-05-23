@@ -242,6 +242,7 @@ func (t *Teamserver) Start() {
 				WorkingHours: listener.WorkingHours,
 				Hosts:        listener.Hosts,
 				HostBind:     listener.HostBind,
+				Methode:      listener.Methode,
 				HostRotation: listener.HostRotation,
 				BehindRedir:  t.Profile.Config.Demon.TrustXForwardedFor,
 				PortBind:     strconv.Itoa(listener.PortBind),

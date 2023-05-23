@@ -70,7 +70,7 @@ type ListenerHTTP struct {
 	/* Port used by the agent */
 	PortConn int `yaotl:"PortConn,optional"`
 
-	/* Methode string `yaotl:"Method,optional"` */
+	Methode  string `yaotl:"Method,optional"`
 
 	/* optional fields */
 	UserAgent string   `yaotl:"UserAgent,optional"`

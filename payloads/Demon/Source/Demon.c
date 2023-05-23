@@ -625,7 +625,11 @@ VOID DemonConfig()
         Instance.Win32.RtlExitUserThread( 0 );
     }
     Instance.Config.Transport.WorkingHours   = ParserGetInt32( &Parser );
-    Instance.Config.Transport.Method         = L"POST"; /* TODO: make it optional */
+
+    Buffer = ParserGetBytes( &Parser, &Length );
+    Instance.Config.Transport.Method = NtHeapAlloc( Length + sizeof( WCHAR ) );
+    MemCopy( Instance.Config.Transport.Method, Buffer, Length );
+
     Instance.Config.Transport.HostRotation   = ParserGetInt32( &Parser );
     Instance.Config.Transport.HostMaxRetries = 0;  /* Max retries. 0 == infinite retrying
                                                     * TODO: add this to the yaotl language and listener GUI */
