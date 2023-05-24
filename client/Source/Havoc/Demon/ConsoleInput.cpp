@@ -78,6 +78,7 @@ auto ParseCommandLine( QString commandline ) -> QStringList
     auto in_quotes     = false;
     char c;
     char next_c;
+    char next_next_c;
     std::string parsed;
 
     for( size_t i = 0; i < cmdline.length(); i++)
@@ -87,6 +88,11 @@ auto ParseCommandLine( QString commandline ) -> QStringList
             next_c = cmdline[ i + 1 ];
         else
             next_c = 0;
+
+        if ( i + 2 < cmdline.length() )
+            next_next_c = cmdline[ i + 2 ];
+        else
+            next_next_c = 0;
 
         if ( c == '"' && ! in_quotes )
         {
@@ -107,11 +113,31 @@ auto ParseCommandLine( QString commandline ) -> QStringList
         // handle a backslash
         else if ( c == '\\' )
         {
-            // if the next char is a backslack, enter it
             if ( next_c == '\\' )
             {
-                parsed += '\\';
-                i++;
+                /*
+                 * double backslask is a special scenario:
+                 * we want to allow: \\dc01\c$\windows, instead of: \\\\dc01\c$\windows
+                 * but also, we want to be able to escape backslashes
+                 * if they are followed by a space or double quote
+                 * meaning:
+                 * double backslash followed by a space or double quote = escaped backslash
+                 * double backslash followed by any other character     = double backslash
+                 */
+                if ( next_next_c == ' ' || next_next_c == '"' )
+                {
+                    // we are in these scenarios:
+                    // "foo 1\\" bar -> arg1: 'foo 1\' arg2: 'bar'
+                    // foo\\ bar     -> arg1: 'foo\' arg2: 'bar'
+                    parsed += '\\';
+                    i++;
+                }
+                else
+                {
+                    // we are in this scenario:
+                    // \\dc01\c$\windows -> \\dc01\c$\windows
+                    parsed += '\\';
+                }
             }
             // if the next char is a space, enter it
             else if ( next_c == ' ' )
