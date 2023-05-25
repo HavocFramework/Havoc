@@ -266,7 +266,7 @@ BOOL TokenSetSeDebugPriv(
 BOOL TokenSetSeImpersonatePriv(
     IN BOOL  Enable
 ) {
-    CHAR PrivName[ 17 ] = { 0 };
+    CHAR PrivName[ 23 ] = { 0 };
 
     PrivName[ 0  ] = HideChar('S');
     PrivName[ 1  ] = HideChar('e');
