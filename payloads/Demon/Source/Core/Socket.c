@@ -409,21 +409,16 @@ VOID SocketFree( PSOCKET_DATA Socket )
     Socket = NULL;
 }
 
-VOID SocketPush()
+VOID SocketCleanDead()
 {
     PSOCKET_DATA Socket = NULL;
     PSOCKET_DATA SkLast = NULL;
 
-    /* check for new clients */
-    SocketClients();
-
-    /* Read data from the clients and send it to our server/forwarded host */
-    SocketRead();
-
-    /* kill every dead/removed socket
+    /*
      * TODO: re-work on this.
      *       make that after the socket got used close it.
-     *       maybe add a timeout ? after the socket didn't got used after a certain period of time. */
+     *       maybe add a timeout ? after the socket didn't got used after a certain period of time.
+     */
     Socket = Instance.Sockets;
     for ( ;; )
     {
@@ -437,13 +432,13 @@ VOID SocketPush()
             {
                 Instance.Sockets = Socket->Next;
                 SocketFree( Socket );
-                Socket = NULL;
+                Socket = Instance.Sockets;
             }
             else
             {
                 SkLast->Next = Socket->Next;
                 SocketFree( Socket );
-                SkLast = NULL;
+                Socket = SkLast->Next;
             }
         }
         else
@@ -452,6 +447,18 @@ VOID SocketPush()
             Socket = Socket->Next;
         }
     }
+}
+
+VOID SocketPush()
+{
+    /* check for new clients */
+    SocketClients();
+
+    /* Read data from the clients and send it to our server/forwarded host */
+    SocketRead();
+
+    /* kill every dead/removed socket */
+    SocketCleanDead();
 }
 
 /*!
