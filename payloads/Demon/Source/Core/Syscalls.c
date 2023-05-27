@@ -40,6 +40,7 @@ BOOL SysInitialize(
     SYS_EXTRACT( NtOpenThread )
     SYS_EXTRACT( NtOpenThreadToken )
     SYS_EXTRACT( NtOpenProcess )
+    SYS_EXTRACT( NtTerminateProcess )
     SYS_EXTRACT( NtOpenProcessToken )
     SYS_EXTRACT( NtDuplicateToken )
     SYS_EXTRACT( NtQueueApcThread )

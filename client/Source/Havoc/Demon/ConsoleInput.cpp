@@ -1064,7 +1064,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                         return false;
                     }
 
-                    if ( ! ( TargetArch.compare( "x64" ) == 0 || TargetArch.compare( "x86" ) != 0 ) ) {
+                    if ( TargetArch.compare( "x64" ) != 0 && TargetArch.compare( "x86" ) != 0 ) {
                         CONSOLE_ERROR( "Incorrect process arch specified: " + TargetArch )
                         return false;
                     }

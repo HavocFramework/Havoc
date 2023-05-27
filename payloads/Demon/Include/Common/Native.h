@@ -16737,6 +16737,12 @@ NtOpenProcess (
     IN OPTIONAL PCLIENT_ID ClientId
     );
 
+NTSTATUS
+NTAPI
+NtTerminateProcess(
+	IN OPTIONAL HANDLE   ProcessHandle,
+	IN          NTSTATUS ExitStatus
+	);
 
 NTSTATUS
 NTAPI

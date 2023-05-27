@@ -242,3 +242,10 @@ const (
 	TokenPrimary       = 1
 	TokenImpersonation = 2
 )
+
+const (
+	INJECT_ERROR_SUCCESS               = 0
+	INJECT_ERROR_FAILED                = 1
+	INJECT_ERROR_INVALID_PARAM         = 2
+	INJECT_ERROR_PROCESS_ARCH_MISMATCH = 3
+)

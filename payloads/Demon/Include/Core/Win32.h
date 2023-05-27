@@ -130,6 +130,11 @@ BOOL ProcessCreate(
     IN  PANONPIPE            AnonPipes
 );
 
+BOOL ProcessTerminate(
+    IN HANDLE hProcess,
+    IN DWORD  Pid
+);
+
 BOOL ProcessIsWow(
     IN HANDLE hProcess
 );

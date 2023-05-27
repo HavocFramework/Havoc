@@ -579,10 +579,14 @@ HANDLE TokenCurrentHandle(
         if ( NtStatus != STATUS_NO_TOKEN )
         {
             PRINTF( "NtOpenThreadToken: Failed:[%08x : %ld]\n", NtStatus, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
+            NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
+            return NULL;
         }
+
         if ( ! NT_SUCCESS( NtStatus = SysNtOpenProcessToken( NtCurrentProcess(), TOKEN_QUERY, &Token ) ) )
         {
             PRINTF( "NtOpenProcessToken: Failed:[%08x : %ld]\n", NtStatus, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
+            NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
             return NULL;
         }
     }

@@ -439,6 +439,8 @@ HANDLE ProcessOpen(
     OBJ_ATTR  ObjAttr  = { 0 };
     NTSTATUS  NtStatus = STATUS_SUCCESS;
 
+    InitializeObjectAttributes( &ObjAttr, NULL, 0, NULL, NULL );
+
     /* set our target process */
     Client.UniqueProcess = C_PTR( Pid );
 
@@ -685,6 +687,42 @@ BOOL ProcessCreate(
 
     Cleanup:
     return Return;
+}
+
+BOOL ProcessTerminate(
+    IN HANDLE hProcess,
+    IN DWORD  Pid)
+{
+    BOOL     Success      = FALSE;
+    BOOL     OpenedHandle = FALSE;
+    NTSTATUS NtStatus     = STATUS_UNSUCCESSFUL;
+
+    if ( ! hProcess ) {
+        if ( ( hProcess = ProcessOpen( Pid, PROCESS_TERMINATE ) ) == NULL ) {
+            PRINTF( "[INJECT] Failed to open process handle: %d\n", NtGetLastError() )
+            hProcess = NULL;
+            goto END;
+        } else {
+            PRINTF( "[INJECT] Opened process handle to %d: %x\n", Pid, hProcess )
+            OpenedHandle = TRUE;
+        }
+    } else {
+        PRINTF( "[INJECT] Using specified process handle: %x\n", hProcess )
+    }
+
+    NtStatus = SysNtTerminateProcess( hProcess, STATUS_SUCCESS );
+    if ( NT_SUCCESS( NtStatus ) ) {
+        Success = TRUE;
+    } else {
+        PUTS( "Failed to terminate process" )
+    }
+
+END:
+    if ( OpenedHandle ) {
+        SysNtClose( hProcess );
+    }
+
+    return Success;
 }
 
 /*!

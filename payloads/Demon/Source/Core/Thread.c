@@ -148,7 +148,7 @@ HANDLE ThreadCreate(
                     *ThreadId = U_PTR( Client.UniqueThread );
                 }
             } else {
-                PRINTF( "Failed to create new thread => NtStatus:[%ld]", NtStatus );
+                PRINTF( "Failed to create new thread => NtStatus:[%x]\n", NtStatus );
                 NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
             }
 

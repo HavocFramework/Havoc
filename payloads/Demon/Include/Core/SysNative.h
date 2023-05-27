@@ -41,6 +41,11 @@ NTSTATUS NTAPI SysNtOpenProcess(
     IN OPT PCLIENT_ID          ClientId
 );
 
+NTSTATUS NTAPI SysNtTerminateProcess(
+    IN OPTIONAL HANDLE   ProcessHandle,
+    IN          NTSTATUS ExitStatus
+);
+
 NTSTATUS NTAPI SysNtOpenProcessToken(
     IN  HANDLE      ProcessHandle,
     IN  ACCESS_MASK DesiredAccess,

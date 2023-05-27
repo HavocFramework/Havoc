@@ -31,6 +31,18 @@ NTSTATUS NTAPI SysNtOpenProcess(
     return NtStatus;
 }
 
+NTSTATUS NTAPI SysNtTerminateProcess(
+    IN OPTIONAL HANDLE   ProcessHandle,
+    IN          NTSTATUS ExitStatus
+) {
+    NTSTATUS   NtStatus  = STATUS_SUCCESS;
+    SYS_CONFIG SysConfig = { 0 };
+
+    SYSCALL_INVOKE( NtTerminateProcess, ProcessHandle, ExitStatus );
+
+    return NtStatus;
+}
+
 NTSTATUS NTAPI SysNtOpenThreadToken(
     IN  HANDLE      ThreadHandle,
     IN  ACCESS_MASK DesiredAccess,

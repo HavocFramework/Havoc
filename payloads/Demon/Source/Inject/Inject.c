@@ -63,9 +63,12 @@ DWORD Inject(
         PRINTF( "[INJECT] Using specified process handle: %x\n", Process )
     }
 
+    // TODO: if x86, check process is not x64?
+
     /* check if the process is x64 */
     if ( x64 ) {
         if ( ProcessIsWow( Process ) ) {
+            PUTS( "The process target process is x86!" )
             Status = INJECT_ERROR_PROCESS_ARCH_MISMATCH;
             goto END;
         }
@@ -329,11 +332,7 @@ DWORD DllSpawnReflective( LPVOID DllLdr, DWORD DllLdrSize, LPVOID DllBuffer, DWO
         if ( Result != 0 )
         {
             PUTS( "Failed" )
-
-            if ( ! Instance.Win32.TerminateProcess( ProcessInfo.hProcess, 0 ) ) {
-                PRINTF( "(Not major) Failed to Terminate Process: %d\n", NtGetLastError()  )
-            }
-
+            ProcessTerminate( ProcessInfo.hProcess, 0 );
             SysNtClose( ProcessInfo.hProcess );
             SysNtClose( ProcessInfo.hThread );
         }

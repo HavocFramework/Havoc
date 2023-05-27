@@ -179,6 +179,7 @@ typedef struct
         WIN_FUNC( NtGetNextThread );
         WIN_FUNC( NtOpenThread )
         WIN_FUNC( NtOpenThreadToken )
+        WIN_FUNC( NtTerminateProcess )
         WIN_FUNC( NtOpenProcess )
         WIN_FUNC( NtOpenProcessToken )
         WIN_FUNC( NtDuplicateToken )
@@ -404,6 +405,7 @@ typedef struct
         WIN_FUNC( NtOpenFile )
         WIN_FUNC( NtOpenThread )
         WIN_FUNC( NtOpenThreadToken )
+        WIN_FUNC( NtTerminateProcess )
         WIN_FUNC( NtOpenProcess )
         WIN_FUNC( NtOpenProcessToken )
         WIN_FUNC( NtCreateSection )
@@ -441,6 +443,7 @@ typedef struct
         /* Syscall Service Numbers */
         WORD NtOpenThread;
         WORD NtOpenThreadToken;
+        WORD NtTerminateProcess;
         WORD NtOpenProcess;
         WORD NtOpenProcessToken;
         WORD NtDuplicateToken;
