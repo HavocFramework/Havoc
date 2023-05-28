@@ -484,6 +484,8 @@ VOID DemonInit( PVOID ModuleInst, PKAYN_ARGS KArgs )
 #if SHELLCODE
         Instance.Session.ModuleBase = KArgs->Demon;
         Instance.Session.ModuleSize = KArgs->DemonSize;
+        Instance.Session.TxtBase = KArgs->TxtBase;
+        Instance.Session.TxtSize = KArgs->TxtSize;
         FreeReflectiveLoader( KArgs->KaynLdr );
 #endif
     }

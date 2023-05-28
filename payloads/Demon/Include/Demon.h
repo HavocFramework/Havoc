@@ -32,12 +32,16 @@
 #include <stdio.h>
 #endif
 
+// To prevent false alignment on x64
+#pragma pack(1)
 typedef struct
 {
     PVOID KaynLdr;
     PVOID DllCopy;
     PVOID Demon;
     DWORD DemonSize;
+    PVOID TxtBase;
+    DWORD TxtSize;
 } KAYN_ARGS, *PKAYN_ARGS;
 
 // TODO: remove all variables that are not switched/changed after some time
@@ -63,6 +67,8 @@ typedef struct
     struct {
         PVOID ModuleBase;
         DWORD ModuleSize;
+        PVOID TxtBase;
+        DWORD TxtSize;
         DWORD AgentID;
         BOOL  Connected;
         DWORD PID;

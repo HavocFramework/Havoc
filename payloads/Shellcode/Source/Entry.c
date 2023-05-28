@@ -74,8 +74,15 @@ SEC( text, B ) VOID Entry( VOID )
             if ( ( SecHeader[ i ].Characteristics & IMAGE_SCN_MEM_WRITE ) && ( SecHeader[ i ].Characteristics & IMAGE_SCN_MEM_READ ) )
                 Protection = PAGE_READWRITE;
 
-            if ( SecHeader[ i ].Characteristics & IMAGE_SCN_MEM_EXECUTE )
+            if ( SecHeader[ i ].Characteristics & IMAGE_SCN_MEM_EXECUTE ) {
                 Protection = PAGE_EXECUTE;
+                // Prevent overwrite with .reloc section
+                if (SecHeader[ i ].SizeOfRawData > 0x1000) {
+                    // .text section found
+                    KaynArgs.TxtBase = KVirtualMemory + SecHeader[ i ].VirtualAddress - KHdrSize;
+                    KaynArgs.TxtSize = SecHeader[ i ].SizeOfRawData;
+                }
+            }
 
             if ( ( SecHeader[ i ].Characteristics & IMAGE_SCN_MEM_EXECUTE ) && ( SecHeader[ i ].Characteristics & IMAGE_SCN_MEM_WRITE ) )
                 Protection = PAGE_EXECUTE_WRITECOPY;
