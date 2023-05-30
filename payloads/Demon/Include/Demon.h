@@ -69,6 +69,7 @@ typedef struct
         DWORD TID;
         DWORD PPID;
         WORD  OS_Arch;
+        WORD  Process_Arch;
         DWORD OSVersion;
     } Session;
 

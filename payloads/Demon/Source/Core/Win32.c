@@ -469,9 +469,13 @@ BOOL ProcessIsWow(
         return FALSE;
     }
 
+    if ( Instance.Session.OS_Arch == PROCESSOR_ARCHITECTURE_INTEL ) {
+        return FALSE;
+    }
+
     if ( ! NT_SUCCESS( NtStatus = SysNtQueryInformationProcess( Process, ProcessWow64Information, &IsWow64, sizeof( PVOID ), NULL ) ) ) {
         PRINTF( "[!] NtQueryInformationProcess Failed: Handle[%x] Status[%lx]\n", Process, NtStatus )
-        IsWow64 = FALSE;
+        return FALSE;
     }
 
     return U_PTR( IsWow64 );

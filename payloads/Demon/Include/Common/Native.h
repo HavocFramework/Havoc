@@ -14770,6 +14770,7 @@ typedef const GUID *LPCGUID;
 #endif
 
 NTSTATUS
+NTAPI
 RtlGetVersion(
     OUT PRTL_OSVERSIONINFOW lpVersionInformation
     );
@@ -22147,6 +22148,7 @@ NtDeleteFile (
     );
 
 NTSTATUS
+NTAPI
 RtlGetVersion(
 	OUT PRTL_OSVERSIONINFOW lpVersionInformation
 	);

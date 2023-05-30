@@ -814,6 +814,11 @@ VOID CoffeeRunner( PCHAR EntryName, DWORD EntryNameSize, PVOID CoffeeData, SIZE_
 {
     PCOFFEE_PARAMS CoffeeParams = NULL;
     INJECTION_CTX  InjectionCtx = { 0 };
+#if _WIN64
+    BOOL           x64          = TRUE;
+#else
+    BOOL           x64          = FALSE;
+#endif
 
     // Allocate memory
     CoffeeParams                 = Instance.Win32.LocalAlloc( LPTR, sizeof( COFFEE_PARAMS ) );
@@ -833,7 +838,7 @@ VOID CoffeeRunner( PCHAR EntryName, DWORD EntryNameSize, PVOID CoffeeData, SIZE_
 
     Instance.Threads++;
 
-    if ( ! ThreadCreate( THREAD_METHOD_NTCREATEHREADEX, NtCurrentProcess(), CoffeeRunnerThread, CoffeeParams, NULL ) ) {
+    if ( ! ThreadCreate( THREAD_METHOD_NTCREATEHREADEX, NtCurrentProcess(), x64, CoffeeRunnerThread, CoffeeParams, NULL ) ) {
         PRINTF( "Failed to create new CoffeeRunnerThread thread: %d", NtGetLastError() )
         PACKAGE_ERROR_WIN32
     }

