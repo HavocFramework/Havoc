@@ -61,10 +61,13 @@ typedef struct
 
 } INSTANCE, *PINSTANCE;
 
+#pragma pack(1)
 typedef struct
 {
     PVOID KaynLdr;
     PVOID DllCopy;
     PVOID Demon;
     DWORD DemonSize;
+    PVOID TxtBase;
+    DWORD TxtSize;
 } KAYN_ARGS, *PKAYN_ARGS;
