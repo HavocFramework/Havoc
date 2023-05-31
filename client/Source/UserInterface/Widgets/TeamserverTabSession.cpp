@@ -217,6 +217,10 @@ void UserInterface::Widgets::TeamserverTabSession::handleDemonContextMenu( const
     ColorMenu.addAction( "Blue" );
     ColorMenu.addAction( "Yellow" );
     ColorMenu.addAction( "Pink" );
+    ColorMenu.addAction( "Green" );
+    ColorMenu.addAction( "Purple" );
+    ColorMenu.addAction( "Orange" );
+
     ColorMenu.setStyleSheet( MenuStyle );
 
     SessionExplorer.addAction( "Process List" );
@@ -290,7 +294,7 @@ void UserInterface::Widgets::TeamserverTabSession::handleDemonContextMenu( const
                     HavocX::Teamserver.TabSession->NewBottomTab( Session.InteractedWidget->DemonInteractedWidget, tabName.toStdString() );
                     Session.InteractedWidget->lineEdit->setFocus();
                 }
-                else if ( action->text().compare( "Red" ) == 0 || action->text().compare( "Blue" ) == 0 || action->text().compare( "Pink" ) == 0 || action->text().compare( "Yellow" ) == 0 || action->text().compare( "Reset" ) == 0 ){
+                else if ( action->text().compare( "Red" ) == 0 || action->text().compare( "Blue" ) == 0 || action->text().compare( "Pink" ) == 0 || action->text().compare( "Yellow" ) == 0 || action->text().compare( "Green" ) == 0 || action->text().compare( "Purple" ) == 0 || action->text().compare( "Orange" ) == 0 || action->text().compare( "Reset" ) == 0 ){
 
                     for ( int i = 0; i < HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->rowCount(); ++i ){
                         auto AgentID = HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item(i, 0)->text();
@@ -308,6 +312,12 @@ void UserInterface::Widgets::TeamserverTabSession::handleDemonContextMenu( const
                                 CurrentColor = QColor( Util::ColorText::Colors::Hex::Pink );
                             else if( action->text().compare("Yellow") == 0 )
                                 CurrentColor = QColor( Util::ColorText::Colors::Hex::Yellow );
+                            else if( action->text().compare("Green") == 0 )
+                                CurrentColor = QColor( Util::ColorText::Colors::Hex::Green );
+                            else if( action->text().compare("Purple") == 0 )
+                                CurrentColor = QColor( Util::ColorText::Colors::Hex::Purple );
+                            else if( action->text().compare("Orange") == 0 )
+                                CurrentColor = QColor( Util::ColorText::Colors::Hex::Orange );
                             else
                                 CurrentColor = QColor( Util::ColorText::Colors::Hex::Background );
 
