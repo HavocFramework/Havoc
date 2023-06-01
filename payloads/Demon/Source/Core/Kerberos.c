@@ -83,7 +83,7 @@ BOOL ElevateToSystem()
     winlogon[ 0 ]  = HideChar('w');
     winlogon[ 10 ] = HideChar('x');
     ProcessID = GetProcessIdByName(winlogon);
-    OverwriteStringW( winlogon );
+    MemZero( winlogon, sizeof( winlogon ) );
     if (ProcessID == -1)
     {
         PUTS( "Failed to find the PID of Winlogon.exe" )
@@ -209,7 +209,7 @@ NTSTATUS GetLsaHandle( HANDLE hToken, BOOL highIntegrity, PHANDLE hLsa )
                 }
             }
         }
-        OverwriteStringA( name );
+        MemZero( name, sizeof( name ) );
     }
     *hLsa = hLsaLocal;
     return status;
@@ -486,7 +486,7 @@ END:
     if ( hLsa ) {
         Instance.Win32.LsaDeregisterLogonProcess( hLsa );
     }
-    OverwriteStringA( name );
+    MemZero( name, sizeof( name ) );
 
     return ReturnValue;
 }
@@ -577,7 +577,7 @@ END:
     if (hLsa) {
         Instance.Win32.LsaDeregisterLogonProcess( hLsa );
     }
-    OverwriteStringA( name );
+    MemZero( name, sizeof( name ) );
 
     return ReturnValue;
 }
@@ -740,7 +740,7 @@ END:
     if ( hLsa ) {
         Instance.Win32.LsaDeregisterLogonProcess( hLsa );
     }
-    OverwriteStringA( name );
+    MemZero( name, sizeof( name ) );
 
     if ( ReturnValue && Sessions ) {
         return Sessions;

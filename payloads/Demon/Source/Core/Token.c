@@ -263,7 +263,7 @@ BOOL TokenSetSeDebugPriv(
     PrivName[ 8  ] = HideChar('r');
 
     Success = TokenSetPrivilege(PrivName, Enable);
-    OverwriteStringA( PrivName );
+    MemZero( PrivName, sizeof( PrivName ) );
 
     return Success;
 }
@@ -300,7 +300,7 @@ BOOL TokenSetSeImpersonatePriv(
     PrivName[ 20 ] = HideChar('g');
 
     Success = TokenSetPrivilege(PrivName, Enable);
-    OverwriteStringA( PrivName );
+    MemZero( PrivName, sizeof( PrivName ) );
 
     return Success;
 }
