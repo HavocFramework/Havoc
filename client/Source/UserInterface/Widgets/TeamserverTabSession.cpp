@@ -305,19 +305,19 @@ void UserInterface::Widgets::TeamserverTabSession::handleDemonContextMenu( const
                             QColor CurrentColor;
 
                             if( action->text().compare("Red") == 0 )
-                                CurrentColor = QColor( Util::ColorText::Colors::Hex::Red );
+                                CurrentColor = QColor( Util::ColorText::Colors::Hex::SessionRed );
                             else if( action->text().compare("Blue") == 0 )
-                                CurrentColor = QColor( Util::ColorText::Colors::Hex::Cyan );
+                                CurrentColor = QColor( Util::ColorText::Colors::Hex::SessionCyan );
                             else if( action->text().compare("Pink") == 0 )
-                                CurrentColor = QColor( Util::ColorText::Colors::Hex::Pink );
+                                CurrentColor = QColor( Util::ColorText::Colors::Hex::SessionPink );
                             else if( action->text().compare("Yellow") == 0 )
-                                CurrentColor = QColor( Util::ColorText::Colors::Hex::Yellow );
+                                CurrentColor = QColor( Util::ColorText::Colors::Hex::SessionYellow );
                             else if( action->text().compare("Green") == 0 )
-                                CurrentColor = QColor( Util::ColorText::Colors::Hex::Green );
+                                CurrentColor = QColor( Util::ColorText::Colors::Hex::SessionGreen );
                             else if( action->text().compare("Purple") == 0 )
-                                CurrentColor = QColor( Util::ColorText::Colors::Hex::Purple );
+                                CurrentColor = QColor( Util::ColorText::Colors::Hex::SessionPurple );
                             else if( action->text().compare("Orange") == 0 )
-                                CurrentColor = QColor( Util::ColorText::Colors::Hex::Orange );
+                                CurrentColor = QColor( Util::ColorText::Colors::Hex::SessionOrange );
                             else
                                 CurrentColor = QColor( Util::ColorText::Colors::Hex::Background );
 

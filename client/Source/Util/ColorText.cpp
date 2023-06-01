@@ -5,13 +5,21 @@ QString HavocNamespace::Util::ColorText::Colors::Hex::Foreground    = "#f8f8f2";
 QString HavocNamespace::Util::ColorText::Colors::Hex::Comment       = "#6272a4";
 QString HavocNamespace::Util::ColorText::Colors::Hex::CurrentLine   = "#44475a";
 
-QString HavocNamespace::Util::ColorText::Colors::Hex::Cyan          = "#618bac";
-QString HavocNamespace::Util::ColorText::Colors::Hex::Green         = "#1C5F11";
-QString HavocNamespace::Util::ColorText::Colors::Hex::Orange        = "#ac7420";
-QString HavocNamespace::Util::ColorText::Colors::Hex::Pink          = "#c33fb6";
-QString HavocNamespace::Util::ColorText::Colors::Hex::Purple        = "#36365b";
-QString HavocNamespace::Util::ColorText::Colors::Hex::Red           = "#5b3d3e";
-QString HavocNamespace::Util::ColorText::Colors::Hex::Yellow        = "#a59220";
+QString HavocNamespace::Util::ColorText::Colors::Hex::Cyan          = "#8be9fd";
+QString HavocNamespace::Util::ColorText::Colors::Hex::Green         = "#50fa7b";
+QString HavocNamespace::Util::ColorText::Colors::Hex::Orange        = "#ffb86c";
+QString HavocNamespace::Util::ColorText::Colors::Hex::Pink          = "#ff79c6";
+QString HavocNamespace::Util::ColorText::Colors::Hex::Purple        = "#bd93f9";
+QString HavocNamespace::Util::ColorText::Colors::Hex::Red           = "#ff5555";
+QString HavocNamespace::Util::ColorText::Colors::Hex::Yellow        = "#f1fa8c";
+
+QString HavocNamespace::Util::ColorText::Colors::Hex::SessionCyan   = "#618bac";
+QString HavocNamespace::Util::ColorText::Colors::Hex::SessionGreen  = "#1C5F11";
+QString HavocNamespace::Util::ColorText::Colors::Hex::SessionOrange = "#ac7420";
+QString HavocNamespace::Util::ColorText::Colors::Hex::SessionPink   = "#c33fb6";
+QString HavocNamespace::Util::ColorText::Colors::Hex::SessionPurple = "#36365b";
+QString HavocNamespace::Util::ColorText::Colors::Hex::SessionRed    = "#5b3d3e";
+QString HavocNamespace::Util::ColorText::Colors::Hex::SessionYellow = "#a59220";
 
 void HavocNamespace::Util::ColorText::SetDraculaDark()
 {
