@@ -244,3 +244,19 @@ BYTE NO_INLINE HideChar( BYTE C )
 {
     return C;
 }
+
+/* Overwrite a string with nullbytes */
+VOID OverwriteStringA( LPSTR S )
+{
+    if ( S ) {
+        MemSet( S, 0, StringLengthA( S ) );
+    }
+}
+
+/* Overwrite a string with nullbytes */
+VOID OverwriteStringW( LPWSTR S )
+{
+    if ( S ) {
+        MemSet( S, 0, StringLengthW( S ) * 2 );
+    }
+}

