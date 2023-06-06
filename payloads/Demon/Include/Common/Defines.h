@@ -134,6 +134,8 @@
 #define H_FUNC_WINHTTPREADDATA                   0x75064b89
 #define H_FUNC_WINHTTPQUERYHEADERS               0xcc1a89c5
 #define H_FUNC_WINHTTPCLOSEHANDLE                0xa7355f15
+#define H_FUNC_WINHTTPGETIEPROXYCONFIGFORCURRENTUSER 0x28197a2
+#define H_FUNC_WINHTTPGETPROXYFORURL             0xa2cf3c6f
 #define H_FUNC_VIRTUALPROTECTEX                  0x5b6b908a
 #define H_FUNC_LOCALALLOC                        0x72073b5b
 #define H_FUNC_LOCALREALLOC                      0x1c44e892
@@ -230,7 +232,6 @@
 #define H_FUNC_SAFEARRAYDESTROY                  0x12b6aed
 #define H_FUNC_SYSALLOCSTRING                    0x3351eb46
 #define H_FUNC_COMMANDLINETOARGVW                0xec6ba0d6
-#define H_FUNC_VSNPRINTF                         0xe212f2ef
 #define H_FUNC_SHOWWINDOW                        0x29bbc91e
 #define H_FUNC_GETSYSTEMMETRICS                  0x287c6401
 #define H_FUNC_GETDC                             0xd2b106c
@@ -278,6 +279,8 @@
 #define H_FUNC_SLEEP                             0xe07cd7e
 #define H_FUNC_CREATETHREAD                      0x98baab11
 #define H_FUNC_AMSISCANBUFFER                    0xbab3d02e
+#define H_FUNC_GLOBALFREE                        0x47886698
+#define H_FUNC_SWPRINTF_S                        0x481aa3d4
 
 
 // Beacon API

