@@ -1609,20 +1609,31 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
         }
         else if ( InputCommands[ 0 ].compare( "upload" ) == 0 )
         {
-            if ( InputCommands.size() >= 3 )
+            if ( InputCommands.size() >= 2 )
             {
                 auto FilePath   = InputCommands[ 1 ];
-                auto RemotePath = JoinAtIndex( InputCommands, 2 );
                 auto Content    = FileRead( FilePath );
+                auto RemotePath = QString();
 
                 if ( Content == nullptr )
                     return false;
 
-                // if the remote path does not contain the filename, use the same as the local path
-                if ( RemotePath.endsWith("\\", Qt::CaseInsensitive) )
+                auto FileName = FilePath.mid( FilePath.lastIndexOf("/") + 1, FilePath.size() - FilePath.lastIndexOf("/") - 1 );
+
+                // if no remote path was specified, upload the file with the same name to the current directory
+                if ( InputCommands.size() == 2 )
                 {
-                    auto index = FilePath.lastIndexOf("/");
-                    RemotePath = RemotePath + FilePath.mid( index + 1, RemotePath.size() - index - 1 );
+                    RemotePath = FileName;
+                }
+                else
+                {
+                    RemotePath = JoinAtIndex( InputCommands, 2 );
+
+                    // if the remote path does not contain the filename, use the same as the local path
+                    if ( RemotePath.endsWith("\\", Qt::CaseInsensitive) )
+                    {
+                        RemotePath = RemotePath + FileName;
+                    }
                 }
 
                 TaskID                     = CONSOLE_INFO( "Tasked demon to upload a file " + FilePath + " to " + RemotePath );
