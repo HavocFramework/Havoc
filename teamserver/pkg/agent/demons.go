@@ -1103,7 +1103,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 
 				break
 
-			case "find-tokens":
+			case "find":
 				SubCommand = 0xa
 
 				job.Data = []interface{}{
