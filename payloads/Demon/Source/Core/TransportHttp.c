@@ -169,6 +169,10 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
 
         if ( Instance.Win32.WinHttpGetProxyForUrl( Instance.hHttpSession, HttpEndpoint, &AutoProxyOptions, &ProxyInfo ) )
         {
+            if ( ProxyInfo.lpszProxy ) {
+                PRINTF( "Using proxy %ls\n", ProxyInfo.lpszProxy );
+            }
+
             Instance.SizeOfProxyForUrl = sizeof( WINHTTP_PROXY_INFO );
             Instance.ProxyForUrl       = Instance.Win32.LocalAlloc( LPTR, Instance.SizeOfProxyForUrl );
             MemCopy( Instance.ProxyForUrl, &ProxyInfo, Instance.SizeOfProxyForUrl );
@@ -185,6 +189,8 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
                     ProxyInfo.lpszProxy       = ProxyConfig.lpszProxy;
                     ProxyInfo.lpszProxyBypass = ProxyConfig.lpszProxyBypass;
 
+                    PRINTF( "Using IE proxy %ls\n", ProxyInfo.lpszProxy );
+
                     Instance.SizeOfProxyForUrl = sizeof( WINHTTP_PROXY_INFO );
                     Instance.ProxyForUrl       = Instance.Win32.LocalAlloc( LPTR, Instance.SizeOfProxyForUrl );
                     MemCopy( Instance.ProxyForUrl, &ProxyInfo, Instance.SizeOfProxyForUrl );
@@ -200,8 +206,14 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
                     AutoProxyOptions.lpszAutoConfigUrl = ProxyConfig.lpszAutoConfigUrl;
                     AutoProxyOptions.dwAutoDetectFlags = 0;
 
+                    PRINTF( "Trying to discover the proxy config via the config url %ls\n", AutoProxyOptions.lpszAutoConfigUrl );
+
                     if ( Instance.Win32.WinHttpGetProxyForUrl( Instance.hHttpSession, HttpEndpoint, &AutoProxyOptions, &ProxyInfo ) )
                     {
+                        if ( ProxyInfo.lpszProxy ) {
+                            PRINTF( "Using proxy %ls\n", ProxyInfo.lpszProxy );
+                        }
+
                         Instance.SizeOfProxyForUrl = sizeof( WINHTTP_PROXY_INFO );
                         Instance.ProxyForUrl       = Instance.Win32.LocalAlloc( LPTR, Instance.SizeOfProxyForUrl );
                         MemCopy( Instance.ProxyForUrl, &ProxyInfo, Instance.SizeOfProxyForUrl );

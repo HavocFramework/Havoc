@@ -115,7 +115,7 @@ func (h *HTTP) request(ctx *gin.Context) {
 
 	// check that the headers defined on the profile are present
 	valid := true
-	IgnoreHeaders := [1]string{"Connection"}
+	IgnoreHeaders := [2]string{"Connection", "Accept-Encoding"}
 	for _, Header := range h.Config.Headers {
 		NameValue := strings.Split(Header, ": ")
 		if len(NameValue) > 1 {

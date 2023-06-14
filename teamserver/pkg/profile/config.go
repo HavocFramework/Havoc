@@ -106,8 +106,8 @@ type ListenerHttpResponse struct {
 type ListenerHttpProxy struct {
 	Host string `yaotl:"Host"`
 	Port int    `yaotl:"Port"`
-	User string `yaotl:"Username"`
-	Pass string `yaotl:"Password"`
+	User string `yaotl:"Username,optional"`
+	Pass string `yaotl:"Password,optional"`
 }
 
 type ListenerHttpCerts struct {
