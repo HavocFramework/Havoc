@@ -58,6 +58,9 @@ typedef struct
 
 #ifdef TRANSPORT_HTTP
     HANDLE hHttpSession;
+    BOOL   LookedForProxy;
+    PVOID  ProxyForUrl;
+    SIZE_T SizeOfProxyForUrl;
 #endif
 
 #if defined(SHELLCODE) && defined(DEBUG)

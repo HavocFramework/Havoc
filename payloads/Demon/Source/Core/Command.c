@@ -3309,6 +3309,10 @@ VOID CommandExit( PPARSER Parser )
         Instance.DownloadChunk.Length = 0;
     }
 
+#ifdef TRANSPORT_HTTP
+    DATA_FREE( Instance.ProxyForUrl, Instance.SizeOfProxyForUrl );
+#endif
+
     // disconnect from all smb pivots
     for ( ;; )
     {

