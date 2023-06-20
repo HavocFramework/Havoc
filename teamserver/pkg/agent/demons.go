@@ -5626,7 +5626,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 							var(
 								Data = Parser.ParseBytes()
 							)
-							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ, Id: %x, Type: %d, DataLength: %x", AgentID, Id, Type, len(Data)))
+							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ,    Id: %x, Type: %d, DataLength: %x", AgentID, Id, Type, len(Data)))
 
 							if Type == SOCKET_TYPE_CLIENT {
 
@@ -5667,21 +5667,21 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 								}
 							}
 						} else {
-							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ, Invalid packet", AgentID))
+							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ,    Invalid packet", AgentID))
 						}
 					} else {
 						if Parser.CanIRead([]parser.ReadType{parser.ReadInt32}) {
 							var (
 								ErrorCode = Parser.ParseInt32()
 							)
-							logger.Warn(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ, Id: %x, Type: %d, Failed with: %d", AgentID, Id, Type, ErrorCode))
+							logger.Warn(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ,    Id: %x, Type: %d, Failed with: %d", AgentID, Id, Type, ErrorCode))
 							a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to read from socks target %v: %v", Id, ErrorCode), "")
 						} else {
-							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ, Invalid packet", AgentID))
+							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ,    Invalid packet", AgentID))
 						}
 					}
 				} else {
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ, Invalid packet", AgentID))
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ,    Invalid packet", AgentID))
 				}
 
 				break
@@ -5721,7 +5721,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						Socket *PortFwd
 					)
 
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CLOSE, SockId: %x, Type: %d", AgentID, SockId, Type))
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CLOSE,   Id: %x, Type: %d", AgentID, SockId, Type))
 
 					/* NOTE: for now the reverse port forward close command is not used. */
 					if Type == SOCKET_TYPE_REVERSE_PORTFWD || Type == SOCKET_TYPE_CLIENT {
@@ -5767,12 +5767,13 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						ErrorCode = Parser.ParseInt32()
 					)
 
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CONNECT, Success: %d, SocketId: %x, ErrorCode: %d", AgentID, Success, SocketId, ErrorCode))
-
 					if Client := a.SocksClientGet(SocketId); Client != nil {
 
 						if Success == win32.TRUE {
 							// succeeded
+
+							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CONNECT, Id: %x, Type: %d, Success: %d", AgentID, SocketId, SOCKET_TYPE_REVERSE_PROXY, Success))
+
 							err := socks.SendConnectSuccess(Client.Conn, Client.ATYP, Client.IpDomain, Client.Port)
 							if err != nil {
 								return
@@ -5780,6 +5781,8 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 							Client.Connected = true
 
 						} else {
+							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CONNECT, Id: %x, Type: %d, Success: %d, ErrorCode: %d", AgentID, SocketId, SOCKET_TYPE_REVERSE_PROXY, Success, ErrorCode))
+
 							a.SocksClientClose(int32(SocketId))
 
 							err := socks.SendConnectFailure(Client.Conn, uint32(ErrorCode), Client.ATYP, Client.IpDomain, Client.Port)
@@ -5789,9 +5792,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						}
 
 					} else {
-
-						logger.Error(fmt.Sprintf("Socket id not found: %x\n", SocketId))
-
+						logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CONNECT, Socket id not found: %x", AgentID, SocketId))
 					}
 
 				} else {

