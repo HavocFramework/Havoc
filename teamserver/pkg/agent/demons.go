@@ -1744,7 +1744,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 								continue
 							}
 
-							if Data, err := a.SocksClientRead(SocketId); err == nil {
+							if Data, err := a.SocksClientRead(client); err == nil {
 
 								/* only send the data if there is something... */
 								if len(Data) > 0 {
@@ -1769,7 +1769,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 								if err != io.EOF {
 
 									/* we failed to read from the socks proxy */
-									logger.Error(fmt.Sprintf("Failed to read from socket %x: %v", client.SocketID, err))
+									logger.Error(fmt.Sprintf("Failed to read from socket %x: %v", SocketId, err))
 
 									a.SocksClientClose(int32(SocketId))
 
@@ -1778,7 +1778,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 										Command: COMMAND_SOCKET,
 										Data: []any{
 											SOCKET_COMMAND_CLOSE,
-											client.SocketID,
+											int32(SocketId),
 										},
 									}
 
@@ -5626,7 +5626,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 							var(
 								Data = Parser.ParseBytes()
 							)
-							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ,    Id: %x, Type: %d, DataLength: %x", AgentID, Id, Type, len(Data)))
+							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ,    Id: %08x, Type: %d, DataLength: %x", AgentID, Id, Type, len(Data)))
 
 							if Type == SOCKET_TYPE_CLIENT {
 
@@ -5674,7 +5674,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 							var (
 								ErrorCode = Parser.ParseInt32()
 							)
-							logger.Warn(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ,    Id: %x, Type: %d, Failed with: %d", AgentID, Id, Type, ErrorCode))
+							logger.Warn(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ,    Id: %08x, Type: %d, Failed with: %d", AgentID, Id, Type, ErrorCode))
 							a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to read from socks target %v: %v", Id, ErrorCode), "")
 						} else {
 							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ,    Invalid packet", AgentID))
@@ -5700,7 +5700,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 							var (
 								ErrorCode = Parser.ParseInt32()
 							)
-							logger.Warn(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_WRITE, Id: %x, Type: %d, Failed with: %d", AgentID, Id, Type, ErrorCode))
+							logger.Warn(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_WRITE, Id: %08x, Type: %d, Failed with: %d", AgentID, Id, Type, ErrorCode))
 							a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to write to socks target %v: %v", Id, ErrorCode), "")
 						} else {
 							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_WRITE, Invalid packet", AgentID))
@@ -5721,7 +5721,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						Socket *PortFwd
 					)
 
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CLOSE,   Id: %x, Type: %d", AgentID, SockId, Type))
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CLOSE,   Id: %08x, Type: %d", AgentID, SockId, Type))
 
 					/* NOTE: for now the reverse port forward close command is not used. */
 					if Type == SOCKET_TYPE_REVERSE_PORTFWD || Type == SOCKET_TYPE_CLIENT {
@@ -5772,23 +5772,19 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						if Success == win32.TRUE {
 							// succeeded
 
-							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CONNECT, Id: %x, Type: %d, Success: %d", AgentID, SocketId, SOCKET_TYPE_REVERSE_PROXY, Success))
+							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CONNECT, Id: %08x, Type: %d, Success: %d", AgentID, SocketId, SOCKET_TYPE_REVERSE_PROXY, Success))
 
 							err := socks.SendConnectSuccess(Client.Conn, Client.ATYP, Client.IpDomain, Client.Port)
-							if err != nil {
-								return
+							if err == nil {
+								Client.Connected = true
 							}
-							Client.Connected = true
 
 						} else {
-							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CONNECT, Id: %x, Type: %d, Success: %d, ErrorCode: %d", AgentID, SocketId, SOCKET_TYPE_REVERSE_PROXY, Success, ErrorCode))
+							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CONNECT, Id: %08x, Type: %d, Success: %d, ErrorCode: %d", AgentID, SocketId, SOCKET_TYPE_REVERSE_PROXY, Success, ErrorCode))
+
+							socks.SendConnectFailure(Client.Conn, uint32(ErrorCode), Client.ATYP, Client.IpDomain, Client.Port)
 
 							a.SocksClientClose(int32(SocketId))
-
-							err := socks.SendConnectFailure(Client.Conn, uint32(ErrorCode), Client.ATYP, Client.IpDomain, Client.Port)
-							if err != nil {
-								return
-							}
 						}
 
 					} else {
