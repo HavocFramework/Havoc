@@ -276,7 +276,7 @@ func RegisterInfoToInstance(Header Header, RegisterInfo map[string]any) *Agent {
 	}
 
 	agent.Info.FirstCallIn = time.Now().Format("02/01/2006 15:04:05")
-	agent.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05.999")
+	agent.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05")
 	agent.BackgroundCheck = false
 	agent.Active = true
 
@@ -425,7 +425,7 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 			Session.NameID = fmt.Sprintf("%08x", DemonID)
 			Session.Info.MagicValue = MagicValue
 			Session.Info.FirstCallIn = time.Now().Format("02/01/2006 15:04:05")
-			Session.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05.999")
+			Session.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05")
 			Session.Info.Hostname = Hostname
 			Session.Info.DomainName = DomainName
 			Session.Info.Username = Username
@@ -694,6 +694,7 @@ func (a *Agent) UpdateLastCallback(Teamserver TeamServer) {
 	)
 
 	a.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05")
+	Teamserver.AgentUpdate(a)
 
 	diff := NewLastCallIn.Sub(OldLastCallIn)
 
