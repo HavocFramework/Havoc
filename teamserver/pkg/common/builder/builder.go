@@ -66,6 +66,7 @@ type BuilderConfig struct {
 	Compiler86 string
 	Nasm       string
 	DebugDev   bool
+	SendLogs   bool
 }
 
 type Builder struct {
@@ -258,6 +259,11 @@ func (b *Builder) Build() bool {
 	//logger.Debug("array = " + array)
 
 	b.compilerOptions.Defines = append(b.compilerOptions.Defines, "CONFIG_BYTES="+array)
+
+	// enable sending debug entries over HTTP(S) to the teamserver
+	if b.compilerOptions.Config.SendLogs {
+		b.compilerOptions.Defines = append(b.compilerOptions.Defines, "SEND_LOGS")
+	}
 
 	// enable debug mode
 	if b.compilerOptions.Config.DebugDev {

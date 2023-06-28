@@ -42,25 +42,38 @@
 
 // DEBUG
 #ifdef DEBUG
-#ifdef SVC_EXE
+#if SEND_LOGS
+#define PRINTF( f, ... )                { DemonPrintf( "[DEBUG::%s::%d] " f, __FUNCTION__, __LINE__, __VA_ARGS__ ); }
+#define PRINTF_DONT_SEND( f, ... )      { ; }
+#elif SVC_EXE
 #define PRINTF( f, ... )                { DbgPrint( "[DEBUG::%s::%d] " f, __FUNCTION__, __LINE__, __VA_ARGS__ ); }
+#define PRINTF_DONT_SEND( f, ... )      { DbgPrint( "[DEBUG::%s::%d] " f, __FUNCTION__, __LINE__, __VA_ARGS__ ); }
 #elif SHELLCODE
 #define PRINTF( f, ... )                { LogToConsole( "[DEBUG::%s::%d] " f, __FUNCTION__, __LINE__, __VA_ARGS__ ); }
+#define PRINTF_DONT_SEND( f, ... )      { LogToConsole( "[DEBUG::%s::%d] " f, __FUNCTION__, __LINE__, __VA_ARGS__ ); }
 #else
-#define PRINTF( f, ... )    { printf( "[DEBUG::%s::%d] " f, __FUNCTION__, __LINE__, __VA_ARGS__ ); }
+#define PRINTF( f, ... )                { printf( "[DEBUG::%s::%d] " f, __FUNCTION__, __LINE__, __VA_ARGS__ ); }
+#define PRINTF_DONT_SEND( f, ... )      { printf( "[DEBUG::%s::%d] " f, __FUNCTION__, __LINE__, __VA_ARGS__ ); }
 #endif
 #else
 #define PRINTF( f, ... )                { ; }
+#define PRINTF_DONT_SEND( f, ... )      { ; }
 #endif
 
 #ifdef DEBUG
-#if SHELLCODE
+#if SEND_LOGS
+#define PUTS( s )           { DemonPrintf( "[DEBUG::%s::%d] %s\n", __FUNCTION__, __LINE__, s ); }
+#define PUTS_DONT_SEND( s ) { ; }
+#elif SHELLCODE
 #define PUTS( s )           { LogToConsole( "[DEBUG::%s::%d] %s\n", __FUNCTION__, __LINE__, s ); }
+#define PUTS_DONT_SEND( s ) { LogToConsole( "[DEBUG::%s::%d] %s\n", __FUNCTION__, __LINE__, s ); }
 #else
 #define PUTS( s )           { printf( "[DEBUG::%s::%d] %s\n", __FUNCTION__, __LINE__, s ); }
+#define PUTS_DONT_SEND( s ) { printf( "[DEBUG::%s::%d] %s\n", __FUNCTION__, __LINE__, s ); }
 #endif
 #else
-#define PUTS( s ) { ; }
+#define PUTS( s )           { ; }
+#define PUTS_DONT_SEND( s ) { ; }
 #endif
 
 #ifdef DEBUG

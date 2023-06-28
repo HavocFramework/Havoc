@@ -794,6 +794,7 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 						Compiler86: t.Settings.Compiler32,
 						Nasm:       t.Settings.Nasm,
 						DebugDev:   t.Flags.Server.DebugDev,
+						SendLogs:   t.Flags.Server.SendLogs,
 					})
 
 					PayloadBuilder.ClientId = ClientID

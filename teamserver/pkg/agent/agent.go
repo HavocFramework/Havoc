@@ -566,12 +566,17 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 }
 
 // check that the request the agent is valid
-func (a *Agent) IsKnownRequestID(RequestID uint32, CommandID uint32) bool {
+func (a *Agent) IsKnownRequestID(teamserver TeamServer, RequestID uint32, CommandID uint32) bool {
 	// some commands are always accepted because they don't follow the "send task and get response" format
 	switch CommandID {
 	case COMMAND_SOCKET:
 		return true
 	case COMMAND_PIVOT:
+		return true
+	}
+
+	if teamserver.SendLogs() && CommandID == BEACON_OUTPUT {
+		// if SendLogs is on, accept all BEACON_OUTPUT so that the agent can send logs
 		return true
 	}
 

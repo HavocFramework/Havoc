@@ -189,6 +189,10 @@ func (t *Teamserver) AgentCallback(DemonID string, Time string) {
 	t.EventBroadcast("", pk)
 }
 
+func (t *Teamserver) SendLogs() bool {
+	return t.Flags.Server.SendLogs
+}
+
 func (t *Teamserver) GetDotNetPipeTemplate() string {
 	PipeTemplate := t.Profile.Config.Demon.DotNetNamePipe
 

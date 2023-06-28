@@ -65,6 +65,8 @@ type TeamServer interface {
 	ServiceAgentExist(MagicValue int) bool
 
 	GetDotNetPipeTemplate() string
+
+	SendLogs() bool
 }
 
 type Job struct {

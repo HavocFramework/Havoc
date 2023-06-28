@@ -193,7 +193,7 @@ VOID PackageDestroy(
     }
 
     if ( ! Package->Buffer ) {
-        PUTS( "Package Buffer empty" )
+        PUTS_DONT_SEND( "Package Buffer empty" )
         return;
     }
 
@@ -218,7 +218,7 @@ BOOL PackageTransmit(
     if ( Package )
     {
         if ( ! Package->Buffer ) {
-            PUTS( "Package->Buffer is empty" )
+            PUTS_DONT_SEND( "Package->Buffer is empty" )
             return FALSE;
         }
 
@@ -241,7 +241,7 @@ BOOL PackageTransmit(
         if ( TransportSend( Package->Buffer, Package->Length, Response, Size ) ) {
             Success = TRUE;
         } else {
-            PUTS("TransportSend failed!")
+            PUTS_DONT_SEND("TransportSend failed!")
         }
 
         if ( Package->Destroy ) {
@@ -250,7 +250,7 @@ BOOL PackageTransmit(
             AesXCryptBuffer( &AesCtx, Package->Buffer + Padding, Package->Length - Padding );
         }
     } else {
-        PUTS( "Package is empty" )
+        PUTS_DONT_SEND( "Package is empty" )
         Success = FALSE;
     }
 
@@ -263,7 +263,7 @@ VOID PackageTransmitError(
 ) {
     PPACKAGE Package = NULL;
 
-    PRINTF( "Transmit Error: %d\n", ErrorCode );
+    PRINTF_DONT_SEND( "Transmit Error: %d\n", ErrorCode );
 
     Package = PackageCreate( DEMON_ERROR );
 

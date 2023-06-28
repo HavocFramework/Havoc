@@ -25,7 +25,7 @@ BOOL SysInitialize(
         if ( SysIndirectAddr ) {
             Instance.Syscall.SysAddress = SysIndirectAddr;
         } else {
-            PUTS( "Failed to resolve SysIndirectAddr" );
+            PUTS_DONT_SEND( "Failed to resolve SysIndirectAddr" );
         }
     }
 

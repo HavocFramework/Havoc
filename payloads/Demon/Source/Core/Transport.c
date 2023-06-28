@@ -12,7 +12,7 @@
 
 BOOL TransportInit( )
 {
-    PUTS( "Connecting to listener" )
+    PUTS_DONT_SEND( "Connecting to listener" )
     PVOID  Data    = NULL;
     SIZE_T Size    = 0;
     BOOL   Success = FALSE;

