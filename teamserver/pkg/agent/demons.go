@@ -2211,7 +2211,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 				Username = Parser.ParseString()
 				DomainName = Parser.ParseString()
 				InternalIP = Parser.ParseString()
-				ProcessName = Parser.ParseString()
+				ProcessName = Parser.ParseUTF16String()
 				ProcessPID = Parser.ParseInt32()
 				ProcessTID = Parser.ParseInt32()
 				ProcessPPID = Parser.ParseInt32()

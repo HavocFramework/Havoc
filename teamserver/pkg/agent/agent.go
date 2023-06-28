@@ -388,7 +388,7 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 					"ExternIP: %v\n",
 				Hostname, Username, DomainName, InternalIP, ExternalIP))
 
-			ProcessName = Parser.ParseString()
+			ProcessName = Parser.ParseUTF16String()
 			ProcessPID  = Parser.ParseInt32()
 			ProcessTID  = Parser.ParseInt32()
 			ProcessPPID = Parser.ParseInt32()

