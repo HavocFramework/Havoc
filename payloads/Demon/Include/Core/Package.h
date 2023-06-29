@@ -8,7 +8,6 @@ typedef struct {
     UINT32  CommandID;
     PVOID   Buffer;
     SIZE_T  Length;
-    SIZE_T  Size;
     BOOL    Encrypt;
     BOOL    Destroy; /* destroy this package after Transmit */
 } PACKAGE, *PPACKAGE;

