@@ -510,10 +510,12 @@ BOOL ProcessCreate(
     IN  BOOL                 Piped,
     IN  PANONPIPE            DataAnonPipes
 ) {
-    PPACKAGE        Package     = NULL;
-    PANONPIPE       AnonPipe    = { 0 };
-    STARTUPINFOW    StartUpInfo = { 0 };
-    BOOL            Return      = TRUE;
+    PPACKAGE        Package            = NULL;
+    PANONPIPE       AnonPipe           = { 0 };
+    STARTUPINFOW    StartUpInfo        = { 0 };
+    BOOL            Return             = TRUE;
+    PVOID           Wow64Value         = NULL;
+    BOOL            DisabledWow64Redir = FALSE;
 
     StartUpInfo.cb          = sizeof( STARTUPINFOA );
     StartUpInfo.dwFlags     = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
@@ -541,9 +543,8 @@ BOOL ProcessCreate(
         StartUpInfo.hStdInput  = NULL;
     }
 
-    /*
-    TODO: doesn't work. always getting ERROR_INVALID_FUNCTION
-    if ( EnableWow64 )
+#if _M_IX86
+    if ( ! x86 && Instance.Win32.Wow64DisableWow64FsRedirection )
     {
         PUTS( "Enable Wow64 process support" )
         if ( ! Instance.Win32.Wow64DisableWow64FsRedirection( &Wow64Value ) )
@@ -553,7 +554,10 @@ BOOL ProcessCreate(
             Return = FALSE;
             goto Cleanup;
         }
-    }*/
+
+        DisabledWow64Redir = TRUE;
+    }
+#endif
 
     if ( Instance.Tokens.Impersonate )
     {
@@ -643,19 +647,6 @@ BOOL ProcessCreate(
         }
     }
 
-    /*
-    TODO: doesn't work. always getting ERROR_INVALID_FUNCTION
-    if ( EnableWow64 )
-    {
-        if ( ! Instance.Win32.Wow64RevertWow64FsRedirection( Wow64Value ) )
-        {
-            PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
-            Return = FALSE;
-            goto Cleanup;
-        }
-    }
-     */
-
     /* Check if we managed to spawn a process */
     if ( ProcessInfo->hProcess && Instance.Config.Implant.Verbose )
     {
@@ -697,6 +688,12 @@ BOOL ProcessCreate(
     }
 
     Cleanup:
+#if _M_IX86
+    if ( DisabledWow64Redir ) {
+        Instance.Win32.Wow64RevertWow64FsRedirection( Wow64Value );
+    }
+#endif
+
     return Return;
 }
 

@@ -94,7 +94,7 @@ VOID DownloadPush()
 {
     PDOWNLOAD_DATA Download = NULL;
     PDOWNLOAD_DATA DownLast = NULL;
-    PPACKAGE        Package  = NULL;
+    PPACKAGE       Package  = NULL;
 
     Download = Instance.Downloads;
 

