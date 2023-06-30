@@ -102,7 +102,6 @@ VOID PackageAddPad( PPACKAGE Package, PCHAR Data, SIZE_T Size )
     Package->Length += Size;
 }
 
-
 VOID PackageAddBytes( PPACKAGE Package, PBYTE Data, SIZE_T Size )
 {
     if ( ! Package ) {

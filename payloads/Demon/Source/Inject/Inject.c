@@ -70,7 +70,9 @@ DWORD Inject(
         Status = INJECT_ERROR_PROCESS_ARCH_MISMATCH;
         goto END;
     }
+
     IsWow64 = ProcessIsWow( Process );
+
     if ( x64 && IsWow64 ) {
         PUTS( "The process target process is x86!" )
         Status = INJECT_ERROR_PROCESS_ARCH_MISMATCH;
