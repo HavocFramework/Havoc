@@ -1803,10 +1803,14 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 			})
 
 			/* TODO: append the socket to a list/array now */
+			a.SocksSvrMtx.Lock()
+
 			a.SocksSvr = append(a.SocksSvr, &SocksServer{
 				Server: Socks,
 				Addr:   Param,
 			})
+
+			a.SocksSvrMtx.Unlock()
 
 			go func() {
 				err := Socks.Start()
@@ -1844,11 +1848,15 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 			Output += fmt.Sprintf(" Port \n")
 			Output += fmt.Sprintf(" ---- \n")
 
+			a.SocksSvrMtx.Lock()
+
 			for _, server := range a.SocksSvr {
 
 				Output += fmt.Sprintf(" %s \n", server.Addr)
 
 			}
+
+			a.SocksSvrMtx.Unlock()
 
 			if Message != nil {
 				*Message = map[string]string{
@@ -1864,6 +1872,8 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 
 			/* TODO: send a queue of tasks to kill every socks proxy client that uses this proxy */
 			var found = false
+
+			a.SocksSvrMtx.Lock()
 
 			for i := range a.SocksSvr {
 
@@ -1903,6 +1913,8 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 
 			}
 
+			a.SocksSvrMtx.Unlock()
+
 			if found {
 
 				if Message != nil {
@@ -1928,6 +1940,8 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 		case "socks clear":
 
 			/* TODO: send a queue of tasks to kill every socks proxy client that uses this proxy */
+
+			a.SocksSvrMtx.Lock()
 
 			for i := range a.SocksSvr {
 
@@ -1958,6 +1972,8 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 				a.SocksSvr = append(a.SocksSvr[:i], a.SocksSvr[i+1:]...)
 
 			}
+
+			a.SocksSvrMtx.Unlock()
 
 			if Message != nil {
 				*Message = map[string]string{

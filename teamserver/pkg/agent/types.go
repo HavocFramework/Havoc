@@ -156,6 +156,7 @@ type Agent struct {
 	SocksCli    []*SocksClient
 	SocksCliMtx sync.Mutex
 	SocksSvr    []*SocksServer
+	SocksSvrMtx sync.Mutex
 
 	Encryption struct {
 		AESKey []byte

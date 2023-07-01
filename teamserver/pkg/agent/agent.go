@@ -1177,6 +1177,8 @@ func (a *Agent) SocksClientClose(SocketID int32) {
 
 func (a *Agent) SocksServerRemove(Addr string) {
 
+	a.SocksSvrMtx.Lock()
+
 	for i := range a.SocksSvr {
 
 		if a.SocksSvr[i].Addr == Addr {
@@ -1196,6 +1198,8 @@ func (a *Agent) SocksServerRemove(Addr string) {
 		}
 
 	}
+
+	a.SocksSvrMtx.Unlock()
 
 }
 
