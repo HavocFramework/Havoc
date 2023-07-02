@@ -737,7 +737,8 @@ func (t *Teamserver) SendEvent(id string, pk packager.Package) error {
 
 		err = t.Clients[id].Connection.WriteMessage(websocket.BinaryMessage, buffer.Bytes())
 		if err != nil {
-			t.Clients[id].Mutex.Unlock()
+			// TODO: comment this line out as it seems to crash the server
+			//t.Clients[id].Mutex.Unlock()
 			return err
 		}
 
