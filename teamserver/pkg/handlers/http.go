@@ -104,14 +104,16 @@ func (h *HTTP) request(ctx *gin.Context) {
 		ExternalIP = strings.Split(ctx.Request.RemoteAddr, ":")[0]
 	}
 
-	//logger.Debug("POST " + ctx.Request.RequestURI)
-	//logger.Debug("Host: " + ctx.Request.Host)
-	//for name, values := range ctx.Request.Header {
-	//	for _, value := range values {
-	//		logger.Debug(name + ": " + value)
-	//	}
-	//}
-	//logger.Debug("\n" + hex.Dump(Body))
+	/*
+	logger.Debug("POST " + ctx.Request.RequestURI)
+	logger.Debug("Host: " + ctx.Request.Host)
+	for name, values := range ctx.Request.Header {
+		for _, value := range values {
+			logger.Debug(name + ": " + value)
+		}
+	}
+	logger.Debug("\n" + hex.Dump(Body))
+	*/
 
 	// check that the headers defined on the profile are present
 	valid := true

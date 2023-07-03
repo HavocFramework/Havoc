@@ -394,6 +394,7 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 					Uris:         Uris,
 					HostHeader:   pk.Body.Info["HostHeader"].(string),
 					UserAgent:    pk.Body.Info["UserAgent"].(string),
+					BehindRedir:  t.Profile.Config.Demon.TrustXForwardedFor,
 				}
 
 				if val, ok := pk.Body.Info["Proxy Enabled"].(string); ok {

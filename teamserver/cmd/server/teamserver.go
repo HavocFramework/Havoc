@@ -370,6 +370,7 @@ func (t *Teamserver) Start() {
 			HandlerData.UserAgent = Data["UserAgent"].(string)
 			HandlerData.Headers = strings.Split(Data["Headers"].(string), ", ")
 			HandlerData.Uris = strings.Split(Data["Uris"].(string), ", ")
+			HandlerData.BehindRedir = t.Profile.Config.Demon.TrustXForwardedFor
 
 			HandlerData.Secure = false
 			if Data["Secure"].(string) == "true" {
