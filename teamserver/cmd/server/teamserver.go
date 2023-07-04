@@ -5,6 +5,7 @@ import (
 	"Havoc/pkg/agent"
 	"Havoc/pkg/common/certs"
 	"Havoc/pkg/db"
+	"Havoc/pkg/encoder"
 	"Havoc/pkg/service"
 	"Havoc/pkg/webhook"
 	"bytes"
@@ -24,8 +25,8 @@ import (
 	"github.com/gorilla/websocket"
 	"golang.org/x/crypto/sha3"
 
-	"Havoc/pkg/common"
 	"Havoc/pkg/colors"
+	"Havoc/pkg/common"
 	"Havoc/pkg/events"
 	"Havoc/pkg/handlers"
 	"Havoc/pkg/logger"
@@ -70,6 +71,13 @@ func (t *Teamserver) Start() {
 
 	if t.Flags.Server.Port == "" {
 		t.Flags.Server.Port = strconv.Itoa(t.Profile.ServerPort())
+	}
+
+	if password := t.Profile.ServerPassword(); password != nil && encoder.KeyNotSet() {
+		encoder.SetKey(password)
+		password = nil
+		enc := encoder.EncryptFile(t.Profile.Path)
+		os.WriteFile(t.Profile.Path, enc, 0644)
 	}
 
 	gin.SetMode(gin.ReleaseMode)

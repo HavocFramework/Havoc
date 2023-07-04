@@ -31,9 +31,10 @@ type ServiceConfig struct {
 }
 
 type ServerProfile struct {
-	Host  string       `yaotl:"Host"`
-	Port  int          `yaotl:"Port"`
-	Build *BuildConfig `yaotl:"Build,block"`
+	Host     string       `yaotl:"Host"`
+	Port     int          `yaotl:"Port"`
+	Password string       `yaotl:"Password"`
+	Build    *BuildConfig `yaotl:"Build,block"`
 	// TODO: add WebSocket server config
 	// Path for Havoc connection
 	// TLS or not
@@ -70,7 +71,7 @@ type ListenerHTTP struct {
 	/* Port used by the agent */
 	PortConn int `yaotl:"PortConn,optional"`
 
-	Methode  string `yaotl:"Method,optional"`
+	Methode string `yaotl:"Method,optional"`
 
 	/* optional fields */
 	UserAgent string   `yaotl:"UserAgent,optional"`
@@ -137,18 +138,18 @@ type ProcessInjectionBlock struct {
 }
 
 type Demon struct {
-	Sleep              int                    `yaotl:"Sleep,optional"`
-	Jitter             int                    `yaotl:"Jitter,optional"`
-	IndirectSyscall    bool                   `yaotl:"IndirectSyscall,optional"`
-	StackDuplication   bool                   `yaotl:"StackDuplication,optional"`
-	SleepTechnique     string                 `yaotl:"SleepTechnique,optional"`
-	ProxyLoading       string                 `yaotl:"ProxyLoading,optional"`
-	AmsiEtwPatching    string                 `yaotl:"AmsiEtwPatching,optional"`
-	ProcessInjection   *ProcessInjectionBlock `yaotl:"Injection,block"`
+	Sleep            int                    `yaotl:"Sleep,optional"`
+	Jitter           int                    `yaotl:"Jitter,optional"`
+	IndirectSyscall  bool                   `yaotl:"IndirectSyscall,optional"`
+	StackDuplication bool                   `yaotl:"StackDuplication,optional"`
+	SleepTechnique   string                 `yaotl:"SleepTechnique,optional"`
+	ProxyLoading     string                 `yaotl:"ProxyLoading,optional"`
+	AmsiEtwPatching  string                 `yaotl:"AmsiEtwPatching,optional"`
+	ProcessInjection *ProcessInjectionBlock `yaotl:"Injection,block"`
 
-	DotNetNamePipe     string                 `yaotl:"DotNetNamePipe,optional"`
+	DotNetNamePipe string `yaotl:"DotNetNamePipe,optional"`
 
-	Binary             *Binary                `yaotl:"Binary,block"`
+	Binary *Binary `yaotl:"Binary,block"`
 
-	TrustXForwardedFor bool                   `yaotl:"TrustXForwardedFor,optional"`
+	TrustXForwardedFor bool `yaotl:"TrustXForwardedFor,optional"`
 }

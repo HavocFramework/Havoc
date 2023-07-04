@@ -1,6 +1,7 @@
 Teamserver {
     Host = "0.0.0.0"
     Port = 40056
+    Password = ""
 }
 
 WebHook {

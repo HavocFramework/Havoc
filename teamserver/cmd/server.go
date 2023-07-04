@@ -7,6 +7,7 @@ import (
 
 	"Havoc/cmd/server"
 	"Havoc/pkg/colors"
+	"Havoc/pkg/encoder"
 	"Havoc/pkg/events"
 	"Havoc/pkg/logger"
 	"Havoc/pkg/logr"
@@ -21,6 +22,7 @@ var CobraServer = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var (
 			DirPath, _  = os.Getwd()
+			DefaultPath = DirPath + "/data/havoc.yaotl"
 			ServerTimer = time.Now()
 			LogrPath    = "data/loot/" + ServerTimer.Format("2006.01.02._15:04:05")
 			Server      *server.Teamserver
@@ -36,6 +38,18 @@ var CobraServer = &cobra.Command{
 
 		Server = server.NewTeamserver(DatabasePath)
 		Server.SetServerFlags(flags)
+
+		if flags.Server.Default {
+			encoder.Initialize(DefaultPath)
+			if Server.Flags.Server.Password && encoder.FileEncrypted(DefaultPath) {
+				encoder.ChangePassword(DefaultPath)
+			}
+		} else if flags.Server.Profile != "" {
+			encoder.Initialize(flags.Server.Profile)
+			if Server.Flags.Server.Password && encoder.FileEncrypted(flags.Server.Profile) {
+				encoder.ChangePassword(flags.Server.Profile)
+			}
+		}
 
 		logr.LogrInstance = logr.NewLogr(DirPath, LogrPath)
 		if logr.LogrInstance == nil {
@@ -64,7 +78,7 @@ var CobraServer = &cobra.Command{
 		logger.Info(fmt.Sprintf("Havoc Framework [Version: %v] [CodeName: %v]", VersionNumber, VersionName))
 
 		if flags.Server.Default {
-			Server.SetProfile(DirPath + "/data/havoc.yaotl")
+			Server.SetProfile(DefaultPath)
 		} else if flags.Server.Profile != "" {
 			Server.SetProfile(flags.Server.Profile)
 		} else {

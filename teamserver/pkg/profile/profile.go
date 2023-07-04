@@ -2,12 +2,14 @@ package profile
 
 import (
 	"Havoc/pkg/colors"
+	"Havoc/pkg/encoder"
 	"Havoc/pkg/logger"
 	yaotl "Havoc/pkg/profile/yaotl/hclsimple"
 )
 
 type Profile struct {
 	Config HavocConfig
+	Path   string
 }
 
 func NewProfile() *Profile {
@@ -15,7 +17,8 @@ func NewProfile() *Profile {
 }
 
 func (p *Profile) SetProfile(path string, def bool) error {
-	err := yaotl.DecodeFile(path, nil, &p.Config)
+	src := encoder.DecryptFile(path)
+	err := yaotl.Decode(path, src, nil, &p.Config)
 	if err != nil {
 		return err
 	}
@@ -26,6 +29,7 @@ func (p *Profile) SetProfile(path string, def bool) error {
 		logger.Info("Havoc profile:", colors.Blue(path))
 	}
 
+	p.Path = path
 	return nil
 }
 
@@ -41,6 +45,13 @@ func (p *Profile) ServerPort() int {
 		return p.Config.Server.Port
 	}
 	return 0
+}
+
+func (p *Profile) ServerPassword() []byte {
+	if p.Config.Server.Password != "" {
+		return []byte(p.Config.Server.Password)
+	}
+	return nil
 }
 
 func (p *Profile) ListOfUsernames() []string {
