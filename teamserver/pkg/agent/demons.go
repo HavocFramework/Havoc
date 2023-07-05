@@ -46,8 +46,8 @@ func (a *Agent) UploadMemFileInChunks(FileData []byte) uint32 {
 		}
 
 		MemFileJob := Job{
-			RequestID: rand.Uint32(),
 			Command:   COMMAND_MEM_FILE,
+			RequestID: rand.Uint32(),
 			Data: []any{
 				ID,
 				uint64(FileSize),
@@ -128,8 +128,8 @@ func (a *Agent) TeamserverTaskPrepare(Command string, Console func(AgentID strin
 func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, ClientID string, teamserver TeamServer) (*Job, error) {
 	var (
 		job = &Job{
-			RequestID: rand.Uint32(),
 			Command:   uint32(Command),
+			RequestID: rand.Uint32(),
 			Data:      []interface{}{},
 			Created:   time.Now().UTC().Format("02/01/2006 15:04:05"),
 		}
@@ -2131,8 +2131,6 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 		logger.Warn(fmt.Sprintf("Agent: %x, CommandID: %d, unknown RequestID: %x. This is either a bug or malicious activity", AgentID, CommandID, RequestID))
 		return
 	}
-
-	Parser.DecryptBuffer(a.Encryption.AESKey, a.Encryption.AESIv)
 
 	//logger.Debug("Task Output: \n" + hex.Dump(Parser.Buffer()))
 
@@ -5137,14 +5135,30 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					if err == nil {
 
 						if AgentHdr.MagicValue == DEMON_MAGIC_VALUE {
-							var Request = AgentHdr.Data.ParseInt32()
-							var Command = AgentHdr.Data.ParseInt32()
 							var PivotAgent *Agent
 
 							PivotAgent = teamserver.AgentInstance(AgentHdr.AgentID)
 							if PivotAgent != nil {
 								//logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PIVOT - DEMON_PIVOT_SMB_COMMAND, Linked Agent: %s, Command: %d", AgentID, PivotAgent.NameID, Command))
-								PivotAgent.TaskDispatch(uint32(Request), uint32(Command), AgentHdr.Data, teamserver)
+
+								// while we can read a command and request id, parse new packages
+								first_iter := true
+								for (AgentHdr.Data.CanIRead(([]parser.ReadType{parser.ReadInt32, parser.ReadInt32}))) {
+									var Command   = uint32(AgentHdr.Data.ParseInt32())
+									var Request   = uint32(AgentHdr.Data.ParseInt32())
+
+									if first_iter {
+										first_iter = false
+										// if the message is not a reconnect, decrypt the buffer
+										AgentHdr.Data.DecryptBuffer(PivotAgent.Encryption.AESKey, PivotAgent.Encryption.AESIv)
+									}
+
+									/* The agent is sending us the result of a task */
+									if Command != COMMAND_GET_JOB {
+										Parser := parser.NewParser(AgentHdr.Data.ParseBytes())
+										PivotAgent.TaskDispatch(Request, Command, Parser, teamserver)
+									}
+								}
 							} else {
 								Message["Type"] = "Error"
 								Message["Message"] = fmt.Sprintf("Can't process output for %x: Agent not found", AgentHdr.AgentID)

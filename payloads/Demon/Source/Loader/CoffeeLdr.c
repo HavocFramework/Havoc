@@ -52,7 +52,7 @@ LONG WINAPI VehDebugger( PEXCEPTION_POINTERS Exception )
     PackageAddInt32( Package, DEMON_COMMAND_INLINE_EXECUTE_EXCEPTION );
     PackageAddInt32( Package, Exception->ExceptionRecord->ExceptionCode );
     PackageAddInt64( Package, (UINT64)(ULONG_PTR)Exception->ExceptionRecord->ExceptionAddress );
-    PackageTransmit( Package, NULL, NULL );
+    PackageQueue( Package );
 
     return EXCEPTION_CONTINUE_EXECUTION;
 }
@@ -205,7 +205,7 @@ SymbolNotFound:
     Package = PackageCreateWithRequestID( Coffee->RequestID, DEMON_COMMAND_INLINE_EXECUTE );
     PackageAddInt32( Package, DEMON_COMMAND_INLINE_EXECUTE_SYMBOL_NOT_FOUND );
     PackageAddString( Package, SymbolName );
-    PackageTransmit( Package, NULL, NULL );
+    PackageQueue( Package );
 
     return FALSE;
 }
@@ -327,7 +327,7 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
 
         PackageAddInt32( Package, DEMON_COMMAND_INLINE_EXECUTE_SYMBOL_NOT_FOUND );
         PackageAddString( Package, Function );
-        PackageTransmit( Package, NULL, NULL );
+        PackageQueue( Package );
 
         return FALSE;
     }
@@ -749,13 +749,13 @@ END:
     {
         PPACKAGE Package = PackageCreateWithRequestID( RequestID, DEMON_COMMAND_INLINE_EXECUTE );
         PackageAddInt32( Package, DEMON_COMMAND_INLINE_EXECUTE_RAN_OK );
-        PackageTransmit( Package, NULL, NULL );
+        PackageQueue( Package );
     }
     else
     {
         PPACKAGE Package = PackageCreateWithRequestID( RequestID, DEMON_COMMAND_INLINE_EXECUTE );
         PackageAddInt32( Package, DEMON_COMMAND_INLINE_EXECUTE_COULD_NO_RUN );
-        PackageTransmit( Package, NULL, NULL );
+        PackageQueue( Package );
     }
 
     RemoveCoffeeFromInstance( Coffee );

