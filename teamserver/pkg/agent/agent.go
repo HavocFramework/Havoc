@@ -143,11 +143,11 @@ func BuildPayloadMessage(Jobs []Job, AesKey []byte, AesIv []byte) []byte {
 			}
 		}
 
-		binary.LittleEndian.PutUint32(RequestID, job.RequestID)
-		PayloadPackage = append(PayloadPackage, RequestID...)
-
 		binary.LittleEndian.PutUint32(DataCommandID, job.Command)
 		PayloadPackage = append(PayloadPackage, DataCommandID...)
+
+		binary.LittleEndian.PutUint32(RequestID, job.RequestID)
+		PayloadPackage = append(PayloadPackage, RequestID...)
 
 		binary.LittleEndian.PutUint32(PayloadPackageSize, uint32(len(DataPayload)))
 		PayloadPackage = append(PayloadPackage, PayloadPackageSize...)
@@ -313,8 +313,8 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 		[ SIZE         ] 4 bytes
 		[ Magic Value  ] 4 bytes
 		[ Agent ID     ] 4 bytes
-		[ Request ID   ] 4 bytes
 		[ COMMAND ID   ] 4 bytes
+		[ Request ID   ] 4 bytes
 		[ AES KEY      ] 32 bytes
 		[ AES IV       ] 16 bytes
 		AES Encrypted {

@@ -225,7 +225,7 @@ VOID BeaconPrintf( INT Type, PCHAR fmt, ... )
 
     PackageAddInt32( package, Type );
     PackageAddBytes( package, CallbackOutput, CallbackSize );
-    PackageTransmit( package, NULL, NULL );
+    PackageTransmit( package );
 
     MemSet( CallbackOutput, 0, CallbackSize );
     Instance.Win32.LocalFree( CallbackOutput );
@@ -247,7 +247,7 @@ VOID BeaconOutput( INT Type, PCHAR data, INT len )
 
     PackageAddInt32( Package, Type );
     PackageAddBytes( Package, ( PBYTE ) data, len );
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 BOOL BeaconIsAdmin(

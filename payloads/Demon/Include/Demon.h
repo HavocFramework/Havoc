@@ -523,6 +523,9 @@ typedef struct
     /* Thread counter. how many threads that are using our code are running ? */
     DWORD  Threads;
 
+    /* A list of packages that have to be sent to the teamserver */
+    PPACKAGE Packages;
+
     /* Buffer to use for allocating download chunks. */
     BUFFER DownloadChunk;
 

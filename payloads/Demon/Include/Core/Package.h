@@ -3,17 +3,23 @@
 
 #include <Core/Command.h>
 
-typedef struct {
+#define DEMON_MAX_REQUEST_LENGTH 0x1e00000
+
+typedef struct _PACKAGE {
     UINT32  RequestID;
     UINT32  CommandID;
     PVOID   Buffer;
     SIZE_T  Length;
     BOOL    Encrypt;
     BOOL    Destroy; /* destroy this package after Transmit */
+    BOOL    Included;
+
+    struct  _PACKAGE* Next;
 } PACKAGE, *PPACKAGE;
 
 /* Package generator */
 PPACKAGE PackageCreate( UINT32 CommandID );
+PPACKAGE PackageCreateWithMetaData( UINT32 CommandID );
 PPACKAGE PackageCreateWithRequestID( UINT32 RequestID, UINT32 CommandID );
 
 /* PackageAddInt32
@@ -66,8 +72,19 @@ VOID PackageDestroy(
 );
 
 // PackageTransmit
-BOOL PackageTransmit(
+BOOL PackageTransmitNow(
     PPACKAGE Package,
+    PVOID*   Response,
+    PSIZE_T  Size
+);
+
+// PackageQueue
+VOID PackageTransmit(
+    IN PPACKAGE Package
+);
+
+// PackageQueue
+BOOL PackageTransmitAll(
     PVOID*   Response,
     PSIZE_T  Size
 );
