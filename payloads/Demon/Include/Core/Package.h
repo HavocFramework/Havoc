@@ -20,7 +20,7 @@ typedef struct _PACKAGE {
 /* Package generator */
 PPACKAGE PackageCreate( UINT32 CommandID );
 PPACKAGE PackageCreateWithMetaData( UINT32 CommandID );
-PPACKAGE PackageCreateWithRequestID( UINT32 RequestID, UINT32 CommandID );
+PPACKAGE PackageCreateWithRequestID( UINT32 CommandID, UINT32 RequestID );
 
 /* PackageAddInt32
  * package => pointer to package response struct

