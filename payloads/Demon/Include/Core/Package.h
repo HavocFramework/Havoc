@@ -72,14 +72,14 @@ VOID PackageDestroy(
 );
 
 // PackageTransmit
-BOOL PackageTransmit(
+BOOL PackageTransmitNow(
     PPACKAGE Package,
     PVOID*   Response,
     PSIZE_T  Size
 );
 
 // PackageQueue
-VOID PackageQueue(
+VOID PackageTransmit(
     IN PPACKAGE Package
 );
 
@@ -89,12 +89,12 @@ BOOL PackageTransmitAll(
     PSIZE_T  Size
 );
 
-VOID PackageQueueError(
+VOID PackageTransmitError(
     UINT32 CommandID,
     UINT32 ErrorCode
 );
 
-#define PACKAGE_ERROR_WIN32         PackageQueueError( CALLBACK_ERROR_WIN32, NtGetLastError() );
-#define PACKAGE_ERROR_NTSTATUS( s ) PackageQueueError( CALLBACK_ERROR_WIN32, Instance.Win32.RtlNtStatusToDosError( s ) );
+#define PACKAGE_ERROR_WIN32         PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+#define PACKAGE_ERROR_NTSTATUS( s ) PackageTransmitError( CALLBACK_ERROR_WIN32, Instance.Win32.RtlNtStatusToDosError( s ) );
 
 #endif

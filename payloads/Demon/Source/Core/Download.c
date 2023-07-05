@@ -150,7 +150,7 @@ VOID DownloadPush()
 
                 /* Send that chunk */
                 PUTS( "transmit download chunk" )
-                PackageQueue( Package );
+                PackageTransmit( Package );
             }
 
             /* if this was the last chunk we read send a finish download close request */
@@ -167,7 +167,7 @@ VOID DownloadPush()
                 PackageAddInt32( Package, DOWNLOAD_REASON_FINISHED );
 
                 /* Send that chunk */
-                PackageQueue( Package );
+                PackageTransmit( Package );
             }
 
             /* if either what we read or the download size is 0 we are finished. */

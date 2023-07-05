@@ -240,7 +240,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
             if ( ! NT_SUCCESS( NtStatus ) )
             {
                 PUTS( "NtWriteVirtualMemory: Failed to write memory for parameters" )
-                PackageQueueError( CALLBACK_ERROR_WIN32, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
+                PackageTransmitError( CALLBACK_ERROR_WIN32, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
                 ReturnValue = NtStatus;
                 goto Cleanup;
             }
@@ -250,7 +250,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
         else
         {
             PUTS( "NtAllocateVirtualMemory: Failed to allocate memory for parameters" )
-            PackageQueueError( CALLBACK_ERROR_WIN32, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
+            PackageTransmitError( CALLBACK_ERROR_WIN32, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
             ReturnValue = -1;
             goto Cleanup;
         }
@@ -280,7 +280,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
                 if ( ! ThreadCreate( THREAD_METHOD_NTCREATEHREADEX, hTargetProcess, x64, ReflectiveLdr, MemParamsBuffer, NULL ) )
                 {
                     PRINTF( "[-] Failed to inject dll %d\n", NtGetLastError() )
-                    PackageQueueError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+                    PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                     ReturnValue = -1;
                     goto Cleanup;
                 }
@@ -291,7 +291,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
             else
             {
                 PUTS("[-] NtProtectVirtualMemory: failed")
-                PackageQueueError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+                PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                 ReturnValue = -1;
                 goto Cleanup;
             }
@@ -299,7 +299,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
         else
         {
             PRINTF( "NtWriteVirtualMemory: Failed to write memory for library [%x]\n", NtStatus )
-            PackageQueueError( 0x1, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
+            PackageTransmitError( 0x1, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
             ReturnValue = NtStatus;
             goto Cleanup;
         }

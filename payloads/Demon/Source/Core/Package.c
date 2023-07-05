@@ -211,7 +211,7 @@ VOID PackageDestroy(
     Package = NULL;
 }
 
-BOOL PackageTransmit(
+BOOL PackageTransmitNow(
     IN OUT PPACKAGE Package,
     OUT    PVOID*   Response,
     OUT    PSIZE_T  Size
@@ -262,7 +262,7 @@ BOOL PackageTransmit(
     return Success;
 }
 
-VOID PackageQueue(
+VOID PackageTransmit(
     IN PPACKAGE Package
 ) {
     PPACKAGE List = NULL;
@@ -413,7 +413,7 @@ BOOL PackageTransmitAll(
     return Success;
 }
 
-VOID PackageQueueError(
+VOID PackageTransmitError(
     IN UINT32 ID,
     IN UINT32 ErrorCode
 ) {
@@ -425,6 +425,6 @@ VOID PackageQueueError(
 
     PackageAddInt32( Package, ID );
     PackageAddInt32( Package, ErrorCode );
-    PackageQueue( Package );
+    PackageTransmit( Package );
 }
 

