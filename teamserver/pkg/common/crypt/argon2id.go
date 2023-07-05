@@ -29,7 +29,7 @@ type Params struct {
 	// Recommended value is between 1 and runtime.NumCPU().
 	Threads uint8
 
-	// Length of the random salt. 16 bytes is recommended for password hashing.
+	// 16 bytes is recommended for password hashing.
 	Salt []byte
 
 	// Length of the generated key. 16 bytes or more is recommended.

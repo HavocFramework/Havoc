@@ -5,6 +5,8 @@ import (
 	"Havoc/pkg/common/crypt"
 	"Havoc/pkg/logger"
 	"bytes"
+	"crypto/rand"
+	"encoding/base64"
 	"os"
 	"time"
 )
@@ -18,19 +20,16 @@ func Initialize(path string) {
 func newEncoder(path string) *Encoder {
 	e := &Encoder{
 		key:       nil,
-		encHeader: []byte("HAVOC: enc"),
+		encHeader: []byte(base64.StdEncoding.EncodeToString([]byte("HAVOC: enc"))),
 	}
 
 	if e.FileEncrypted(path) {
 		i := 0
 		for i < 3 {
 			logger.Info(colors.Blue("Enter passsowrd: "))
-			pass, err := promptPassword()
-			if err != nil {
-				logger.Error("Read password Error:", colors.Red(err))
-				os.Exit(1)
-			}
+			pass := promptPassword()
 			e.key = crypt.CreateHash(pass, crypt.DefaultParams)
+			OverwriteBytes(pass)
 
 			if d := e.decryptFile(path); len(d) != 0 {
 				logger.Info(colors.Blue("Logged in"))
@@ -39,7 +38,9 @@ func newEncoder(path string) *Encoder {
 				break
 			}
 			logger.Info(colors.Red("Wrong password!"))
+			OverwriteBytes(e.key)
 			e.key = nil
+
 			i++
 		}
 		if i == 3 {
@@ -53,15 +54,19 @@ func newEncoder(path string) *Encoder {
 
 func ChangePassword(path string) {
 	logger.Info(colors.Blue("Enter new passsowrd: "))
-	pass1, _ := promptPassword()
+	pass1 := promptPassword()
 	logger.Info(colors.Blue("Confirm passsowrd: "))
-	pass2, _ := promptPassword()
+	pass2 := promptPassword()
 
 	if bytes.Equal(pass1, pass2) {
-		dec := DecryptFile(path)
+		d := DecryptFile(path)
 		SetKey(pass1)
-		enc := EncryptText(dec)
-		err := os.WriteFile(path, enc, 0644)
+		e := EncryptText(d)
+
+		OverwriteBytes(pass1)
+		OverwriteBytes(pass2)
+
+		err := os.WriteFile(path, e, 0644)
 		if err != nil {
 			logger.Error("Config Error:", colors.Red(err))
 			os.Exit(1)
@@ -101,4 +106,19 @@ func FileEncrypted(path string) bool {
 
 func KeyNotSet() bool {
 	return EncoderInstance.keyNotSet()
+}
+
+func OverwriteBytes(data []byte) {
+	randomBytes := make([]byte, len(data))
+	if _, err := rand.Read(randomBytes); err != nil {
+		logger.Error("Byte generation Error:", colors.Red(err))
+		os.Exit(1)
+	}
+
+	for i := range data {
+		data[i] = randomBytes[i]
+	}
+	for i := range randomBytes {
+		randomBytes[i] = 0
+	}
 }

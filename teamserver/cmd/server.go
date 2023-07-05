@@ -41,12 +41,12 @@ var CobraServer = &cobra.Command{
 
 		if flags.Server.Default {
 			encoder.Initialize(DefaultPath)
-			if Server.Flags.Server.Password && encoder.FileEncrypted(DefaultPath) {
+			if Server.Flags.Server.UpdatePass && encoder.FileEncrypted(DefaultPath) {
 				encoder.ChangePassword(DefaultPath)
 			}
 		} else if flags.Server.Profile != "" {
 			encoder.Initialize(flags.Server.Profile)
-			if Server.Flags.Server.Password && encoder.FileEncrypted(flags.Server.Profile) {
+			if Server.Flags.Server.UpdatePass && encoder.FileEncrypted(flags.Server.Profile) {
 				encoder.ChangePassword(flags.Server.Profile)
 			}
 		}

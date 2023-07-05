@@ -109,6 +109,7 @@ func (e *Encoder) decryptFile(path string) []byte {
 	if e.keyNotSet() {
 		return file
 	}
+
 	return e.decryptText(file)
 }
 
@@ -123,28 +124,34 @@ func (e *Encoder) FileEncrypted(path string) bool {
 	if bytes.Equal(e.encHeader, header) {
 		return true
 	}
+
 	return false
+}
+
+func (e *Encoder) setKey(pass []byte) {
+	e.key = crypt.CreateHash(pass, crypt.DefaultParams)
 }
 
 func (e *Encoder) keyNotSet() bool {
 	if e.key == nil {
 		return true
 	}
+
 	return false
 }
-func promptPassword() ([]byte, error) {
+
+func promptPassword() []byte {
 	password, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
-		return nil, err
+		logger.Error("Read password Error:", colors.Red(err))
+		os.Exit(1)
 	}
 
-	return password, nil
+	return password
 }
+
 func clearTerminal() {
 	cmd := exec.Command("clear")
 	cmd.Stdout = os.Stdout
 	cmd.Run()
-}
-func (e *Encoder) setKey(pass []byte) {
-	e.key = crypt.CreateHash(pass, crypt.DefaultParams)
 }

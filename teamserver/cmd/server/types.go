@@ -42,13 +42,13 @@ type serverFlags struct {
 	Host string
 	Port string
 
-	Profile  string
-	Password bool
-	Verbose  bool
-	Debug    bool
-	DebugDev bool
-	SendLogs bool
-	Default  bool
+	Profile    string
+	UpdatePass bool
+	Verbose    bool
+	Debug      bool
+	DebugDev   bool
+	SendLogs   bool
+	Default    bool
 }
 
 type utilFlags struct {
