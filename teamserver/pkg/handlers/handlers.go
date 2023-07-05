@@ -74,6 +74,7 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header, External
 
 		// while we can read a command and request id, parse new packages
 		first_iter := true
+		asked_for_jobs := false
 		for (Header.Data.CanIRead(([]parser.ReadType{parser.ReadInt32, parser.ReadInt32}))) {
 			Command   = uint32(Header.Data.ParseInt32())
 			RequestID = uint32(Header.Data.ParseInt32())
@@ -105,11 +106,13 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header, External
 			if Command != agent.COMMAND_GET_JOB {
 				Parser := parser.NewParser(Header.Data.ParseBytes())
 				Agent.TaskDispatch(RequestID, Command, Parser, Teamserver)
+			} else {
+				asked_for_jobs = true
 			}
 		}
 
 		/* if there is no job then just reply with a COMMAND_NOJOB */
-		if len(Agent.JobQueue) == 0 {
+		if asked_for_jobs == false || len(Agent.JobQueue) == 0 {
 			var NoJob = []agent.Job{{
 				Command: agent.COMMAND_NOJOB,
 				Data:    []interface{}{},

@@ -929,7 +929,7 @@ VOID AnonPipesRead(
     } while ( Success == TRUE );
 
     if ( dwBufferSize ) {
-        Package = PackageCreateWithRequestID( RequestID, DEMON_OUTPUT );
+        Package = PackageCreateWithRequestID( DEMON_OUTPUT, RequestID );
         PackageAddBytes( Package, Buffer, dwBufferSize );
         PackageTransmit( Package );
     }

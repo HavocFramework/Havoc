@@ -208,7 +208,7 @@ VOID BeaconPrintf( INT Type, PCHAR fmt, ... )
     PVOID       CoffeeFunctionReturn = __builtin_return_address( 0 );
 
     if ( GetRequestIDForCallingObjectFile( CoffeeFunctionReturn, &RequestID ) )
-        package = PackageCreateWithRequestID( RequestID, BEACON_OUTPUT );
+        package = PackageCreateWithRequestID( BEACON_OUTPUT, RequestID );
     else
         package = PackageCreate( BEACON_OUTPUT );
 
@@ -240,7 +240,7 @@ VOID BeaconOutput( INT Type, PCHAR data, INT len )
     PVOID    CoffeeFunctionReturn = __builtin_return_address( 0 );
 
     if ( GetRequestIDForCallingObjectFile( CoffeeFunctionReturn, &RequestID ) ) {
-        Package = PackageCreateWithRequestID( RequestID, BEACON_OUTPUT );
+        Package = PackageCreateWithRequestID( BEACON_OUTPUT, RequestID );
     } else {
         Package = PackageCreate( BEACON_OUTPUT );
     }

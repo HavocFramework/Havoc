@@ -45,7 +45,7 @@ LONG WINAPI VehDebugger( PEXCEPTION_POINTERS Exception )
     //       given that CoffeeFunctionReturn won't point to BOF code but Demon code
     //       also, if two BOFs are running at the same time, this VEH impl won't work
     if ( GetRequestIDForCallingObjectFile( CoffeeFunctionReturn, &RequestID ) )
-        Package = PackageCreateWithRequestID( RequestID, DEMON_COMMAND_INLINE_EXECUTE );
+        Package = PackageCreateWithRequestID( DEMON_COMMAND_INLINE_EXECUTE, RequestID );
     else
         Package = PackageCreate( DEMON_COMMAND_INLINE_EXECUTE );
 
@@ -202,7 +202,7 @@ BOOL CoffeeProcessSymbol( PCOFFEE Coffee, LPSTR SymbolName, UINT16 SymbolType, P
     return TRUE;
 
 SymbolNotFound:
-    Package = PackageCreateWithRequestID( Coffee->RequestID, DEMON_COMMAND_INLINE_EXECUTE );
+    Package = PackageCreateWithRequestID( DEMON_COMMAND_INLINE_EXECUTE, Coffee->RequestID );
     PackageAddInt32( Package, DEMON_COMMAND_INLINE_EXECUTE_SYMBOL_NOT_FOUND );
     PackageAddString( Package, SymbolName );
     PackageTransmit( Package );
@@ -323,7 +323,7 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
     {
         PRINTF( "[!] Couldn't find function => %s\n", Function );
 
-        PPACKAGE Package = PackageCreateWithRequestID( RequestID, DEMON_COMMAND_INLINE_EXECUTE );
+        PPACKAGE Package = PackageCreateWithRequestID( DEMON_COMMAND_INLINE_EXECUTE, RequestID );
 
         PackageAddInt32( Package, DEMON_COMMAND_INLINE_EXECUTE_SYMBOL_NOT_FOUND );
         PackageAddString( Package, Function );
@@ -747,13 +747,13 @@ END:
 
     if ( Success )
     {
-        PPACKAGE Package = PackageCreateWithRequestID( RequestID, DEMON_COMMAND_INLINE_EXECUTE );
+        PPACKAGE Package = PackageCreateWithRequestID( DEMON_COMMAND_INLINE_EXECUTE, RequestID );
         PackageAddInt32( Package, DEMON_COMMAND_INLINE_EXECUTE_RAN_OK );
         PackageTransmit( Package );
     }
     else
     {
-        PPACKAGE Package = PackageCreateWithRequestID( RequestID, DEMON_COMMAND_INLINE_EXECUTE );
+        PPACKAGE Package = PackageCreateWithRequestID( DEMON_COMMAND_INLINE_EXECUTE, RequestID );
         PackageAddInt32( Package, DEMON_COMMAND_INLINE_EXECUTE_COULD_NO_RUN );
         PackageTransmit( Package );
     }

