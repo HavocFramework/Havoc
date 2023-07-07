@@ -45,31 +45,28 @@ PVOID MemoryAlloc(
             if ( ! NT_SUCCESS( NtStatus = SysNtAllocateVirtualMemory( Process, &Memory, 0, &Size, MEM_COMMIT | MEM_RESERVE, Protect ) ) ) {
                 PRINTF( "[-] NtAllocateVirtualMemory: Failed:[%lx]\n", NtStatus )
                 NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
-                return NULL;
+                Memory = NULL;
             }
 
             break;
         }
 
         default: {
-            return NULL;
+            break;
         }
     }
 
     PRINTF( "Memory:[%p] MemSize:[%d]\n", Memory, Size );
 
-    if ( Memory ) {
-        if ( Instance.Config.Implant.Verbose ) {
-            PackageAddPtr( Package, Memory );
-            PackageAddInt32( Package, Size );
-            PackageAddInt32( Package, Protect );
-            PackageTransmit( Package );
-        }
-    } else {
-        PackageDestroy( Package );
+    if ( Memory && Instance.Config.Implant.Verbose ) {
+        Package = PackageCreate( DEMON_INFO );
+        PackageAddInt32( Package, DEMON_INFO_MEM_ALLOC );
+        PackageAddPtr( Package, Memory );
+        PackageAddInt32( Package, Size );
+        PackageAddInt32( Package, Protect );
+        PackageTransmit( Package );
+        Package = NULL;
     }
-
-    Package = NULL;
 
     return Memory;
 }
@@ -94,11 +91,6 @@ BOOL MemoryProtect(
     NTSTATUS  NtStatus   = STATUS_SUCCESS;
     ULONG     OldProtect = 0;
     BOOL      Success    = FALSE;
-
-    if ( Instance.Config.Implant.Verbose && ( Method != DX_MEM_DEFAULT ) ) {
-        Package = PackageCreate( DEMON_INFO );
-        PackageAddInt32( Package, DEMON_INFO_MEM_PROTECT );
-    }
 
     switch ( Method )
     {
@@ -131,6 +123,8 @@ BOOL MemoryProtect(
     }
 
     if ( Success && Instance.Config.Implant.Verbose ) {
+        Package = PackageCreate( DEMON_INFO );
+        PackageAddInt32( Package, DEMON_INFO_MEM_PROTECT );
         PackageAddPtr( Package, Memory );
         PackageAddInt32( Package, Size );
         PackageAddInt32( Package, OldProtect );
@@ -138,12 +132,6 @@ BOOL MemoryProtect(
         PackageTransmit( Package );
         Package = NULL;
     }
-
-    if ( Package ) {
-        PackageDestroy( Package );
-    }
-
-    Package = NULL;
 
     return Success;
 }
