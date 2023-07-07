@@ -176,8 +176,22 @@ PPACKAGE PackageCreateWithRequestID( UINT32 CommandID, UINT32 RequestID )
 VOID PackageDestroy(
     IN PPACKAGE Package
 ) {
+    PPACKAGE Pkg = Instance.Packages;
+
     if ( Package )
     {
+        // make sure the package is not on the Instance.Packages list, avoid UAF
+        while ( Pkg )
+        {
+            if ( Package == Pkg )
+            {
+                PUTS_DONT_SEND( "Package can't be destroyed, is on Instance.Packages list" )
+                return;
+            }
+
+            Pkg = Pkg->Next;
+        }
+
         if ( Package->Buffer )
         {
             MemSet( Package->Buffer, 0, Package->Length );
@@ -249,8 +263,9 @@ VOID PackageTransmit(
 ) {
     PPACKAGE List = NULL;
 
-    if(Package == NULL)
+    if ( ! Package ) {
         return;
+    }
         
     if ( ! Instance.Packages )
     {
