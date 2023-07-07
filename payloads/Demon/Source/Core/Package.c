@@ -249,6 +249,9 @@ VOID PackageTransmit(
 ) {
     PPACKAGE List = NULL;
 
+    if(Package == NULL)
+        return;
+        
     if ( ! Instance.Packages )
     {
         Instance.Packages = Package;

