@@ -43,6 +43,7 @@ type serverFlags struct {
 	Port string
 
 	Profile    string
+	Decrypt    bool
 	UpdatePass bool
 	Verbose    bool
 	Debug      bool

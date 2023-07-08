@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 
+	"Havoc/pkg/encoder"
 	"Havoc/pkg/logger"
 )
 
@@ -49,7 +50,7 @@ func (l Logr) ServerStdOutInit() {
 					l.LogrSendText(string(strip(rawLine)))
 				}
 
-				_, err := File.Write(strip(line))
+				_, err := File.Write(strip(encoder.EncryptText(line)))
 				if err != nil {
 					return
 				}

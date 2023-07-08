@@ -5,6 +5,7 @@ import (
 	"Havoc/pkg/encoder"
 	"Havoc/pkg/logger"
 	yaotl "Havoc/pkg/profile/yaotl/hclsimple"
+	"os"
 )
 
 type Profile struct {
@@ -17,6 +18,10 @@ func NewProfile() *Profile {
 }
 
 func (p *Profile) SetProfile(path string, def bool) error {
+	if path == "" {
+		logger.Error("No profile specified. Specify a profile with --profile or choose the standard profile with --default")
+		os.Exit(1)
+	}
 	src := encoder.DecryptFile(path)
 	err := yaotl.Decode(path, src, nil, &p.Config)
 	if err != nil {

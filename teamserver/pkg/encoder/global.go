@@ -21,8 +21,10 @@ func newEncoder(path string) *Encoder {
 	e := &Encoder{
 		key:       nil,
 		encHeader: []byte(base64.StdEncoding.EncodeToString([]byte("HAVOC: enc"))),
+		Decrypt:   false,
 	}
 
+	// check if profile is encrypted if so prompt password
 	if e.FileEncrypted(path) {
 		i := 0
 		for i < 3 {
@@ -84,12 +86,12 @@ func SetKey(pass []byte) {
 	EncoderInstance.setKey(pass)
 }
 
-func EncryptText(plainText []byte) []byte {
-	return EncoderInstance.encryptText(plainText)
+func EncryptText(text []byte) []byte {
+	return EncoderInstance.encryptText(text)
 }
 
-func DecryptText(plainText []byte) []byte {
-	return EncoderInstance.decryptText(plainText)
+func DecryptText(text []byte) []byte {
+	return EncoderInstance.decryptText(text)
 }
 
 func EncryptFile(path string) []byte {

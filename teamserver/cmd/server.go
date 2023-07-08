@@ -22,7 +22,7 @@ var CobraServer = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var (
 			DirPath, _  = os.Getwd()
-			DefaultPath = DirPath + "/data/havoc.yaotl"
+			ProfilePath string
 			ServerTimer = time.Now()
 			LogrPath    = "data/loot/" + ServerTimer.Format("2006.01.02._15:04:05")
 			Server      *server.Teamserver
@@ -40,15 +40,17 @@ var CobraServer = &cobra.Command{
 		Server.SetServerFlags(flags)
 
 		if flags.Server.Default {
-			encoder.Initialize(DefaultPath)
-			if Server.Flags.Server.UpdatePass && encoder.FileEncrypted(DefaultPath) {
-				encoder.ChangePassword(DefaultPath)
-			}
-		} else if flags.Server.Profile != "" {
-			encoder.Initialize(flags.Server.Profile)
-			if Server.Flags.Server.UpdatePass && encoder.FileEncrypted(flags.Server.Profile) {
-				encoder.ChangePassword(flags.Server.Profile)
-			}
+			ProfilePath = DirPath + "/data/havoc.yaotl"
+		} else {
+			ProfilePath = flags.Server.Profile
+		}
+		encoder.Initialize(ProfilePath)
+		if Server.Flags.Server.UpdatePass && encoder.FileEncrypted(ProfilePath) {
+			encoder.ChangePassword(ProfilePath)
+		}
+
+		if Server.Flags.Server.Decrypt && encoder.FileEncrypted(ProfilePath) {
+			encoder.EncoderInstance.Decrypt = true
 		}
 
 		logr.LogrInstance = logr.NewLogr(DirPath, LogrPath)
@@ -77,14 +79,7 @@ var CobraServer = &cobra.Command{
 
 		logger.Info(fmt.Sprintf("Havoc Framework [Version: %v] [CodeName: %v]", VersionNumber, VersionName))
 
-		if flags.Server.Default {
-			Server.SetProfile(DefaultPath)
-		} else if flags.Server.Profile != "" {
-			Server.SetProfile(flags.Server.Profile)
-		} else {
-			logger.Error("No profile specified. Specify a profile with --profile or choose the standard profile with --default")
-			os.Exit(1)
-		}
+		Server.SetProfile(ProfilePath)
 
 		if !Server.FindSystemPackages() {
 			logger.Error("Please install needed packages. Refer to the Wiki for more help.")

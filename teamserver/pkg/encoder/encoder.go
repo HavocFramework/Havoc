@@ -19,6 +19,7 @@ import (
 type Encoder struct {
 	key       []byte
 	encHeader []byte
+	Decrypt   bool
 }
 
 func (e *Encoder) encryptText(plainText []byte) []byte {
@@ -103,7 +104,7 @@ func (e *Encoder) encryptFile(path string) []byte {
 func (e *Encoder) decryptFile(path string) []byte {
 	file, err := os.ReadFile(path)
 	if err != nil {
-		logger.Error("Read profile Error: ", colors.Red(err))
+		logger.Error("Read encrypted file Error: ", colors.Red(err))
 		return []byte{}
 	}
 	if e.keyNotSet() {
