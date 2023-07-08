@@ -1,6 +1,7 @@
 Teamserver {
 	Host = "0.0.0.0"
 	Port = 40056
+	Password = ""
 
 	Build {
 	    Compiler64 = "/usr/bin/x86_64-w64-mingw32-gcc"
