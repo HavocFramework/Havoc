@@ -76,8 +76,7 @@ func (t *Teamserver) Start() {
 	if password := t.Profile.ServerPassword(); password != nil && encoder.KeyNotSet() {
 		encoder.SetKey(password)
 		encoder.OverwriteBytes(password)
-		enc := encoder.EncryptFile(t.Profile.Path)
-		os.WriteFile(t.Profile.Path, enc, 0644)
+		encoder.EncryptFile(t.Profile.Path, true)
 	}
 
 	gin.SetMode(gin.ReleaseMode)

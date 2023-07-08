@@ -41,16 +41,22 @@ var CobraServer = &cobra.Command{
 
 		if flags.Server.Default {
 			ProfilePath = DirPath + "/data/havoc.yaotl"
-		} else {
+		} else if flags.Server.Profile != "" {
 			ProfilePath = flags.Server.Profile
-		}
-		encoder.Initialize(ProfilePath)
-		if Server.Flags.Server.UpdatePass && encoder.FileEncrypted(ProfilePath) {
-			encoder.ChangePassword(ProfilePath)
+		} else {
+			logger.Error("No profile specified. Specify a profile with --profile or choose the standard profile with --default")
+			os.Exit(1)
 		}
 
+		encoder.Initialize(ProfilePath)
+
 		if Server.Flags.Server.Decrypt && encoder.FileEncrypted(ProfilePath) {
+			encoder.DecryptFile(ProfilePath, true)
 			encoder.EncoderInstance.Decrypt = true
+		}
+
+		if Server.Flags.Server.UpdatePass && encoder.FileEncrypted(ProfilePath) {
+			encoder.ChangePassword(ProfilePath)
 		}
 
 		logr.LogrInstance = logr.NewLogr(DirPath, LogrPath)
@@ -80,6 +86,7 @@ var CobraServer = &cobra.Command{
 		logger.Info(fmt.Sprintf("Havoc Framework [Version: %v] [CodeName: %v]", VersionNumber, VersionName))
 
 		Server.SetProfile(ProfilePath)
+		logger.Info("Profile set")
 
 		if !Server.FindSystemPackages() {
 			logger.Error("Please install needed packages. Refer to the Wiki for more help.")

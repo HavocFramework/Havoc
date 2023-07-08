@@ -23,7 +23,7 @@ type Encoder struct {
 }
 
 func (e *Encoder) encryptText(plainText []byte) []byte {
-	if e.keyNotSet() {
+	if e.keyNotSet() || e.Decrypt {
 		return plainText
 	}
 
@@ -52,7 +52,7 @@ func (e *Encoder) encryptText(plainText []byte) []byte {
 }
 
 func (e *Encoder) decryptText(cipherText []byte) []byte {
-	if e.keyNotSet() {
+	if e.keyNotSet() || e.Decrypt {
 		return cipherText
 	}
 
@@ -87,31 +87,45 @@ func (e *Encoder) decryptText(cipherText []byte) []byte {
 	return plainText
 }
 
-func (e *Encoder) encryptFile(path string) []byte {
+func (e *Encoder) encryptFile(path string, write bool) []byte {
 
 	file, err := os.ReadFile(path)
 	if err != nil {
 		logger.Error("Read profile Error: ", colors.Red(err))
 		return []byte{}
 	}
-	if e.keyNotSet() {
+	if e.keyNotSet() || e.Decrypt {
 		return file
 	}
 
-	return e.encryptText(file)
+	enc := e.encryptText(file)
+	if write {
+		if err := os.WriteFile(path, enc, 0644); err != nil {
+			logger.Error("Write decrypted file Error: ", colors.Red(err))
+			return []byte{}
+		}
+	}
+	return enc
 }
 
-func (e *Encoder) decryptFile(path string) []byte {
+func (e *Encoder) decryptFile(path string, write bool) []byte {
 	file, err := os.ReadFile(path)
 	if err != nil {
 		logger.Error("Read encrypted file Error: ", colors.Red(err))
 		return []byte{}
 	}
-	if e.keyNotSet() {
+	if e.keyNotSet() || e.Decrypt {
 		return file
 	}
 
-	return e.decryptText(file)
+	dec := e.decryptText(file)
+	if write {
+		if err := os.WriteFile(path, dec, 0644); err != nil {
+			logger.Error("Write decrypted file Error: ", colors.Red(err))
+			return []byte{}
+		}
+	}
+	return dec
 }
 
 func (e *Encoder) FileEncrypted(path string) bool {

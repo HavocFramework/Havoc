@@ -33,7 +33,7 @@ func newEncoder(path string) *Encoder {
 			e.key = crypt.CreateHash(pass, crypt.DefaultParams)
 			OverwriteBytes(pass)
 
-			if d := e.decryptFile(path); len(d) != 0 {
+			if d := e.decryptFile(path, false); len(d) != 0 {
 				logger.Info(colors.Blue("Logged in"))
 				time.Sleep(time.Millisecond * 1000)
 				clearTerminal()
@@ -61,7 +61,7 @@ func ChangePassword(path string) {
 	pass2 := promptPassword()
 
 	if bytes.Equal(pass1, pass2) {
-		d := DecryptFile(path)
+		d := DecryptFile(path, false)
 		SetKey(pass1)
 		e := EncryptText(d)
 
@@ -94,12 +94,12 @@ func DecryptText(text []byte) []byte {
 	return EncoderInstance.decryptText(text)
 }
 
-func EncryptFile(path string) []byte {
-	return EncoderInstance.encryptFile(path)
+func EncryptFile(path string, write bool) []byte {
+	return EncoderInstance.encryptFile(path, write)
 }
 
-func DecryptFile(path string) []byte {
-	return EncoderInstance.decryptFile(path)
+func DecryptFile(path string, write bool) []byte {
+	return EncoderInstance.decryptFile(path, write)
 }
 
 func FileEncrypted(path string) bool {
