@@ -73,7 +73,7 @@ type Endpoint struct {
 type Teamserver struct {
 	Flags      TeamserverFlags
 	Profile    *profile.Profile
-	Clients    map[string]*Client
+	Clients    sync.Map // map[string]*Client
 	Users      []Users
 	EventsList []packager.Package
 	Service    *service.Service
