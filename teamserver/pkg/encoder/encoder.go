@@ -17,7 +17,9 @@ import (
 )
 
 type Encoder struct {
+	profilePath string
 	key       []byte
+	salt      []byte
 	encHeader []byte
 	Decrypt   bool
 }
@@ -47,7 +49,7 @@ func (e *Encoder) encryptText(plainText []byte) []byte {
 	cipherText := aesGCM.Seal(nil, nonce, plainText, nil)
 	cipherText = append(nonce, cipherText...)
 	cipherText = append(cipherText, e.encHeader...) // add encryption header to end of file
-
+    cipherText = append(cipherText, e.salt) 
 	return cipherText
 }
 
@@ -56,8 +58,9 @@ func (e *Encoder) decryptText(cipherText []byte) []byte {
 		return cipherText
 	}
 
-	// remove encryption header from cipher text
-	cipherText = cipherText[:len(cipherText)-len(e.encHeader)]
+	// remove encryption header and salt
+	 from cipher text
+	cipherText = cipherText[:len(cipherText)-len(e.encHeader)-len(e.salt)]
 
 	block, err := aes.NewCipher(e.key)
 	if err != nil {
@@ -94,7 +97,7 @@ func (e *Encoder) encryptFile(path string, write bool) []byte {
 		logger.Error("Read profile Error: ", colors.Red(err))
 		return []byte{}
 	}
-	if e.keyNotSet() || e.Decrypt {
+	if e.keyNotSet() || e.Decrypt || e.FileEncrypted(path) {
 		return file
 	}
 
@@ -114,7 +117,7 @@ func (e *Encoder) decryptFile(path string, write bool) []byte {
 		logger.Error("Read encrypted file Error: ", colors.Red(err))
 		return []byte{}
 	}
-	if e.keyNotSet() || e.Decrypt {
+	if e.keyNotSet() || e.Decrypt || !e.FileEncrypted(path){
 		return file
 	}
 
@@ -135,7 +138,7 @@ func (e *Encoder) FileEncrypted(path string) bool {
 		return false
 	}
 
-	header := file[len(file)-len(e.encHeader):]
+	header := file[len(file)-len(e.encHeader)-len(e.salt):len(file)-len(e.salt)]
 	if bytes.Equal(e.encHeader, header) {
 		return true
 	}
@@ -143,8 +146,8 @@ func (e *Encoder) FileEncrypted(path string) bool {
 	return false
 }
 
-func (e *Encoder) setKey(pass []byte) {
-	e.key = crypt.CreateHash(pass, crypt.DefaultParams)
+func (e *Encoder) setKey(pass []byte, salt []byte) {
+	e.key, e.salt = crypt.CreateHash(pass, crypt.DefaultParams, salt)
 }
 
 func (e *Encoder) keyNotSet() bool {
@@ -153,6 +156,19 @@ func (e *Encoder) keyNotSet() bool {
 	}
 
 	return false
+}
+
+func(e *Encoder) SaltFromFile(path string) []byte{
+	if !e.FileEncrypted(path){
+		return nil
+	}
+	
+	file, err := os.ReadFile(path)
+	if err != nil{
+		logger.Error(err)
+		os.Exit(1)
+	}
+	return file[len(file)-len(e.encHeader)-len(e.salt):]
 }
 
 func promptPassword() []byte {

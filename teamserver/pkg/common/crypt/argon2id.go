@@ -1,6 +1,7 @@
 package crypt
 
 import (
+	"encoding/base64"
 	"golang.org/x/crypto/argon2"
 )
 
@@ -11,7 +12,7 @@ var DefaultParams = &Params{
 	Memory:    64 * 1024,
 	Time:      1,
 	Threads:   1,
-	Salt:      []byte("HAVOC ENCRYPTION SALT"),
+	SaltLength:16,
 	KeyLength: 32,
 }
 
@@ -29,8 +30,8 @@ type Params struct {
 	// Recommended value is between 1 and runtime.NumCPU().
 	Threads uint8
 
-	// 16 bytes is recommended for password hashing.
-	Salt []byte
+	// Length of the random salt. 16 bytes is recommended for password hashing.
+	SaltLength uint32
 
 	// Length of the generated key. 16 bytes or more is recommended.
 	// The key argument should be the AES key, either 16, 24, or 32 bytes
@@ -38,6 +39,22 @@ type Params struct {
 	KeyLength uint32
 }
 
-func CreateHash(password []byte, params *Params) []byte {
-	return argon2.IDKey(password, params.Salt, params.Time, params.Memory, params.Threads, params.KeyLength)
+func CreateHash(password []byte, params *Params, salt []byte) ([]byte, []byte) {
+	if salt == nil {
+		salt = RandomBytes(params.SaltLength)
+	}
+	saltB64 : = make([]byte, base64.StdEncoding.EncodedLen(len(salt)))
+	base64.StdEncoding.Encode(saltB64,salt)
+	
+	return argon2.IDKey(password, salt, params.Time, params.Memory, params.Threads, params.KeyLength), saltB64
+}
+
+func RandomBytes(n uint32) []byte{
+	buff := make([]byte, n)
+	_, err := rand.Read(buff)
+	if err != nil{
+		logger.Error("Buffer Error:", err)
+		os.Exit(1)
+	}
+	return buff
 }

@@ -19,6 +19,7 @@ func Initialize(path string) {
 
 func newEncoder(path string) *Encoder {
 	e := &Encoder{
+		profilePath path,
 		key:       nil,
 		encHeader: []byte(base64.StdEncoding.EncodeToString([]byte("HAVOC: enc"))),
 		Decrypt:   false,
@@ -30,7 +31,7 @@ func newEncoder(path string) *Encoder {
 		for i < 3 {
 			logger.Info(colors.Blue("Enter passsowrd: "))
 			pass := promptPassword()
-			e.key = crypt.CreateHash(pass, crypt.DefaultParams)
+			SetKey(pass, path)
 			OverwriteBytes(pass)
 
 			if d := e.decryptFile(path, false); len(d) != 0 {
@@ -62,7 +63,7 @@ func ChangePassword(path string) {
 
 	if bytes.Equal(pass1, pass2) {
 		d := DecryptFile(path, false)
-		SetKey(pass1)
+		SetKey(pass1, path)
 		e := EncryptText(d)
 
 		OverwriteBytes(pass1)
@@ -83,7 +84,8 @@ func ChangePassword(path string) {
 	os.Exit(1)
 }
 func SetKey(pass []byte) {
-	EncoderInstance.setKey(pass)
+	salt := EncoderInstance.SaltFromFile(path)
+	EncoderInstance.setKey(pass, salt)
 }
 
 func EncryptText(text []byte) []byte {
