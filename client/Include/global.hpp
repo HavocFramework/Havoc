@@ -25,6 +25,7 @@
 #include <QLineEdit>
 #include <QTextEdit>
 #include <QTableWidget>
+#include <QTextCodec>
 
 #include <string>
 #include <map>
