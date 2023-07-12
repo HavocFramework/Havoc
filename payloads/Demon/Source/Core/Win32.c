@@ -218,10 +218,10 @@ PVOID LdrModuleLoad(
     UNICODE_STRING UnicodeString  = { 0 };
     WCHAR          NameW[ 260 ]   = { 0 };
     PVOID          Module         = { 0 };
-    USHORT         DestSize       = { 0 };
-    HANDLE         Event          = { 0 };
-    HANDLE         Queue          = { 0 };
-    HANDLE         Timer          = { 0 };
+    USHORT         DestSize       = 0;
+    HANDLE         Event          = NULL;
+    HANDLE         Queue          = NULL;
+    HANDLE         Timer          = NULL;
     DWORD          Count          = 5;
     NTSTATUS       NtStatus       = STATUS_SUCCESS;
 
@@ -322,6 +322,7 @@ PVOID LdrModuleLoad(
 
         /* if module still hasn't been found then go to default */
         if ( ! Module ) {
+            PUTS( "Module was not loaded, try with default technique" )
             goto DEFAULT;
         }
     }

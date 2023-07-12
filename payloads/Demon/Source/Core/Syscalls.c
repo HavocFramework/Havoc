@@ -87,14 +87,23 @@ BOOL SysExtract(
     OUT PWORD  Ssn,
     OUT PVOID* SysAddr
 ) {
-    ULONG Offset      = { 0 };
-    BYTE  SsnLow      = { 0 };
-    BYTE  SsnHigh     = { 0 };
+    ULONG Offset      = 0;
+    BYTE  SsnLow      = 0;
+    BYTE  SsnHigh     = 0;
     BOOL  Success     = FALSE;
 
     /* check args */
     if ( ! Function )
+    {
+        PUTS( "Function address is not defined" )
         return FALSE;
+    }
+
+    if ( ! Ssn && ! SysAddr )
+    {
+        PRINTF( "No Ssn and SysAddr pointers set for function at 0x%p\n", Function )
+        return FALSE;
+    }
 
     do {
         /* check if current instruction is a 'ret' (end of function) */
@@ -158,6 +167,18 @@ BOOL SysExtract(
 
         Offset++;
     } while ( TRUE );
+
+    if ( ! Success )
+    {
+        if ( Ssn ) {
+            // the ntdll version is not supported or the function is hooked
+            PRINTF( "Could not resolve the Ssn of function at 0x%p\n", Function )
+        }
+
+        if ( SysAddr ) {
+            PRINTF( "Could not resolve the SysAddr of function at 0x%p\n", Function )
+        }
+    }
 
     return Success;
 }

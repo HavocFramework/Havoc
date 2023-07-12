@@ -532,6 +532,7 @@ VOID DemonInit( PVOID ModuleInst, PKAYN_ARGS KArgs )
     Instance.Downloads          = NULL;
     Instance.Sockets            = NULL;
     Instance.HwBpEngine         = NULL;
+    Instance.Packages           = NULL;
 
     /* Global Objects */
     Instance.Dotnet = NULL;
