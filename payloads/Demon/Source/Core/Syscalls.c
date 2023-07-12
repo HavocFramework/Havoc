@@ -19,7 +19,7 @@ BOOL SysInitialize(
     if ( ( SysNativeFunc = LdrFunctionAddr( Ntdll, H_FUNC_NTADDBOOTENTRY ) ) )
     {
         /* resolve address */
-        SysExtract( SysNativeFunc, NULL, &SysIndirectAddr );
+        SysExtract( SysNativeFunc, TRUE, NULL, &SysIndirectAddr );
 
         /* check if we managed to resolve it  */
         if ( SysIndirectAddr ) {
@@ -77,13 +77,15 @@ BOOL SysInitialize(
 /*!
  * extract syscall service number (SSN) and or
  * syscall instruction address
- * @param Function  Native function address to extract Ssn/SysAddr from
- * @param Ssn       extracted ssn
- * @param Addr      extracted sys addr
- * @return          if extracting the syscall was successful
+ * @param Function       Native function address to extract Ssn/SysAddr from
+ * @param ResolveHooked  if the function should call FindSsnOfHookedSyscall upon failure
+ * @param Ssn            extracted ssn
+ * @param Addr           extracted sys addr
+ * @return               if extracting the syscall was successful
  */
 BOOL SysExtract(
     IN  PVOID  Function,
+    IN  BOOL   ResolveHooked,
     OUT PWORD  Ssn,
     OUT PVOID* SysAddr
 ) {
@@ -168,10 +170,13 @@ BOOL SysExtract(
         Offset++;
     } while ( TRUE );
 
+    if ( ! Success && Ssn && ResolveHooked ) {
+        Success = FindSsnOfHookedSyscall( Function, Ssn );
+    }
+
     if ( ! Success )
     {
         if ( Ssn ) {
-            // the ntdll version is not supported or the function is hooked
             PRINTF( "Could not resolve the Ssn of function at 0x%p\n", Function )
         }
 
@@ -181,4 +186,45 @@ BOOL SysExtract(
     }
 
     return Success;
+}
+
+/*
+ * If a function is hooked, we can't obtain the Ssn directly.
+ * Instead, we look for the Ssn of a neighbouring syscalls and add/subtract
+ * to their Ssn according to their distance.
+ * WARNING: This only works if Ssn are incremental!
+ */
+BOOL FindSsnOfHookedSyscall(
+    IN  PVOID  Function,
+    OUT PWORD  Ssn
+) {
+    UINT32 SyscallSize      = 0;
+    PVOID  NeighbourSyscall = NULL;
+    WORD   NeighbourSsn     = NULL;
+
+    if ( ! ( SyscallSize = GetSyscallSize() ) )
+        return FALSE;
+
+    PRINTF("SyscallSize: %d\n", SyscallSize);
+
+    for ( UINT32 i = 1; i < 500; ++i )
+    {
+        // try with a syscall above ours
+        NeighbourSyscall = C_PTR( U_PTR( Function ) + ( SyscallSize * i ) );
+        if( SysExtract( NeighbourSyscall, FALSE, &NeighbourSsn, NULL ) )
+        {
+            *Ssn = NeighbourSsn - i;
+            return TRUE;
+        }
+
+        // try with a syscall below ours
+        NeighbourSyscall = C_PTR( U_PTR( Function ) - ( SyscallSize * i ) );
+        if( SysExtract( NeighbourSyscall, FALSE, &NeighbourSsn, NULL ) )
+        {
+            *Ssn = NeighbourSsn + i;
+            return TRUE;
+        }
+    }
+
+    return FALSE;
 }
