@@ -15,6 +15,10 @@ BOOL SysInitialize(
     PVOID SysNativeFunc   = NULL;
     PVOID SysIndirectAddr = NULL;
 
+    if ( ! Ntdll ) {
+        return FALSE;
+    }
+
     /* Resolve Syscall instruction from dummy nt function */
     if ( ( SysNativeFunc = LdrFunctionAddr( Ntdll, H_FUNC_NTADDBOOTENTRY ) ) )
     {
@@ -202,10 +206,13 @@ BOOL FindSsnOfHookedSyscall(
     PVOID  NeighbourSyscall = NULL;
     WORD   NeighbourSsn     = NULL;
 
-    if ( ! ( SyscallSize = GetSyscallSize() ) )
-        return FALSE;
+    PRINTF( "The syscall at address 0x%p seems to be hooked, trying to resolve its Ssn via neighbouring syscalls...\n", Function )
 
-    PRINTF("SyscallSize: %d\n", SyscallSize);
+    if ( ! ( SyscallSize = GetSyscallSize() ) ) {
+        PUTS( "Failed to obtain the size of the syscalls stub" )
+        return FALSE;
+    }
+
 
     for ( UINT32 i = 1; i < 500; ++i )
     {
