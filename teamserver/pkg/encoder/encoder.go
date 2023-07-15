@@ -3,6 +3,7 @@ package encoder
 import (
 	"bytes"
 	"crypto/aes"
+	"encoding/base64"
 	"crypto/cipher"
 	"crypto/rand"
 	"io"
@@ -48,8 +49,8 @@ func (e *Encoder) encryptText(plainText []byte) []byte {
 	}
 	cipherText := aesGCM.Seal(nil, nonce, plainText, nil)
 	cipherText = append(nonce, cipherText...)
-	cipherText = append(cipherText, e.encHeader...) // add encryption header to end of file
-    cipherText = append(cipherText, e.salt) 
+	cipherText = append(cipherText, e.salt...)
+	cipherText = append(cipherText, e.encHeader...)
 	return cipherText
 }
 
@@ -58,8 +59,7 @@ func (e *Encoder) decryptText(cipherText []byte) []byte {
 		return cipherText
 	}
 
-	// remove encryption header and salt
-	 from cipher text
+	// remove encryption header and salt from cipher text
 	cipherText = cipherText[:len(cipherText)-len(e.encHeader)-len(e.salt)]
 
 	block, err := aes.NewCipher(e.key)
@@ -91,13 +91,12 @@ func (e *Encoder) decryptText(cipherText []byte) []byte {
 }
 
 func (e *Encoder) encryptFile(path string, write bool) []byte {
-
 	file, err := os.ReadFile(path)
 	if err != nil {
 		logger.Error("Read profile Error: ", colors.Red(err))
 		return []byte{}
 	}
-	if e.keyNotSet() || e.Decrypt || e.FileEncrypted(path) {
+	if e.keyNotSet() || e.Decrypt || e.fileEncrypted(path) {
 		return file
 	}
 
@@ -117,7 +116,7 @@ func (e *Encoder) decryptFile(path string, write bool) []byte {
 		logger.Error("Read encrypted file Error: ", colors.Red(err))
 		return []byte{}
 	}
-	if e.keyNotSet() || e.Decrypt || !e.FileEncrypted(path){
+	if e.keyNotSet() || e.Decrypt || !e.fileEncrypted(path){
 		return file
 	}
 
@@ -131,23 +130,19 @@ func (e *Encoder) decryptFile(path string, write bool) []byte {
 	return dec
 }
 
-func (e *Encoder) FileEncrypted(path string) bool {
+func (e *Encoder) fileEncrypted(path string) bool {
 	file, err := os.ReadFile(path)
 	if err != nil {
 		logger.Error("Read profile Error: ", colors.Red(err))
 		return false
 	}
 
-	header := file[len(file)-len(e.encHeader)-len(e.salt):len(file)-len(e.salt)]
+	header := file[len(file)-len(e.encHeader):]
 	if bytes.Equal(e.encHeader, header) {
 		return true
 	}
 
 	return false
-}
-
-func (e *Encoder) setKey(pass []byte, salt []byte) {
-	e.key, e.salt = crypt.CreateHash(pass, crypt.DefaultParams, salt)
 }
 
 func (e *Encoder) keyNotSet() bool {
@@ -158,17 +153,40 @@ func (e *Encoder) keyNotSet() bool {
 	return false
 }
 
-func(e *Encoder) SaltFromFile(path string) []byte{
-	if !e.FileEncrypted(path){
+func (e *Encoder) setKey(pass []byte, path string) {
+        salt := e.saltFromFile(path)
+        e.key, e.salt = crypt.CreateHash(pass, crypt.DefaultParams, salt)
+}
+
+func(e *Encoder) saltFromFile(path string) []byte{
+	if path == "" || !e.fileEncrypted(path) {
 		return nil
 	}
-	
+
 	file, err := os.ReadFile(path)
 	if err != nil{
 		logger.Error(err)
 		os.Exit(1)
 	}
-	return file[len(file)-len(e.encHeader)-len(e.salt):]
+	saltB64 := file[len(file)-len(e.encHeader)-crypt.B64SaltLenght():len(file)-len(e.encHeader)]
+	salt, _ := base64.StdEncoding.DecodeString(string(saltB64))
+
+	return []byte(salt)
+}
+
+func(e *Encoder) overwriteBytes(data []byte) {
+        randomBytes := make([]byte, len(data))
+        if _, err := rand.Read(randomBytes); err != nil {
+                logger.Error("Byte generation Error:", colors.Red(err))
+                os.Exit(1)
+        }
+
+        for i := range data {
+                data[i] = randomBytes[i]
+        }
+        for i := range randomBytes {
+                randomBytes[i] = 0
+        }
 }
 
 func promptPassword() []byte {

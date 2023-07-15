@@ -1,8 +1,11 @@
 package crypt
 
 import (
+	"Havoc/pkg/logger"
 	"encoding/base64"
 	"golang.org/x/crypto/argon2"
+	"math/rand"
+	"os"
 )
 
 // Modified version of agithub.com/alexedwards/argon2id
@@ -31,7 +34,7 @@ type Params struct {
 	Threads uint8
 
 	// Length of the random salt. 16 bytes is recommended for password hashing.
-	SaltLength uint32
+	SaltLength int
 
 	// Length of the generated key. 16 bytes or more is recommended.
 	// The key argument should be the AES key, either 16, 24, or 32 bytes
@@ -43,13 +46,13 @@ func CreateHash(password []byte, params *Params, salt []byte) ([]byte, []byte) {
 	if salt == nil {
 		salt = RandomBytes(params.SaltLength)
 	}
-	saltB64 : = make([]byte, base64.StdEncoding.EncodedLen(len(salt)))
+	saltB64 := make([]byte, base64.StdEncoding.EncodedLen(len(salt)))
 	base64.StdEncoding.Encode(saltB64,salt)
-	
+
 	return argon2.IDKey(password, salt, params.Time, params.Memory, params.Threads, params.KeyLength), saltB64
 }
 
-func RandomBytes(n uint32) []byte{
+func RandomBytes(n int) []byte{
 	buff := make([]byte, n)
 	_, err := rand.Read(buff)
 	if err != nil{
@@ -57,4 +60,8 @@ func RandomBytes(n uint32) []byte{
 		os.Exit(1)
 	}
 	return buff
+}
+
+func B64SaltLenght() int {
+	return  base64.StdEncoding.EncodedLen(DefaultParams.SaltLength)
 }

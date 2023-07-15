@@ -2,13 +2,12 @@ package encoder
 
 import (
 	"Havoc/pkg/colors"
-	"Havoc/pkg/common/crypt"
 	"Havoc/pkg/logger"
-	"bytes"
-	"crypto/rand"
+
 	"encoding/base64"
 	"os"
 	"time"
+	"bytes"
 )
 
 var EncoderInstance *Encoder
@@ -19,19 +18,19 @@ func Initialize(path string) {
 
 func newEncoder(path string) *Encoder {
 	e := &Encoder{
-		profilePath path,
+		profilePath: path,
 		key:       nil,
 		encHeader: []byte(base64.StdEncoding.EncodeToString([]byte("HAVOC: enc"))),
 		Decrypt:   false,
 	}
 
 	// check if profile is encrypted if so prompt password
-	if e.FileEncrypted(path) {
+	if e.fileEncrypted(path) {
 		i := 0
 		for i < 3 {
 			logger.Info(colors.Blue("Enter passsowrd: "))
 			pass := promptPassword()
-			SetKey(pass, path)
+			e.setKey(pass, path)
 			OverwriteBytes(pass)
 
 			if d := e.decryptFile(path, false); len(d) != 0 {
@@ -83,9 +82,8 @@ func ChangePassword(path string) {
 	logger.Info(colors.Blue("Passwords doesn't match"))
 	os.Exit(1)
 }
-func SetKey(pass []byte) {
-	salt := EncoderInstance.SaltFromFile(path)
-	EncoderInstance.setKey(pass, salt)
+func SetKey(pass []byte, path string) {
+	EncoderInstance.setKey(pass, path)
 }
 
 func EncryptText(text []byte) []byte {
@@ -105,7 +103,7 @@ func DecryptFile(path string, write bool) []byte {
 }
 
 func FileEncrypted(path string) bool {
-	return EncoderInstance.FileEncrypted(path)
+	return EncoderInstance.fileEncrypted(path)
 }
 
 func KeyNotSet() bool {
@@ -113,16 +111,5 @@ func KeyNotSet() bool {
 }
 
 func OverwriteBytes(data []byte) {
-	randomBytes := make([]byte, len(data))
-	if _, err := rand.Read(randomBytes); err != nil {
-		logger.Error("Byte generation Error:", colors.Red(err))
-		os.Exit(1)
-	}
-
-	for i := range data {
-		data[i] = randomBytes[i]
-	}
-	for i := range randomBytes {
-		randomBytes[i] = 0
-	}
+	EncoderInstance.overwriteBytes(data)
 }
