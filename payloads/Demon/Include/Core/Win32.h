@@ -104,6 +104,10 @@ PVOID LdrFunctionAddr(
     IN ULONG   Hash
 );
 
+UINT32 GetSyscallSize(
+    VOID
+);
+
 PVOID LdrModulePeb(
     IN DWORD hash
 );

@@ -149,6 +149,14 @@ BOOL TokenRemove(
     IN DWORD TokenID
 );
 
+BOOL SysDuplicateTokenEx(
+    IN HANDLE ExistingTokenHandle,
+    IN DWORD dwDesiredAccess,
+    IN LPSECURITY_ATTRIBUTES lpTokenAttributes  OPTIONAL,
+    IN SECURITY_IMPERSONATION_LEVEL ImpersonationLevel,
+    IN TOKEN_TYPE TokenType,
+    OUT PHANDLE DuplicateTokenHandle);
+
 HANDLE TokenSteal(
     IN DWORD  ProcessID,
     IN HANDLE TargetHandle

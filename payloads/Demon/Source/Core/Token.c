@@ -362,6 +362,49 @@ DWORD TokenAdd(
     return TokenIndex;
 }
 
+BOOL SysDuplicateTokenEx(
+    IN HANDLE ExistingTokenHandle,
+    IN DWORD dwDesiredAccess,
+    IN LPSECURITY_ATTRIBUTES lpTokenAttributes OPTIONAL,
+    IN SECURITY_IMPERSONATION_LEVEL ImpersonationLevel,
+    IN TOKEN_TYPE TokenType,
+    OUT PHANDLE DuplicateTokenHandle)
+{
+    OBJECT_ATTRIBUTES           ObjAttr  = { 0 };
+    NTSTATUS                    NtStatus = STATUS_UNSUCCESSFUL;
+    SECURITY_QUALITY_OF_SERVICE Sqos     = { 0 };
+
+    Sqos.Length              = sizeof( SECURITY_QUALITY_OF_SERVICE );
+    Sqos.ImpersonationLevel  = ImpersonationLevel;
+    Sqos.ContextTrackingMode = 0;
+    Sqos.EffectiveOnly       = FALSE;
+
+    if ( lpTokenAttributes ) {
+        InitializeObjectAttributes( &ObjAttr, NULL, lpTokenAttributes->bInheritHandle ? OBJ_INHERIT : 0, NULL, lpTokenAttributes->lpSecurityDescriptor);
+    }
+    else {
+        InitializeObjectAttributes( &ObjAttr, NULL, 0, NULL, NULL );
+    }
+
+    ObjAttr.SecurityQualityOfService = &Sqos;
+
+    NtStatus = SysNtDuplicateToken(
+        ExistingTokenHandle,
+        dwDesiredAccess,
+        &ObjAttr,
+        FALSE,
+        TokenType,
+        DuplicateTokenHandle);
+    if ( ! NT_SUCCESS( NtStatus ) )
+    {
+        PRINTF( "NtDuplicateToken: Failed:[%08x : %ld]\n", NtStatus, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
+        NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 /*!
  * Steals the process token from the specified pid
  * @param ProcessID
@@ -1241,7 +1284,7 @@ BOOL SysImpersonateLoggedOnUser( HANDLE hToken )
     ULONG                       ReturnLength     = 0;
     BOOL                        Duplicated       = FALSE;
     NTSTATUS                    Status           = STATUS_UNSUCCESSFUL;
- 
+
     /* Get the token type */
     Status = SysNtQueryInformationToken(
         hToken,
@@ -1254,7 +1297,7 @@ BOOL SysImpersonateLoggedOnUser( HANDLE hToken )
         PRINTF( "NtQueryInformationToken: Failed:[%08x : %ld]\n", Status, Instance.Win32.RtlNtStatusToDosError( Status ) );
         return FALSE;
     }
- 
+
     if (Type == TokenPrimary)
     {
         /* Create a duplicate impersonation token */
@@ -1262,14 +1305,14 @@ BOOL SysImpersonateLoggedOnUser( HANDLE hToken )
         Qos.ImpersonationLevel = SecurityImpersonation;
         Qos.ContextTrackingMode = SECURITY_DYNAMIC_TRACKING;
         Qos.EffectiveOnly = FALSE;
- 
+
         ObjectAttributes.Length = sizeof(OBJECT_ATTRIBUTES);
         ObjectAttributes.RootDirectory = NULL;
         ObjectAttributes.ObjectName = NULL;
         ObjectAttributes.Attributes = 0;
         ObjectAttributes.SecurityDescriptor = NULL;
         ObjectAttributes.SecurityQualityOfService = &Qos;
- 
+
         Status = SysNtDuplicateToken(
             hToken,
             TOKEN_IMPERSONATE | TOKEN_QUERY,
@@ -1281,7 +1324,7 @@ BOOL SysImpersonateLoggedOnUser( HANDLE hToken )
         {
             return FALSE;
         }
- 
+
         Duplicated = TRUE;
     }
     else
@@ -1290,25 +1333,25 @@ BOOL SysImpersonateLoggedOnUser( HANDLE hToken )
         NewToken = hToken;
         Duplicated = FALSE;
     }
- 
+
     /* Impersonate the the current thread */
     Status = SysNtSetInformationThread(
         NtCurrentThread(),
         ThreadImpersonationToken,
         &NewToken,
         sizeof(HANDLE));
- 
+
     if (Duplicated != FALSE)
     {
         SysNtClose(NewToken);
     }
- 
+
     if ( ! NT_SUCCESS( Status ) )
     {
         PRINTF( "NtSetInformationThread: Failed:[%08x : %ld]\n", Status, Instance.Win32.RtlNtStatusToDosError( Status ) );
         return FALSE;
     }
- 
+
     return TRUE;
 }
 

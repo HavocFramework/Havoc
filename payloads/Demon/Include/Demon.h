@@ -452,7 +452,8 @@ typedef struct
         WIN_FUNC( NtQueryInformationThread )
         WIN_FUNC( NtQueryObject )
 #else
-        PVOID SysAddress; /* 'syscall' instruction pointer */
+        PVOID  SysAddress; /* 'syscall' instruction pointer */
+        UINT32 Size; /* size of each 'syscall' stub */
 
         /* Syscall Service Numbers */
         WORD NtOpenThread;
