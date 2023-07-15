@@ -370,38 +370,28 @@ BOOL SysDuplicateTokenEx(
     IN TOKEN_TYPE TokenType,
     OUT PHANDLE DuplicateTokenHandle)
 {
-    OBJECT_ATTRIBUTES           ObjectAttributes = { 0 };
-    NTSTATUS                    NtStatus         = STATUS_UNSUCCESSFUL;
-    SECURITY_QUALITY_OF_SERVICE Sqos             = { 0 };
+    OBJECT_ATTRIBUTES           ObjAttr  = { 0 };
+    NTSTATUS                    NtStatus = STATUS_UNSUCCESSFUL;
+    SECURITY_QUALITY_OF_SERVICE Sqos     = { 0 };
 
     Sqos.Length              = sizeof( SECURITY_QUALITY_OF_SERVICE );
     Sqos.ImpersonationLevel  = ImpersonationLevel;
     Sqos.ContextTrackingMode = 0;
     Sqos.EffectiveOnly       = FALSE;
 
-    if ( lpTokenAttributes != NULL )
-    {
-        InitializeObjectAttributes(&ObjectAttributes,
-                                   NULL,
-                                   lpTokenAttributes->bInheritHandle ? OBJ_INHERIT : 0,
-                                   NULL,
-                                   lpTokenAttributes->lpSecurityDescriptor);
+    if ( lpTokenAttributes ) {
+        InitializeObjectAttributes( &ObjAttr, NULL, lpTokenAttributes->bInheritHandle ? OBJ_INHERIT : 0, NULL, lpTokenAttributes->lpSecurityDescriptor);
     }
-    else
-    {
-        InitializeObjectAttributes(&ObjectAttributes,
-                                   NULL,
-                                   0,
-                                   NULL,
-                                   NULL);
+    else {
+        InitializeObjectAttributes( &ObjAttr, NULL, 0, NULL, NULL );
     }
 
-    ObjectAttributes.SecurityQualityOfService = &Sqos;
+    ObjAttr.SecurityQualityOfService = &Sqos;
 
     NtStatus = SysNtDuplicateToken(
         ExistingTokenHandle,
         dwDesiredAccess,
-        &ObjectAttributes,
+        &ObjAttr,
         FALSE,
         TokenType,
         DuplicateTokenHandle);

