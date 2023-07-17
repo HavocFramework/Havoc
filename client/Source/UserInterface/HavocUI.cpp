@@ -374,6 +374,7 @@ void HavocNamespace::UserInterface::HavocUI::ConnectEvents()
     QMainWindow::connect( OneSecondTimer, &QTimer::timeout, this, [&]() {
         UpdateSessionsHealth();
     } );
+    OneSecondTimer->start(1000);
 
     QMainWindow::connect( actionNew_Client, &QAction::triggered, this, []() {
         QProcess::startDetached( QCoreApplication::applicationFilePath(), QStringList{""} );
