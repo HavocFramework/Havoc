@@ -14,6 +14,7 @@ import (
 
 	"Havoc/pkg/colors"
 	"Havoc/pkg/common/certs"
+	"Havoc/pkg/common"
 	"Havoc/pkg/logger"
 	"Havoc/pkg/logr"
 
@@ -56,7 +57,7 @@ func (h *HTTP) generateCertFiles() bool {
 	h.TLS.CertPath = ListenerPath + "server.crt"
 	h.TLS.KeyPath = ListenerPath + "server.key"
 
-	h.TLS.Cert, h.TLS.Key, err = certs.HTTPSGenerateRSACertificate(h.Config.HostBind)
+	h.TLS.Cert, h.TLS.Key, err = certs.HTTPSGenerateRSACertificate(common.GetInterfaceIpv4Addr(h.Config.HostBind))
 
 	err = os.WriteFile(h.TLS.CertPath, h.TLS.Cert, 0644)
 	if err != nil {
@@ -214,7 +215,7 @@ func (h *HTTP) Start() {
 	if h.Config.Secure {
 		// TODO: only generate certs if h.Config.Cert is emtpy
 		if h.generateCertFiles() {
-			logger.Info("Started \"" + colors.Green(h.Config.Name) + "\" listener: " + colors.BlueUnderline("https://"+h.Config.HostBind+":"+h.Config.PortBind))
+			logger.Info("Started \"" + colors.Green(h.Config.Name) + "\" listener: " + colors.BlueUnderline("https://"+common.GetInterfaceIpv4Addr(h.Config.HostBind)+":"+h.Config.PortBind))
 
 			pk := h.Teamserver.ListenerAdd("", LISTENER_HTTP, h)
 			h.Teamserver.EventAppend(pk)
@@ -227,7 +228,7 @@ func (h *HTTP) Start() {
 				)
 
 				h.Server = &http.Server{
-					Addr:    h.Config.HostBind + ":" + h.Config.PortBind,
+					Addr:    common.GetInterfaceIpv4Addr(h.Config.HostBind) + ":" + h.Config.PortBind,
 					Handler: h.GinEngine,
 				}
 
@@ -251,7 +252,7 @@ func (h *HTTP) Start() {
 			logger.Error("Failed to generate server tls certifications")
 		}
 	} else {
-		logger.Info("Started \"" + colors.Green(h.Config.Name) + "\" listener: " + colors.BlueUnderline("http://"+h.Config.HostBind+":"+h.Config.PortBind))
+		logger.Info("Started \"" + colors.Green(h.Config.Name) + "\" listener: " + colors.BlueUnderline("http://"+common.GetInterfaceIpv4Addr(h.Config.HostBind)+":"+h.Config.PortBind))
 
 		pk := h.Teamserver.ListenerAdd("", LISTENER_HTTP, h)
 		h.Teamserver.EventAppend(pk)
@@ -259,7 +260,7 @@ func (h *HTTP) Start() {
 
 		go func() {
 			h.Server = &http.Server{
-				Addr:    h.Config.HostBind + ":" + h.Config.PortBind,
+				Addr:    common.GetInterfaceIpv4Addr(h.Config.HostBind) + ":" + h.Config.PortBind,
 				Handler: h.GinEngine,
 			}
 

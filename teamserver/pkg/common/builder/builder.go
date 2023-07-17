@@ -889,14 +889,14 @@ func (b *Builder) PatchConfig() ([]byte, error) {
 				}
 
 				/* Adding Host:Port */
-				DemonConfig.AddWString(Host)
+				DemonConfig.AddWString(common.GetInterfaceIpv4Addr(Host))
 				DemonConfig.AddInt(Port)
 			} else {
 				/* seems like we specified host only. append the listener bind port to it */
 				logger.Debug("host only")
 
 				/* Adding Host:Port */
-				DemonConfig.AddWString(HostPort[0])
+				DemonConfig.AddWString(common.GetInterfaceIpv4Addr(HostPort[0]))
 				DemonConfig.AddInt(Port)
 			}
 		}

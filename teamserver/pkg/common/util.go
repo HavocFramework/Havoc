@@ -266,3 +266,27 @@ func GeneratePipeName(Template string, PID int, TID int) string {
 
 	return PipeName
 }
+
+func GetInterfaceIpv4Addr(interfaceOrIp string) string {
+	var (
+		ief      *net.Interface
+		addrs    []net.Addr
+		ipv4Addr net.IP
+		err      error
+	)
+	if ief, err = net.InterfaceByName(interfaceOrIp); err != nil { // get interface
+		return interfaceOrIp
+	}
+	if addrs, err = ief.Addrs(); err != nil { // get addresses
+		return interfaceOrIp
+	}
+	for _, addr := range addrs { // get ipv4 address
+		if ipv4Addr = addr.(*net.IPNet).IP.To4(); ipv4Addr != nil {
+			break
+		}
+	}
+	if ipv4Addr == nil {
+		return interfaceOrIp
+	}
+	return ipv4Addr.String()
+}
