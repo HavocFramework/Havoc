@@ -776,32 +776,12 @@ VOID CoffeeRunnerThread( PCOFFEE_PARAMS Param )
     CoffeeLdr( Param->EntryName, Param->CoffeeData, Param->ArgData, Param->ArgSize, Param->RequestID );
 
 ExitThread:
-    if ( Param->EntryName )
-    {
-        MemSet( Param->EntryName, 0, Param->EntryNameSize );
-        Instance.Win32.LocalFree( Param->EntryName );
-        Param->EntryName = NULL;
-    }
-
-    if ( Param->CoffeeData )
-    {
-        MemSet( Param->EntryName, 0, Param->EntryNameSize );
-        Instance.Win32.LocalFree( Param->EntryName );
-        Param->EntryName = NULL;
-    }
-
-    if ( Param->ArgData )
-    {
-        MemSet( Param->EntryName, 0, Param->EntryNameSize );
-        Instance.Win32.LocalFree( Param->EntryName );
-        Param->EntryName = NULL;
-    }
-
     if ( Param )
     {
-        MemSet( Param, 0, sizeof( COFFEE_PARAMS ) );
-        Instance.Win32.LocalFree( Param );
-        Param = NULL;
+        DATA_FREE( Param->EntryName,  Param->EntryNameSize );
+        DATA_FREE( Param->CoffeeData, Param->CoffeeDataSize );
+        DATA_FREE( Param->ArgData,    Param->ArgSize );
+        DATA_FREE( Param,             sizeof( COFFEE_PARAMS ) );
     }
 
     JobRemove( (DWORD)(ULONG_PTR)NtCurrentTeb()->ClientId.UniqueThread );
