@@ -2132,9 +2132,6 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 		return
 	}
 
-	//logger.Debug("Task Output: \n" + hex.Dump(Parser.Buffer()))
-
-	a.UpdateLastCallback(teamserver)
 
 	switch CommandID {
 
