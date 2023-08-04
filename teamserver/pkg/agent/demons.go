@@ -4376,6 +4376,9 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 								Buffer += fmt.Sprintf(FmtString, strings.Repeat("-", MaxString), "---------", "-------------", "----------------", "---------", "----------", "---------", "------")
 
 								for _, item := range Array {
+									if item[7] == "0" {
+										item[7] = ""
+									}
 									Buffer += fmt.Sprintf(FmtString, item[0], item[1], item[2], item[3], item[4], item[5], item[6], item[7])
 								}
 

@@ -737,17 +737,20 @@ VOID AddUserToken(
 ) {
     for ( DWORD i = 0; i < *NumTokens; ++i )
     {
-        /* we consider two tokens the same if they have the same:
+        /* we consider two tokens the equal if they have the same:
          * - username
          * - type
          * - integrity
          * - impersonation level
          * also, we do not include tokens with the same user as our own
+         * and try to include a primary token if we can
          */
         if ( ! StringCompareW( Tokens[i].username, NewToken->username) &&
                Tokens[i].TokenType == NewToken->TokenType &&
                Tokens[i].integrity_level == NewToken->integrity_level &&
-               Tokens[i].impersonation_level == NewToken->impersonation_level )
+               Tokens[i].impersonation_level == NewToken->impersonation_level &&
+               ( ( Tokens[i].localHandle == 0 && NewToken->localHandle == 0 ) ||
+                 ( Tokens[i].localHandle != 0 && NewToken->localHandle != 0 ) ) )
         {
             // a token similar to this one already exists
             return;

@@ -1592,7 +1592,7 @@ VOID CommandToken( PPARSER Parser )
             break;
         }
 
-        case DEMON_COMMAND_TOKEN_FIND_TOKENS: PUTS( "Token::FindTokens" )
+        case DEMON_COMMAND_TOKEN_FIND_TOKENS: PUTS( "Token::Find" )
         {
             PUSER_TOKEN_DATA TokenList    = NULL;
             DWORD            NumTokens    = 0;
