@@ -95,8 +95,8 @@ type Download struct {
 	FileID    int
 	FilePath  string
 	LocalFile string
-	TotalSize int
-	Progress  int
+	TotalSize int64
+	Progress  int64
 	State     int
 }
 

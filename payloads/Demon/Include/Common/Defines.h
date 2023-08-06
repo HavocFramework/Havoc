@@ -149,6 +149,7 @@
 #define H_FUNC_CREATEFILEW                           0x687d2110
 #define H_FUNC_GETFULLPATHNAMEW                      0xa6a2249d
 #define H_FUNC_GETFILESIZE                           0x7b813820
+#define H_FUNC_GETFILESIZEEX                         0x60afc95d
 #define H_FUNC_CREATENAMEDPIPEW                      0xa05e2a83
 #define H_FUNC_CONVERTFIBERTOTHREAD                  0x11b30049
 #define H_FUNC_CREATEFIBEREX                         0x7b94a3fe

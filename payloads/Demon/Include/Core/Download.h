@@ -32,10 +32,10 @@ typedef struct _DOWNLOAD_DATA
     UINT32 RequestID;
 
     /* What we have left to read. */
-    DWORD Size;
+    LONGLONG Size;
 
     /* What we already read. */
-    DWORD ReadSize;
+    LONGLONG ReadSize;
 
     /* Current state of file transfer */
     DownloadState State;
@@ -67,7 +67,7 @@ typedef struct _MEM_FILE
 } MEM_FILE, *PMEM_FILE;
 
 /* Add file to linked list with type (upload/download) */
-PDOWNLOAD_DATA DownloadAdd( HANDLE hFile, DWORD MaxSize );
+PDOWNLOAD_DATA DownloadAdd( HANDLE hFile, LONGLONG MaxSize );
 
 /* Get download data from linked list */
 PDOWNLOAD_DATA DownloadGet( DWORD FileID );

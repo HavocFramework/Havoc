@@ -2800,11 +2800,11 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					case 0x0:
 						logger.Debug(fmt.Sprintf("Download open FileID:[%x]", FileID))
 
-						if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadBytes}) {
+						if Parser.CanIRead([]parser.ReadType{parser.ReadInt64, parser.ReadBytes}) {
 							var (
-								FileSize = Parser.ParseInt32()
+								FileSize = Parser.ParseInt64()
 								FileName = Parser.ParseUTF16String()
-								Size     = common.ByteCountSI(int64(FileSize))
+								Size     = common.ByteCountSI(FileSize)
 							)
 
 							Output["Type"] = "Info"
@@ -3238,7 +3238,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					if len(Data) > 8 {
 						logger.Debug(fmt.Sprintf("Agent: %x, Command: BEACON_OUTPUT - CALLBACK_FILE", AgentID))
 						var FileID = int(binary.BigEndian.Uint32(Data[0:4]))
-						var FileLength = int(binary.BigEndian.Uint32(Data[4:8]))
+						var FileLength = int64(binary.BigEndian.Uint32(Data[4:8]))
 						var FileName = string(Data[8:])
 
 						var Output = make(map[string]string)

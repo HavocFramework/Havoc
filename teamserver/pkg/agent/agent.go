@@ -807,7 +807,7 @@ func (a *Agent) PivotAddJob(job Job) {
 	pivots.Parent.JobQueue = append(pivots.Parent.JobQueue, PivotJob)
 }
 
-func (a *Agent) DownloadAdd(FileID int, FilePath string, FileSize int) error {
+func (a *Agent) DownloadAdd(FileID int, FilePath string, FileSize int64) error {
 	var (
 		err      error
 		download = &Download{
@@ -871,7 +871,7 @@ func (a *Agent) DownloadWrite(FileID int, data []byte) error {
 					return errors.New("Failed to write to file [" + a.Downloads[i].LocalFile + "]: " + err.Error())
 				}
 
-				a.Downloads[i].Progress += len(data)
+				a.Downloads[i].Progress += int64(len(data))
 			}
 			return nil
 		}

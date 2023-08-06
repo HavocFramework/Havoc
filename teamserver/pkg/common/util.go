@@ -173,7 +173,7 @@ func StripNull(s string) string {
 	return string(bytes.Trim([]byte(s), "\x00"))
 }
 
-func PercentageChange(part int, total int) float64 {
+func PercentageChange(part int, total int64) float64 {
 	return (float64(part) * float64(100)) / float64(total)
 }
 

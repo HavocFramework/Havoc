@@ -3,7 +3,7 @@
 
 #include <Core/Command.h>
 
-#define DEMON_MAX_REQUEST_LENGTH 0x1e00000
+#define DEMON_MAX_REQUEST_LENGTH 0x300000 // 3 MiB
 
 typedef struct _PACKAGE {
     UINT32  RequestID;

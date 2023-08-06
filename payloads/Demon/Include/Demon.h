@@ -232,6 +232,7 @@ typedef struct
         WIN_FUNC( CreateFileW )
         WIN_FUNC( GetFullPathNameW )
         WIN_FUNC( GetFileSize )
+        WIN_FUNC( GetFileSizeEx )
         WIN_FUNC( CreateNamedPipeW )
         WIN_FUNC( WaitNamedPipeW )
         WIN_FUNC( PeekNamedPipe )

