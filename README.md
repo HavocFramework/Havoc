@@ -50,12 +50,15 @@ See the [Installation](https://github.com/HavocFramework/Havoc/wiki#installation
 
 > Havoc's flagship agent written in C and ASM
 
-- Sleep Obfuscation via [Ekko](https://github.com/Cracked5pider/Ekko) or [FOLIAGE](https://github.com/SecIdiot/FOLIAGE)
+- Sleep Obfuscation via [Ekko](https://github.com/Cracked5pider/Ekko), Ziliean or [FOLIAGE](https://github.com/SecIdiot/FOLIAGE)
 - x64 return address spoofing
 - Indirect Syscalls for Nt* APIs
 - SMB support
 - Token vault
 - Variety of built-in post-exploitation commands
+- Patching Amsi/Etw via Hardware breakpoints
+- Proxy library loading
+- Stack duplication during sleep. 
 
 <div align="center">
   <img src="assets/Screenshots/SessionConsoleHelp.png" width="90%" /><br />
