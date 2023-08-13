@@ -1,6 +1,6 @@
 Teamserver {
-	Host = "0.0.0.0"
-	Port = 40056
+    Host = "0.0.0.0"
+    Port = 40056
 }
 
 WebHook {
@@ -17,13 +17,13 @@ WebHook {
 }
 
 Operators {
-	user "5pider" {
-		Password = "password1234"
-	}
+    user "5pider" {
+        Password = "password1234"
+    }
 
-	user "Neo" {
-		Password = "password1234"
-	}
+    user "Neo" {
+        Password = "password1234"
+    }
 }
 
 # this is optional. if you dont use it you can remove it.

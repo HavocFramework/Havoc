@@ -35,7 +35,6 @@ enum class Commands {
     INJECT_DLL_SPAWN        = 26,
     TOKEN                   = 40,
     PROC                    = 0x1010,
-    PS_IMPORT               = 0x1011,
     INLINE_EXECUTE_ASSEMBLY = 0x2001,
     ASSEMBLY_LIST_VERSIONS 	= 0x2003,
     NET                     = 2100,
@@ -72,13 +71,12 @@ public:
     auto Transfer( const QString& TaskID, QString SubCommand, QString FileID ) -> void;
     auto Socket( const QString& TaskID, QString SubCommand, QString Params ) -> void;
     auto Luid( const QString& TaskID ) -> void;
-    auto CommandExecute::Klist( const QString &TaskID, QString Argument1, QString Argument2 ) -> void;
-    auto CommandExecute::Purge( const QString &TaskID, QString Argument ) -> void;
-    auto CommandExecute::Ptt( const QString &TaskID, QString Ticket, QString Luid ) -> void;
+    auto Klist( const QString &TaskID, QString Argument1, QString Argument2 ) -> void;
+    auto Purge( const QString &TaskID, QString Argument ) -> void;
+    auto Ptt( const QString &TaskID, QString Ticket, QString Luid ) -> void;
 
     auto ProcModule( QString TaskID, int SubCommand, QString Args ) -> void;
     auto ProcList( QString TaskID, bool FromProcessManager ) -> void;
-    auto PsImport( QString TaskID, QString Content );
 
     auto ShellcodeInject( QString TaskID, QString InjectionTechnique, QString TargetPID, QString TargetArch, QString Path, QString Arguments ) const -> void;
     auto ShellcodeSpawn( QString TaskID, QString InjectionTechnique, QString TargetArch, QString Path, QString Arguments ) -> void;
@@ -127,7 +125,7 @@ public:
         QString     Usage;
         QString     Example;
         QStringList Options;
-    } SubCommand_t ;
+    } SubCommand_t;
 
     typedef struct Command
     {
@@ -151,6 +149,7 @@ public:
 
     auto SetDemonConsole( UserInterface::Widgets::DemonInteracted* pInteracted ) -> void;
     auto DispatchCommand( bool Send, QString TaskID, const QString& commandline ) -> bool;
+    auto PrintModuleCachedMessages() -> void;
 };
 
 #endif

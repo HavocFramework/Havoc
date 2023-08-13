@@ -143,11 +143,11 @@ func BuildPayloadMessage(Jobs []Job, AesKey []byte, AesIv []byte) []byte {
 			}
 		}
 
-		binary.LittleEndian.PutUint32(RequestID, job.RequestID)
-		PayloadPackage = append(PayloadPackage, RequestID...)
-
 		binary.LittleEndian.PutUint32(DataCommandID, job.Command)
 		PayloadPackage = append(PayloadPackage, DataCommandID...)
+
+		binary.LittleEndian.PutUint32(RequestID, job.RequestID)
+		PayloadPackage = append(PayloadPackage, RequestID...)
 
 		binary.LittleEndian.PutUint32(PayloadPackageSize, uint32(len(DataPayload)))
 		PayloadPackage = append(PayloadPackage, PayloadPackageSize...)
@@ -209,7 +209,7 @@ func RegisterInfoToInstance(Header Header, RegisterInfo map[string]any) *Agent {
 		err error
 	)
 
-	agent.NameID = fmt.Sprintf("%x", Header.AgentID)
+	agent.NameID = fmt.Sprintf("%08x", Header.AgentID)
 	agent.Info.MagicValue = Header.MagicValue
 
 	if val, ok := RegisterInfo["Hostname"]; ok {
@@ -276,7 +276,7 @@ func RegisterInfoToInstance(Header Header, RegisterInfo map[string]any) *Agent {
 	}
 
 	agent.Info.FirstCallIn = time.Now().Format("02/01/2006 15:04:05")
-	agent.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05.999")
+	agent.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05")
 	agent.BackgroundCheck = false
 	agent.Active = true
 
@@ -295,8 +295,10 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 		InternalIP   string
 		ProcessName  string
 		ProcessPID   int
+		ProcessTID   int
 		OsVersion    []int
 		OsArch       int
+		BaseAddress  int64
 		Elevated     int
 		ProcessArch  int
 		ProcessPPID  int
@@ -312,6 +314,7 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 		[ Magic Value  ] 4 bytes
 		[ Agent ID     ] 4 bytes
 		[ COMMAND ID   ] 4 bytes
+		[ Request ID   ] 4 bytes
 		[ AES KEY      ] 32 bytes
 		[ AES IV       ] 16 bytes
 		AES Encrypted {
@@ -325,6 +328,7 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 			[ Parent  PID  ] 4 bytes
 			[ Process Arch ] 4 bytes
 			[ Elevated     ] 4 bytes
+			[ Base Address ] 8 bytes
 			[ OS Info      ] ( 5 * 4 ) bytes
 			[ OS Arch      ] 4 bytes
 			..... more
@@ -384,20 +388,24 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 					"ExternIP: %v\n",
 				Hostname, Username, DomainName, InternalIP, ExternalIP))
 
-			ProcessName = Parser.ParseString()
-			ProcessPID = Parser.ParseInt32()
+			ProcessName = Parser.ParseUTF16String()
+			ProcessPID  = Parser.ParseInt32()
+			ProcessTID  = Parser.ParseInt32()
 			ProcessPPID = Parser.ParseInt32()
 			ProcessArch = Parser.ParseInt32()
 			Elevated = Parser.ParseInt32()
+			BaseAddress = Parser.ParseInt64()
 
 			logger.Debug(fmt.Sprintf(
 				"\n"+
-					"ProcessName: %v\n"+
-					"ProcessPID : %v\n"+
-					"ProcessPPID: %v\n"+
-					"ProcessArch: %v\n"+
-					"Elevated   : %v\n",
-				ProcessName, ProcessPID, ProcessPPID, ProcessArch, Elevated))
+					"ProcessName : %v\n"+
+					"ProcessPID  : %v\n"+
+					"ProcessTID  : %v\n"+
+					"ProcessPPID : %v\n"+
+					"ProcessArch : %v\n"+
+					"Elevated    : %v\n"+
+					"Base Address: 0x%x\n",
+				ProcessName, ProcessPID, ProcessTID, ProcessPPID, ProcessArch, Elevated, BaseAddress))
 
 			OsVersion = []int{Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32()}
 			OsArch = Parser.ParseInt32()
@@ -414,10 +422,10 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 
 			Session.Active = true
 
-			Session.NameID = fmt.Sprintf("%x", DemonID)
+			Session.NameID = fmt.Sprintf("%08x", DemonID)
 			Session.Info.MagicValue = MagicValue
 			Session.Info.FirstCallIn = time.Now().Format("02/01/2006 15:04:05")
-			Session.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05.999")
+			Session.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05")
 			Session.Info.Hostname = Hostname
 			Session.Info.DomainName = DomainName
 			Session.Info.Username = Username
@@ -478,9 +486,11 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 			process := strings.Split(ProcessName, "\\")
 
 			Session.Info.ProcessName = process[len(process)-1]
-			Session.Info.ProcessPID = ProcessPID
+			Session.Info.ProcessPID  = ProcessPID
+			Session.Info.ProcessTID  = ProcessTID
 			Session.Info.ProcessPPID = ProcessPPID
 			Session.Info.ProcessPath = ProcessName
+			Session.Info.BaseAddress = BaseAddress
 			Session.BackgroundCheck = false
 
 			/*for {
@@ -556,12 +566,17 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 }
 
 // check that the request the agent is valid
-func (a *Agent) IsKnownRequestID(RequestID uint32, CommandID uint32) bool {
+func (a *Agent) IsKnownRequestID(teamserver TeamServer, RequestID uint32, CommandID uint32) bool {
 	// some commands are always accepted because they don't follow the "send task and get response" format
 	switch CommandID {
 	case COMMAND_SOCKET:
 		return true
 	case COMMAND_PIVOT:
+		return true
+	}
+
+	if teamserver.SendLogs() && CommandID == BEACON_OUTPUT {
+		// if SendLogs is on, accept all BEACON_OUTPUT so that the agent can send logs
 		return true
 	}
 
@@ -684,6 +699,7 @@ func (a *Agent) UpdateLastCallback(Teamserver TeamServer) {
 	)
 
 	a.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05")
+	Teamserver.AgentUpdate(a)
 
 	diff := NewLastCallIn.Sub(OldLastCallIn)
 
@@ -791,7 +807,7 @@ func (a *Agent) PivotAddJob(job Job) {
 	pivots.Parent.JobQueue = append(pivots.Parent.JobQueue, PivotJob)
 }
 
-func (a *Agent) DownloadAdd(FileID int, FilePath string, FileSize int) error {
+func (a *Agent) DownloadAdd(FileID int, FilePath string, FileSize int64) error {
 	var (
 		err      error
 		download = &Download{
@@ -855,7 +871,7 @@ func (a *Agent) DownloadWrite(FileID int, data []byte) error {
 					return errors.New("Failed to write to file [" + a.Downloads[i].LocalFile + "]: " + err.Error())
 				}
 
-				a.Downloads[i].Progress += len(data)
+				a.Downloads[i].Progress += int64(len(data))
 			}
 			return nil
 		}
@@ -1056,16 +1072,16 @@ func (a *Agent) PortFwdClose(SocketID int) {
 
 func (a *Agent) SocksClientAdd(SocketID int32, conn net.Conn, ATYP byte, IpDomain []byte, Port uint16) *SocksClient {
 
-	a.SocksCliMtx.Lock()
-
 	var client = new(SocksClient)
 
-	client.SocketID = SocketID
-	client.Conn = conn
+	client.SocketID  = SocketID
+	client.Conn      = conn
 	client.Connected = false
-	client.ATYP = ATYP
-	client.IpDomain = IpDomain
-	client.Port = Port
+	client.ATYP      = ATYP
+	client.IpDomain  = IpDomain
+	client.Port      = Port
+
+	a.SocksCliMtx.Lock()
 
 	a.SocksCli = append(a.SocksCli, client)
 
@@ -1075,39 +1091,41 @@ func (a *Agent) SocksClientAdd(SocketID int32, conn net.Conn, ATYP byte, IpDomai
 }
 
 func (a *Agent) SocksClientGet(SocketID int) *SocksClient {
+	var (
+		client *SocksClient = nil
+	)
+
+	a.SocksCliMtx.Lock()
 
 	for i := range a.SocksCli {
 
 		if a.SocksCli[i].SocketID == int32(SocketID) {
 
-			return a.SocksCli[i]
+			client = a.SocksCli[i]
 
+			break
 		}
 
 	}
 
-	return nil
+	a.SocksCliMtx.Unlock()
+
+	return client
 }
 
-func (a *Agent) SocksClientRead(SocketID int) ([]byte, error) {
+func (a *Agent) SocksClientRead(client *SocksClient) ([]byte, error) {
 	var (
-		found = false
 		data  = make([]byte, 0x10000)
 		read  []byte
 	)
 
-	for i := range a.SocksCli {
-
-		/* check if it's our rportfwd connection */
-		if a.SocksCli[i].SocketID == int32(SocketID) {
-
-			/* alright we found our socket */
-			found = true
-
-			if a.SocksCli[i].Conn != nil {
+	if client != nil {
+		if client.Conn != nil {
+			if client.Connected {
 
 				/* read from our socket to the data buffer or return error */
-				length, err := a.SocksCli[i].Conn.Read(data)
+				client.Conn.SetReadDeadline(time.Time{})
+				length, err := client.Conn.Read(data)
 				if err != nil {
 					return nil, err
 				}
@@ -1115,23 +1133,18 @@ func (a *Agent) SocksClientRead(SocketID int) ([]byte, error) {
 				read = make([]byte, length)
 				copy(read, data)
 
-				break
+				/* return the read data */
+				return read, nil
 
 			} else {
-				return nil, errors.New("socks proxy connection is empty")
+				return nil, errors.New("socks proxy is not connected")
 			}
-
-			break;
+		} else {
+			return nil, errors.New("socks proxy connection is empty")
 		}
-
+	} else {
+		return nil, errors.New("socks proxy empty client")
 	}
-
-	if !found {
-		return nil, fmt.Errorf("socks proxy socket id %x not found", SocketID)
-	}
-
-	/* return the read data */
-	return read, nil
 }
 
 func (a *Agent) SocksClientClose(SocketID int32) {
@@ -1148,6 +1161,7 @@ func (a *Agent) SocksClientClose(SocketID int32) {
 
 				/* close our connection */
 				a.SocksCli[i].Conn.Close()
+				a.SocksCli[i].Conn = nil
 
 			}
 
@@ -1162,6 +1176,8 @@ func (a *Agent) SocksClientClose(SocketID int32) {
 }
 
 func (a *Agent) SocksServerRemove(Addr string) {
+
+	a.SocksSvrMtx.Lock()
 
 	for i := range a.SocksSvr {
 
@@ -1182,6 +1198,8 @@ func (a *Agent) SocksServerRemove(Addr string) {
 		}
 
 	}
+
+	a.SocksSvrMtx.Unlock()
 
 }
 
@@ -1205,7 +1223,7 @@ func (a *Agent) ToMap() map[string]interface{} {
 	delete(Info, "JobQueue")
 	delete(Info, "Parent")
 
-	MagicValue = fmt.Sprintf("%x", a.Info.MagicValue)
+	MagicValue = fmt.Sprintf("%08x", a.Info.MagicValue)
 
 	if ParentAgent != nil {
 		Info["PivotParent"] = ParentAgent.NameID

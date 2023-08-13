@@ -1,20 +1,23 @@
 #include <global.hpp>
 #include <UserInterface/Widgets/Chat.hpp>
-#include <UserInterface/SmallWidgets/TextComplete.h>
 #include <Util/ColorText.h>
 #include <QtCore>
 #include <QCompleter>
 #include <QAbstractItemModel>
 
-#include "Include/Havoc/Packager.hpp"
-#include "Include/Havoc/Connector.hpp"
+#include <Havoc/Packager.hpp>
+#include <Havoc/Connector.hpp>
 
-void HavocNamespace::UserInterface::Widgets::Chat::setupUi(QWidget *Form) {
+void HavocNamespace::UserInterface::Widgets::Chat::setupUi( QWidget *Form )
+{
     ChatWidget = Form;
 
-    if (Form->objectName().isEmpty())
+    if ( Form->objectName().isEmpty() ) {
         Form->setObjectName(QString::fromUtf8("Form"));
-    Form->resize(932, 536);
+    }
+
+    Form->resize( 932, 536 );
+
     gridLayout = new QGridLayout(Form);
     gridLayout->setObjectName(QString::fromUtf8("gridLayout"));
     gridLayout->setVerticalSpacing(4);

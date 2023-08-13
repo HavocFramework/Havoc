@@ -1,7 +1,7 @@
 #ifndef DEMON_TRANSPORTSMB_H
 #define DEMON_TRANSPORTSMB_H
 
-#include <Core/WinUtils.h>
+#include <Core/Win32.h>
 
 #ifdef TRANSPORT_SMB
 

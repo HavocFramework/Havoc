@@ -13,6 +13,14 @@ QString HavocNamespace::Util::ColorText::Colors::Hex::Purple        = "#bd93f9";
 QString HavocNamespace::Util::ColorText::Colors::Hex::Red           = "#ff5555";
 QString HavocNamespace::Util::ColorText::Colors::Hex::Yellow        = "#f1fa8c";
 
+QString HavocNamespace::Util::ColorText::Colors::Hex::SessionCyan   = "#618bac";
+QString HavocNamespace::Util::ColorText::Colors::Hex::SessionGreen  = "#1C5F11";
+QString HavocNamespace::Util::ColorText::Colors::Hex::SessionOrange = "#ac7420";
+QString HavocNamespace::Util::ColorText::Colors::Hex::SessionPink   = "#c33fb6";
+QString HavocNamespace::Util::ColorText::Colors::Hex::SessionPurple = "#36365b";
+QString HavocNamespace::Util::ColorText::Colors::Hex::SessionRed    = "#5b3d3e";
+QString HavocNamespace::Util::ColorText::Colors::Hex::SessionYellow = "#a59220";
+
 void HavocNamespace::Util::ColorText::SetDraculaDark()
 {
     HavocNamespace::Util::ColorText::Colors::Hex::Background    = "#282a36";

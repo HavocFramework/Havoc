@@ -50,6 +50,18 @@ func GenerateID(n int) string {
     return string(b)
 }
 
+func GenerateString(min int, max int) string {
+    rand.Seed(time.Now().UnixNano())
+    length := min + rand.Intn(max - min + 1)
+    var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    b := make([]rune, length)
+    for i := range b {
+        b[i] = letterRunes[rand.Intn(len(letterRunes))]
+    }
+
+    return string(b)
+}
+
 func EncodeCommand(x string) string {
     encodedCMD := base64.StdEncoding.EncodeToString([]byte(x))
     return encodedCMD

@@ -10,9 +10,11 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"fmt"
 
 	"Havoc/pkg/colors"
 	"Havoc/pkg/common/certs"
+	"Havoc/pkg/common"
 	"Havoc/pkg/logger"
 	"Havoc/pkg/logr"
 
@@ -55,7 +57,7 @@ func (h *HTTP) generateCertFiles() bool {
 	h.TLS.CertPath = ListenerPath + "server.crt"
 	h.TLS.KeyPath = ListenerPath + "server.key"
 
-	h.TLS.Cert, h.TLS.Key, err = certs.HTTPSGenerateRSACertificate(h.Config.HostBind)
+	h.TLS.Cert, h.TLS.Key, err = certs.HTTPSGenerateRSACertificate(common.GetInterfaceIpv4Addr(h.Config.HostBind))
 
 	err = os.WriteFile(h.TLS.CertPath, h.TLS.Cert, 0644)
 	if err != nil {
@@ -90,6 +92,7 @@ func (h *HTTP) fake404(ctx *gin.Context) {
 
 func (h *HTTP) request(ctx *gin.Context) {
 	var ExternalIP string
+	var MissingHdr string
 
 	Body, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
@@ -102,26 +105,43 @@ func (h *HTTP) request(ctx *gin.Context) {
 		ExternalIP = strings.Split(ctx.Request.RemoteAddr, ":")[0]
 	}
 
-	//logger.Debug("POST " + ctx.Request.RequestURI)
-	//logger.Debug("Host: " + ctx.Request.Host)
-	//for name, values := range ctx.Request.Header {
-	//	for _, value := range values {
-	//		logger.Debug(name + ": " + value)
-	//	}
-	//}
-	//logger.Debug("\n" + hex.Dump(Body))
+	/*
+	logger.Debug("POST " + ctx.Request.RequestURI)
+	logger.Debug("Host: " + ctx.Request.Host)
+	for name, values := range ctx.Request.Header {
+		for _, value := range values {
+			logger.Debug(name + ": " + value)
+		}
+	}
+	logger.Debug("\n" + hex.Dump(Body))
+	*/
 
 	// check that the headers defined on the profile are present
 	valid := true
+	IgnoreHeaders := [2]string{"Connection", "Accept-Encoding"}
 	for _, Header := range h.Config.Headers {
 		NameValue := strings.Split(Header, ": ")
-		if len(NameValue) > 1 && ctx.Request.Header.Get(NameValue[0]) != NameValue[1] {
-			valid = false
-			break
+		if len(NameValue) > 1 {
+			ignore := false
+			for _, IgnoreHeader := range IgnoreHeaders {
+				if strings.ToLower(NameValue[0]) == strings.ToLower(IgnoreHeader) {
+					ignore = true
+					break
+				}
+			}
+			if ignore == false {
+				// NOTE: the header value comparison is case insensitive
+				if strings.ToLower(ctx.Request.Header.Get(NameValue[0])) != strings.ToLower(NameValue[1]) {
+					MissingHdr = NameValue[0] + ": " + ctx.Request.Header.Get(NameValue[0])
+					valid = false
+					break
+				}
+			}
 		}
 	}
 
 	if valid == false {
+		logger.Warn(fmt.Sprintf("got a request with an invalid header: %s", MissingHdr))
 		h.fake404(ctx)
 		return
 	}
@@ -137,6 +157,7 @@ func (h *HTTP) request(ctx *gin.Context) {
 		}
 
 		if valid == false {
+			logger.Warn(fmt.Sprintf("got a request with an invalid request path: %s", ctx.Request.RequestURI))
 			h.fake404(ctx)
 			return
 		}
@@ -145,6 +166,7 @@ func (h *HTTP) request(ctx *gin.Context) {
 	// check that the User-Agent is valid
 	if h.Config.UserAgent != "" {
 		if h.Config.UserAgent != ctx.Request.UserAgent() {
+			logger.Warn(fmt.Sprintf("got a request with an invalid user agent: %s", ctx.Request.UserAgent()))
 			h.fake404(ctx)
 			return
 		}
@@ -169,6 +191,7 @@ func (h *HTTP) request(ctx *gin.Context) {
 			return
 		}
 	} else {
+		logger.Warn("failed to parse agent request")
 		h.fake404(ctx)
 		return
 	}
@@ -192,7 +215,7 @@ func (h *HTTP) Start() {
 	if h.Config.Secure {
 		// TODO: only generate certs if h.Config.Cert is emtpy
 		if h.generateCertFiles() {
-			logger.Info("Started \"" + colors.Green(h.Config.Name) + "\" listener: " + colors.BlueUnderline("https://"+h.Config.HostBind+":"+h.Config.PortBind))
+			logger.Info("Started \"" + colors.Green(h.Config.Name) + "\" listener: " + colors.BlueUnderline("https://"+common.GetInterfaceIpv4Addr(h.Config.HostBind)+":"+h.Config.PortBind))
 
 			pk := h.Teamserver.ListenerAdd("", LISTENER_HTTP, h)
 			h.Teamserver.EventAppend(pk)
@@ -205,7 +228,7 @@ func (h *HTTP) Start() {
 				)
 
 				h.Server = &http.Server{
-					Addr:    h.Config.HostBind + ":" + h.Config.PortBind,
+					Addr:    common.GetInterfaceIpv4Addr(h.Config.HostBind) + ":" + h.Config.PortBind,
 					Handler: h.GinEngine,
 				}
 
@@ -229,7 +252,7 @@ func (h *HTTP) Start() {
 			logger.Error("Failed to generate server tls certifications")
 		}
 	} else {
-		logger.Info("Started \"" + colors.Green(h.Config.Name) + "\" listener: " + colors.BlueUnderline("http://"+h.Config.HostBind+":"+h.Config.PortBind))
+		logger.Info("Started \"" + colors.Green(h.Config.Name) + "\" listener: " + colors.BlueUnderline("http://"+common.GetInterfaceIpv4Addr(h.Config.HostBind)+":"+h.Config.PortBind))
 
 		pk := h.Teamserver.ListenerAdd("", LISTENER_HTTP, h)
 		h.Teamserver.EventAppend(pk)
@@ -237,7 +260,7 @@ func (h *HTTP) Start() {
 
 		go func() {
 			h.Server = &http.Server{
-				Addr:    h.Config.HostBind + ":" + h.Config.PortBind,
+				Addr:    common.GetInterfaceIpv4Addr(h.Config.HostBind) + ":" + h.Config.PortBind,
 				Handler: h.GinEngine,
 			}
 

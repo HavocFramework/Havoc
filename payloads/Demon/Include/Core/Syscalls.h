@@ -3,28 +3,61 @@
 #define DEMON_SYSCALLS_H
 
 #include <windows.h>
-
-/* use Native.h */
 #include <Common/Native.h>
 
-#define WIN_FUNC(x) __typeof__(x) * x;
+/* Syscall functions */
+#define SYS_ASM_RET 0xC3
+#define SYS_RANGE   0x1E
+#if _WIN64
+ #define SYSCALL_ASM  0x050F
+ #define SSN_OFFSET_1 0x4
+ #define SSN_OFFSET_2 0x5
+#else
+ #define SYSCALL_ASM  0x340f
+ #define SSN_OFFSET_1 0x1
+ #define SSN_OFFSET_2 0x2
+#endif
 
-#define OBJ_CASE_INSENSITIVE	    0x40
-#define STATUS_IMAGE_NOT_AT_BASE    0x40000003
+#define SYS_EXTRACT( NtName )                                                       \
+    if ( Instance.Win32.NtName ) {                                                  \
+        SysExtract(                                                                 \
+            Instance.Win32.NtName,                                                  \
+            TRUE,                                                                   \
+            &Instance.Syscall.NtName,                                               \
+            NULL                                                                    \
+        );                                                                          \
+        PRINTF( "Extracted \"%s\": [Ssn: %x] Ptr:[%p]\n", #NtName, Instance.Syscall.NtName, Instance.Win32.NtName ) \
+    }
 
-#define MAX_SYSCALL_STUB_SIZE	    64
-#define MAX_NUMBER_OF_SYSCALLS	    1024
+typedef struct _SYS_CONFIG {
+    PVOID Adr; /* indirect syscall instruction address */
+    WORD  Ssn; /* syscall service number */
+} SYS_CONFIG, *PSYS_CONFIG;
 
-typedef struct _SYSCALL_STUB
-{
-    PVOID Stub;
-    PCHAR Hash;
-} SYSCALL_STUB, *PSYSCALL_STUB;
+BOOL SysInitialize(
+    IN PVOID Ntdll
+);
 
-// Obfuscated syscalls
-PVOID SyscallLdrNtdll( );
-BOOL  SyscallsInit( );
-UINT  SyscallsExtract( ULONG_PTR pNtdll, PSYSCALL_STUB Syscalls );
-PVOID SyscallsObf( PSYSCALL_STUB Syscalls, UINT uiCount, DWORD dwSyscallNameHash );
+BOOL SysExtract(
+    IN  PVOID  Function,
+    IN  BOOL   ResolveHooked,
+    OUT PWORD  Ssn,
+    OUT PVOID* Addr
+);
+
+BOOL FindSsnOfHookedSyscall(
+    IN  PVOID  Function,
+    OUT PWORD  Ssn
+);
+
+VOID SysSetConfig(
+    IN PSYS_CONFIG Config
+);
+
+NTSTATUS SysInvoke(
+    IN OUT /* Args... */
+);
+
+BOOL IsWoW64();
 
 #endif

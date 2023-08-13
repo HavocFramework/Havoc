@@ -19,6 +19,14 @@ public:
             static QString Purple;
             static QString Red;
             static QString Yellow;
+
+            static QString SessionCyan;
+            static QString SessionGreen;
+            static QString SessionOrange;
+            static QString SessionPink;
+            static QString SessionPurple;
+            static QString SessionRed;
+            static QString SessionYellow;
         };
     };
 

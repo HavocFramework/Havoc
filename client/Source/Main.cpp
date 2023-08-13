@@ -6,6 +6,8 @@ int main( int argc, char** argv )
 {
     auto Arguments = cmdline::parser();
     auto HavocApp  = QApplication( argc, argv );
+    QTextCodec* codec = QTextCodec::codecForName( "UTF-8" );
+    QTextCodec::setCodecForLocale( codec );
 
     spdlog::set_pattern( "[%T] [%^%l%$] %v" );
     spdlog::info( "Havoc Framework [Version: {}] [CodeName: {}]", HavocNamespace::Version, HavocNamespace::CodeName );

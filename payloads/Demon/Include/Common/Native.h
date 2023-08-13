@@ -11208,6 +11208,28 @@ typedef struct _RTL_PROCESS_VERIFIER_OPTIONS
 	UCHAR OptionData[1];
 } RTL_PROCESS_VERIFIER_OPTIONS, *PRTL_PROCESS_VERIFIER_OPTIONS;
 
+typedef enum _VIRTUAL_MEMORY_INFORMATION_CLASS
+{
+    VmPrefetchInformation,
+    VmPagePriorityInformation,
+    VmCfgCallTargetInformation
+} VIRTUAL_MEMORY_INFORMATION_CLASS;
+
+typedef struct _VM_INFORMATION
+{
+    DWORD					dwNumberOfOffsets;
+    PULONG					plOutput;
+    PCFG_CALL_TARGET_INFO	ptOffsets;
+    PVOID					pMustBeZero;
+    PVOID					pMoarZero;
+} VM_INFORMATION, * PVM_INFORMATION;
+
+typedef struct _MEMORY_RANGE_ENTRY
+{
+    PVOID  VirtualAddress;
+    SIZE_T NumberOfBytes;
+} MEMORY_RANGE_ENTRY, *PMEMORY_RANGE_ENTRY;
+
 typedef struct _RTL_PROCESS_LOCKS {
 	ULONG NumberOfLocks;
 	RTL_PROCESS_LOCK_INFORMATION Locks[ 1 ];
@@ -14748,6 +14770,7 @@ typedef const GUID *LPCGUID;
 #endif
 
 NTSTATUS
+NTAPI
 RtlGetVersion(
     OUT PRTL_OSVERSIONINFOW lpVersionInformation
     );
@@ -16715,6 +16738,12 @@ NtOpenProcess (
     IN OPTIONAL PCLIENT_ID ClientId
     );
 
+NTSTATUS
+NTAPI
+NtTerminateProcess(
+	IN OPTIONAL HANDLE   ProcessHandle,
+	IN          NTSTATUS ExitStatus
+	);
 
 NTSTATUS
 NTAPI
@@ -16887,6 +16916,14 @@ NtSetInformationThread (
     IN ULONG ThreadInformationLength
     );
 
+NTSTATUS NtSetInformationVirtualMemory(
+    IN HANDLE                           ProcessHandle,
+    IN VIRTUAL_MEMORY_INFORMATION_CLASS VmInformationClass,
+    IN ULONG_PTR                        NumberOfEntries,
+    IN PMEMORY_RANGE_ENTRY              VirtualAddresses,
+    IN PVOID                            VmInformation,
+    IN ULONG                            VmInformationLength
+);
 
 NTSTATUS
 NTAPI
@@ -21641,6 +21678,12 @@ RtlDeregisterWaitEx(
 #define RtlFillMemory(Destination,Length,Fill) memset((Destination),(Fill),(Length))
 #define RtlZeroMemory(Destination,Length) memset((Destination),0,(Length))
 
+NTSTATUS NTAPI RtlCopyMappedMemory (
+    PVOID       pDest,
+    CONST PVOID pSrc,
+    SIZE_T      bytesToCopy
+);
+
 typedef
 VOID
 (*PKNORMAL_ROUTINE)
@@ -21849,6 +21892,10 @@ RtlCreateTimer(
     IN ULONG Period,
     IN ULONG Flags
     );
+
+NTSTATUS NTAPI RtlCreateTimerQueue(
+    PHANDLE TimerQueueHandle
+);
 
 NTSTATUS
 NTAPI
@@ -22101,6 +22148,7 @@ NtDeleteFile (
     );
 
 NTSTATUS
+NTAPI
 RtlGetVersion(
 	OUT PRTL_OSVERSIONINFOW lpVersionInformation
 	);
@@ -22423,6 +22471,29 @@ DuplicateHandle(
 	IN  DWORD    dwOptions
 	);
 
+BOOL
+WINAPI
+AttachConsole(
+  IN DWORD dwProcessId
+);
+
+HANDLE
+WINAPI
+GetStdHandle(
+  IN DWORD nStdHandle
+);
+
+/*
+BOOL
+WINAPI
+WriteConsoleA(
+  IN  HANDLE  hConsoleOutput,
+  IN  VOID    *lpBuffer,
+  IN  DWORD   nNumberOfCharsToWrite,
+  OUT LPDWORD lpNumberOfCharsWritten,
+  IN  LPVOID  lpReserved
+);
+*/
 typedef struct addrinfo {
   int             ai_flags;
   int             ai_family;

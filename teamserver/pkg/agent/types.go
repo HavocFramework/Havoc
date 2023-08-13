@@ -63,11 +63,15 @@ type TeamServer interface {
 
 	ServiceAgent(MagicValue int) ServiceAgentInterface
 	ServiceAgentExist(MagicValue int) bool
+
+	GetDotNetPipeTemplate() string
+
+	SendLogs() bool
 }
 
 type Job struct {
-	RequestID uint32
 	Command   uint32
+	RequestID uint32
 	Data      []interface{}
 	Payload   []byte
 
@@ -91,14 +95,15 @@ type Download struct {
 	FileID    int
 	FilePath  string
 	LocalFile string
-	TotalSize int
-	Progress  int
+	TotalSize int64
+	Progress  int64
 	State     int
 }
 
 type BofCallback struct {
 	TaskID   uint32
 	Output   string
+	Error    string
 	ClientID string
 }
 
@@ -151,6 +156,7 @@ type Agent struct {
 	SocksCli    []*SocksClient
 	SocksCliMtx sync.Mutex
 	SocksSvr    []*SocksServer
+	SocksSvrMtx sync.Mutex
 
 	Encryption struct {
 		AESKey []byte
@@ -191,8 +197,10 @@ type AgentInfo struct {
 	ProcessArch string
 	ProcessName string
 	ProcessPID  int
+	ProcessTID  int
 	ProcessPPID int
 	ProcessPath string
+	BaseAddress int64
 
 	// Call home from Demon
 	FirstCallIn string

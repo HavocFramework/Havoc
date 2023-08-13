@@ -18,7 +18,7 @@ DemonInteracted::DemonInput::DemonInput( QWidget* parent ) : QLineEdit( parent )
     CommandHistoryIndex = 0;
 }
 
-bool DemonInteracted::DemonInput::handleKeyPress(QKeyEvent* eventKey)
+bool DemonInteracted::DemonInput::handleKeyPress( QKeyEvent* eventKey )
 {
     switch (eventKey->key())
     {
@@ -39,28 +39,28 @@ bool DemonInteracted::DemonInput::handleKeyPress(QKeyEvent* eventKey)
 void DemonInteracted::DemonInput::handleTabKey()
 {
     auto CompletedString = completer()->currentCompletion();
-    if (!CompletedString.isEmpty())
-        this->setText(CompletedString);
+    if ( ! CompletedString.isEmpty() ) {
+        setText( CompletedString );
+    }
 }
 
 void DemonInteracted::DemonInput::handleUpKey()
 {
-    if (CommandHistoryIndex == 0)
-    {
-        setText("");
+    if ( CommandHistoryIndex == 0 )  {
+        setText( "" );
         return;
     }
 
     CommandHistoryIndex--;
 
-    if (CommandHistoryIndex >= 1)
-        setText(CommandHistory.at(CommandHistoryIndex));
-    else
-    {
-        if (!CommandHistory.empty())
-            setText(CommandHistory.at(CommandHistoryIndex));
-        else
-            setText("");
+    if ( CommandHistoryIndex >= 1 ) {
+        setText( CommandHistory.at( CommandHistoryIndex ) );
+    } else {
+        if ( ! CommandHistory.empty() ) {
+            setText( CommandHistory.at( CommandHistoryIndex ) );
+        } else {
+            setText( "" );
+        }
     }
 }
 
@@ -75,16 +75,16 @@ void DemonInteracted::DemonInput::handleDownKey()
         setText("");
 }
 
-bool DemonInteracted::DemonInput::event(QEvent* e)
+bool DemonInteracted::DemonInput::event( QEvent* e )
 {
-    if (e->type() == e->KeyPress)
-    {
-        auto eventKey = dynamic_cast<QKeyEvent*>(e);
-        if (handleKeyPress(eventKey))
+    if ( e->type() == e->KeyPress ) {
+        auto eventKey = dynamic_cast<QKeyEvent*>( e );
+        if ( handleKeyPress( eventKey ) ) {
             return true;
+        }
     }
 
-    return QLineEdit::event(e);
+    return QLineEdit::event( e );
 }
 
 void DemonInteracted::DemonInput::AddCommand( const QString &Command )
@@ -96,8 +96,9 @@ void DemonInteracted::setupUi( QWidget *Form )
 {
     this->DemonInteractedWidget = Form;
 
-    if ( Form->objectName().isEmpty() )
+    if ( Form->objectName().isEmpty() ) {
         Form->setObjectName( QString::fromUtf8( "Form" ) );
+    }
 
     Form->resize( 932, 536 );
     gridLayout = new QGridLayout( Form );
@@ -202,7 +203,7 @@ void DemonInteracted::setupUi( QWidget *Form )
 
     connect( lineEdit, &QLineEdit::returnPressed, this, &DemonInteracted::AppendFromInput );
 
-    QMetaObject::connectSlotsByName(Form);
+    QMetaObject::connectSlotsByName( Form );
 }
 
 void DemonInteracted::AppendFromInput()
@@ -221,13 +222,14 @@ void DemonInteracted::AppendText( const QString& text )
         }
     }
 
-    if ( AgentTypeName.isEmpty() )
+    if ( AgentTypeName.isEmpty() ) {
         AgentTypeName = "Demon";
+    }
 
     DemonCommands->Prompt = QString(
-            ColorText::Comment( QDate::currentDate().toString( "dd/MM/yyyy" ) + " "+ QTime::currentTime().toString( "hh:mm:ss" ) +
-            " [" + HavocX::Teamserver.User + "] " ) +
-            ColorText::UnderlinePink( AgentTypeName ) + ColorText::Cyan(" » ") + text
+        ColorText::Comment( QDate::currentDate().toString( "dd/MM/yyyy" ) + " "+ QTime::currentTime().toString( "hh:mm:ss" ) +
+        " [" + HavocX::Teamserver.User + "] " ) +
+        ColorText::UnderlinePink( AgentTypeName ) + ColorText::Cyan(" » ") + text
     );
 
     if ( ! text.isEmpty() )
@@ -279,8 +281,9 @@ void DemonInteracted::AppendText( const QString& text )
 
 QString DemonInteracted::TaskInfo( bool Show, QString TaskID, const QString &text ) const
 {
-    if ( TaskID == nullptr )
+    if ( TaskID == nullptr ) {
         TaskID = Util::gen_random( 8 ).c_str();
+    }
 
     if ( ! Show )
     {

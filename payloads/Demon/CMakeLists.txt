@@ -13,7 +13,6 @@ include_directories( Include )
 
 set( COMMON_SOURCE
         Source/Core/Command.c
-        Source/Core/WinUtils.c
         Source/Core/Win32.c
         Source/Core/MiniStd.c
         Source/Core/Token.c
@@ -21,6 +20,7 @@ set( COMMON_SOURCE
         Source/Core/SleepObf.c
         Source/Core/Spoof.c
         Source/Core/Syscalls.c
+        Source/Core/SysNative.c
         Source/Core/Command.c
         Source/Core/Transport.c
         Source/Core/TransportHttp.c
@@ -31,8 +31,12 @@ set( COMMON_SOURCE
         Source/Core/Download.c
         Source/Core/Dotnet.c
         Source/Core/Socket.c
-
-        Source/Extra/KaynLdr.c
+        Source/Core/Kerberos.c
+        Source/Core/Thread.c
+        Source/Core/Memory.c
+        Source/Core/Runtime.c
+        Source/Core/HwBpEngine.c
+        Source/Core/HwBpExceptions.c
 )
 
 set( INJECT_SOURCE
@@ -43,7 +47,6 @@ set( INJECT_SOURCE
 set( LOADER_SOURCE
         Source/Loader/CoffeeLdr.c
         Source/Loader/ObjectApi.c
-        Source/Extra/KaynLdr.c
 )
 
 set( MAIN_SOURCE
@@ -76,10 +79,6 @@ add_compile_definitions( SERVICE_NAME="DemonService" )
 add_compile_definitions( TRANSPORT_HTTP )
 add_compile_definitions( TRANSPORT_SMB )
 add_compile_definitions( AES256 )
-add_compile_definitions( PORT=4545 )          # 4545
-add_compile_definitions( SERVER=69 )
-add_compile_definitions( SLEEP=2 )
-add_compile_definitions( REFLECTIVEDLLINJECTION_VIA_LOADREMOTELIBRARYR )
 
 # linking library
 link_libraries( netapi32 ws2_32 wsock32 wtsapi32 iphlpapi mscoree mscorlib )

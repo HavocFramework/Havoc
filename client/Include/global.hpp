@@ -25,6 +25,7 @@
 #include <QLineEdit>
 #include <QTextEdit>
 #include <QTableWidget>
+#include <QTextCodec>
 
 #include <string>
 #include <map>
@@ -47,7 +48,7 @@
 typedef uint32_t            u32;
 typedef uint64_t            u64;
 
-// windows habit lol
+/* windows habit lol */
 typedef char*               PCHAR;
 typedef char                BYTE;
 typedef void*               PVOID;
@@ -57,6 +58,11 @@ typedef unsigned long int   UINT_PTR;
 /* std typedefs */
 typedef std::map<std::string, std::string> MapStrStr;
 typedef std::map<std::string, std::any>    MapStrAny;
+
+/* TODO: rewrite everything.
+ *       this is a stupid design
+ *       move every class into its own header
+ *       remove this namespace */
 
 namespace HavocNamespace
 {
@@ -70,35 +76,8 @@ namespace HavocNamespace
         std::string base64_encode( const char* buf, unsigned int bufLen );
         std::string gen_random( const int len );
 
-        // TODO: remove this. never used.
-        typedef struct CredentialsItem
-        {
-            typedef struct PasswordTypes
-            {
-                static std::string Cleartext;
-                static std::string Hashed;
-            } PasswordTypes;
-
-            typedef struct SourceTypes
-            {
-                static std::string Mimikatz;
-                static std::string Hashdump;
-                static std::string Manuel;
-            } SourceTypes;
-
-            int CredentialsID;
-            std::string User;
-            std::string Password;
-            std::string Type;
-            std::string Domain;
-            std::string Source;
-            std::string Added;
-
-        } CredentialsItem;
-
         typedef struct RegisteredCommand
         {
-
             /* for what agent is it this command */
             std::string     Agent;
 
@@ -143,7 +122,6 @@ namespace HavocNamespace
         namespace Dialogs {
             class Connect;
             class NewListener;
-            class Preferences;
         }
 
         // Widgets
@@ -232,32 +210,32 @@ namespace HavocNamespace
     {
         typedef struct
         {
-            QString  TeamserverID;
 
-            QString  Name;
-            uint64_t MagicValue;
-            QString  External;
-            QString  Internal;
-            QString  Listener;
-            QString  User;
-            QString  Computer;
-            QString  Domain;
-            QString  OS;
-            QString  OSBuild;
-            QString  OSArch;
-            QString  Process;
-            QString  PID;
-            QString  Arch;
-            QString  First;
-            QString  Last;
-            QString  Elevated;
-            QString  PivotParent;
-            QString  Marked;
-            QString  Health;
-            uint32_t SleepDelay;
-            uint32_t SleepJitter;
-            uint64_t KillDate;
-            uint32_t WorkingHours;
+            QString TeamserverID;
+            QString Name;
+            u64     MagicValue;
+            QString External;
+            QString Internal;
+            QString Listener;
+            QString User;
+            QString Computer;
+            QString Domain;
+            QString OS;
+            QString OSBuild;
+            QString OSArch;
+            QString Process;
+            QString PID;
+            QString Arch;
+            QString First;
+            QString Last;
+            QString Elevated;
+            QString PivotParent;
+            QString Marked;
+            QString Health;
+            u32     SleepDelay;
+            u32     SleepJitter;
+            u64     KillDate;
+            u32     WorkingHours;
 
             UserInterface::Widgets::DemonInteracted* InteractedWidget;
             UserInterface::Widgets::ProcessList*     ProcessList;
@@ -279,7 +257,6 @@ namespace HavocNamespace
             std::vector<ListenerItem>      Listeners;
             std::vector<json>              RegisteredListeners;
             std::vector<SessionItem>       Sessions;
-            std::vector<CredentialsItem>   Credentials;
             std::vector<RegisteredCommand> RegisteredCommands;
             std::vector<RegisteredModule>  RegisteredModules;
             std::vector<ServiceAgent>      ServiceAgents;

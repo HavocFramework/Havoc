@@ -26,29 +26,29 @@ using namespace UserInterface::Widgets;
 
 void HavocNamespace::UserInterface::Widgets::TeamserverTabSession::setupUi( QWidget* Page, QString TeamserverName )
 {
-    this->TeamserverName = TeamserverName;
-    this->PageWidget = Page;
+    TeamserverName = TeamserverName;
+    PageWidget = Page;
 
-    this->SmallAppWidgets = new SmallAppWidgets_t;
-    this->SmallAppWidgets->EventViewer = new UserInterface::SmallWidgets::EventViewer;
-    this->SmallAppWidgets->EventViewer->setupUi(new QWidget);
+    SmallAppWidgets = new SmallAppWidgets_t;
+    SmallAppWidgets->EventViewer = new UserInterface::SmallWidgets::EventViewer;
+    SmallAppWidgets->EventViewer->setupUi( new QWidget );
 
     auto MenuStyle = QString(
-            "QMenu {"
-            "    background-color: #282a36;"
-            "    color: #f8f8f2;"
-            "    border: 1px solid #44475a;"
-            "}"
-            "QMenu::separator {"
-            "    background: #44475a;"
-            "}"
-            "QMenu::item:selected {"
-            "    background: #44475a;"
-            "}"
-            "QAction {"
-            "    background-color: #282a36;"
-            "    color: #f8f8f2;"
-            "}"
+        "QMenu {"
+        "    background-color: #282a36;"
+        "    color: #f8f8f2;"
+        "    border: 1px solid #44475a;"
+        "}"
+        "QMenu::separator {"
+        "    background: #44475a;"
+        "}"
+        "QMenu::item:selected {"
+        "    background: #44475a;"
+        "}"
+        "QAction {"
+        "    background-color: #282a36;"
+        "    color: #f8f8f2;"
+        "}"
     );
 
     gridLayout = new QGridLayout(PageWidget);
@@ -75,7 +75,7 @@ void HavocNamespace::UserInterface::Widgets::TeamserverTabSession::setupUi( QWid
     splitter_SessionAndTabs->setOrientation( Qt::Horizontal );
 
     SessionTableWidget = new HavocNamespace::UserInterface::Widgets::SessionTable;
-    SessionTableWidget->setupUi( new QTableWidget(), this->TeamserverName );
+    SessionTableWidget->setupUi( new QTableWidget(), TeamserverName );
     SessionTableWidget->setFocusPolicy( Qt::NoFocus );
 
     SessionGraphWidget = new GraphWidget( MainViewWidget );
@@ -112,9 +112,9 @@ void HavocNamespace::UserInterface::Widgets::TeamserverTabSession::setupUi( QWid
     tabWidget->setCurrentIndex( 0 );
     tabWidget->setMovable( false );
 
-    this->LootWidget = new ::LootWidget;
+    LootWidget = new ::LootWidget;
 
-    NewWidgetTab( this->SmallAppWidgets->EventViewer->EventViewer, "Event Viewer" );
+    NewWidgetTab( SmallAppWidgets->EventViewer->EventViewer, "Event Viewer" );
 
     connect( SessionTableWidget->SessionTableWidget, &QTableWidget::customContextMenuRequested, this, &TeamserverTabSession::handleDemonContextMenu );
     connect( tabWidget->tabBar(), &QTabBar::tabCloseRequested, this, [&]( int index )
@@ -126,19 +126,18 @@ void HavocNamespace::UserInterface::Widgets::TeamserverTabSession::setupUi( QWid
 
         if ( tabWidget->count() == 0 )
         {
-            this->splitter_TopBot->setSizes( QList<int>() << 0 );
+            splitter_TopBot->setSizes( QList<int>() << 0 );
             splitter_TopBot->setStyleSheet( "QSplitter::handle {  image: url(images/notExists.png); }" );
         }
         else if ( tabWidget->count() == 1 )
         {
-            this->tabWidget->setMovable( false );
+            tabWidget->setMovable( false );
         }
     } );
 
     connect( tabWidgetSmall->tabBar(), &QTabBar::tabCloseRequested, this, &TeamserverTabSession::removeTabSmall );
 
     connect( SessionTableWidget->SessionTableWidget, &QTableWidget::doubleClicked, this, [&]( const QModelIndex &index ) {
-
         auto SessionID = SessionTableWidget->SessionTableWidget->item( index.row(), 0 )->text();
 
         for ( const auto& Session : HavocX::Teamserver.Sessions )
@@ -162,42 +161,28 @@ void HavocNamespace::UserInterface::Widgets::TeamserverTabSession::setupUi( QWid
     } );
 }
 
-void UserInterface::Widgets::TeamserverTabSession::removeTab( int index ) const
-{
-    if ( index == -1 )
-        return;
-
-    tabWidget->removeTab(index);
-
-    if (tabWidget->count() == 0) {
-        this->splitter_TopBot->setSizes(QList<int>() << 0);
-        splitter_TopBot->setStyleSheet("QSplitter::handle {  image: url(images/notExists.png); }");
-    }
-    else if (tabWidget->count() == 1)
-        this->tabWidget->setMovable(false);
-}
-
 void UserInterface::Widgets::TeamserverTabSession::handleDemonContextMenu( const QPoint &pos )
 {
-    if ( ! SessionTableWidget->SessionTableWidget->itemAt( pos ) )
+    if ( ! SessionTableWidget->SessionTableWidget->itemAt( pos ) ) {
         return;
+    }
 
     auto MenuStyle  = QString(
-            "QMenu {"
-            "    background-color: #282a36;"
-            "    color: #f8f8f2;"
-            "    border: 1px solid #44475a;"
-            "}"
-            "QMenu::separator {"
-            "    background: #44475a;"
-            "}"
-            "QMenu::item:selected {"
-            "    background: #44475a;"
-            "}"
-            "QAction {"
-            "    background-color: #282a36;"
-            "    color: #f8f8f2;"
-            "}"
+        "QMenu {"
+        "    background-color: #282a36;"
+        "    color: #f8f8f2;"
+        "    border: 1px solid #44475a;"
+        "}"
+        "QMenu::separator {"
+        "    background: #44475a;"
+        "}"
+        "QMenu::item:selected {"
+        "    background: #44475a;"
+        "}"
+        "QAction {"
+        "    background-color: #282a36;"
+        "    color: #f8f8f2;"
+        "}"
     );
 
     auto SessionID = SessionTableWidget->SessionTableWidget->item( SessionTableWidget->SessionTableWidget->currentRow(), 0 )->text();
@@ -225,6 +210,18 @@ void UserInterface::Widgets::TeamserverTabSession::handleDemonContextMenu( const
     auto SessionMenu     = QMenu();
     auto SessionExplorer = QMenu( "Explorer" );
     auto ExitMenu        = QMenu( "Exit" );
+    auto ColorMenu       = QMenu( "Color" );
+
+    ColorMenu.addAction( "Reset" );
+    ColorMenu.addAction( "Red" );
+    ColorMenu.addAction( "Blue" );
+    ColorMenu.addAction( "Yellow" );
+    ColorMenu.addAction( "Pink" );
+    ColorMenu.addAction( "Green" );
+    ColorMenu.addAction( "Purple" );
+    ColorMenu.addAction( "Orange" );
+
+    ColorMenu.setStyleSheet( MenuStyle );
 
     SessionExplorer.addAction( "Process List" );
     SessionExplorer.addAction( "File Explorer" );
@@ -247,6 +244,8 @@ void UserInterface::Widgets::TeamserverTabSession::handleDemonContextMenu( const
         SessionMenu.addAction( "Mark as Dead" );
     else
         SessionMenu.addAction( "Mark as Alive" );
+
+    SessionMenu.addAction( ColorMenu.menuAction() );
 
     SessionMenu.addAction( "Export" );
     SessionMenu.addAction( seperator3 );
@@ -294,6 +293,42 @@ void UserInterface::Widgets::TeamserverTabSession::handleDemonContextMenu( const
 
                     HavocX::Teamserver.TabSession->NewBottomTab( Session.InteractedWidget->DemonInteractedWidget, tabName.toStdString() );
                     Session.InteractedWidget->lineEdit->setFocus();
+                }
+                else if ( action->text().compare( "Red" ) == 0 || action->text().compare( "Blue" ) == 0 || action->text().compare( "Pink" ) == 0 || action->text().compare( "Yellow" ) == 0 || action->text().compare( "Green" ) == 0 || action->text().compare( "Purple" ) == 0 || action->text().compare( "Orange" ) == 0 || action->text().compare( "Reset" ) == 0 ){
+
+                    for ( int i = 0; i < HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->rowCount(); ++i ){
+                        auto AgentID = HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item(i, 0)->text();
+
+                        if(AgentID.compare( SessionID ) == 0 )
+                        {
+
+                            QColor CurrentColor;
+
+                            if( action->text().compare("Red") == 0 )
+                                CurrentColor = QColor( Util::ColorText::Colors::Hex::SessionRed );
+                            else if( action->text().compare("Blue") == 0 )
+                                CurrentColor = QColor( Util::ColorText::Colors::Hex::SessionCyan );
+                            else if( action->text().compare("Pink") == 0 )
+                                CurrentColor = QColor( Util::ColorText::Colors::Hex::SessionPink );
+                            else if( action->text().compare("Yellow") == 0 )
+                                CurrentColor = QColor( Util::ColorText::Colors::Hex::SessionYellow );
+                            else if( action->text().compare("Green") == 0 )
+                                CurrentColor = QColor( Util::ColorText::Colors::Hex::SessionGreen );
+                            else if( action->text().compare("Purple") == 0 )
+                                CurrentColor = QColor( Util::ColorText::Colors::Hex::SessionPurple );
+                            else if( action->text().compare("Orange") == 0 )
+                                CurrentColor = QColor( Util::ColorText::Colors::Hex::SessionOrange );
+                            else
+                                CurrentColor = QColor( Util::ColorText::Colors::Hex::Background );
+
+                            for ( int j = 0; j < HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->columnCount(); j++ )
+                            {
+                                HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item(i, j)->setBackground( CurrentColor );
+                            }
+
+                        }
+                    }
+                    
                 }
                 else if ( action->text().compare( "Mark as Dead" ) == 0 || action->text().compare( "Mark as Alive" ) == 0 )
                 {
@@ -418,11 +453,8 @@ void UserInterface::Widgets::TeamserverTabSession::handleDemonContextMenu( const
                         {
                             HavocX::Teamserver.TabSession->NewBottomTab( Session.FileBrowser->FileBrowserWidget, TabName.toStdString(), "" );
                         }
-
-                        
                     }
                 }
-
             }
         }
 
@@ -440,13 +472,13 @@ void UserInterface::Widgets::TeamserverTabSession::NewBottomTab( QWidget* TabWid
     int id = 0;
     if ( tabWidget->count() == 0 )
     {
-        this->splitter_TopBot->setSizes( QList<int>() << 100 << 200 );
-        this->splitter_TopBot->setStyleSheet( "" );
+        splitter_TopBot->setSizes( QList<int>() << 100 << 200 );
+        splitter_TopBot->setStyleSheet( "" );
     }
     else if ( tabWidget->count() == 1 )
-        this->tabWidget->setMovable( true );
+        tabWidget->setMovable( true );
 
-    this->tabWidget->setTabsClosable( true );
+    tabWidget->setTabsClosable( true );
 
     id = tabWidget->addTab( TabWidget, TitleName.c_str() );
 
@@ -456,42 +488,39 @@ void UserInterface::Widgets::TeamserverTabSession::NewBottomTab( QWidget* TabWid
 
 void UserInterface::Widgets::TeamserverTabSession::NewWidgetTab( QWidget *TabWidget, const std::string &TitleName ) const
 {
-    if ( tabWidgetSmall->count() == 0 )
-    {
+    if ( tabWidgetSmall->count() == 0 ) {
         splitter_SessionAndTabs->setSizes( QList<int>() << 200 << 10 );
-        this->splitter_SessionAndTabs->setStyleSheet( "" );
-
+        splitter_SessionAndTabs->setStyleSheet( "" );
         splitter_SessionAndTabs->handle( 1 )->setEnabled( true );
         splitter_SessionAndTabs->handle( 1 )->setCursor( Qt::SplitHCursor );
+    } else if ( tabWidgetSmall->count() == 1 ) {
+        tabWidgetSmall->setMovable( true );
     }
-    else if ( tabWidgetSmall->count() == 1)
-        this->tabWidgetSmall->setMovable(true);
 
-    this->tabWidgetSmall->setTabsClosable(true);
+    tabWidgetSmall->setTabsClosable( true );
 
-    int id = tabWidgetSmall->addTab(TabWidget, TitleName.c_str());
-    tabWidget->setCurrentIndex(id);
+    tabWidget->setCurrentIndex(
+        tabWidgetSmall->addTab(
+            TabWidget,
+            TitleName.c_str()
+        )
+    );
 }
 
 void UserInterface::Widgets::TeamserverTabSession::removeTabSmall( int index ) const
 {
-    if ( index == -1 )
+    if ( index == -1 ) {
         return;
+    }
 
     tabWidgetSmall->removeTab( index );
 
-    if ( tabWidgetSmall->count() == 0 )
-    {
+    if ( tabWidgetSmall->count() == 0 ) {
         splitter_SessionAndTabs->setSizes( QList<int>() << 0 );
         splitter_SessionAndTabs->setStyleSheet( "QSplitter::handle { image: url(images/notExists.png); }" );
         splitter_SessionAndTabs->handle( 1 )->setEnabled( false );
         splitter_SessionAndTabs->handle( 1 )->setCursor( Qt::ArrowCursor );
+    } else if ( tabWidgetSmall->count() == 1 ) {
+        tabWidgetSmall->setMovable( false );
     }
-    else if ( tabWidgetSmall->count() == 1 )
-        this->tabWidgetSmall->setMovable( false );
-}
-
-bool TeamserverTabSession::event( QEvent* e )
-{
-
 }

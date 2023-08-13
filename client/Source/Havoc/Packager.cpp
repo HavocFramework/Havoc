@@ -190,6 +190,8 @@ bool Packager::DispatchInitConnection( Util::Packager::PPackage Package )
                     ScriptManager::AddScript( "client/Modules/Jump-exec/WMI/wmi.py" );
                     ScriptManager::AddScript( "client/Modules/nanodump/nanodump.py" );
                     ScriptManager::AddScript( "client/Modules/nanorobeus/nanorobeus.py" );
+                    ScriptManager::AddScript( "client/Modules/Bofbelt/bofbelt.py" );
+                    ScriptManager::AddScript( "client/Modules/SamDump/samdump.py" );
                 }
                 else
                 {
@@ -307,7 +309,7 @@ bool Packager::DispatchListener( Util::Packager::PPackage Package )
 
                 for ( const auto& listener : HavocX::Teamserver.RegisteredListeners )
                 {
-                    if ( ListenerInfo.Protocol == listener[ "Name" ] )
+                    if ( ListenerInfo.Protocol == listener[ "Name" ].get<std::string>() )
                     {
                         found = true;
 
@@ -683,47 +685,6 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
             {
                 if ( Session.Name.compare( Package->Body.Info[ "DemonID" ].c_str() ) == 0 )
                 {
-                    /*
-                    if ( Session.Marked.compare( "Dead" ) == 0 )
-                    {
-                        auto Package = new Util::Packager::Package;
-
-                        Package->Head = Util::Packager::Head_t {
-                                .Event= Util::Packager::Session::Type,
-                                .User = HavocX::Teamserver.User.toStdString(),
-                                .Time = QTime::currentTime().toString( "hh:mm:ss" ).toStdString(),
-                        };
-
-                        for ( int i = 0; i < HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->rowCount(); i++ )
-                        {
-                            auto Row = HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, 0 )->text();
-
-                            if ( Row.compare( Session.Name ) == 0 )
-                            {
-                                HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, 0 )->setIcon( WinVersionIcon( Session.OS, true ) );
-
-                                for ( int j = 0; j < HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->columnCount(); j++ )
-                                {
-                                    HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, j )->setBackground( QColor( Util::ColorText::Colors::Hex::Background ) );
-                                    HavocX::Teamserver.TabSession->SessionTableWidget->SessionTableWidget->item( i, j )->setForeground( QColor( Util::ColorText::Colors::Hex::Foreground ) );
-                                }
-                            }
-                        }
-
-                        Package->Body = Util::Packager::Body_t {
-                                .SubEvent = Util::Packager::Session::MarkAs,
-                                .Info = {
-                                    { "AgentID", Session.Name.toStdString() },
-                                    { "Marked",  "Alive" },
-                                }
-                        };
-
-                        Session.Marked = "Alive";
-
-                        HavocX::Connector->SendPackage( Package );
-                    }
-                    */
-
                     Session.InteractedWidget->DemonCommands->OutputDispatch.DemonCommandInstance = Session.InteractedWidget->DemonCommands;
 
                     int CommandID = QString( Package->Body.Info[ "CommandID" ].c_str() ).toInt();
@@ -753,6 +714,7 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                                 auto JsonDocument  = QJsonDocument::fromJson( QByteArray::fromBase64( Output.toLocal8Bit( ) ) );
                                 auto Worked        = JsonDocument[ "Worked" ].toString();
                                 auto Output        = JsonDocument[ "Output" ].toString();
+                                auto Error         = JsonDocument[ "Error"  ].toString();
                                 auto TaskID        = JsonDocument[ "TaskID" ].toString();
                                 PyObject* Callback = nullptr;
 
@@ -761,7 +723,7 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                                     Callback = it->second;
                                     if ( PyCallable_Check( Callback ) )
                                     {
-                                        PyObject *arglist = Py_BuildValue( "sOs", Session.Name.toStdString().c_str(), Worked == "true" ? Py_True : Py_False, Output.toStdString().c_str() );
+                                        PyObject *arglist = Py_BuildValue( "ssOss", Session.Name.toStdString().c_str(), TaskID.toStdString().c_str(), Worked == "true" ? Py_True : Py_False, Output.toStdString().c_str(), Error.toStdString().c_str() );
                                         PyObject_CallObject( Callback, arglist );
                                         Py_XDECREF( Callback );
                                     } else {
@@ -769,6 +731,9 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                                     }
 
                                     Session.TaskIDToPythonCallbacks.erase( TaskID );
+
+                                    // print messages from the python the module
+                                    Session.InteractedWidget->DemonCommands->PrintModuleCachedMessages();
                                 } else {
                                     spdlog::error( "[PACKAGE] TaskID not found: {}", TaskID.toStdString() );
                                 }

@@ -40,3 +40,20 @@ Commit: https://github.com/HavocFramework/Havoc/commit/d98f8b692b9c0fe79b6d153b6
 - vuln fix in the service api (found by hyperreality)
 
 Commit: https://github.com/HavocFramework/Havoc/commit/133f6ead8085147dc39beb368c41aead2873927e
+
+### Version `0.5` | `Emporer`
+
+- upgraded socks4a to socks5
+- improved support for redirectors
+- 'Health' tab
+- add working hours
+- refactored BOF loader
+- add several default BOFs
+- add kill date
+- add sleep jitter
+- add kerberos native support
+- add incognito 'find-tokens'
+- add DLL reflective loader (Kayn)
+- refactor TS logs
+
+Commits/PR: https://github.com/HavocFramework/Havoc/pull/310

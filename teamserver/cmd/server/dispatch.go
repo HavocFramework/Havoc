@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"errors"
-	"os"
 	"fmt"
 	"strconv"
 	"strings"
@@ -16,7 +15,6 @@ import (
 	"Havoc/pkg/logger"
 	"Havoc/pkg/logr"
 	"Havoc/pkg/packager"
-	"Havoc/pkg/utils"
 )
 
 func (t *Teamserver) DispatchEvent(pk packager.Package) {
@@ -180,14 +178,16 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 
 									var ClientID string
 									ClientID = ""
-									for _, client := range t.Clients {
+									t.Clients.Range(func(key, value any) bool {
+										client := value.(*Client)
 										if client.Username == pk.Head.User {
 											ClientID = client.ClientID
-											break
+											return false
 										}
-									}
+										return true
+									})
 
-									job, err = t.Agents.Agents[i].TaskPrepare(command, pk.Body.Info, Message, ClientID)
+									job, err = t.Agents.Agents[i].TaskPrepare(command, pk.Body.Info, Message, ClientID, t)
 									if err != nil {
 										Console(t.Agents.Agents[i].NameID, map[string]string{
 											"Type":    "Error",
@@ -396,6 +396,7 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 					Uris:         Uris,
 					HostHeader:   pk.Body.Info["HostHeader"].(string),
 					UserAgent:    pk.Body.Info["UserAgent"].(string),
+					BehindRedir:  t.Profile.Config.Demon.TrustXForwardedFor,
 				}
 
 				if val, ok := pk.Body.Info["Proxy Enabled"].(string); ok {
@@ -407,68 +408,88 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 						if val, ok = pk.Body.Info["Proxy Type"].(string); ok {
 							Config.Proxy.Type = val
 						} else {
-							for id, client := range t.Clients {
+							t.Clients.Range(func(key, value any) bool {
+								id := key.(string)
+								client := value.(*Client)
 								if client.Username == pk.Head.User {
 									err := t.SendEvent(id, events.Listener.ListenerError(pk.Head.User, pk.Body.Info["Name"].(string), errors.New("proxy type not specified")))
 									if err != nil {
 										logger.Error("Failed to send Event: " + err.Error())
 									}
+									return false
 								}
-							}
+								return true
+							})
 						}
 
 						if val, ok = pk.Body.Info["Proxy Host"].(string); ok {
 							Config.Proxy.Host = val
 						} else {
-							for id, client := range t.Clients {
+							t.Clients.Range(func(key, value any) bool {
+								id := key.(string)
+								client := value.(*Client)
 								if client.Username == pk.Head.User {
 									err := t.SendEvent(id, events.Listener.ListenerError(pk.Head.User, pk.Body.Info["Name"].(string), errors.New("proxy host not specified")))
 									if err != nil {
 										logger.Error("Failed to send Event: " + err.Error())
 									}
+									return false
 								}
-							}
+								return true
+							})
 						}
 
 						if val, ok = pk.Body.Info["Proxy Port"].(string); ok {
 							Config.Proxy.Port = val
 						} else {
-							for id, client := range t.Clients {
+							t.Clients.Range(func(key, value any) bool {
+								id := key.(string)
+								client := value.(*Client)
 								if client.Username == pk.Head.User {
 									err := t.SendEvent(id, events.Listener.ListenerError(pk.Head.User, pk.Body.Info["Name"].(string), errors.New("proxy port not specified")))
 									if err != nil {
 										logger.Error("Failed to send Event: " + err.Error())
 									}
+									return false
 								}
-							}
+								return true
+							})
 							return
 						}
 
 						if val, ok = pk.Body.Info["Proxy Username"].(string); ok {
 							Config.Proxy.Username = val
 						} else {
-							for id, client := range t.Clients {
+							t.Clients.Range(func(key, value any) bool {
+								id := key.(string)
+								client := value.(*Client)
 								if client.Username == pk.Head.User {
 									err := t.SendEvent(id, events.Listener.ListenerError(pk.Head.User, pk.Body.Info["Name"].(string), errors.New("proxy username not specified")))
 									if err != nil {
 										logger.Error("Failed to send Event: " + err.Error())
 									}
+									return false
 								}
-							}
+								return true
+							})
 							return
 						}
 
 						if val, ok = pk.Body.Info["Proxy Password"].(string); ok {
 							Config.Proxy.Password = val
 						} else {
-							for id, client := range t.Clients {
+							t.Clients.Range(func(key, value any) bool {
+								id := key.(string)
+								client := value.(*Client)
 								if client.Username == pk.Head.User {
 									err := t.SendEvent(id, events.Listener.ListenerError(pk.Head.User, pk.Body.Info["Name"].(string), errors.New("proxy password not specified")))
 									if err != nil {
 										logger.Error("Failed to send Event: " + err.Error())
 									}
+									return false
 								}
-							}
+								return true
+							})
 							return
 						}
 					}
@@ -479,14 +500,18 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 				}
 
 				if err := t.ListenerStart(handlers.LISTENER_HTTP, Config); err != nil {
-					for id, client := range t.Clients {
+					t.Clients.Range(func(key, value any) bool {
+						id := key.(string)
+						client := value.(*Client)
 						if client.Username == pk.Head.User {
 							err := t.SendEvent(id, events.Listener.ListenerError(pk.Head.User, pk.Body.Info["Name"].(string), err))
 							if err != nil {
 								logger.Error("Failed to send Event: " + err.Error())
 							}
+							return false
 						}
-					}
+						return true
+					})
 				}
 
 				break
@@ -508,14 +533,18 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 				}
 
 				if err := t.ListenerStart(handlers.LISTENER_PIVOT_SMB, SmdConfig); err != nil {
-					for id, client := range t.Clients {
+					t.Clients.Range(func(key, value any) bool {
+						id := key.(string)
+						client := value.(*Client)
 						if client.Username == pk.Head.User {
 							err := t.SendEvent(id, events.Listener.ListenerError(pk.Head.User, pk.Body.Info["Name"].(string), err))
 							if err != nil {
 								logger.Error("Failed to send Event: " + err.Error())
 							}
+							return false
 						}
-					}
+						return true
+					})
 				}
 
 				break
@@ -538,14 +567,18 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 				}
 
 				if err := t.ListenerStart(handlers.LISTENER_EXTERNAL, ExtConfig); err != nil {
-					for id, client := range t.Clients {
+					t.Clients.Range(func(key, value any) bool {
+						id := key.(string)
+						client := value.(*Client)
 						if client.Username == pk.Head.User {
 							err := t.SendEvent(id, events.Listener.ListenerError(pk.Head.User, pk.Body.Info["Name"].(string), err))
 							if err != nil {
 								logger.Error("Failed to send Event: " + err.Error())
 							}
+							return false
 						}
-					}
+						return true
+					})
 				}
 
 				break
@@ -668,68 +701,88 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 						if val, ok = pk.Body.Info["Proxy Type"].(string); ok {
 							Config.Proxy.Type = val
 						} else {
-							for id, client := range t.Clients {
+							t.Clients.Range(func(key, value any) bool {
+								id := key.(string)
+								client := value.(*Client)
 								if client.Username == pk.Head.User {
 									err := t.SendEvent(id, events.Listener.ListenerError(pk.Head.User, pk.Body.Info["Name"].(string), errors.New("proxy type not specified")))
 									if err != nil {
 										logger.Error("Failed to send Event: " + err.Error())
 									}
+									return false
 								}
-							}
+								return true
+							})
 						}
 
 						if val, ok = pk.Body.Info["Proxy Host"].(string); ok {
 							Config.Proxy.Host = val
 						} else {
-							for id, client := range t.Clients {
+							t.Clients.Range(func(key, value any) bool {
+								id := key.(string)
+								client := value.(*Client)
 								if client.Username == pk.Head.User {
 									err := t.SendEvent(id, events.Listener.ListenerError(pk.Head.User, pk.Body.Info["Name"].(string), errors.New("proxy host not specified")))
 									if err != nil {
 										logger.Error("Failed to send Event: " + err.Error())
 									}
+									return false
 								}
-							}
+								return true
+							})
 						}
 
 						if val, ok = pk.Body.Info["Proxy Port"].(string); ok {
 							Config.Proxy.Port = val
 						} else {
-							for id, client := range t.Clients {
+							t.Clients.Range(func(key, value any) bool {
+								id := key.(string)
+								client := value.(*Client)
 								if client.Username == pk.Head.User {
 									err := t.SendEvent(id, events.Listener.ListenerError(pk.Head.User, pk.Body.Info["Name"].(string), errors.New("proxy port not specified")))
 									if err != nil {
 										logger.Error("Failed to send Event: " + err.Error())
 									}
+									return false
 								}
-							}
+								return true
+							})
 							return
 						}
 
 						if val, ok = pk.Body.Info["Proxy Username"].(string); ok {
 							Config.Proxy.Username = val
 						} else {
-							for id, client := range t.Clients {
+							t.Clients.Range(func(key, value any) bool {
+								id := key.(string)
+								client := value.(*Client)
 								if client.Username == pk.Head.User {
 									err := t.SendEvent(id, events.Listener.ListenerError(pk.Head.User, pk.Body.Info["Name"].(string), errors.New("proxy username not specified")))
 									if err != nil {
 										logger.Error("Failed to send Event: " + err.Error())
 									}
+									return false
 								}
-							}
+								return true
+							})
 							return
 						}
 
 						if val, ok = pk.Body.Info["Proxy Password"].(string); ok {
 							Config.Proxy.Password = val
 						} else {
-							for id, client := range t.Clients {
+							t.Clients.Range(func(key, value any) bool {
+								id := key.(string)
+								client := value.(*Client)
 								if client.Username == pk.Head.User {
 									err := t.SendEvent(id, events.Listener.ListenerError(pk.Head.User, pk.Body.Info["Name"].(string), errors.New("proxy password not specified")))
 									if err != nil {
 										logger.Error("Failed to send Event: " + err.Error())
 									}
+									return false
 								}
-							}
+								return true
+							})
 							return
 						}
 					}
@@ -767,11 +820,14 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 				ClientID       string
 			)
 
-			for _, client := range t.Clients {
-				if client.Username == pk.Head.User {
-					ClientID = client.ClientID
+			t.Clients.Range(func(key, value any) bool {
+				Client := value.(*Client)
+				if Client.Username == pk.Head.User {
+					ClientID = Client.ClientID
+					return false
 				}
-			}
+				return true
+			})
 
 			SendConsoleMsg = func(MsgType, Message string) {
 				err := t.SendEvent(ClientID, events.Gate.SendConsoleMessage(MsgType, Message))
@@ -795,9 +851,9 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 						Compiler64: t.Settings.Compiler64,
 						Compiler86: t.Settings.Compiler32,
 						Nasm:       t.Settings.Nasm,
+						DebugDev:   t.Flags.Server.DebugDev,
+						SendLogs:   t.Flags.Server.SendLogs,
 					})
-
-					PayloadBuilder.DebugMode(t.Flags.Server.DebugDev)
 
 					PayloadBuilder.ClientId = ClientID
 
@@ -820,22 +876,27 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 					}
 
 					var Ext string
+					if Arch == "x64" {
+						Ext = ".x64"
+					} else {
+						Ext = ".x86"
+					}
 					logger.Debug(Format)
 					if Format == "Windows Exe" {
 						PayloadBuilder.SetFormat(builder.FILETYPE_WINDOWS_EXE)
-						Ext = ".exe"
+						Ext += ".exe"
 					} else if Format == "Windows Service Exe" {
 						PayloadBuilder.SetFormat(builder.FILETYPE_WINDOWS_SERVICE_EXE)
-						Ext = ".exe"
+						Ext += ".exe"
 					} else if Format == "Windows Dll" {
 						PayloadBuilder.SetFormat(builder.FILETYPE_WINDOWS_DLL)
-						Ext = ".dll"
+						Ext += ".dll"
 					} else if Format == "Windows Reflective Dll" {
 						PayloadBuilder.SetFormat(builder.FILETYPE_WINDOWS_REFLECTIVE_DLL)
-						Ext = ".dll"
+						Ext += ".dll"
 					} else if Format == "Windows Shellcode" {
 						PayloadBuilder.SetFormat(builder.FILETYPE_WINDOWS_RAW_BINARY)
-						Ext = ".bin"
+						Ext += ".bin"
 					} else {
 						logger.Error("Unknown Format: " + Format)
 						return
@@ -847,14 +908,10 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 						}
 					}
 
-					OutputPath := "/tmp/" + utils.GenerateID(10) + Ext
+					PayloadBuilder.SetExtension(Ext)
 
-					PayloadBuilder.SetOutputPath(OutputPath)
-
-					if t.Profile.Config.Demon != nil {
-						if t.Profile.Config.Demon.Binary != nil {
-							PayloadBuilder.SetPatchConfig(t.Profile.Config.Demon.Binary.Header)
-						}
+					if t.Profile.Config.Demon != nil && t.Profile.Config.Demon.Binary != nil {
+						PayloadBuilder.SetPatchConfig(t.Profile.Config.Demon.Binary)
 					}
 
 					if PayloadBuilder.Build() {
@@ -865,10 +922,7 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 								logger.Error("Error while sending event: " + err.Error())
 								return
 							}
-							err = os.Remove(OutputPath)
-							if err != nil {
-								logger.Error(fmt.Sprintf("Failed to cleanup binary: %s", OutputPath))
-							}
+							PayloadBuilder.DeletePayload()
 						}
 					}
 				}()

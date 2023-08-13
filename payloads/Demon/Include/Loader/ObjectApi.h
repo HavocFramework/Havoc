@@ -44,7 +44,6 @@ VOID    BeaconOutput( INT Type, PCHAR data, INT len );
 
 /* Token Functions */
 BOOL    BeaconUseToken( HANDLE token );
-VOID    BeaconRevertToken();
 BOOL    BeaconIsAdmin();
 
 /* Spawn+Inject Functions */
@@ -57,5 +56,7 @@ VOID    BeaconCleanupProcess( PROCESS_INFORMATION* pInfo );
 /* Utility Functions */
 BOOL   toWideChar( PCHAR src, PWCHAR dst, INT max );
 UINT32 swap_endianess( UINT32 indata );
+
+BOOL   GetRequestIDForCallingObjectFile( PVOID CoffeeFunctionReturn, PUINT32 RequestID );
 
 #endif

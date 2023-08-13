@@ -3,13 +3,13 @@
 #include <Havoc/DemonCmdDispatch.h>
 #include <UserInterface/Widgets/DemonInteracted.h>
 #include <Util/ColorText.h>
-#include <Util/ColorText.h>
 #include <Havoc/Packager.hpp>
 
 #include <sstream>
 #include <vector>
 #include <iomanip>
 #include <filesystem>
+#include <algorithm>
 
 using namespace HavocNamespace::HavocSpace;
 using namespace Util;
@@ -78,6 +78,7 @@ auto ParseCommandLine( QString commandline ) -> QStringList
     auto in_quotes     = false;
     char c;
     char next_c;
+    char next_next_c;
     std::string parsed;
 
     for( size_t i = 0; i < cmdline.length(); i++)
@@ -87,6 +88,11 @@ auto ParseCommandLine( QString commandline ) -> QStringList
             next_c = cmdline[ i + 1 ];
         else
             next_c = 0;
+
+        if ( i + 2 < cmdline.length() )
+            next_next_c = cmdline[ i + 2 ];
+        else
+            next_next_c = 0;
 
         if ( c == '"' && ! in_quotes )
         {
@@ -107,11 +113,31 @@ auto ParseCommandLine( QString commandline ) -> QStringList
         // handle a backslash
         else if ( c == '\\' )
         {
-            // if the next char is a backslack, enter it
             if ( next_c == '\\' )
             {
-                parsed += '\\';
-                i++;
+                /*
+                 * double backslask is a special scenario:
+                 * we want to allow: \\dc01\c$\windows, instead of: \\\\dc01\c$\windows
+                 * but also, we want to be able to escape backslashes
+                 * if they are followed by a space or double quote
+                 * meaning:
+                 * double backslash followed by a space or double quote = escaped backslash
+                 * double backslash followed by any other character     = double backslash
+                 */
+                if ( next_next_c == ' ' || next_next_c == '"' )
+                {
+                    // we are in these scenarios:
+                    // "foo 1\\" bar -> arg1: 'foo 1\' arg2: 'bar'
+                    // foo\\ bar     -> arg1: 'foo\' arg2: 'bar'
+                    parsed += '\\';
+                    i++;
+                }
+                else
+                {
+                    // we are in this scenario:
+                    // \\dc01\c$\windows -> \\dc01\c$\windows
+                    parsed += '\\';
+                }
             }
             // if the next char is a space, enter it
             else if ( next_c == ' ' )
@@ -152,6 +178,11 @@ auto ParseCommandLine( QString commandline ) -> QStringList
     }
 
     return InputCommands;
+}
+
+bool compareQString(const QString &a, const QString &b)
+{
+    return a.toLower() < b.toLower();
 }
 
 DemonCommands::DemonCommands( )
@@ -419,55 +450,70 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             {
                 int TotalSize = 25;
 
-                DemonConsole->Console->append( "" );
-                DemonConsole->Console->append( "Demon Commands" );
-                DemonConsole->Console->append( "==============" );
-                DemonConsole->Console->append( "" );
-                DemonConsole->Console->append( "  Command                  Type         Description" );
-                DemonConsole->Console->append( "  -------                  -------      -----------" );
+                std::vector<QString> commandOutput;
 
-                for ( auto & i : DemonCommandList )
+                for (auto &i : DemonCommandList)
                 {
-                    if ( ! i.SubCommands.empty() || i.Module )
+                    QString currentLine;
+
+                    if (!i.SubCommands.empty() || i.Module)
                     {
-                        std::string Spaces = std::string("&nbsp;") * ( TotalSize - i.CommandString.size() );
-                        if ( i.Module )
+                        if (i.Module)
                         {
-                            DemonConsole->Console->append( "  " + i.CommandString + QString( std::string( ( TotalSize - i.CommandString.size() ), ' ' ).c_str() ) + "Module " + "      " +  i.Description );
+                            currentLine = "  " + i.CommandString + QString(std::string((TotalSize - i.CommandString.size()), ' ').c_str()) + "Module " + "      " + i.Description;
                         }
-                        else if (  i.SubCommands.empty() )
+                        else if (i.SubCommands.empty())
                         {
-                            if ( i.SubCommands[ 0 ].CommandString != nullptr )
+                            if (i.SubCommands[0].CommandString != nullptr)
                             {
-                                DemonConsole->Console->append( "  " + i.CommandString + QString( std::string( ( TotalSize - i.CommandString.size() ), ' ' ).c_str() ) + "Module " + "      " +  i.Description );
+                                currentLine = "  " + i.CommandString + QString(std::string((TotalSize - i.CommandString.size()), ' ').c_str()) + "Module " + "      " + i.Description;
                             }
                         }
                         else
                         {
-                            DemonConsole->Console->append( "  " + i.CommandString + QString( std::string( ( TotalSize - i.CommandString.size() ), ' ' ).c_str() ) + "Command" + "      "  + i.Description );
+                            currentLine = "  " + i.CommandString + QString(std::string((TotalSize - i.CommandString.size()), ' ').c_str()) + "Command" + "      " + i.Description;
                         }
                     }
                     else
                     {
-                        std::string Spaces = std::string( ( TotalSize - i.CommandString.size() ), ' ' );
-                        DemonConsole->Console->append( "  " + i.CommandString + QString( std::string( ( TotalSize - i.CommandString.size() ), ' ' ).c_str() ) + "Command" + "      "  + i.Description );
+                        currentLine = "  " + i.CommandString + QString(std::string((TotalSize - i.CommandString.size()), ' ').c_str()) + "Command" + "      " + i.Description;
+                    }
+
+                    commandOutput.push_back(currentLine);
+                }
+
+                for (auto &Module : HavocX::Teamserver.RegisteredModules)
+                {
+                    if (!Module.Name.empty())
+                    {
+                        QString currentLine = "  " + QString(Module.Name.c_str()) + QString(std::string((TotalSize - Module.Name.size()), ' ').c_str()) + "Module " + "      " + QString(Module.Description.c_str());
+                        commandOutput.push_back(currentLine);
                     }
                 }
 
-                for ( auto& Module : HavocX::Teamserver.RegisteredModules )
+                for (auto &Command : HavocX::Teamserver.RegisteredCommands)
                 {
-                    std::string Spaces = std::string( ( TotalSize - Module.Name.size() ), ' ' );
-
-                    if ( ! Module.Name.empty() )
-                        DemonConsole->Console->append( "  " + QString( Module.Name.c_str() ) + QString( Spaces.c_str() ) + "Module " + "      " + QString( Module.Description.c_str() ) );
+                    if (Command.Module.empty())
+                    {
+                        QString currentLine = "  " + QString(Command.Command.c_str()) + QString(std::string((TotalSize - Command.Command.size()), ' ').c_str()) + "Command" + "      " + QString(Command.Help.c_str());
+                        commandOutput.push_back(currentLine);
+                    }
                 }
 
-                for ( auto& Command : HavocX::Teamserver.RegisteredCommands )
-                {
-                    std::string Spaces = std::string( ( TotalSize - Command.Command.size() ), ' ' );
+                // Sort the commandOutput vector alphabetically
+                std::sort(commandOutput.begin(), commandOutput.end(), compareQString);
 
-                    if ( Command.Module.empty() )
-                        DemonConsole->Console->append( "  " + QString( Command.Command.c_str() ) + QString( Spaces.c_str() ) + "Command" + "      " + QString( Command.Help.c_str() ) );
+                // Append the sorted commands to the console
+                DemonConsole->Console->append("");
+                DemonConsole->Console->append("Demon Commands");
+                DemonConsole->Console->append("==============");
+                DemonConsole->Console->append("");
+                DemonConsole->Console->append("  Command                  Type         Description");
+                DemonConsole->Console->append("  -------                  -------      -----------");
+
+                for (const auto &output : commandOutput)
+                {
+                    DemonConsole->Console->append(output);
                 }
             }
 
@@ -1013,21 +1059,19 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                     auto TargetPID  = InputCommands[ 3 ];
                     auto Shellcode  = QString( ( InputCommands.begin() + 4 )->toStdString().c_str() );
 
-                    if ( ! QFile::exists( Shellcode ) )
-                    {
+                    if ( ! QFile::exists( Shellcode ) ) {
                         CONSOLE_ERROR( "Specified file not found" )
                         return false;
                     }
 
-                    if ( ! ( TargetArch.compare( "x64" ) == 0 || TargetArch.compare( "x86" ) != 0 ) )
-                    {
+                    if ( TargetArch.compare( "x64" ) != 0 && TargetArch.compare( "x86" ) != 0 ) {
                         CONSOLE_ERROR( "Incorrect process arch specified: " + TargetArch )
                         return false;
                     }
 
                     CommandInputList[ TaskID ] = commandline;
 
-                    SEND( Execute.ShellcodeInject( TaskID, "0", TargetPID, TargetArch, Shellcode, "" ) );
+                    SEND( Execute.ShellcodeInject( TaskID, "default", TargetPID, TargetArch, Shellcode, "" ) );
                 }
                 else
                 {
@@ -1062,7 +1106,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                     }
 
                     CommandInputList[ TaskID ] = commandline;
-                    SEND( Execute.ShellcodeSpawn( TaskID, "0", TargetArch, ShellcodeBinaryPath, "" ); )
+                    SEND( Execute.ShellcodeSpawn( TaskID, "default", TargetArch, ShellcodeBinaryPath, "" ); )
                 }
                 else
                 {
@@ -1097,7 +1141,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                     }
 
                     CommandInputList[ TaskID ] = commandline;
-                    SEND( Execute.ShellcodeExecute( TaskID, "0", TargetArch, ShellcodeBinaryPath, "" ); )
+                    SEND( Execute.ShellcodeExecute( TaskID, "default", TargetArch, ShellcodeBinaryPath, "" ); )
                 }
                 else
                 {
@@ -1187,12 +1231,12 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
 
                 SEND( Execute.Token( TaskID, "list", "" ) );
             }
-            else if ( InputCommands[ 1 ].compare( "find-tokens" ) == 0 )
+            else if ( InputCommands[ 1 ].compare( "find" ) == 0 )
             {
                 TaskID = CONSOLE_INFO( "Tasked demon to find tokens" );
                 CommandInputList[ TaskID ] = commandline;
 
-                SEND( Execute.Token( TaskID, "find-tokens", "" ) );
+                SEND( Execute.Token( TaskID, "find", "" ) );
             }
             else if ( InputCommands[ 1 ].compare( "make" ) == 0 )
             {
@@ -1565,20 +1609,31 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
         }
         else if ( InputCommands[ 0 ].compare( "upload" ) == 0 )
         {
-            if ( InputCommands.size() >= 3 )
+            if ( InputCommands.size() >= 2 )
             {
                 auto FilePath   = InputCommands[ 1 ];
-                auto RemotePath = JoinAtIndex( InputCommands, 2 );
                 auto Content    = FileRead( FilePath );
+                auto RemotePath = QString();
 
                 if ( Content == nullptr )
                     return false;
 
-                // if the remote path does not contain the filename, use the same as the local path
-                if ( RemotePath.endsWith("\\", Qt::CaseInsensitive) )
+                auto FileName = FilePath.mid( FilePath.lastIndexOf("/") + 1, FilePath.size() - FilePath.lastIndexOf("/") - 1 );
+
+                // if no remote path was specified, upload the file with the same name to the current directory
+                if ( InputCommands.size() == 2 )
                 {
-                    auto index = FilePath.lastIndexOf("/");
-                    RemotePath = RemotePath + FilePath.mid( index + 1, RemotePath.size() - index - 1 );
+                    RemotePath = FileName;
+                }
+                else
+                {
+                    RemotePath = JoinAtIndex( InputCommands, 2 );
+
+                    // if the remote path does not contain the filename, use the same as the local path
+                    if ( RemotePath.endsWith("\\", Qt::CaseInsensitive) )
+                    {
+                        RemotePath = RemotePath + FileName;
+                    }
                 }
 
                 TaskID                     = CONSOLE_INFO( "Tasked demon to upload a file " + FilePath + " to " + RemotePath );
@@ -2237,16 +2292,11 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                                 PyErr_Clear();
                             }
 
-                            if ( Py_IsNone( Return ) || Py_IsTrue( Return ) )
+                            if ( Py_IsNone( Return ) || Py_IsFalse( Return ) )
                             {
                                 if ( Send )
                                 {
-                                    DemonConsole->Console->append( "" );
-                                    DemonConsole->Console->append( this->Prompt );
-
-                                    /* display any messages that the script made */
-                                    for ( auto& message : DemonConsole->DemonCommands->BufferedMessages )
-                                        DemonConsole->Console->append( message );
+                                    PrintModuleCachedMessages();
 
                                     if ( Py_IsNone( Return ) )
                                         DemonConsole->TaskError( "Failed to execute " + InputCommands[ 0 ] + ". Script return is None" );
@@ -2331,12 +2381,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                         {
                             if ( Send )
                             {
-                                DemonConsole->Console->append( "" );
-                                DemonConsole->Console->append( this->Prompt );
-
-                                /* display any messages that the script made */
-                                for ( auto& message : DemonConsole->DemonCommands->BufferedMessages )
-                                    DemonConsole->Console->append( message );
+                                PrintModuleCachedMessages();
 
                                 if ( Py_IsNone( Return ) )
                                     DemonConsole->TaskError( "Failed to execute " + InputCommands[ 0 ] + ". Script return is None" );
@@ -2379,43 +2424,59 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
     }
     else
     {
-        if ( InputCommands[ 0 ].compare( "help" ) == 0 )
+        if (InputCommands[0].compare("help") == 0)
         {
-            if ( InputCommands.size() > 1 && InputCommands[ 1 ] != "" )
+            if (InputCommands.size() > 1 && InputCommands[1] != "")
             {
-                spdlog::info( "show help for command" );
+                spdlog::info("show help for command");
             }
             else
             {
                 int TotalSize = 18;
 
-                DemonConsole->Console->append( "" );
-                DemonConsole->Console->append( "  Command           Type         Description" );
-                DemonConsole->Console->append( "  ---------         -------      -----------" );
+                DemonConsole->Console->append("");
+                DemonConsole->Console->append("  Command           Type         Description");
+                DemonConsole->Console->append("  ---------         -------      -----------");
 
-                for ( auto & command : AgentData.Commands )
+                std::vector<QString> commandOutput;
+
+                for (auto &command : AgentData.Commands)
                 {
-                    if ( ! command.Anonymous )
+                    if (!command.Anonymous)
                     {
-                        auto Spaces = std::string( ( TotalSize - command.Name.size() ), ' ' );
-                        DemonConsole->Console->append( "  " + command.Name + QString( std::string( ( TotalSize - command.Name.size() ), ' ' ).c_str() ) + "Command" + "      "  + command.Description );
+                        commandOutput.push_back("  " + command.Name + QString(std::string((TotalSize - command.Name.size()), ' ').c_str()) + "Command" + "      " + command.Description);
                     }
                     else
                     {
-                        spdlog::debug( "Anonymous command: {}", command.Name.toStdString() );
+                        spdlog::debug("Anonymous command: {}", command.Name.toStdString());
                     }
                 }
 
-                for ( auto & command : HavocX::Teamserver.RegisteredCommands )
+                // Sort the commandOutput vector alphabetically
+                std::sort(commandOutput.begin(), commandOutput.end(), compareQString);
+
+                for (auto &command : HavocX::Teamserver.RegisteredCommands)
                 {
-                    if ( command.Agent == AgentTypeName.toStdString() )
+                    if (command.Agent == AgentTypeName.toStdString())
                     {
-                        auto Spaces = std::string( ( TotalSize - command.Command.size() ), ' ' );
-                        DemonConsole->Console->append( "  " + QString( command.Command.c_str() ) + QString( std::string( ( TotalSize - command.Command.size() ), ' ' ).c_str() ) + "Command" + "      "  + QString( command.Help.c_str() ) );
+                        QString currentCommand = "  " + QString(command.Command.c_str()) + QString(std::string((TotalSize - command.Command.size()), ' ').c_str()) + "Command" + "      " + QString(command.Help.c_str());
+
+                        // Find the position to insert the current command in the sorted commandOutput vector
+                        auto insertPosition = std::lower_bound(commandOutput.begin(), commandOutput.end(), currentCommand, compareQString);
+
+                        // Insert the current command to the commandOutput vector in the proper position
+                        commandOutput.insert(insertPosition, currentCommand);
                     }
+                }
+
+                // Append the sorted commands to the console
+                for (const auto &output : commandOutput)
+                {
+                    DemonConsole->Console->append(output);
                 }
             }
         }
+
         else if ( InputCommands[ 0 ].compare( "clear" ) == 0 )
         {
             auto AgentMessageInfo = QString();
@@ -2506,7 +2567,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             else
             {
                 CommandFound = false;
-                
+
                 for ( auto & Command : HavocX::Teamserver.RegisteredCommands )
                 {
                     if ( InputCommands[ 0 ].isEmpty() )
@@ -2615,4 +2676,19 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
     }
 
     return true;
+}
+
+auto DemonCommands::PrintModuleCachedMessages( ) -> void
+{
+    if ( DemonConsole->DemonCommands->BufferedMessages.size() > 0 )
+    {
+        DemonConsole->Console->append( "" );
+        DemonConsole->Console->append( this->Prompt );
+
+        /* display any messages that the script made */
+        for ( auto& message : DemonConsole->DemonCommands->BufferedMessages )
+            DemonConsole->Console->append( message );
+
+        DemonConsole->DemonCommands->BufferedMessages.clear();
+    }
 }

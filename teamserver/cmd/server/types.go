@@ -46,6 +46,7 @@ type serverFlags struct {
 	Verbose  bool
 	Debug    bool
 	DebugDev bool
+	SendLogs bool
 	Default  bool
 }
 
@@ -72,7 +73,7 @@ type Endpoint struct {
 type Teamserver struct {
 	Flags      TeamserverFlags
 	Profile    *profile.Profile
-	Clients    map[string]*Client
+	Clients    sync.Map // map[string]*Client
 	Users      []Users
 	EventsList []packager.Package
 	Service    *service.Service

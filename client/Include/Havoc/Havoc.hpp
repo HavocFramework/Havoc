@@ -4,7 +4,6 @@
 #include <global.hpp>
 #include <UserInterface/HavocUI.hpp>
 #include <Havoc/DBManager/DBManager.hpp>
-#include "Arguments.hpp"
 
 using namespace HavocNamespace;
 
@@ -14,12 +13,11 @@ public:
     DBManager* dbManager;
     QMainWindow* HavocMainWindow;
     bool ClientInitConnect = true;
-    // HavocArgOptions HavocArgs;
 
-    Havoc(QMainWindow*);
+    Havoc( QMainWindow* );
     ~Havoc();
 
-    void Init(int argc, char** argv);
+    void Init( int argc, char** argv );
     void Start();
 
     static void Exit();

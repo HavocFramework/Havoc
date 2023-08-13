@@ -20,6 +20,6 @@ typedef struct {
 } AESCTX, *PAESCTX ;
 
 void AesInit( PAESCTX ctx, const PUINT8 key, const PUINT8 iv);
-void AesXCryptBuffer( PAESCTX ctx, PUINT8 buf, size_t length);
+void AesXCryptBuffer( PAESCTX ctx, PUINT8 buf, SIZE_T length);
 
 #endif // _AES_H_

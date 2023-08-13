@@ -46,7 +46,6 @@ type OperatorsBlock struct {
 type UsersBlock struct {
 	Name     string `yaotl:"Name,label"`
 	Password string `yaotl:"Password"`
-	Hashed   bool   `yaotl:"Hashed,optional"`
 }
 
 type Listeners struct {
@@ -59,7 +58,7 @@ type ListenerHTTP struct {
 	Name string `yaotl:"Name"`
 
 	// 2006-01-02 15:04:05
-	KillDate     string `yaotl:"KillDate,optional"`
+	KillDate string `yaotl:"KillDate,optional"`
 	// 8:00-17:00
 	WorkingHours string `yaotl:"WorkingHours,optional"`
 
@@ -67,11 +66,11 @@ type ListenerHTTP struct {
 	HostBind     string   `yaotl:"HostBind"`
 	HostRotation string   `yaotl:"HostRotation"`
 	/* Port used by the TS */
-	PortBind     int      `yaotl:"PortBind"`
+	PortBind int `yaotl:"PortBind"`
 	/* Port used by the agent */
-	PortConn     int      `yaotl:"PortConn,optional"`
+	PortConn int `yaotl:"PortConn,optional"`
 
-	/* Methode string `yaotl:"Method,optional"` */
+	Methode  string `yaotl:"Method,optional"`
 
 	/* optional fields */
 	UserAgent string   `yaotl:"UserAgent,optional"`
@@ -90,7 +89,7 @@ type ListenerSMB struct {
 	PipeName string `yaotl:"PipeName"`
 
 	// 2006-01-02 15:04:05
-	KillDate     string `yaotl:"KillDate,optional"`
+	KillDate string `yaotl:"KillDate,optional"`
 	// 8:00-17:00
 	WorkingHours string `yaotl:"WorkingHours,optional"`
 }
@@ -107,8 +106,8 @@ type ListenerHttpResponse struct {
 type ListenerHttpProxy struct {
 	Host string `yaotl:"Host"`
 	Port int    `yaotl:"Port"`
-	User string `yaotl:"Username"`
-	Pass string `yaotl:"Password"`
+	User string `yaotl:"Username,optional"`
+	Pass string `yaotl:"Password,optional"`
 }
 
 type ListenerHttpCerts struct {
@@ -116,7 +115,6 @@ type ListenerHttpCerts struct {
 	Key  string `yaotl:"Key"`
 }
 
-/* TODO: remove */
 type HeaderBlock struct {
 	MagicMzX64  string `yaotl:"MagicMz-x64,optional"` // max 2 bytes
 	MagicMzX86  string `yaotl:"MagicMz-x86,optional"` // max 2 bytes
@@ -128,6 +126,9 @@ type HeaderBlock struct {
 
 type Binary struct {
 	Header *HeaderBlock `yaotl:"Header,block"`
+
+	ReplaceStringsX64 map[string]string `yaotl:"ReplaceStrings-x64,optional"`
+	ReplaceStringsX86 map[string]string `yaotl:"ReplaceStrings-x86,optional"`
 }
 
 type ProcessInjectionBlock struct {
@@ -138,7 +139,16 @@ type ProcessInjectionBlock struct {
 type Demon struct {
 	Sleep              int                    `yaotl:"Sleep,optional"`
 	Jitter             int                    `yaotl:"Jitter,optional"`
-	TrustXForwardedFor bool                   `yaotl:"TrustXForwardedFor,optional"`
-	Binary             *Binary                `yaotl:"Binary,block"`
+	IndirectSyscall    bool                   `yaotl:"IndirectSyscall,optional"`
+	StackDuplication   bool                   `yaotl:"StackDuplication,optional"`
+	SleepTechnique     string                 `yaotl:"SleepTechnique,optional"`
+	ProxyLoading       string                 `yaotl:"ProxyLoading,optional"`
+	AmsiEtwPatching    string                 `yaotl:"AmsiEtwPatching,optional"`
 	ProcessInjection   *ProcessInjectionBlock `yaotl:"Injection,block"`
+
+	DotNetNamePipe     string                 `yaotl:"DotNetNamePipe,optional"`
+
+	Binary             *Binary                `yaotl:"Binary,block"`
+
+	TrustXForwardedFor bool                   `yaotl:"TrustXForwardedFor,optional"`
 }

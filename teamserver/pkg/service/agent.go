@@ -91,7 +91,7 @@ func (a *AgentService) SendResponse(AgentInfo any, Header agent.Header) []byte {
 
         header = map[string]any{
             "Size":       fmt.Sprintf("%v", Header.Size),
-            "AgentID":    fmt.Sprintf("%x", Header.AgentID),
+            "AgentID":    fmt.Sprintf("%08x", Header.AgentID),
             "MagicValue": fmt.Sprintf("%x", Header.MagicValue),
         }
 

