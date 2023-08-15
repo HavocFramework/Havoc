@@ -67,7 +67,7 @@ RUN apt install -y python3.10-dev libpython3.10 libpython3.10-dev python3.10 bui
 #RUN python3.10 --version
 #
 # Copy over Havoc Client files for local build
-COPY ./Client Build/
+COPY ./client Build/
 RUN chmod -R 777 Build/
 #
 USER jenkins

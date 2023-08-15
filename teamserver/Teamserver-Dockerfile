@@ -54,7 +54,7 @@ RUN apt update \
 RUN git clone https://github.com/HavocFramework/Havoc
 #
 # Build the cloned repos copy of the Teamserver-Client  
-RUN cd Havoc/Teamserver/ && chmod +x ./Install.sh && ./Install.sh && make
+RUN cd Havoc/teamserver/ && chmod +x ./Install.sh && ./Install.sh && make
 #
 # ------------------------------------------------------------------------------#
 # original @author      Nicola Asuni <info@tecnick.com>
