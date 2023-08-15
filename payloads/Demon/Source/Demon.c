@@ -669,7 +669,8 @@ VOID DemonConfig()
             HostAdd( Buffer, Length, Temp );
         }
     }
-    PRINTF( "Hosts added => %d\n", HostCount() )
+    Instance.Config.Transport.NumHosts = HostCount();
+    PRINTF( "Hosts added => %d\n", Instance.Config.Transport.NumHosts )
 
     /* Get Host data based on our host rotation strategy */
     Instance.Config.Transport.Host = HostRotation( Instance.Config.Transport.HostRotation );

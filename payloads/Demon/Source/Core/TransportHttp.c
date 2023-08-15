@@ -424,6 +424,15 @@ PHOST_DATA HostRotation( SHORT Strategy )
 {
     PHOST_DATA Host = NULL;
 
+    if ( Instance.Config.Transport.NumHosts > 1 )
+    {
+        /*
+         * Different CDNs can have different WPAD rules.
+         * After rotating, look for the proxy again
+         */
+        Instance.LookedForProxy = FALSE;
+    }
+
     if ( Strategy == TRANSPORT_HTTP_ROTATION_ROUND_ROBIN )
     {
         DWORD Count = 0;

@@ -91,6 +91,7 @@ typedef struct
 #ifdef TRANSPORT_HTTP
             PHOST_DATA Host;  /* current using host */
             PHOST_DATA Hosts; /* host linked list */
+            UINT32     NumHosts;
             UINT64     KillDate;
             UINT32     WorkingHours;
             LPWSTR     Method; /* TODO: use WCHAR[4] instead of LPWSTR. */
