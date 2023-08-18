@@ -1451,7 +1451,6 @@ PROOT_DIR listDir(
     WIN32_FIND_DATAW FindData      = { 0 };
     HANDLE           hFile         = NULL;
     ULARGE_INTEGER   FileSize      = { 0 };
-    DWORD            Return        = 0;
     PROOT_DIR        RootDir       = NULL;
     PROOT_DIR        Dir           = NULL;
     PROOT_DIR        LastDir       = NULL;
@@ -1484,15 +1483,17 @@ PROOT_DIR listDir(
         goto Cleanup;
     }
 
+    IsDir = ( FindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) == FILE_ATTRIBUTE_DIRECTORY;
+
     // If it's a single directory without a wildcard, re-run it with a \*
-    if ( FindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY && Path[ PathSize - 1 ] != 0x2a )
+    if ( IsDir && Path[ PathSize - 1 ] != 0x2a )
     {
         Path[ PathSize++ ] = 0x5c;
         Path[ PathSize++ ] = 0x2a;
         Path[ PathSize ]   = 0x00;
 
         // repeat the search
-        Instance.Win32.FindClose( hFile ); hFile = NULL;
+        Instance.Win32.FindClose( hFile );
         hFile = Instance.Win32.FindFirstFileW( Path, &FindData );
         if ( hFile == INVALID_HANDLE_VALUE )
         {
@@ -1512,8 +1513,8 @@ PROOT_DIR listDir(
         // ignore dirs if we are only looking for files on the current dir
         if ( IsDir && ! SubDirs && FilesOnly )
             continue;
-        // ignore files if we are only looking for dirs
 
+        // ignore files if we are only looking for dirs
         if ( ! IsDir && DirsOnly )
             continue;
 
@@ -1610,10 +1611,10 @@ PROOT_DIR listDir(
     }
     while ( Instance.Win32.FindNextFileW( hFile, &FindData ) );
 
-    // list all subdirs recuresively if requested
+    // list all subdirs recursively if requested
     SubDir  = RootSubDir;
     LastDir = RootDir;
-    if ( SubDirs && SubDir )
+    while ( SubDir )
     {
         Dir = listDir( SubDir->Path, SubDirs, FilesOnly, DirsOnly, Starts, Contains, Ends );
 
