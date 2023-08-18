@@ -2783,7 +2783,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 								ItemsLeft     = NumFiles + NumDirs
 							)
 
-							if !Explorer && !ListOnly {
+							if NumFiles + NumDirs > 0 && !Explorer && !ListOnly {
 								if IsFirst {
 									IsFirst = false
 									Dir += fmt.Sprintf(" Directory of %s:\n\n", RootDirPath)
@@ -2813,7 +2813,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 								ReadOne = true
 
 								if ListOnly {
-									Dir += fmt.Sprintf("%s\n", FileName)
+									Dir += fmt.Sprintf("%s%s\n", RootDirPath[:len(RootDirPath)-1], FileName)
 								} else {
 									LastModified = fmt.Sprintf("%02d/%02d/%d  %02d:%02d", LastAccessDay, LastAccessMonth, LastAccessYear, LastAccessHour, LastAccessMinute)
 									if IsDir {
@@ -2840,7 +2840,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 								ItemsLeft -= 1
 							}
 
-							if !Explorer && !ListOnly {
+							if NumFiles + NumDirs > 0 && !Explorer && !ListOnly {
 								Dir += fmt.Sprintf("               %d File(s)     %s\n", NumFiles, common.ByteCountSI(TotalFileSize))
 								Dir += fmt.Sprintf("               %d Folder(s)", NumDirs)
 							}
