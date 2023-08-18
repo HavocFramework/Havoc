@@ -210,19 +210,101 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 		switch Optional["SubCommand"].(string) {
 		case "dir":
 			SubCommand = 1
+
+			var (
+				SubDirs int
+				FilesOnly int
+				DirsOnly int
+				ListOnly int
+			)
+
+			ArgArray  := strings.Split(Arguments, ";")
+			Path      := ArgArray[0]
+			Starts    := ArgArray[5];
+			Contains  := ArgArray[6];
+			Ends      := ArgArray[7];
+
+			if ArgArray[1] == "true" {
+				SubDirs = win32.TRUE
+			} else {
+				SubDirs = win32.FALSE
+			}
+			if ArgArray[2] == "true" {
+				FilesOnly = win32.TRUE
+			} else {
+				FilesOnly = win32.FALSE
+			}
+
+			if ArgArray[3] == "true" {
+				DirsOnly = win32.TRUE
+			} else {
+				DirsOnly = win32.FALSE
+			}
+
+			if ArgArray[4] == "true" {
+				ListOnly = win32.TRUE
+			} else {
+				ListOnly = win32.FALSE
+			}
+
+			// go from \\server\share to \\server\share\
+			if strings.HasPrefix(Path, "\\\\") {
+				uncIndex := strings.Index(Path[2:], "\\")
+				if uncIndex != -1 && strings.Index(Path[uncIndex+3:], "\\") == -1 {
+					Path += "\\" 
+				}
+			}
+
+			// If the file ends in \ or is a drive (C:), throw a * on there
+			if strings.HasSuffix(Path, "\\") {
+				Path += "*"
+			} else if strings.HasSuffix(Path, ":") {
+				Path += "\\*"
+			}
+
 			job.Data = []interface{}{
 				SubCommand,
 				win32.FALSE,
-				common.EncodeUTF16(Arguments + "\\*"),
+				common.EncodeUTF16(Path),
+				SubDirs,
+				FilesOnly,
+				DirsOnly,
+				ListOnly,
+				common.EncodeUTF16(Starts),
+				common.EncodeUTF16(Contains),
+				common.EncodeUTF16(Ends),
 			}
 			break
 
 		case "dir;ui":
 			SubCommand = 1
+
+			// go from \\server\share to \\server\share\
+			if strings.HasPrefix(Arguments, "\\\\") {
+				uncIndex := strings.Index(Arguments[2:], "\\")
+				if uncIndex != -1 && strings.Index(Arguments[uncIndex+3:], "\\") == -1 {
+					Arguments += "\\"
+				}
+			}
+
+			// If the file ends in \ or is a drive (C:), throw a * on there
+			if strings.HasSuffix(Arguments, "\\") {
+				Arguments += "*"
+			} else if strings.HasSuffix(Arguments, ":") {
+				Arguments += "\\*"
+			}
+
 			job.Data = []interface{}{
 				SubCommand,
 				win32.TRUE,
-				common.EncodeUTF16(Arguments + "\\*"),
+				common.EncodeUTF16(Arguments),
+				win32.FALSE,
+				win32.FALSE,
+				win32.FALSE,
+				win32.FALSE,
+				common.EncodeUTF16(""),
+				common.EncodeUTF16(""),
+				common.EncodeUTF16(""),
 			}
 			break
 
@@ -2674,95 +2756,121 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 			switch SubCommand {
 			case DEMON_COMMAND_FS_DIR:
 				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_DIR", AgentID))
-				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadBytes}) {
+				if Parser.CanIRead([]parser.ReadType{parser.ReadBool, parser.ReadBool, parser.ReadBytes, parser.ReadBool}) {
 
 					var (
-						Exp32    = Parser.ParseInt32()
-						Path     = Parser.ParseUTF16String()
-						Dir      string
-						DirMap   = make(map[string]any)
-						DirArr   []map[string]string
-						Explorer = false
+						Explorer  = Parser.ParseBool()
+						ListOnly  = Parser.ParseBool()
+						StartPath = Parser.ParseUTF16String()
+						Success   = Parser.ParseBool()
+						ReadOne   = false
+						Dir       string
+						DirMap    = make(map[string]any)
+						DirArr    []map[string]string
 					)
 
-					if Exp32 == win32.TRUE {
-						Explorer = true
-					}
-
-					if !Explorer {
-						Dir += "\n"
-						Dir += fmt.Sprintf(" %-12s %-8s %-20s  %s\n", "Size", "Type", "Last Modified      ", "Name")
-						Dir += fmt.Sprintf(" %-12s %-8s %-20s  %s\n", "----", "----", "-------------------", "----")
-					}
-
-					for Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadInt64, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadBytes}) {
-						var (
-							IsDir            = Parser.ParseInt32()
-							FileSize         = Parser.ParseInt64()
-							LastAccessDay    = Parser.ParseInt32()
-							LastAccessMonth  = Parser.ParseInt32()
-							LastAccessYear   = Parser.ParseInt32()
-							LastAccessSecond = Parser.ParseInt32()
-							LastAccessMinute = Parser.ParseInt32()
-							LastAccessHour   = Parser.ParseInt32()
-							FileName         = Parser.ParseUTF16String()
-
-							Size         string
-							Type         string
-							LastModified string
-							Name         string
-						)
-
-						Type = "file"
-						Size = ""
-						if IsDir == win32.TRUE {
-							Type = "dir"
-						} else {
-							Size = common.ByteCountSI(int64(FileSize))
-						}
-
-						LastModified = fmt.Sprintf("%02d/%02d/%d %02d:%02d:%02d", LastAccessDay, LastAccessMonth, LastAccessYear, LastAccessSecond, LastAccessMinute, LastAccessHour)
-						Name = FileName
-
-						// ignore these. not needed
-						if Name == "." || Name == ".." || Name == "" {
-							continue
-						}
-
-						if !Explorer {
-							Dir += fmt.Sprintf(" %-12s %-8s %-20s  %-8v\n", Size, Type, LastModified, Name)
-						} else {
-							DirArr = append(DirArr, map[string]string{
-								"Type":     Type,
-								"Size":     Size,
-								"Modified": LastModified,
-								"Name":     Name,
-							})
-						}
-
-					}
-
-					if !Explorer {
-						Output["Type"] = "Info"
-						Output["Message"] = fmt.Sprintf("List Directory: %v", Path)
-						Output["Output"] = Dir
+					if ! Success {
+						Output["Type"] = "Error"
+						Output["Message"] = "Failed to enumerate files/folders at specified path: " + StartPath
 					} else {
-						DirMap["Path"] = []byte(Path)
-						DirMap["Files"] = DirArr
+						IsFirst := true
+						for Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadInt32, parser.ReadInt32, parser.ReadInt64}) {
+							var (
+								RootDirPath   = Parser.ParseUTF16String()
+								NumFiles      = Parser.ParseInt32()
+								NumDirs       = Parser.ParseInt32()
+								TotalFileSize = Parser.ParseInt64()
+								ItemsLeft     = NumFiles + NumDirs
+							)
 
-						DirJson, err := json.Marshal(DirMap)
-						if err != nil {
-							logger.Debug("[Error] " + err.Error())
-						} else {
-							Output["MiscType"] = "FileExplorer"
-							Output["MiscData"] = base64.StdEncoding.EncodeToString(DirJson)
+							if !Explorer && !ListOnly {
+								if IsFirst {
+									IsFirst = false
+									Dir += fmt.Sprintf(" Directory of %s:\n\n", RootDirPath)
+								} else {
+									Dir += fmt.Sprintf("\n Directory of %s:\n\n", RootDirPath)
+								}
+							}
+
+							for ItemsLeft > 0 && Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadBool, parser.ReadInt64, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32}) {
+
+								var (
+									FileName         = Parser.ParseUTF16String()
+									IsDir            = Parser.ParseBool()
+									FileSize         = Parser.ParseInt64()
+									LastAccessDay    = Parser.ParseInt32()
+									LastAccessMonth  = Parser.ParseInt32()
+									LastAccessYear   = Parser.ParseInt32()
+									LastAccessMinute = Parser.ParseInt32()
+									LastAccessHour   = Parser.ParseInt32()
+
+									Size         string
+									Type         string
+									LastModified string
+									DirText      string
+								)
+
+								ReadOne = true
+
+								if ListOnly {
+									Dir += fmt.Sprintf("%s\n", FileName)
+								} else {
+									LastModified = fmt.Sprintf("%02d/%02d/%d  %02d:%02d", LastAccessDay, LastAccessMonth, LastAccessYear, LastAccessHour, LastAccessMinute)
+									if IsDir {
+										Type = "dir"
+										DirText = "<DIR>"
+										Size    = ""
+									} else {
+										DirText = ""
+										Size    = common.ByteCountSI(int64(FileSize))
+									}
+
+									if Explorer {
+										DirArr = append(DirArr, map[string]string{
+											"Type":     Type,
+											"Size":     Size,
+											"Modified": LastModified,
+											"Name":     FileName,
+										})
+									} else {
+										Dir += fmt.Sprintf("%-17s    %-5s  %-12s   %-8s\n", LastModified, DirText, Size, FileName)
+									}
+								}
+
+								ItemsLeft -= 1
+							}
+
+							if !Explorer && !ListOnly {
+								Dir += fmt.Sprintf("               %d File(s)     %s\n", NumFiles, common.ByteCountSI(TotalFileSize))
+								Dir += fmt.Sprintf("               %d Folder(s)", NumDirs)
+							}
+
+							if Explorer {
+								DirMap["Path"] = []byte(RootDirPath)
+								DirMap["Files"] = DirArr
+
+								DirJson, err := json.Marshal(DirMap)
+								if err != nil {
+									logger.Debug("[Error] " + err.Error())
+								} else {
+									Output["MiscType"] = "FileExplorer"
+									Output["MiscData"] = base64.StdEncoding.EncodeToString(DirJson)
+								}
+							}
+						}
+
+						if ReadOne == false {
+							Output["Type"] = "Info"
+							Output["Output"] = "No file or folder was found"
+						} else if !Explorer {
+							Output["Type"] = "Info"
+							Output["Output"] = Dir
 						}
 					}
+
 					a.RequestCompleted(RequestID)
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_DIR, Invalid packet", AgentID))
-					Output["Type"] = "Error"
-					Output["Message"] = "No files/folders at specified path"
 				}
 
 				break

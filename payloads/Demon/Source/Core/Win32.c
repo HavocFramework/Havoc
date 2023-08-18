@@ -1438,3 +1438,211 @@ VOID LogToConsole(
 }
 
 #endif
+
+PROOT_DIR listDir(
+    IN LPWSTR StartPath,
+    IN BOOL   SubDirs,
+    IN BOOL   FilesOnly,
+    IN BOOL   DirsOnly,
+    IN LPWSTR Starts,
+    IN LPWSTR Contains,
+    IN LPWSTR Ends)
+{
+    WIN32_FIND_DATAW FindData      = { 0 };
+    HANDLE           hFile         = NULL;
+    ULARGE_INTEGER   FileSize      = { 0 };
+    DWORD            Return        = 0;
+    PROOT_DIR        RootDir       = NULL;
+    PROOT_DIR        Dir           = NULL;
+    PROOT_DIR        LastDir       = NULL;
+    PDIR_OR_FILE     DirOrFile     = NULL;
+    PDIR_OR_FILE     LastDirOrFile = NULL;
+    PSUB_DIR         RootSubDir    = NULL;
+    PSUB_DIR         LastSubDir    = NULL;
+    PSUB_DIR         SubDir        = NULL;
+    BOOL             IsDir         = FALSE;
+    LPWSTR           Path          = NULL;
+    UINT32           PathSize      = NULL;
+
+    if ( ( ! StartPath ) || ( FilesOnly && DirsOnly ) ) {
+        PUTS( "Invalid arguments" )
+        goto Cleanup;
+    }
+
+    // allocate the path on the heap to keep stack usage low (given that this function is recursive)
+    Path = Instance.Win32.LocalAlloc( LPTR, ( MAX_PATH + 2 + 1 ) * sizeof( WCHAR ) );
+
+    // copy the path
+    PathSize = MIN( MAX_PATH, StringLengthW( StartPath ) );
+    MemCopy( Path, StartPath, PathSize * sizeof( WCHAR ) );
+
+    // search for the first file in the folder specified
+    hFile = Instance.Win32.FindFirstFileW( Path, &FindData );
+    if ( hFile == INVALID_HANDLE_VALUE )
+    {
+        PRINTF( "FindFirstFileW failed for path %ls\n", Path );
+        goto Cleanup;
+    }
+
+    // If it's a single directory without a wildcard, re-run it with a \*
+    if ( FindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY && Path[ PathSize - 1 ] != 0x2a )
+    {
+        Path[ PathSize++ ] = 0x5c;
+        Path[ PathSize++ ] = 0x2a;
+        Path[ PathSize ]   = 0x00;
+
+        // repeat the search
+        Instance.Win32.FindClose( hFile ); hFile = NULL;
+        hFile = Instance.Win32.FindFirstFileW( Path, &FindData );
+        if ( hFile == INVALID_HANDLE_VALUE )
+        {
+            PRINTF( "FindFirstFileW failed for path %ls\n", Path );
+            goto Cleanup;
+        }
+    }
+
+    // allocate the RootDir
+    RootDir = Instance.Win32.LocalAlloc( LPTR, sizeof( ROOT_DIR ) );
+    MemCopy( RootDir->Path, Path, MIN( MAX_PATH, StringLengthW( Path ) ) * sizeof( WCHAR ) );
+
+    do
+    {
+        IsDir = ( FindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) == FILE_ATTRIBUTE_DIRECTORY;
+
+        // ignore dirs if we are only looking for files on the current dir
+        if ( IsDir && ! SubDirs && FilesOnly )
+            continue;
+        // ignore files if we are only looking for dirs
+
+        if ( ! IsDir && DirsOnly )
+            continue;
+
+        // ignore .
+        if ( IsDir &&
+             StringLengthW( FindData.cFileName ) == 1 &&
+             FindData.cFileName[0] == 0x2e )
+            continue;
+
+        // ignore ..
+        if ( IsDir &&
+             StringLengthW( FindData.cFileName ) == 2 &&
+             FindData.cFileName[0] == 0x2e &&
+             FindData.cFileName[1] == 0x2e )
+            continue;
+
+        // if we are interested in subdirs, remember that we found this directory
+        if ( IsDir && SubDirs )
+        {
+            SubDir = Instance.Win32.LocalAlloc( LPTR, sizeof( SUB_DIR ) );
+            MemCopy( SubDir->Path, Path, ( PathSize - 1 ) * sizeof( WCHAR ) );
+            StringConcatW( SubDir->Path, FindData.cFileName );
+
+            if ( ! LastSubDir ) {
+                RootSubDir = SubDir;
+                LastSubDir = SubDir;
+            } else {
+                LastSubDir->Next = SubDir;
+                LastSubDir = SubDir;
+            }
+        }
+
+        // ignore dirs if we are only looking for files
+        if ( IsDir && FilesOnly )
+            continue;
+
+        // if defined, make sure the name starts with Starts
+        if ( Starts )
+        {
+            if ( StringLengthW( FindData.cFileName ) < StringLengthW( Starts ) )
+                continue;
+            if ( StringCompareIW( Starts, FindData.cFileName ) != 0 )
+                continue;
+        }
+
+        // if defined, make sure the name contains with Contains
+        if ( Contains )
+        {
+            if ( StringLengthW( FindData.cFileName ) < StringLengthW( Contains ) )
+                continue;
+            if ( ! WcsStr( FindData.cFileName, Contains ) )
+                continue;
+        }
+
+        // if defined, make sure the name ends with Ends
+        if ( Ends )
+        {
+            if ( StringLengthW( FindData.cFileName ) < StringLengthW( Ends ) )
+                continue;
+            if ( StringCompareIW( Ends, &FindData.cFileName[ StringLengthW( FindData.cFileName ) - StringLengthW( Ends ) ] ) != 0 )
+                continue;
+        }
+
+        // save this directory or file
+        DirOrFile = Instance.Win32.LocalAlloc( LPTR, sizeof( DIR_OR_FILE ) );
+
+        Instance.Win32.FileTimeToSystemTime( &FindData.ftLastAccessTime, &DirOrFile->FileTime );
+        Instance.Win32.SystemTimeToTzSpecificLocalTime( 0, &DirOrFile->FileTime, &DirOrFile->SystemTime );
+
+        DirOrFile->IsDir = IsDir;
+
+        if ( DirOrFile->IsDir )
+        {
+            RootDir->NumFolders += 1;
+        }
+        else
+        {
+            FileSize.HighPart = FindData.nFileSizeHigh;
+            FileSize.LowPart  = FindData.nFileSizeLow;
+            DirOrFile->Size   = FileSize.QuadPart;
+
+            RootDir->NumFiles      += 1;
+            RootDir->TotalFileSize += DirOrFile->Size;
+        }
+
+        MemCopy( DirOrFile->FileName, FindData.cFileName, StringLengthW( FindData.cFileName ) * sizeof( WCHAR ) );
+
+        if ( LastDirOrFile ) {
+            LastDirOrFile->Next = DirOrFile;
+        } else {
+            RootDir->Content = DirOrFile;
+        }
+        LastDirOrFile = DirOrFile;
+    }
+    while ( Instance.Win32.FindNextFileW( hFile, &FindData ) );
+
+    // list all subdirs recuresively if requested
+    SubDir  = RootSubDir;
+    LastDir = RootDir;
+    if ( SubDirs && SubDir )
+    {
+        Dir = listDir( SubDir->Path, SubDirs, FilesOnly, DirsOnly, Starts, Contains, Ends );
+
+        if ( Dir )
+        {
+            LastDir->Next = Dir;
+            LastDir       = Dir;
+            while ( LastDir->Next )
+            {
+                LastDir = LastDir->Next;
+            }
+        }
+
+        SubDir = SubDir->Next;
+    }
+
+Cleanup:
+    if ( hFile )
+        Instance.Win32.FindClose( hFile );
+
+    DATA_FREE( Path, ( MAX_PATH + 2 + 1 ) * sizeof( WCHAR ) );
+
+    SubDir = RootSubDir;
+    while ( SubDir )
+    {
+        LastSubDir = SubDir->Next;
+        DATA_FREE( SubDir, sizeof( SUB_DIR ) );
+        SubDir = LastSubDir;
+    }
+
+    return RootDir;
+}

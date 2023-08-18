@@ -13,6 +13,7 @@ const (
 	ReadInt64
 	ReadBytes
 	ReadPointer
+	ReadBool
 )
 
 type Parser struct {
@@ -50,6 +51,11 @@ func (p *Parser) CanIRead(ReadTypes []ReadType) bool {
 				return false
 			}
 			BytesRead += 8
+		case ReadBool:
+			if TotalSize - BytesRead < 4 {
+				return false
+			}
+			BytesRead += 4
 		case ReadBytes:
 			if TotalSize - BytesRead < 4 {
 				return false
@@ -118,6 +124,30 @@ func (p *Parser) ParseInt64() int64 {
 		return int64(binary.BigEndian.Uint64(integer))
 	} else {
 		return int64(binary.LittleEndian.Uint64(integer))
+	}
+}
+
+func (p *Parser) ParseBool() bool {
+	var integer = make([]byte, 4)
+
+	for i := range integer {
+		integer[i] = 0
+	}
+
+	if p.Length() >= 4 {
+		if p.Length() == 4 {
+			copy(integer, p.buffer[:p.Length()])
+			p.buffer = []byte{}
+		} else {
+			copy(integer, p.buffer[:p.Length()-4])
+			p.buffer = p.buffer[4:]
+		}
+	}
+
+	if p.bigEndian {
+		return int(binary.BigEndian.Uint32(integer)) != 0
+	} else {
+		return int(binary.LittleEndian.Uint32(integer)) != 0
 	}
 }
 

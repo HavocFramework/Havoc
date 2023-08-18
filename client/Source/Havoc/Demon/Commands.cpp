@@ -185,8 +185,8 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
             .Description    = "list specified directory",
             .Behavior       = BEHAVIOR_API_ONLY,
             .MitreTechniques = { "T1083", "T1083" },
-            .Usage          = "[/path/to/dir]",
-            .Example        = "c:\\windows\\system32",
+            .Usage          = "[/path/to/dir] [/s] [/b] [/d] [/f] [/starts foo] [/contains foo] [/ends foo]",
+            .Example        = "c:\\users /s /b /f /ends .ps1",
             NO_SUBCOMMANDS
         },
         {

@@ -667,7 +667,14 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
         }
         else if ( InputCommands[ 0 ].compare( "dir" ) == 0 )
         {
-            auto Path = QString( "" );
+            auto Path      = QString( "" );
+            auto SubDirs   = "false";
+            auto FilesOnly = "false";
+            auto DirsOnly  = "false";
+            auto ListOnly  = "false";
+            auto Starts    = QString( "" );
+            auto Contains  = QString( "" );
+            auto Ends      = QString( "" );
 
             if ( InputCommands.size() == 1 )
             {
@@ -676,20 +683,76 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             }
             else
             {
-                if ( InputCommands[ 1 ] == "" )
+                Path = InputCommands[ 1 ];
+                for ( int i = 2; i < InputCommands.size(); ++i )
                 {
-                    Path = ".";
-                    TaskID = CONSOLE_INFO( "Tasked demon to list current directory" );
+                    if ( InputCommands[ i ].compare( "/s" ) == 0 )
+                    {
+                        SubDirs = "true";
+                    }
+                    else if ( InputCommands[ i ].compare( "/f" ) == 0 )
+                    {
+                        FilesOnly = "true";
+                    }
+                    else if ( InputCommands[ i ].compare( "/d" ) == 0 )
+                    {
+                        DirsOnly = "true";
+                    }
+                    else if ( InputCommands[ i ].compare( "/b" ) == 0 )
+                    {
+                        ListOnly = "true";
+                    }
+                    else if ( InputCommands[ i ].compare( "/starts" ) == 0 )
+                    {
+                        if ( i + 1 == InputCommands.size() )
+                        {
+                            CONSOLE_ERROR( "Not enough arguments" );
+                            return false;
+                        }
+
+                        Starts = InputCommands[ i + 1 ];
+                        i++;
+                    }
+                    else if ( InputCommands[ i ].compare( "/contains" ) == 0 )
+                    {
+                        if ( i + 1 == InputCommands.size() )
+                        {
+                            CONSOLE_ERROR( "Not enough arguments" );
+                            return false;
+                        }
+
+                        Contains = InputCommands[ i + 1 ];
+                        i++;
+                    }
+                    else if ( InputCommands[ i ].compare( "/ends" ) == 0 )
+                    {
+                        if ( i + 1 == InputCommands.size() )
+                        {
+                            CONSOLE_ERROR( "Not enough arguments" );
+                            return false;
+                        }
+
+                        Ends = InputCommands[ i + 1 ];
+                        i++;
+                    }
+                    else
+                    {
+                        CONSOLE_ERROR( "Unknown parameter " + InputCommands[ i ] );
+                        return false;
+                    }
                 }
-                else
+
+                if ( FilesOnly == "true" && DirsOnly == "true" )
                 {
-                    Path = JoinAtIndex( InputCommands, 1 );
-                    TaskID = CONSOLE_INFO( "Tasked demon to list directory: " + Path );
+                    CONSOLE_ERROR( "Cannot set both /f and /d" );
+                    return false;
                 }
+
+                TaskID = CONSOLE_INFO( "Tasked demon to list " + Path );
             }
 
             CommandInputList[ TaskID ] = commandline;
-            SEND( Execute.FS( TaskID, "dir", Path ) );
+            SEND( Execute.FS( TaskID, "dir", Path + ";" + SubDirs + ";" + FilesOnly + ";" + DirsOnly + ";" + ListOnly + ";" + Starts + ";" + Contains + ";" + Ends ) );
         }
         else if (InputCommands[0].compare( "cd" ) == 0)
         {

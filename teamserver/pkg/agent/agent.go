@@ -138,6 +138,19 @@ func BuildPayloadMessage(Jobs []Job, AesKey []byte, AesIv []byte) []byte {
 
 				break
 
+			case bool:
+				var boolean = make([]byte, 4)
+
+				if job.Data[i].(bool) {
+					binary.LittleEndian.PutUint32(boolean, 1)
+				} else {
+					binary.LittleEndian.PutUint32(boolean, 0)
+				}
+				
+				DataPayload = append(DataPayload, boolean...)
+
+				break
+
 			default:
 				logger.Error(fmt.Sprintf("Could not package, unknown data type: %v", job.Data[i]))
 			}
@@ -667,6 +680,10 @@ func (a *Agent) GetQueuedJobs() []Job {
 
 			case byte:
 				JobsSize += 1
+				break
+
+			case bool:
+				JobsSize += 4
 				break
 
 			default:

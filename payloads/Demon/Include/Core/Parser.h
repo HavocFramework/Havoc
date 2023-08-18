@@ -19,6 +19,7 @@ INT16  ParserGetInt16( PPARSER parser );
 BYTE   ParserGetByte( PPARSER parser );
 INT    ParserGetInt32( PPARSER parser );
 INT64  ParserGetInt64( PPARSER parser );
+BOOL   ParserGetBool( PPARSER parser );
 PBYTE  ParserGetBytes( PPARSER parser, PUINT32 size );
 PCHAR  ParserGetString( PPARSER parser, PUINT32 size );
 PWCHAR ParserGetWString( PPARSER parser, PUINT32 size );

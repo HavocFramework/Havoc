@@ -81,6 +81,25 @@ VOID PackageAddInt64( PPACKAGE Package, UINT64 dataInt )
     Package->Length += sizeof( UINT64 );
 }
 
+VOID PackageAddBool(
+    IN OUT PPACKAGE Package,
+    IN     BOOLEAN  Data
+) {
+    if ( ! Package ) {
+        return;
+    }
+
+    Package->Buffer = Instance.Win32.LocalReAlloc(
+            Package->Buffer,
+            Package->Length + sizeof( UINT32 ),
+            LMEM_MOVEABLE
+    );
+
+    Int32ToBuffer( Package->Buffer + Package->Length, Data ? 1 : 0 );
+
+    Package->Length += sizeof( UINT32 );
+}
+
 VOID PackageAddPtr( PPACKAGE Package, PVOID pointer )
 {
     PackageAddInt64( Package, ( UINT64 ) pointer );

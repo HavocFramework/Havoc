@@ -26,6 +26,35 @@
 #define MAX( a, b ) ( ( a ) > ( b ) ? ( a ) : ( b ) )
 #define MIN( a, b ) ( ( a ) < ( b ) ? ( a ) : ( b ) )
 
+typedef struct _DIR_OR_FILE
+{
+    WCHAR      FileName[MAX_PATH+1];
+    SYSTEMTIME FileTime;
+    SYSTEMTIME SystemTime;
+    BOOL       IsDir;
+    UINT64     Size;
+
+    struct _DIR_OR_FILE* Next;
+} DIR_OR_FILE, *PDIR_OR_FILE;
+
+typedef struct _SUB_DIR
+{
+    WCHAR       Path[MAX_PATH+1];
+
+    struct _SUB_DIR* Next;
+} SUB_DIR, *PSUB_DIR;
+
+typedef struct _ROOT_DIR
+{
+    WCHAR        Path[MAX_PATH+1];
+    PDIR_OR_FILE Content;
+    UINT32       NumFiles;
+    UINT32       NumFolders;
+    UINT64       TotalFileSize;
+
+    struct _ROOT_DIR* Next;
+} ROOT_DIR, *PROOT_DIR;
+
 typedef struct
 {
     PVOID TebInformation;
@@ -220,5 +249,14 @@ VOID ShuffleArray(
     IN OUT PVOID* array,
     IN     SIZE_T n
 );
+
+PROOT_DIR listDir(
+    IN LPWSTR StartPath,
+    IN BOOL   SubDirs,
+    IN BOOL   FilesOnly,
+    IN BOOL   DirsOnly,
+    IN LPWSTR Starts,
+    IN LPWSTR Contains,
+    IN LPWSTR Ends);
 
 #endif

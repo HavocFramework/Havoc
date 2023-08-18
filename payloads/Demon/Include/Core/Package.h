@@ -37,6 +37,11 @@ VOID PackageAddInt64(
     UINT64 dataInt
 );
 
+VOID PackageAddBool(
+    IN OUT PPACKAGE Package,
+    IN     BOOLEAN  Data
+);
+
 VOID PackageAddPtr(
     PPACKAGE Package,
     PVOID pointer

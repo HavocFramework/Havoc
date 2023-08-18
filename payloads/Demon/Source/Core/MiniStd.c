@@ -132,6 +132,23 @@ PWCHAR StringConcatW(PWCHAR String, PWCHAR String2)
     return String;
 }
 
+LPWSTR WcsStr( PWCHAR String, PWCHAR String2 )
+{
+    UINT32 Size1 = StringLengthW( String );
+    UINT32 Size2 = StringLengthW( String2 );
+
+    if ( Size2 > Size1 )
+        return NULL;
+
+    for ( UINT32 i = 0; i < Size1; i++ )
+    {
+        if ( StringCompareW( String + i, String2 ) == 0 )
+            return String + i;
+    }
+
+    return NULL;
+}
+
 INT MemCompare( PVOID s1, PVOID s2, INT len)
 {
     PUCHAR p = s1;
