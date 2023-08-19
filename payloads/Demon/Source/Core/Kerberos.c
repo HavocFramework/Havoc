@@ -337,9 +337,9 @@ VOID ExtractTicket( HANDLE hLsa, ULONG authPackage, LUID luid, UNICODE_STRING ta
 VOID CopySessionInfo( PSESSION_INFORMATION Session, PSECURITY_LOGON_SESSION_DATA Data )
 {
     // UserName
-    StringCopyW( Session->UserName, Data->UserName.Buffer );
+    MemCopy( Session->UserName, Data->UserName.Buffer, Data->UserName.Length );
     // Domain
-    StringCopyW( Session->Domain, Data->LogonDomain.Buffer );
+    MemCopy( Session->Domain, Data->LogonDomain.Buffer, Data->LogonDomain.Length );
     // LogonId
     Session->LogonId.LowPart  = Data->LogonId.LowPart;
     Session->LogonId.HighPart = Data->LogonId.HighPart;
@@ -357,13 +357,13 @@ VOID CopySessionInfo( PSESSION_INFORMATION Session, PSECURITY_LOGON_SESSION_DATA
     // LogonType
     Session->LogonType = Data->LogonType;
     // AuthenticationPackage
-    StringCopyW( Session->AuthenticationPackage, Data->AuthenticationPackage.Buffer );
+    MemCopy( Session->AuthenticationPackage, Data->AuthenticationPackage.Buffer, Data->AuthenticationPackage.Length );
     // LogonServer
-    StringCopyW( Session->LogonServer, Data->LogonServer.Buffer );
+    MemCopy( Session->LogonServer, Data->LogonServer.Buffer, Data->LogonServer.Length );
     // LogonServerDNSDomain
-    StringCopyW( Session->LogonServerDNSDomain, Data->DnsDomainName.Buffer );
+    MemCopy( Session->LogonServerDNSDomain, Data->DnsDomainName.Buffer, Data->DnsDomainName.Length );
     // Upn
-    StringCopyW( Session->Upn, Data->Upn.Buffer );
+    MemCopy( Session->Upn, Data->Upn.Buffer, Data->Upn.Length );
     // Tickets
     Session->Tickets = NULL;
 }
@@ -371,13 +371,13 @@ VOID CopySessionInfo( PSESSION_INFORMATION Session, PSECURITY_LOGON_SESSION_DATA
 VOID CopyTicketInfo( PTICKET_INFORMATION TicketInfo, PKERB_TICKET_CACHE_INFO_EX Data )
 {
     // ClientName
-    StringCopyW( TicketInfo->ClientName, Data->ClientName.Buffer );
+    MemCopy( TicketInfo->ClientName, Data->ClientName.Buffer, Data->ClientName.Length );
     // ClientRealm
-    StringCopyW( TicketInfo->ClientRealm, Data->ClientRealm.Buffer );
+    MemCopy( TicketInfo->ClientRealm, Data->ClientRealm.Buffer, Data->ClientRealm.Length );
     // ServerName
-    StringCopyW( TicketInfo->ServerName, Data->ServerName.Buffer );
+    MemCopy( TicketInfo->ServerName, Data->ServerName.Buffer, Data->ServerName.Length );
     // ServerRealm
-    StringCopyW( TicketInfo->ServerRealm, Data->ServerRealm.Buffer );
+    MemCopy( TicketInfo->ServerRealm, Data->ServerRealm.Buffer, Data->ServerRealm.Length );
     // StartTime
     TicketInfo->StartTime.LowPart  = Data->StartTime.LowPart;
     TicketInfo->StartTime.HighPart = Data->StartTime.HighPart;
