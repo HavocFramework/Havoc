@@ -46,7 +46,7 @@ GraphWidget::GraphWidget( QWidget* parent ) : QGraphicsView( parent )
 
     GraphScene->addItem( MainNode->Node );
 
-    MainNode->Node->setPos( 500, 100 );
+    MainNode->Node->setPos( 100, 50 );
 
     NodeList.push_back( MainNode );
 }
@@ -61,6 +61,7 @@ Node* GraphWidget::GraphNodeAdd( SessionItem Session )
     );
 
     item->NodeEdge = new Edge( MainNode->Node, item, QColor( HavocNamespace::Util::ColorText::Colors::Hex::Green ) );
+    item->Parent   = MainNode->Node;
     item->NodeID   = Session.Name;
     item->Session  = Session;
 
@@ -72,7 +73,10 @@ Node* GraphWidget::GraphNodeAdd( SessionItem Session )
     GraphScene->addItem( item );
     GraphScene->addItem( item->NodeEdge );
 
+    MainNode->Node->appendChild( item );
     NodeList.push_back( member );
+
+    layout( MainNode->Node );
 
     return item;
 }
@@ -85,6 +89,9 @@ void GraphWidget::GraphNodeRemove( SessionItem Session )
         {
             GraphScene->removeItem( NodeList[ i ]->Node->NodeEdge );
             GraphScene->removeItem( NodeList[ i ]->Node );
+
+            NodeList.erase( NodeList.begin() + i );
+            MainNode->Node->removeChild( NodeList[ i ]->Node );
 
             /* delete NodeList[ i ]->Node->NodeEdge;
             delete NodeList[ i ]->Node;
@@ -119,8 +126,13 @@ void GraphWidget::GraphPivotNodeAdd( QString AgentID, SessionItem Session )
             {
                 item->NodeID   = Session.Name;
                 item->NodeEdge = new Edge( i, item, QColor( HavocNamespace::Util::ColorText::Colors::Hex::Purple ) );
+                item->Parent   = i;
+                
+                i->appendChild( item );
 
                 GraphScene->addItem( item->NodeEdge );
+
+                layout( MainNode->Node );
                 return;
             }
         }
@@ -305,6 +317,183 @@ Node *GraphWidget::GraphNodeGet( QString AgentID )
                 return i;
             }
         }
+    }
+}
+
+// Initialize node properties for layout
+void GraphWidget::initNode(Node* v)
+{
+    v->Modifier = 0;
+    v->Thread   = nullptr;
+    v->Ancestor = v;
+    for (Node* w : v->Children) {
+        initNode(w);
+    }
+}
+
+// Entry function for layout
+void GraphWidget::layout(Node* T)
+{
+    initNode(T);
+
+    firstWalk(T);
+    // m = 50 to shift position to positive axes
+    secondWalk(T, 50, 0);
+}
+
+// Calculate preliminary x-coordinates for all nodes
+void GraphWidget::firstWalk(Node* v)
+{
+    if (v->Children.empty()) { // If leaf node
+        if (v->Parent && v != v->Parent->Children[0]) {
+            auto leftSibling = std::prev(std::find(v->Parent->Children.cbegin(), v->Parent->Children.cend(), v));
+            v->Prelim = (*leftSibling)->Prelim + Y_SEP;
+        } else {
+            v->Prelim = 0;
+        }
+    } else { // Non-leaf node
+        Node* defaultAncestor = v->Children[0];
+
+        for (Node* w : v->Children) {
+            firstWalk(w);
+            apportion(w, defaultAncestor); 
+        }
+
+        executeShifts(v);
+
+        // Compute the node's preliminary x-coordinate based on children's positions
+        double midpoint = (v->Children[0]->Prelim + v->Children.back()->Prelim) / 2;
+
+        if (v->Parent && v != v->Parent->Children[0]) {
+            auto leftSibling = *std::prev(std::find(v->Parent->Children.cbegin(), v->Parent->Children.cend(), v));
+            v->Prelim = leftSibling->Prelim + Y_SEP;
+            v->Modifier = v->Prelim - midpoint;
+        } else {
+            v->Prelim = midpoint;
+        }
+    }
+}
+
+// Adjusts spacing between subtrees to ensure they don't overlap
+void GraphWidget::apportion(Node* v, Node*& defaultAncestor)
+{
+    if (v != v->Parent->Children[0]) {
+        auto leftSibling = *std::prev(std::find(v->Parent->Children.cbegin(), v->Parent->Children.cend(), v));
+        Node* vip = v;
+        Node* vop = v;
+        Node* vim = leftSibling;
+        Node* vom = vip->Parent->Children[0];
+
+        double sip = vip->Modifier;
+        double sop = vop->Modifier;
+        double sim = vim->Modifier;
+        double som = vom->Modifier;
+
+        while (nextRight(vim) && nextLeft(vip)) {
+            vim = nextRight(vim);
+            vip = nextLeft(vip);
+            vom = nextLeft(vom);
+            vop = nextRight(vop);
+            vop->Ancestor = v;
+
+            // Calculate how much to shift the trees apart
+            double shift = (vim->Prelim + sim) - (vip->Prelim + sip) + Y_SEP;
+
+            if (shift > 0) {
+                // Move the current subtree apart from the previous subtree
+                moveSubtree(ancestor(vim, v, defaultAncestor), v, shift);
+                sip += shift;
+                sop += shift;
+            }
+
+            sim += vim->Modifier;
+            sip += vip->Modifier;
+            som += vom->Modifier;
+            sop += vop->Modifier;
+        }
+
+        if (nextRight(vim) && !nextRight(vop)) {
+            vop->Thread = nextRight(vim);
+            vop->Modifier += sim - sop;
+        }
+
+        if (nextLeft(vip) && !nextLeft(vom)) {
+            vom->Thread = nextLeft(vip);
+            vom->Modifier += sip - som;
+            defaultAncestor = v;
+        }
+    }
+}
+
+// Move the subtree rooted at wp so it's shifted away from the subtree rooted at wm
+void GraphWidget::moveSubtree(Node* wm, Node* wp, double shift)
+{
+    // Find the indices of wm and wp in their parent's children list
+    auto wmIndex = std::distance(wp->Parent->Children.cbegin(), std::find(wp->Parent->Children.cbegin(), wp->Parent->Children.cend(), wm));
+    auto wpIndex = std::distance(wp->Parent->Children.cbegin(), std::find(wp->Parent->Children.cbegin(), wp->Parent->Children.cend(), wp));
+
+    // Number of subtrees is the difference in their indices
+    int subtrees = wpIndex - wmIndex;
+
+    if (subtrees != 0) {
+        wp->Change -= shift / subtrees;
+        wp->Shift += shift;
+        wm->Change += shift / subtrees;
+        wp->Prelim += shift;
+        wp->Modifier += shift;
+    }
+}
+
+// Helper function to get the leftmost child or thread (left contour)
+Node* GraphWidget::nextLeft(Node* v)
+{
+    if (!v->Children.empty())
+        return v->Children[0];
+    else
+        return v->Thread;
+}
+
+// Helper function to get the rightmost child or thread (right contour)
+Node* GraphWidget::nextRight(Node* v)
+{
+    if (!v->Children.empty())
+        return v->Children.back();
+    else
+        return v->Thread;
+}
+
+// Get the ancestor of vim that is in the same subtree as v, or return defaultAncestor
+Node* GraphWidget::ancestor(Node* vim, Node* v, Node*& defaultAncestor)
+{
+    if (vim->Ancestor->Parent == v->Parent) {
+        return vim->Ancestor;
+    } else {
+        return defaultAncestor;
+    }
+}
+
+// Propagate the shifts down to ensure subtrees are moved accordingly
+void GraphWidget::executeShifts(Node* v)
+{
+    double shift = 0;
+    double change = 0;
+
+    for (int i = v->Children.size() - 1; i >= 0; i--) {
+        Node* w = v->Children[i];
+        w->Prelim += shift;
+        w->Modifier += shift;
+        change += w->Change;
+        shift += w->Shift + change;
+    }
+}
+
+// Walk the tree again to assign final x and y coordinates to each node
+void GraphWidget::secondWalk(Node* v, double m, double depth)
+{
+    v->setPos((depth * X_SEP) + 100, v->Prelim + m);
+
+    for (Node* w : v->Children) {
+        secondWalk(w, m + v->Modifier, depth + 1);
     }
 }
 
@@ -688,6 +877,16 @@ Node::Node( NodeItemType NodeType, QString NodeLabel, GraphWidget* graphWidget )
     setFlag( ItemSendsGeometryChanges );
     setCacheMode( DeviceCoordinateCache );
     setZValue( -1 );
+}
+
+void Node::appendChild( Node* child )
+{
+    Children.push_back(child);
+}
+
+void Node::removeChild( Node* child )
+{
+    Children.erase(std::find(Children.cbegin(), Children.cend(), child));
 }
 
 QRectF Node::boundingRect() const
