@@ -27,7 +27,6 @@ public:
 
     void setupUi( QWidget* widget, QString TeamserverName );
     void NewSessionItem( Util::SessionItem item ) const;
-    void RemoveSession( Util::SessionItem session );
     void ChangeSessionValue( QString DemonID, int key, QString value );
     void updateRow();
 };

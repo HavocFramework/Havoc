@@ -244,7 +244,6 @@ void HavocNamespace::UserInterface::HavocUI::MarkSessionAs(HavocNamespace::Util:
                 }
             }
 
-            spdlog::debug( "- Marked.toStdString(): {}", Marked.toStdString() );
             Package->Body = Util::Packager::Body_t {
                 .SubEvent = Util::Packager::Session::MarkAs,
                 .Info = {

@@ -96,7 +96,8 @@ Util::Packager::PPackage Packager::DecodePackage( const QString& Package )
     }
     else
     {
-        spdlog::critical("Is not an Object: {}", QJsonDocument(JsonData).toJson().toStdString());
+        auto object = QJsonDocument( JsonData ).toJson().toStdString();
+        spdlog::critical( "Is not an Object: {}", object );
     }
 
     return FullPackage;
@@ -735,7 +736,8 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                                     // print messages from the python the module
                                     Session.InteractedWidget->DemonCommands->PrintModuleCachedMessages();
                                 } else {
-                                    spdlog::error( "[PACKAGE] TaskID not found: {}", TaskID.toStdString() );
+                                    auto taskId = TaskID.toStdString();
+                                    spdlog::error( "[PACKAGE] TaskID not found: {}", taskId );
                                 }
                             }
 
@@ -852,6 +854,7 @@ bool Packager::DispatchService( Util::Packager::PPackage Package )
             auto Commands       = std::vector<AgentCommands>();
             auto MagicValue     = uint64_t( 0 );
             auto StringStream   = std::stringstream();
+            auto AgentName      = std::string();
 
             for ( const auto& item : JsonObject[ "Arch" ].toArray() )
                 Arch << item.toString();
@@ -910,7 +913,9 @@ bool Packager::DispatchService( Util::Packager::PPackage Package )
                 .BuildingConfig = QJsonDocument( JsonObject[ "BuildingConfig" ].toObject() ),
             } );
 
-            spdlog::info( "Added service agent to client: {}", JsonObject[ "Name" ].toString().toStdString() );
+            AgentName = JsonObject[ "Name" ].toString().toStdString();
+
+            spdlog::info( "Added service agent to client: {}", AgentName );
 
             return true;
         }
@@ -918,10 +923,11 @@ bool Packager::DispatchService( Util::Packager::PPackage Package )
         case Util::Packager::Service::ListenerRegister:
         {
             auto listener = json::parse( Package->Body.Info[ "Listener" ].c_str() );
+            auto name     = listener[ "Name" ].get<std::string>();
 
             HavocX::Teamserver.RegisteredListeners.push_back( listener );
 
-            spdlog::info( "Added service listener to client: {}", listener[ "Name" ].get<std::string>() );
+            spdlog::info( "Added service listener to client: {}", name );
 
             return true;
         }

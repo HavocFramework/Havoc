@@ -3,12 +3,13 @@
 auto FileRead( const QString& FilePath ) -> QByteArray
 {
     auto Content = QByteArray( );
+    auto path    = FilePath.toStdString();
 
     if ( FilePath[ 0 ] != ':' )
     {
         if ( ! QFile::exists( FilePath ) )
         {
-            spdlog::error( "Failed to find file: {}", FilePath.toStdString() );
+            spdlog::error( "Failed to find file: {}", path );
             return nullptr;
         }
     }
@@ -104,8 +105,6 @@ auto WinVersionIcon( QString OSVersion, bool High ) -> QIcon
     }
     else
     {
-        spdlog::debug( "Didn't found OSVersion: {}", OSVersion.toStdString() );
-
         if ( High )
             return QIcon( ":/images/unknown-high" );
         else
@@ -180,8 +179,6 @@ auto WinVersionImage( QString OSVersion, bool High ) -> QImage
     }
     else
     {
-        spdlog::debug( "Didn't found OSVersion: {}", OSVersion.toStdString() );
-
         if ( High )
             return QImage( ":/images/unknown-high" );
         else

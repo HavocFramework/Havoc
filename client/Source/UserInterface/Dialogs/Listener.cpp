@@ -578,8 +578,6 @@ MapStrStr NewListener::Start( Util::ListenerItem Item, bool Edit )
                 {
                     auto ListenerConfiguration = json::parse( any_cast<Listener::Service>( Item.Info )[ "Info" ] );
 
-                    spdlog::debug( "ListenerConfiguration => {}", ListenerConfiguration.dump() );
-
                     ComboPayload->setCurrentIndex( listener.Index + 1 );
 
                     /* TODO: iterate over ServiceListeners and check what has been set
@@ -593,8 +591,6 @@ MapStrStr NewListener::Start( Util::ListenerItem Item, bool Edit )
                         auto value    = QString();
 
                         value = QString( ListenerConfiguration[ item[ "name" ] ].get<std::string>().c_str() );
-
-                        spdlog::debug( "item => {}", item.dump() );
 
                         /* if object type is "input" */
                         if ( object == "input" )

@@ -111,19 +111,18 @@ void ScriptManager::RetranslateUi( )
 void ScriptManager::AddScript( QString Path )
 {
     auto Script = FileRead( Path );
+    auto path   = Path.toStdString();
 
     HavocX::Teamserver.LoadingScript = Path.toStdString();
 
-    if ( Script != nullptr )
-    {
+    if ( Script != nullptr ) {
         if ( ! Script.isEmpty() )
             PyRun_SimpleStringFlags( Script.toStdString().c_str(), NULL );
-        else
-            spdlog::error( "Script path not found: {}", Path.toStdString() );
-    }
-    else
-    {
-        spdlog::error( "Failed to load script: {}", Path.toStdString() );
+        else {
+            spdlog::error( "Script path not found: {}", path );
+        }
+    } else {
+        spdlog::error( "Failed to load script: {}", path );
     }
 
     HavocX::Teamserver.LoadingScript = "";
