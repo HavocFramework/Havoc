@@ -25,13 +25,25 @@ class Node : public QGraphicsItem
 public:
     QString      NodeID       = QString();
     NodeItemType NodeType     = NodeItemType::Nothing;
-    Edge*        NodeEdge     = nullptr;
+    Edge*        NodeEdge     = nullptr; 
+    Node*        Parent       = nullptr; // Pointer to the parent node of the current node. Null for the root.
+    Node*        Thread       = nullptr; // For extreme left or right nodes, used to provide a successor node in a contour.
+    Node*        Ancestor     = this;    // During the tree layout, it points to the node's ancestor that is used to determine how far apart different subtrees should be.
     bool         Disconnected = false;
+    double       Prelim       = 0;       // Preliminary y-coordinate calculated during the first tree traversal.
+    double       Modifier     = 0;       // Amount to adjust a node's y-coordinate, based on the positions of its descendants.
+    double       Shift        = 0;       // Amount to move subtrees apart to avoid overlaps.
+    double       Change       = 0;       // Rate of change in shift amount, used to evenly distribute shifts among siblings.
+    
+    std::vector<Node*> Children = std::vector<Node*>();
 
     HavocNamespace::Util::SessionItem Session;
 
 public:
     Node( NodeItemType NodeType, QString NodeLabel, GraphWidget* graphWidget );
+
+    void appendChild( Node* child );
+    void removeChild( Node* child );
 
     void addEdge( Edge* edge );
     QVector<Edge*> edges() const;
@@ -108,6 +120,19 @@ protected:
 private:
     int timerId = 0;
     Node* centerNode;
+    const double X_SEP = 220; // Horizontal separation between levels of the tree
+    const double Y_SEP = 120; // Vertical separation between sibling nodes
+
+    void initNode(Node* v);
+    void layout(Node* T);
+    void firstWalk(Node* v);
+    void apportion(Node* v, Node*& defaultAncestor);
+    void moveSubtree(Node* wm, Node* wp, double shift);
+    Node* nextLeft(Node* v);
+    Node* nextRight(Node* v);
+    Node* ancestor(Node* vim, Node* v, Node*& defaultAncestor);
+    void executeShifts(Node* v);
+    void secondWalk(Node* v, double m, double depth);
 };
 
 class Edge : public QGraphicsItem
