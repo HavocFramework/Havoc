@@ -702,6 +702,7 @@ VOID CommandFS( PPARSER Parser )
             LPWSTR           Ends         = NULL;
             PDIR_OR_FILE     DirOrFile    = NULL;
             PDIR_OR_FILE     TmpDirOrFile = NULL;
+            UINT32           PathSize     = NULL;
 
             FileExplorer = ParserGetBool( Parser );
             TargetFolder = ParserGetWString( Parser, NULL );
@@ -728,7 +729,11 @@ VOID CommandFS( PPARSER Parser )
                     break;
                 }
 
-                StringConcatW( Path, L"*" );
+                PathSize = StringLengthW( Path );
+                if ( Path[ PathSize - 1 ] != 0x5c )
+                    Path[ PathSize++ ] = 0x5c;
+                Path[ PathSize++ ] = 0x2a;
+                Path[ PathSize ]   = 0x00;
             }
             else
             {

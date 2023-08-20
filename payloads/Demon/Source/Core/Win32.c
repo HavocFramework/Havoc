@@ -1488,7 +1488,8 @@ PROOT_DIR listDir(
     // If it's a single directory without a wildcard, re-run it with a \*
     if ( IsDir && Path[ PathSize - 1 ] != 0x2a )
     {
-        Path[ PathSize++ ] = 0x5c;
+        if ( Path[ PathSize - 1 ] != 0x5c )
+            Path[ PathSize++ ] = 0x5c;
         Path[ PathSize++ ] = 0x2a;
         Path[ PathSize ]   = 0x00;
 

@@ -2788,7 +2788,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 									IsFirst = false
 									Dir += fmt.Sprintf(" Directory of %s:\n\n", RootDirPath)
 								} else {
-									Dir += fmt.Sprintf("\n Directory of %s:\n\n", RootDirPath)
+									Dir += fmt.Sprintf("\n\n Directory of %s:\n\n", RootDirPath)
 								}
 							}
 
