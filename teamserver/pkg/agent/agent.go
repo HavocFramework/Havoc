@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"reflect" // <-- Added, 0xtriboulet
 
 	"Havoc/pkg/common"
 	"Havoc/pkg/common/crypt"
@@ -274,7 +275,22 @@ func RegisterInfoToInstance(Header Header, RegisterInfo map[string]any) *Agent {
 	if val, ok := RegisterInfo["OS Arch"]; ok {
 		agent.Info.OSArch = val.(string)
 	}
-
+	if val, ok := RegisterInfo["SleepDelay"]; ok { // 0xtriboulet
+		switch v := val.(type) {
+		case float64:
+			agent.Info.SleepDelay = int(v)
+		case string:
+			agent.Info.SleepDelay, err = strconv.Atoi(v)
+			if err != nil {
+				logger.DebugError("Couldn't parse SleepDelay integer from string: " + err.Error())
+				agent.Info.SleepDelay = 0
+			}
+		default:
+			// handle unexpected type
+			logger.DebugError("Unexpected type for SleepDelay: " + reflect.TypeOf(v).String())
+			agent.Info.SleepDelay = 0
+		}
+	}
 	agent.Info.FirstCallIn = time.Now().Format("02/01/2006 15:04:05")
 	agent.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05")
 	agent.BackgroundCheck = false
