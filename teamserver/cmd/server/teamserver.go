@@ -30,6 +30,7 @@ import (
 	"Havoc/pkg/logger"
 	"Havoc/pkg/packager"
 	"Havoc/pkg/profile"
+	"Havoc/pkg/service"
 	"Havoc/pkg/utils"
 )
 
