@@ -10,5 +10,5 @@ import havocui
 def calling_popup():
     havocui.messagebox("Hello", "World!")
 
-#havocui.createtab("Tab Popup", "popup here", calling_popup)
-havocui.createtab("Tab Popup", "popup here")
+havocui.createtab("Tab Popup", "popup here", calling_popup)
+#havocui.createtab("Tab Popup", "popup here")

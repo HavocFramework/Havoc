@@ -28,19 +28,18 @@ PyObject* PythonAPI::HavocUI::Core::CreateTab(PyObject *self, PyObject *args)
     char *title = nullptr;
     char *in_menu = nullptr;
 	PyObject *tmp_callback;
-	PyObject *arglist;
 	PyObject *result;
 	static PyObject *my_callback = NULL;
 
-    if( !PyArg_ParseTuple( args, "ss", &title, &in_menu) )
+    if( !PyArg_ParseTuple( args, "ssO", &title, &in_menu, &tmp_callback) )
     {
         Py_RETURN_NONE;
     }
-	/*if ( !PyCallable_Check(tmp_callback) )
+	if ( !PyCallable_Check(tmp_callback) )
 	{
 		PyErr_SetString(PyExc_TypeError, "parameter must be callable");
         return NULL;
-	}*/
+	}
 	Py_XINCREF(tmp_callback);
 	Py_XDECREF(my_callback);
 	my_callback = tmp_callback;
@@ -55,13 +54,13 @@ PyObject* PythonAPI::HavocUI::Core::CreateTab(PyObject *self, PyObject *args)
     {
         Py_RETURN_NONE;
     }
-	tab->addMenu(in_menu);
-/*    QMainWindow::connect( actionCallback, &QAction::triggered, *HavocX::HavocUserInterface, [&]() {
-		arglist = Py_BuildValue("");
-		result = PyObject_CallObject(tmp_callback, arglist);
-		Py_DECREF(arglist);
+	actionCallback->setObjectName(QString::fromUtf8(in_menu));
+	actionCallback->setText(in_menu);
+	tab->addAction(actionCallback);
+    QMainWindow::connect( actionCallback, &QAction::triggered, HavocX::HavocUserInterface->HavocWindow, [&]() {
+		result = PyObject_CallFunctionObjArgs(my_callback, nullptr);
 		return result;
-	});*/
+	});
 	Py_RETURN_NONE;
 }
 
