@@ -1,4 +1,3 @@
-
 #ifndef HAVOC_PYTHONAPI_H
 #define HAVOC_PYTHONAPI_H
 
@@ -41,6 +40,7 @@ namespace PythonAPI
         namespace Core
         {
             PY_FUNCTION( MessageBox )
+            PY_FUNCTION( CreateTab )
         }
 
         namespace PyModule
