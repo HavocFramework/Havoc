@@ -7,6 +7,7 @@ namespace PythonAPI::HavocUI
     PyMethodDef PyMethode_HavocUI[] = {
             { "messagebox", PythonAPI::HavocUI::Core::MessageBox, METH_VARARGS, "Python interface for Havoc Messagebox" },
             { "createtab", PythonAPI::HavocUI::Core::CreateTab, METH_VARARGS, "Python interface for Havoc Tabs" },
+            { "inputdialog", PythonAPI::HavocUI::Core::InputDialog, METH_VARARGS, "Python interface for Havoc InputDialog" },
 
             { NULL, NULL, 0, NULL }
     };
@@ -83,6 +84,19 @@ PyObject* PythonAPI::HavocUI::Core::MessageBox(PyObject *self, PyObject *args)
     messageBox.exec();
 
     Py_RETURN_NONE;
+}
+
+PyObject* PythonAPI::HavocUI::Core::InputDialog(PyObject *self, PyObject *args)
+{
+    char *title = nullptr, *content = nullptr;
+
+    if( !PyArg_ParseTuple( args, "ss", &title, &content ) )
+    {
+        Py_RETURN_NONE;
+    }
+    QString data = QInputDialog::getText(
+                    HavocX::HavocUserInterface->HavocWindow, title, content);
+    return PyBytes_FromString(data.toStdString().c_str());
 }
 
 PyMODINIT_FUNC PythonAPI::HavocUI::PyInit_HavocUI(void)
