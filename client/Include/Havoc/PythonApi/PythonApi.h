@@ -41,6 +41,7 @@ namespace PythonAPI
         {
             PY_FUNCTION( MessageBox )
             PY_FUNCTION( CreateTab )
+            PY_FUNCTION( InputDialog )
         }
 
         namespace PyModule
