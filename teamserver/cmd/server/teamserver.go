@@ -5,6 +5,7 @@ import (
 	"Havoc/pkg/agent"
 	"Havoc/pkg/common/certs"
 	"Havoc/pkg/db"
+	"Havoc/pkg/service"
 	"Havoc/pkg/webhook"
 	"bytes"
 	"encoding/hex"
