@@ -1,6 +1,7 @@
 #include <Havoc/PythonApi/PythonApi.h>
 #include <UserInterface/HavocUI.hpp>
 #include <QFile>
+#include <QInputDialog>
 
 namespace PythonAPI::HavocUI
 {
