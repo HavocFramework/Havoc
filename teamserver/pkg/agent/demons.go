@@ -1716,6 +1716,33 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 			}
 
 			var Socks *socks.Socks
+			var PortNum int
+
+			PortNum, err = strconv.Atoi(Param)
+			if err != nil || PortNum < 1 || PortNum > 65535 {
+				return nil, errors.New("invalid socks5 port")
+			}
+
+			var found = false
+
+			a.SocksSvrMtx.Lock()
+
+			for i := range a.SocksSvr {
+
+				if a.SocksSvr[i].Addr == Param {
+
+					/* socks proxy already exists! */
+					found = true
+
+					break
+				}
+			}
+
+			a.SocksSvrMtx.Unlock()
+
+			if found {
+				return nil, errors.New("a socks5 proxy on that port already exists")
+			}
 
 			Socks = socks.NewSocks("0.0.0.0:" + Param)
 			if Socks == nil {
