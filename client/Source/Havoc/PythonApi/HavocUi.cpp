@@ -1,6 +1,8 @@
 #include <Havoc/PythonApi/PythonApi.h>
 #include <UserInterface/HavocUI.hpp>
 #include <QFile>
+#include <QMessageBox>
+#include <QFileDialog>
 #include <QInputDialog>
 
 namespace PythonAPI::HavocUI
@@ -9,6 +11,9 @@ namespace PythonAPI::HavocUI
             { "messagebox", PythonAPI::HavocUI::Core::MessageBox, METH_VARARGS, "Python interface for Havoc Messagebox" },
             { "createtab", PythonAPI::HavocUI::Core::CreateTab, METH_VARARGS, "Python interface for Havoc Tabs" },
             { "inputdialog", PythonAPI::HavocUI::Core::InputDialog, METH_VARARGS, "Python interface for Havoc InputDialog" },
+            { "openfiledialog", PythonAPI::HavocUI::Core::OpenFileDialog, METH_VARARGS, "Python interface for Havoc InputDialog" },
+            { "savefiledialog", PythonAPI::HavocUI::Core::SaveFileDialog, METH_VARARGS, "Python interface for Havoc InputDialog" },
+            { "questiondialog", PythonAPI::HavocUI::Core::QuestionDialog, METH_VARARGS, "Python interface for Havoc InputDialog" },
 
             { NULL, NULL, 0, NULL }
     };
@@ -87,6 +92,24 @@ PyObject* PythonAPI::HavocUI::Core::MessageBox(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 }
 
+PyObject* PythonAPI::HavocUI::Core::QuestionDialog(PyObject *self, PyObject *args)
+{
+    char *title = nullptr, *content = nullptr;
+
+    if( !PyArg_ParseTuple( args, "ss", &title, &content ) )
+    {
+        Py_RETURN_NONE;
+    }
+
+    QMessageBox::StandardButton result = QMessageBox::question(HavocX::HavocUserInterface->HavocWindow, title, content, QMessageBox::Yes | QMessageBox::No);
+
+    if (result == QMessageBox::Yes) {
+        Py_RETURN_TRUE;
+    } else {
+        Py_RETURN_FALSE;
+    }
+}
+
 PyObject* PythonAPI::HavocUI::Core::InputDialog(PyObject *self, PyObject *args)
 {
     char *title = nullptr, *content = nullptr;
@@ -97,6 +120,32 @@ PyObject* PythonAPI::HavocUI::Core::InputDialog(PyObject *self, PyObject *args)
     }
     QString data = QInputDialog::getText(
                     HavocX::HavocUserInterface->HavocWindow, title, content);
+    return PyBytes_FromString(data.toStdString().c_str());
+}
+
+PyObject* PythonAPI::HavocUI::Core::OpenFileDialog(PyObject *self, PyObject *args)
+{
+    char *title = nullptr;
+
+    if( !PyArg_ParseTuple( args, "s", &title) )
+    {
+        Py_RETURN_NONE;
+    }
+    QString data = QFileDialog::getOpenFileName(
+                    HavocX::HavocUserInterface->HavocWindow, title, QDir::homePath());
+    return PyBytes_FromString(data.toStdString().c_str());
+}
+
+PyObject* PythonAPI::HavocUI::Core::SaveFileDialog(PyObject *self, PyObject *args)
+{
+    char *title = nullptr;
+
+    if( !PyArg_ParseTuple( args, "s", &title) )
+    {
+        Py_RETURN_NONE;
+    }
+    QString data = QFileDialog::getSaveFileName(
+                    HavocX::HavocUserInterface->HavocWindow, title, QDir::homePath());
     return PyBytes_FromString(data.toStdString().c_str());
 }
 
