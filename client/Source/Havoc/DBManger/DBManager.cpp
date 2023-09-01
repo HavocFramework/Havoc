@@ -32,6 +32,7 @@ DBManager::DBManager( const QString& FilePath, int OpenFlag )
 bool DBManager::createNewDatabase()
 {
     auto query = QSqlQuery();
+    auto error = std::string();
 
     /* check if the db file is opened */
     if ( ! DB.isOpen() ) {
@@ -49,7 +50,8 @@ bool DBManager::createNewDatabase()
         ");"
     );
     if ( ! query.exec() ) {
-        spdlog::error( "[DB] Couldn't create Teamserver table: ", query.lastError().text().toStdString() );
+        error = query.lastError().text().toStdString();
+        spdlog::error( "[DB] Couldn't create Teamserver table: ", error );
     }
 
     query.prepare(
@@ -58,8 +60,10 @@ bool DBManager::createNewDatabase()
         "\"Path\" TEXT "
         ");"
     );
+
     if ( ! query.exec() ) {
-        spdlog::error( "[DB] Couldn't create Scripts table: ", query.lastError().text().toStdString() );
+        error = query.lastError().text().toStdString();
+        spdlog::error( "[DB] Couldn't create Scripts table: ", error );
         return false;
     }
 

@@ -3,13 +3,14 @@
 bool HavocNamespace::HavocSpace::DBManager::AddScript( QString Path )
 {
     auto query = QSqlQuery();
+    auto error = std::string();
 
     query.prepare( "insert into Scripts (Path) values(:Path)" );
     query.bindValue( ":Path", Path );
 
-    if ( ! query.exec() )
-    {
-        spdlog::error( "[DB] Failed to add Script: {}", query.lastError().text().toStdString() );
+    if ( ! query.exec() ) {
+        error = query.lastError().text().toStdString();
+        spdlog::error( "[DB] Failed to add Script: {}", error );
         return false;
     }
 
@@ -19,13 +20,18 @@ bool HavocNamespace::HavocSpace::DBManager::AddScript( QString Path )
 bool HavocNamespace::HavocSpace::DBManager::RemoveScript( QString Path )
 {
     auto query = QSqlQuery();
+    auto error = std::string();
+    auto path  = std::string();
 
     query.prepare( "delete from Scripts where Path = :Path" );
-    query.bindValue(":Path", Path);
+    query.bindValue( ":Path", Path );
 
-    if ( ! query.exec() )
-    {
-        spdlog::error( "[DB] Couldn't delete {} from Scripts: {}", Path.toStdString(), query.lastError().text().toStdString() );
+    if ( ! query.exec() ) {
+        error = query.lastError().text().toStdString();
+        path  = Path.toStdString();
+
+        spdlog::error( "[DB] Couldn't delete {} from Scripts: {}", path, error );
+
         return false;
     }
 
@@ -35,11 +41,13 @@ bool HavocNamespace::HavocSpace::DBManager::RemoveScript( QString Path )
 bool HavocNamespace::HavocSpace::DBManager::CheckScript( QString Path )
 {
     auto query = QSqlQuery();
+    auto error = std::string();
 
     query.prepare( "select * from Scripts" );
-    if ( ! query.exec() )
-    {
-        spdlog::error( "[DB] Couldn't query Scripts: {}", query.lastError().text().toStdString() );
+
+    if ( ! query.exec() ) {
+        error = query.lastError().text().toStdString();
+        spdlog::error( "[DB] Couldn't query Scripts: {}", error );
         return false;
     }
 
@@ -54,13 +62,15 @@ bool HavocNamespace::HavocSpace::DBManager::CheckScript( QString Path )
 
 vector<QString> HavocNamespace::HavocSpace::DBManager::GetScripts()
 {
-    auto List   = vector<QString>();
-    auto query  = QSqlQuery();
+    auto List  = vector<QString>();
+    auto query = QSqlQuery();
+    auto error = std::string();
 
     query.prepare( "select * from Scripts" );
-    if ( ! query.exec() )
-    {
-        spdlog::error( "[DB] Couldn't query Scripts: {}", query.lastError().text().toStdString() );
+
+    if ( ! query.exec() ) {
+        error = query.lastError().text().toStdString();
+        spdlog::error( "[DB] Couldn't query Scripts: {}", error );
         return List;
     }
 

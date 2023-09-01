@@ -138,7 +138,10 @@ void GraphWidget::GraphPivotNodeAdd( QString AgentID, SessionItem Session )
         }
     }
 
-    spdlog::error( "Parent AgentID {} not found for {}", AgentID.toStdString(), Session.Name.toStdString() );
+    auto agent_id = AgentID.toStdString();
+    auto session  = Session.Name.toStdString();
+
+    spdlog::error( "Parent AgentID {} not found for {}", agent_id, session );
 }
 
 void GraphWidget::GraphPivotNodeDisconnect( QString AgentID )

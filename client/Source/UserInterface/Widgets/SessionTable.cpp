@@ -217,15 +217,6 @@ void UserInterface::Widgets::SessionTable::ChangeSessionValue( QString DemonID, 
     }
 }
 
-void UserInterface::Widgets::SessionTable::RemoveSession( Util::SessionItem Session )
-{
-    for ( int i = 0; i < SessionTableWidget->rowCount(); i++ )
-    {
-        if ( SessionTableWidget->item( i, 0 )->text() == Session.Name )
-            spdlog::info( "Want to remove: {}", Session.Name.toStdString() );
-    }
-}
-
 void HavocNamespace::UserInterface::Widgets::SessionTable::updateRow()
 {
     bool selected = false;

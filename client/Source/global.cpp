@@ -54,12 +54,10 @@ void Util::SessionItem::Export()
 
         if ( ! Filename.toString().isNull() )
         {
-            // Save to file
             auto file       = QFile( Filename.toString() );
             auto messageBox = QMessageBox(  );
 
-            if ( file.open( QIODevice::ReadWrite ) )
-            {
+            if ( file.open( QIODevice::ReadWrite ) ) {
                 auto SessionData = QJsonObject();
 
                 SessionData.insert( "AgentID",          QJsonValue::fromVariant( Name ) );
@@ -83,8 +81,10 @@ void Util::SessionItem::Export()
 
                 file.write( QJsonDocument( SessionData ).toJson( QJsonDocument::Indented ) );
             }
-            else
-                spdlog::error("Couldn't write to file {}", Filename.toString().toStdString());
+            else {
+                auto path = Filename.toString().toStdString();
+                spdlog::error("Couldn't write to file {}", path );
+            }
 
             file.close();
 

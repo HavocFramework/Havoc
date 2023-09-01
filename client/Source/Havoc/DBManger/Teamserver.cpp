@@ -7,6 +7,7 @@ bool HavocSpace::DBManager::addTeamserverInfo( const Util::ConnectionInfo& conne
 {
     auto query   = QSqlQuery();
     auto success = true;
+    auto error   = std::string();
 
     query.prepare( "insert into Teamservers (ProfileName, Host, Port, User, Password) values(:ProfileName, :Host, :Port, :User, :Password)" );
 
@@ -18,8 +19,10 @@ bool HavocSpace::DBManager::addTeamserverInfo( const Util::ConnectionInfo& conne
 
     /* print error */
     if ( ! ( success = query.exec() ) ) {
-        spdlog::error( "[DB] Failed to add teamserver info: {}", query.lastError().text().toStdString() );
+        error   = query.lastError().text().toStdString();
         success = false;
+
+        spdlog::error( "[DB] Failed to add teamserver info: {}", error );
     }
 
     return success;
@@ -29,11 +32,13 @@ bool HavocSpace::DBManager::checkTeamserverExists( const QString& ProfileName )
 {
     auto query   = QSqlQuery();
     auto success = false;
+    auto error   = std::string();
 
     query.prepare( "select * from Teamservers" );
 
     if ( ! query.exec() ) {
-        spdlog::error( "[DB] Failed to query teamserver existence: {}", query.lastError().text().toStdString() );
+        error = query.lastError().text().toStdString();
+        spdlog::error( "[DB] Failed to query teamserver existence: {}", error );
         return success;
     }
 
@@ -50,12 +55,17 @@ bool HavocSpace::DBManager::checkTeamserverExists( const QString& ProfileName )
 bool HavocSpace::DBManager::removeTeamserverInfo( const QString& ProfileName )
 {
     auto query = QSqlQuery();
+    auto error = std::string();
+    auto name  = std::string();
 
     query.prepare( "delete from Teamservers where ProfileName = :ProfileName" );
     query.bindValue( ":ProfileName", ProfileName );
 
     if ( ! query.exec() ) {
-        spdlog::error( "[DB] Failed to deleting teamserver [{}] info: {}", ProfileName.toStdString(), query.lastError().text().toStdString() );
+        error = query.lastError().text().toStdString();
+        name  = ProfileName.toStdString();
+
+        spdlog::error( "[DB] Failed to deleting teamserver [{}] info: {}", name, error );
         return false;
     }
 
@@ -66,11 +76,14 @@ vector<Util::ConnectionInfo> HavocSpace::DBManager::listTeamservers()
 {
     auto query          = QSqlQuery();
     auto TeamserverList = vector<Util::ConnectionInfo>();
+    auto error          = std::string();
 
     query.prepare( "select * from Teamservers" );
 
     if ( ! query.exec() ) {
-        spdlog::error( "[DB] Error while query teamserver list: {}", query.lastError().text().toStdString() );
+        error = query.lastError().text().toStdString();
+
+        spdlog::error( "[DB] Error while query teamserver list: {}", error );
         return TeamserverList;
     }
 
@@ -88,13 +101,17 @@ vector<Util::ConnectionInfo> HavocSpace::DBManager::listTeamservers()
     return TeamserverList;
 }
 
-bool HavocSpace::DBManager::removeAllTeamservers() {
+bool HavocSpace::DBManager::removeAllTeamservers()
+{
     auto query = QSqlQuery();
+    auto error = std::string();
 
     query.prepare( "delete from Teamservers" );
 
     if ( ! query.exec() ) {
-        spdlog::error( "[DB] Error while deleting teamservers: {}", query.lastError().text().toStdString() );
+        error = query.lastError().text().toStdString();
+
+        spdlog::error( "[DB] Error while deleting teamservers: {}", error );
 
         return false;
     }

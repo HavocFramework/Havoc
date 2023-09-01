@@ -269,10 +269,12 @@ auto Payload::ReceivedImplantAndSave( QString FileName, QByteArray ImplantArray 
             auto file       = QFile( Filename.toString() );
             auto messageBox = QMessageBox(  );
 
-            if ( file.open( QIODevice::ReadWrite ) )
+            if ( file.open( QIODevice::ReadWrite ) ) {
                 file.write( ImplantArray );
-            else
-                spdlog::error("Couldn't write to file {}", Filename.toString().toStdString());
+            } else {
+                auto name = Filename.toString().toStdString();
+                spdlog::error( "Couldn't write to file {}", name );
+            }
 
             file.close();
 
@@ -668,7 +670,9 @@ auto Payload::GetConfigAsJson() -> QJsonDocument
                 }
                 else
                 {
-                    spdlog::error( "ObjType not found: {}", ObjType.toStdString() );
+                    auto obj = ObjType.toStdString();
+
+                    spdlog::error( "ObjType not found: {}", obj );
 
                     ++TreeIterator;
                     continue;
@@ -692,7 +696,8 @@ auto Payload::GetConfigAsJson() -> QJsonDocument
             }
             else
             {
-                spdlog::error( "ObjType not found: {}", ObjType.toStdString() );
+                auto obj = ObjType.toStdString();
+                spdlog::error( "ObjType not found: {}", obj );
 
                 ++TreeIterator;
                 continue;

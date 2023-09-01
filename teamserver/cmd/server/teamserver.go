@@ -5,6 +5,7 @@ import (
 	"Havoc/pkg/agent"
 	"Havoc/pkg/common/certs"
 	"Havoc/pkg/db"
+	"Havoc/pkg/service"
 	"Havoc/pkg/webhook"
 	"bytes"
 	"encoding/hex"
@@ -193,7 +194,7 @@ func (t *Teamserver) Start() {
 
     logger.Warn("Service api has been disabled for this version.")
 
-    /*
+    // 3rd Party Agent Support Enabled
 		t.Service = service.NewService(t.Server.Engine)
 		t.Service.Teamserver = t
 		t.Service.Data.ServerAgents = &t.Agents
@@ -204,7 +205,7 @@ func (t *Teamserver) Start() {
 			logger.Info(fmt.Sprintf("%v starting service handle on %v", "["+colors.BoldWhite("SERVICE")+"]", colors.BlueUnderline(TeamserverWs+"/"+t.Service.Config.Endpoint)))
 		} else {
 			logger.Error("Teamserver service error: Endpoint not specified")
-		}*/
+		}
 	}
 
 	/* now load up our db or start a new one if none exist */

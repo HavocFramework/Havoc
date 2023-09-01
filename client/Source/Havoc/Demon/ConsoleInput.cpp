@@ -241,7 +241,6 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
 
                                 if ( InputCommands[ 2 ].compare( SubCommandString ) == 0 )
                                 {
-                                    spdlog::debug( "Found command: {} == {}", InputCommands[ 2 ].toStdString(), SubCommandString.toStdString() );
                                     FoundSubCommand = true;
 
                                     DemonConsole->Console->append( "" );
@@ -276,7 +275,6 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                             {
                                 for ( auto& Command : HavocX::Teamserver.RegisteredCommands )
                                 {
-                                    spdlog::debug( "[help] {} == {}", InputCommands[ 1 ].toStdString(), Command.Module );
                                     if ( InputCommands[ 1 ].compare( Command.Module.c_str() ) == 0 )
                                     {
                                         if ( InputCommands[ 2 ].compare( Command.Command.c_str() ) == 0 )
@@ -422,7 +420,6 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                     {
                         for ( auto& Command : HavocX::Teamserver.RegisteredCommands )
                         {
-                            spdlog::debug( "[help] {} == {}", InputCommands[ 1 ].toStdString(), Command.Command );
                             if ( InputCommands[ 1 ].compare( Command.Command.c_str() ) == 0 )
                             {
                                 FoundCommand = true;
@@ -2307,8 +2304,6 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                     /* Check if command is matching */
                     if ( InputCommands[ 1 ].compare( Command.Command.c_str() ) == 0 )
                     {
-                        spdlog::debug( "Found module command: {}", commandline.toStdString() );
-
                         PyObject* FuncArgs = PyTuple_New( InputCommands.size() );
                         PyObject* Return   = nullptr;
                         auto      Path     = std::string();
@@ -2508,10 +2503,6 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                     if (!command.Anonymous)
                     {
                         commandOutput.push_back("  " + command.Name + QString(std::string((TotalSize - command.Name.size()), ' ').c_str()) + "Command" + "      " + command.Description);
-                    }
-                    else
-                    {
-                        spdlog::debug("Anonymous command: {}", command.Name.toStdString());
                     }
                 }
 

@@ -164,6 +164,8 @@ void HavocNamespace::UserInterface::Dialogs::Connect::setupUi( QDialog* Form )
 
 Util::ConnectionInfo HavocNamespace::UserInterface::Dialogs::Connect::StartDialog( bool FromAction )
 {
+    auto ProfileName = std::string();
+
     listWidget->clear();
 
     for ( auto & TeamserverConnection : TeamserverList )
@@ -191,6 +193,8 @@ Util::ConnectionInfo HavocNamespace::UserInterface::Dialogs::Connect::StartDialo
     ConnectionInfo->User     = lineEdit_User->text();
     ConnectionInfo->Password = lineEdit_Password->text();
 
+    ProfileName = ConnectionInfo->Name.toStdString();
+
     if ( this->tryConnect )
     {
         auto ConnectionInstant = new Connector( ConnectionInfo );
@@ -198,18 +202,15 @@ Util::ConnectionInfo HavocNamespace::UserInterface::Dialogs::Connect::StartDialo
         HavocX::Teamserver = *ConnectionInfo;
         HavocX::Connector  = ConnectionInstant;
 
-        if ( this->isNewProfile )
-        {
-            if ( ! this->dbManager->addTeamserverInfo( *ConnectionInfo ) )
+        if ( this->isNewProfile ) {
+            if ( ! this->dbManager->addTeamserverInfo( *ConnectionInfo ) ) {
                 spdlog::warn( "Failed to add Teamserver Info to database" );
+            }
         }
-        else if ( ConnectionInstant->ErrorString == nullptr )
-        {
-            spdlog::info( "Connecting to profile: {}", ConnectionInfo->Name.toStdString() );
-        }
-        else
-        {
-            spdlog::critical( "Couldn't connect to profile: {}", ConnectionInfo->Name.toStdString() );
+        else if ( ConnectionInstant->ErrorString == nullptr ) {
+            spdlog::info( "Connecting to profile: {}", ProfileName );
+        } else {
+            spdlog::critical( "Couldn't connect to profile: {}", ProfileName );
             Havoc::Exit();
         }
 
