@@ -1062,10 +1062,13 @@ BOOL WinScreenshot(
     HDC                 hDC, hMemDC = NULL;
     BYTE*               bBits       = NULL;
     DWORD               cbBits      = 0;
+    BOOL                ReturnValue = FALSE;
+    HGDIOBJ             ObjPtr      = NULL;
 
     PVOID               BitMapImage = NULL;
     DWORD               BitMapSize  = 0;
 
+    // NOTE: if GetSystemMetrics fails, screenshot works anyways
     INT x = Instance.Win32.GetSystemMetrics( SM_XVIRTUALSCREEN );
     INT y = Instance.Win32.GetSystemMetrics( SM_YVIRTUALSCREEN );
 
@@ -1074,10 +1077,22 @@ BOOL WinScreenshot(
     MemSet( &BitMapInfo, 0, sizeof( BITMAPINFO ) );
     MemSet( &AllDesktops,0, sizeof( BITMAP ) );
 
-    hDC      = Instance.Win32.GetDC( NULL );
-    hTempMap = Instance.Win32.GetCurrentObject( hDC, OBJ_BITMAP );
+    hDC = Instance.Win32.GetDC( NULL );
+    if ( ! hDC ) {
+        PUTS( "GetDC failed" )
+        goto Cleanup;
+    }
 
-    Instance.Win32.GetObjectW( hTempMap, sizeof( BITMAP ), &AllDesktops );
+    hTempMap = Instance.Win32.GetCurrentObject( hDC, OBJ_BITMAP );
+    if ( ! hTempMap ) {
+        PUTS( "GetCurrentObject failed" )
+        goto Cleanup;
+    }
+
+    if ( ! Instance.Win32.GetObjectW( hTempMap, sizeof( BITMAP ), &AllDesktops ) ) {
+        PUTS( "GetObjectW failed" )
+        goto Cleanup;
+    }
 
     BitFileHdr.bfType        = ( WORD ) ( 'B' | ( 'M' << 8 ) );
     BitFileHdr.bfOffBits     = sizeof( BITMAPFILEHEADER ) + sizeof( BITMAPINFOHEADER );
@@ -1096,14 +1111,35 @@ BOOL WinScreenshot(
     BitMapImage = Instance.Win32.LocalAlloc( LPTR, BitMapSize );
 
     hMemDC  = Instance.Win32.CreateCompatibleDC( hDC );
-    hBitmap = Instance.Win32.CreateDIBSection( hDC, &BitMapInfo, DIB_RGB_COLORS, ( VOID** ) &bBits, NULL, 0 );
+    if ( ! hMemDC ) {
+        PUTS( "CreateCompatibleDC failed" )
+        goto Cleanup;
+    }
 
-    Instance.Win32.SelectObject( hMemDC, hBitmap );
-    Instance.Win32.BitBlt( hMemDC, 0, 0, AllDesktops.bmWidth, AllDesktops.bmHeight, hDC, x, y, SRCCOPY );
+    hBitmap = Instance.Win32.CreateDIBSection( hDC, &BitMapInfo, DIB_RGB_COLORS, ( VOID** ) &bBits, NULL, 0 );
+    if ( ! hBitmap ) {
+        PUTS( "CreateDIBSection failed" )
+        goto Cleanup;
+    }
+
+    ObjPtr = Instance.Win32.SelectObject( hMemDC, hBitmap );
+    if ( ! ObjPtr || ObjPtr == HGDI_ERROR ) {
+        PUTS( "SelectObject failed" )
+        goto Cleanup;
+    }
+
+    if ( ! Instance.Win32.BitBlt( hMemDC, 0, 0, AllDesktops.bmWidth, AllDesktops.bmHeight, hDC, x, y, SRCCOPY ) ) {
+        PUTS( "BitBlt failed" )
+        goto Cleanup;
+    }
 
     MemCopy( BitMapImage, &BitFileHdr, sizeof( BITMAPFILEHEADER ) );
     MemCopy( BitMapImage + sizeof( BITMAPFILEHEADER ), &BitInfoHdr, sizeof( BITMAPINFOHEADER ) );
     MemCopy( BitMapImage + sizeof( BITMAPFILEHEADER ) + sizeof( BITMAPINFOHEADER ), bBits, cbBits );
+
+    ReturnValue = TRUE;
+
+Cleanup:
 
     if ( ImagePointer )
         *ImagePointer = BitMapImage;
@@ -1127,7 +1163,7 @@ BOOL WinScreenshot(
         Instance.Win32.DeleteObject( hBitmap );
     }
 
-    return TRUE;
+    return ReturnValue;
 }
 
 /*!
