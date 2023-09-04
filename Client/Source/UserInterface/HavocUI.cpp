@@ -59,9 +59,6 @@ void HavocNamespace::UserInterface::HavocUI::setupUi(QMainWindow *Havoc)
     actionGeneratePayload = new QAction( this->HavocWindow );
     actionGeneratePayload->setObjectName( QString::fromUtf8( "actionGeneratePayload" ) );
 
-    actionGeneratePayload = new QAction( this->HavocWindow );
-    actionGeneratePayload->setObjectName( QString::fromUtf8( "actionGeneratePayload" ) );
-
     actionLoad_Script = new QAction( this->HavocWindow );
     actionLoad_Script->setObjectName( QString::fromUtf8( "actionLoad_Script" ) );
 
