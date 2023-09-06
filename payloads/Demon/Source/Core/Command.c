@@ -636,6 +636,7 @@ VOID CommandProcList(
              * if we close the handle to our own process we won't see any debug prints anymore */
             if ( U_PTR( SysProcessInfo->UniqueProcessId ) != Instance.Session.PID ) {
                 SysNtClose( Process );
+                Process = NULL;
             }
 #else
             if ( Process ) {
