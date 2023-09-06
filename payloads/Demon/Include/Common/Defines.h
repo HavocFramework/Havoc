@@ -185,6 +185,7 @@
 #define H_FUNC_DELETEFILEW                           0x99bee22f
 #define H_FUNC_CREATEDIRECTORYW                      0xb717be65
 #define H_FUNC_COPYFILEW                             0x39e8f317
+#define H_FUNC_MOVEFILEEXW                           0xd356ecf0
 #define H_FUNC_SETCURRENTDIRECTORYW                  0xcf2ad680
 #define H_FUNC_WOW64DISABLEWOW64FSREDIRECTION        0x40750b38
 #define H_FUNC_WOW64REVERTWOW64FSREDIRECTION         0xc993b9c

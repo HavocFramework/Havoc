@@ -417,6 +417,37 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 
 			break
 
+                case "mv":
+                        SubCommand = 8
+
+                        var Paths = strings.Split(Arguments, ";")
+                        if len(Paths) >= 2 {
+                                var (
+                                        PathFrom []byte
+                                        PathTo   []byte
+                                )
+
+                                if val, err := base64.StdEncoding.DecodeString(Paths[0]); err == nil {
+                                        PathFrom = []byte(common.EncodeUTF16(string(val)))
+                                } else {
+                                        return nil, err
+                                }
+
+                                if val, err := base64.StdEncoding.DecodeString(Paths[1]); err == nil {
+                                        PathTo = []byte(common.EncodeUTF16(string(val)))
+                                } else {
+                                        return nil, err
+                                }
+
+                                job.Data = []interface{}{
+                                        SubCommand,
+                                        PathFrom,
+                                        PathTo,
+                                }
+                        }
+
+                        break
+
 		case "pwd":
 			SubCommand = 9
 			job.Data = []interface{}{
@@ -3118,6 +3149,31 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 				}
 
 				break
+
+                        case DEMON_COMMAND_FS_MOVE:
+                                if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadBytes, parser.ReadBytes}) {
+                                        var (
+                                                Success  = Parser.ParseInt32()
+                                                PathFrom = Parser.ParseUTF16String()
+                                                PathTo   = Parser.ParseUTF16String()
+                                        )
+
+                                        logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_MOVE, Success: %d, PathFrom: %v, PathTo: %v", AgentID, Success, PathFrom, PathTo))
+
+                                        if Success == win32.TRUE {
+                                                Output["Type"] = "Good"
+                                                Output["Message"] = fmt.Sprintf("Successful moved file %v to %v", PathFrom, PathTo)
+                                        } else {
+                                                Output["Type"] = "Error"
+                                                Output["Message"] = fmt.Sprintf("Failed to moved file %v to %v", PathFrom, PathTo)
+                                        }
+                                        a.RequestCompleted(RequestID)
+                                } else {
+                                        logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_MOVE, Invalid packet", AgentID))
+                                }
+
+                                break
+
 
 			case DEMON_COMMAND_FS_GET_PWD:
 
