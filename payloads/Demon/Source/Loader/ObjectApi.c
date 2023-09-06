@@ -207,6 +207,11 @@ VOID BeaconPrintf( INT Type, PCHAR fmt, ... )
     UINT32      RequestID            = 0;
     PVOID       CoffeeFunctionReturn = __builtin_return_address( 0 );
 
+    if ( ! fmt ) {
+        PUTS( "Format string can't be NULL" );
+        return;
+    }
+
     if ( GetRequestIDForCallingObjectFile( CoffeeFunctionReturn, &RequestID ) )
         package = PackageCreateWithRequestID( BEACON_OUTPUT, RequestID );
     else
@@ -214,10 +219,27 @@ VOID BeaconPrintf( INT Type, PCHAR fmt, ... )
 
     va_start( VaListArg, fmt );
 
-    CallbackSize    = Instance.Win32.vsnprintf( NULL, 0, fmt, VaListArg );
-    CallbackOutput  = Instance.Win32.LocalAlloc( LPTR, CallbackSize );
+    CallbackSize = Instance.Win32.vsnprintf( NULL, 0, fmt, VaListArg );
+    if ( CallbackSize < 0 ) {
+        PUTS( "Failed to calculate final string length" )
+        va_end( VaListArg );
+        return;
+    }
 
-    Instance.Win32.vsnprintf( CallbackOutput, CallbackSize, fmt, VaListArg );
+    CallbackOutput = Instance.Win32.LocalAlloc( LPTR, CallbackSize );
+    if ( ! CallbackOutput ) {
+        PUTS( "Failed to allocate CallbackOutput" );
+        va_end( VaListArg );
+        return;
+    }
+
+    if ( Instance.Win32.vsnprintf( CallbackOutput, CallbackSize, fmt, VaListArg ) < 0 ) {
+        PUTS( "Failed to format string" )
+        MemSet( CallbackOutput, 0, CallbackSize );
+        Instance.Win32.LocalFree( CallbackOutput );
+        va_end( VaListArg );
+        return;
+    }
 
     va_end( VaListArg );
 
