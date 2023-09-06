@@ -15,9 +15,10 @@ string HavocNamespace::CodeName = "Hierophant Green";
 // Global Variables in the Havoc Namespace
 HavocSpace::Havoc* HavocNamespace::HavocApplication;
 
-Util::ConnectionInfo       HavocX::Teamserver;
-HavocNamespace::Connector* HavocX::Connector;
-bool                       HavocX::DebugMode = false;
+Util::ConnectionInfo                    HavocX::Teamserver;
+HavocNamespace::Connector*              HavocX::Connector;
+HavocNamespace::UserInterface::HavocUI* HavocX::HavocUserInterface;
+bool                                    HavocX::DebugMode = false;
 
 QString HavocSpace::Listener::PayloadHTTPS    = "Https";
 QString HavocSpace::Listener::PayloadHTTP     = "Http";

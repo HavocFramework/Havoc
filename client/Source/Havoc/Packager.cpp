@@ -165,6 +165,7 @@ auto Packager::DispatchPackage( Util::Packager::PPackage Package ) -> bool
 
 bool Packager::DispatchInitConnection( Util::Packager::PPackage Package )
 {
+    HavocX::HavocUserInterface = &HavocApplication->HavocAppUI;
     switch ( Package->Body.SubEvent )
     {
         case Util::Packager::InitConnection::Success:
