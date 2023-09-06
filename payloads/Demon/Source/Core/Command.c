@@ -640,11 +640,13 @@ VOID CommandProcList(
 #else
             if ( Process ) {
                 SysNtClose( Process );
+                Process = NULL;
             }
 #endif
 
             if ( Token ) {
                 SysNtClose( Token );
+                Token = NULL;
             }
 
             if ( UserDomain.Buffer ) {

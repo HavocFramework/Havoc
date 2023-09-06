@@ -3629,7 +3629,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						ProcName = Parser.ParseString()
 						ProcID = Parser.ParseInt32()
 						ParentPID = Parser.ParseInt32()
-						ProcUser = Parser.ParseString()
+						ProcUser = Parser.ParseUTF16String()
 						ProcArch = Parser.ParseInt32()
 
 						Output += fmt.Sprintf(
