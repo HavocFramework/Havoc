@@ -597,6 +597,9 @@ VOID CommandProcList(
         PackageAddInt32( Package, ProcessUI );
 
         do {
+            /* reset token handle */
+	    Token = NULL;
+		
             /* open handle to each process with query information privilege since we don't need anything else besides basic info */
             Process = ProcessOpen(
                 U_PTR( SysProcessInfo->UniqueProcessId ),
