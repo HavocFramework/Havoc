@@ -131,6 +131,7 @@
 #define DEMON_COMMAND_FS_REMOVE              5
 #define DEMON_COMMAND_FS_MKDIR               6
 #define DEMON_COMMAND_FS_COPY                7
+#define DEMON_COMMAND_FS_MOVE                8
 #define DEMON_COMMAND_FS_GET_PWD             9
 #define DEMON_COMMAND_FS_CAT                 10
 

