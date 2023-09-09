@@ -289,7 +289,7 @@ NTSTATUS HwBpEngineDestroy(
         BpNext = BpEntry->Next;
 
         /* disable hardware breakpoinnt */
-        HwBpEngineSetBp( BpEntry->Tid, BpEntry->Address, BpEntry->Position, TRUE );
+        HwBpEngineSetBp( BpEntry->Tid, BpEntry->Address, BpEntry->Position, FALSE );
 
         /* zero out struct */
         MemZero( BpEntry, sizeof( BP_LIST ) );
@@ -323,36 +323,34 @@ LONG ExceptionHandler(
     PBP_LIST BpEntry = NULL;
     BOOL     Found   = FALSE;
 
-    PRINTF( "Exception Address: %p\n", Exception->ExceptionRecord->ExceptionAddress )
-    PRINTF( "Exception Code   : %p\n", Exception->ExceptionRecord->ExceptionCode )
-
-    BpEntry = Instance.HwBpEngine->Breakpoints;
-
     if ( Exception->ExceptionRecord->ExceptionCode == STATUS_SINGLE_STEP )
     {
-        /* search in linked list for bp entry */
-        do {
-            /* stop search */
-            if ( ! BpEntry ) {
-                break;
-            }
+        PRINTF( "Exception Address: %p\n", Exception->ExceptionRecord->ExceptionAddress )
 
+        BpEntry = Instance.HwBpEngine->Breakpoints;
+
+        /* search in linked list for bp entry */
+        while ( BpEntry )
+        {
             /* check if it's the address we want */
             if ( BpEntry->Address == Exception->ExceptionRecord->ExceptionAddress ) {
                 Found = TRUE;
 
-                /* remove breakpoint */
+                /* remove breakpoint so that the handler can call the original function */
                 HwBpEngineSetBp( BpEntry->Tid, BpEntry->Address, BpEntry->Position, FALSE );
 
-                /* execute registered exception */
+                /* execute registered exception handler */
                 ( ( VOID (*)( PEXCEPTION_POINTERS ) ) BpEntry->Function ) ( Exception );
+
+                /* restore breakpoint */
+                HwBpEngineSetBp( BpEntry->Tid, BpEntry->Address, BpEntry->Position, TRUE );
 
                 break;
             }
 
             /* Next entry */
             BpEntry = BpEntry->Next;
-        } while ( TRUE );
+        }
 
         PRINTF( "Found exception handler: %s\n", Found ? "TRUE" : "FALSE" )
         if ( Found ) {
