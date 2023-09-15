@@ -745,7 +745,13 @@ VOID CommandFS( PPARSER Parser )
 
             PRINTF( "Path: %ls\n", Path )
 
-            RootDir = listDir( Path, SubDirs, FilesOnly, DirsOnly, Starts, Contains, Ends );
+            /*
+             * TODO: make listDir not recursive,
+             *       right now, we avoid stack overflows by iterating 10 times tops
+             *       otherweise, this function is known to crash if the
+             *       search space is too vast
+            */
+            RootDir = listDir( Path, SubDirs, FilesOnly, DirsOnly, Starts, Contains, Ends, 10 );
 
             PackageAddBool( Package, FileExplorer );
             PackageAddBool( Package, ListOnly );

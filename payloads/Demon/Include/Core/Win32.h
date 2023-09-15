@@ -257,6 +257,7 @@ PROOT_DIR listDir(
     IN BOOL   DirsOnly,
     IN LPWSTR Starts,
     IN LPWSTR Contains,
-    IN LPWSTR Ends);
+    IN LPWSTR Ends,
+    IN UINT32 MaxLevelDeep);
 
 #endif

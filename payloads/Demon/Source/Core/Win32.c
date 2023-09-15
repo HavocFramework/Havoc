@@ -1482,7 +1482,8 @@ PROOT_DIR listDir(
     IN BOOL   DirsOnly,
     IN LPWSTR Starts,
     IN LPWSTR Contains,
-    IN LPWSTR Ends)
+    IN LPWSTR Ends,
+    IN UINT32 MaxLevelDeep)
 {
     WIN32_FIND_DATAW FindData      = { 0 };
     HANDLE           hFile         = NULL;
@@ -1651,9 +1652,9 @@ PROOT_DIR listDir(
     // list all subdirs recursively if requested
     SubDir  = RootSubDir;
     LastDir = RootDir;
-    while ( SubDir )
+    while ( MaxLevelDeep > 0 && SubDir )
     {
-        Dir = listDir( SubDir->Path, SubDirs, FilesOnly, DirsOnly, Starts, Contains, Ends );
+        Dir = listDir( SubDir->Path, SubDirs, FilesOnly, DirsOnly, Starts, Contains, Ends, MaxLevelDeep -1 );
 
         if ( Dir )
         {
