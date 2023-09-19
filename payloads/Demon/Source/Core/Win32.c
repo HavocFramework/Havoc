@@ -1491,14 +1491,17 @@ PROOT_DIR listDir(
     PROOT_DIR        RootDir       = NULL;
     PROOT_DIR        Dir           = NULL;
     PROOT_DIR        LastDir       = NULL;
+    PROOT_DIR        TmpRootDir    = NULL;
     PDIR_OR_FILE     DirOrFile     = NULL;
     PDIR_OR_FILE     LastDirOrFile = NULL;
+    PDIR_OR_FILE     TmpDirOrFile  = NULL;
     PSUB_DIR         RootSubDir    = NULL;
     PSUB_DIR         LastSubDir    = NULL;
     PSUB_DIR         SubDir        = NULL;
     BOOL             IsDir         = FALSE;
     LPWSTR           Path          = NULL;
     UINT32           PathSize      = NULL;
+    BOOL             Success       = FALSE;
 
     if ( ( ! StartPath ) || ( FilesOnly && DirsOnly ) ) {
         PUTS( "Invalid arguments" )
@@ -1507,6 +1510,11 @@ PROOT_DIR listDir(
 
     // allocate the path on the heap to keep stack usage low (given that this function is recursive)
     Path = Instance.Win32.LocalAlloc( LPTR, ( MAX_PATH + 2 + 1 ) * sizeof( WCHAR ) );
+    if ( ! Path )
+    {
+        PUTS( "Failed to allocate memory" );
+        goto Cleanup;
+    }
 
     // copy the path
     PathSize = MIN( MAX_PATH, StringLengthW( StartPath ) );
@@ -1542,6 +1550,12 @@ PROOT_DIR listDir(
 
     // allocate the RootDir
     RootDir = Instance.Win32.LocalAlloc( LPTR, sizeof( ROOT_DIR ) );
+    if ( ! RootDir )
+    {
+        PUTS( "Failed to allocate memory" );
+        goto Cleanup;
+    }
+
     MemCopy( RootDir->Path, Path, MIN( MAX_PATH, StringLengthW( Path ) ) * sizeof( WCHAR ) );
 
     do
@@ -1573,6 +1587,12 @@ PROOT_DIR listDir(
         if ( IsDir && SubDirs )
         {
             SubDir = Instance.Win32.LocalAlloc( LPTR, sizeof( SUB_DIR ) );
+            if ( ! SubDir )
+            {
+                PUTS( "Failed to allocate memory" );
+                goto Cleanup;
+            }
+
             MemCopy( SubDir->Path, Path, ( PathSize - 1 ) * sizeof( WCHAR ) );
             StringConcatW( SubDir->Path, FindData.cFileName );
 
@@ -1618,6 +1638,11 @@ PROOT_DIR listDir(
 
         // save this directory or file
         DirOrFile = Instance.Win32.LocalAlloc( LPTR, sizeof( DIR_OR_FILE ) );
+        if ( ! DirOrFile )
+        {
+            PUTS( "Failed to allocate memory" );
+            goto Cleanup;
+        }
 
         Instance.Win32.FileTimeToSystemTime( &FindData.ftLastAccessTime, &DirOrFile->FileTime );
         Instance.Win32.SystemTimeToTzSpecificLocalTime( 0, &DirOrFile->FileTime, &DirOrFile->SystemTime );
@@ -1669,6 +1694,8 @@ PROOT_DIR listDir(
         SubDir = SubDir->Next;
     }
 
+    Success = TRUE;
+
 Cleanup:
     if ( hFile )
         Instance.Win32.FindClose( hFile );
@@ -1681,6 +1708,26 @@ Cleanup:
         LastSubDir = SubDir->Next;
         DATA_FREE( SubDir, sizeof( SUB_DIR ) );
         SubDir = LastSubDir;
+    }
+
+    if ( ! Success )
+    {
+        while ( RootDir )
+        {
+            DirOrFile = RootDir->Content;
+            while ( DirOrFile )
+            {
+                TmpDirOrFile = DirOrFile->Next;
+                DATA_FREE( DirOrFile, sizeof( DIR_OR_FILE ) );
+                DirOrFile = TmpDirOrFile;
+            }
+
+            TmpRootDir = RootDir->Next;
+            DATA_FREE( RootDir, sizeof( ROOT_DIR ) );
+            RootDir = TmpRootDir;
+        }
+
+        return NULL;
     }
 
     return RootDir;
