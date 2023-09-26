@@ -2297,9 +2297,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 				Message["Message"] = "Agent has been tasked to cleanup and exit process. cya..."
 			}
 
-			a.Active = false
-			teamserver.EventAgentMark(a.NameID, "Dead")
-			teamserver.AgentUpdate(a)
+			teamserver.Died(a)
 			a.RequestCompleted(RequestID)
 
 			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
@@ -2317,9 +2315,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 		Message["Type"] = "Good"
 		Message["Message"] = "Agent has been reached its kill date, tasked to cleanup and exit thread. cya..."
 
-		a.Active = false
-		teamserver.EventAgentMark(a.NameID, "Dead")
-		teamserver.AgentUpdate(a)
+		teamserver.Died(a)
 		a.RequestCompleted(RequestID)
 
 		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
@@ -5191,22 +5187,24 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 										Message["MiscType"] = "reconnect"
 										Message["MiscData"] = fmt.Sprintf("%v;%x", a.NameID, AgentHdr.AgentID)
 
-										if DemonInfo.Pivots.Parent == nil {
-											//logger.Warn(fmt.Sprintf("SMB agent [%x] does not have a Parent!", AgentHdr.AgentID))
-											DemonInfo.Pivots.Parent = a
-										}
-
-										for i := range DemonInfo.Pivots.Parent.Pivots.Links {
-											if DemonInfo.Pivots.Parent.Pivots.Links[i].NameID == fmt.Sprintf("%08x", AgentHdr.AgentID) {
-												DemonInfo.Pivots.Parent.Pivots.Links = append(DemonInfo.Pivots.Parent.Pivots.Links[:i], DemonInfo.Pivots.Parent.Pivots.Links[i+1:]...)
-												break
+										if DemonInfo.Pivots.Parent != nil {
+											for i := range DemonInfo.Pivots.Parent.Pivots.Links {
+												if DemonInfo.Pivots.Parent.Pivots.Links[i].NameID == fmt.Sprintf("%08x", AgentHdr.AgentID) {
+													DemonInfo.Pivots.Parent.Pivots.Links = append(DemonInfo.Pivots.Parent.Pivots.Links[:i], DemonInfo.Pivots.Parent.Pivots.Links[i+1:]...)
+													break
+												}
 											}
 										}
 
+										DemonInfo.Active = true
+										DemonInfo.Reason = ""
 										DemonInfo.Pivots.Parent = a
 
 										a.Pivots.Links = append(a.Pivots.Links, DemonInfo)
 										teamserver.LinkAdd(a, DemonInfo)
+
+										teamserver.AgentUpdate(DemonInfo)
+										teamserver.AgentUpdate(a)
 
 									} else {
 										// if the agent doesn't exist then we assume that it's a register request from a new agent
@@ -5291,18 +5289,10 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						Message["MiscType"] = "disconnect"
 						Message["MiscData"] = fmt.Sprintf("%08x", AgentID)
 
+
 						AgentInstance := teamserver.AgentInstance(AgentID)
 						if AgentInstance != nil {
-							AgentInstance.Active = false
-							AgentInstance.Reason = "Disconnected"
-						}
-
-						for i := range a.Pivots.Links {
-							if a.Pivots.Links[i].NameID == Message["MiscData"] {
-								teamserver.LinkRemove(a, a.Pivots.Links[i])
-								a.Pivots.Links = append(a.Pivots.Links[:i], a.Pivots.Links[i+1:]...)
-								break
-							}
+							teamserver.LinkRemove(a, AgentInstance, true)
 						}
 					} else {
 						Message["Type"] = "Error"
@@ -5330,6 +5320,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 							PivotAgent = teamserver.AgentInstance(AgentHdr.AgentID)
 							if PivotAgent != nil {
+								PivotAgent.UpdateLastCallback(teamserver)
 								//logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PIVOT - DEMON_PIVOT_SMB_COMMAND, Linked Agent: %s, Command: %d", AgentID, PivotAgent.NameID, Command))
 
 								// while we can read a command and request id, parse new packages
@@ -5762,7 +5753,8 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					FwdAddr = Parser.ParseInt32()
 					FwdPort = Parser.ParseInt32()
 
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_OPEN, SocktID: %x, LclAddr: %d, LclPort: %d, FwdAddr: %d, FwdPort: %d", AgentID, SocktID, LclAddr, LclPort, FwdAddr, FwdPort))
+					// avoid too much spam
+					//logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_OPEN, SocktID: %x, LclAddr: %d, LclPort: %d, FwdAddr: %d, FwdPort: %d", AgentID, SocktID, LclAddr, LclPort, FwdAddr, FwdPort))
 
 					FwdString = common.Int32ToIpString(int64(FwdAddr))
 					FwdString = fmt.Sprintf("%s:%d", FwdString, FwdPort)
@@ -5847,7 +5839,8 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 							var(
 								Data = Parser.ParseBytes()
 							)
-							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ,    Id: %08x, Type: %d, DataLength: %x", AgentID, Id, Type, len(Data)))
+							// avoid too much spam
+							//logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ,    Id: %08x, Type: %d, DataLength: %x", AgentID, Id, Type, len(Data)))
 
 							if Type == SOCKET_TYPE_CLIENT {
 
@@ -5993,7 +5986,8 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						if Success == win32.TRUE {
 							// succeeded
 
-							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CONNECT, Id: %08x, Type: %d, Success: %d", AgentID, SocketId, SOCKET_TYPE_REVERSE_PROXY, Success))
+							// avoid too much spam
+							//logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CONNECT, Id: %08x, Type: %d, Success: %d", AgentID, SocketId, SOCKET_TYPE_REVERSE_PROXY, Success))
 
 							err := socks.SendConnectSuccess(Client.Conn, Client.ATYP, Client.IpDomain, Client.Port)
 							if err == nil {

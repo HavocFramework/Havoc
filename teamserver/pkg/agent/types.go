@@ -39,9 +39,10 @@ type ServiceAgentInterface interface {
 // interface that allows us to interact with the core teamserver
 type TeamServer interface {
 	AgentUpdate(agent *Agent)
+	Died(Agent *Agent)
 	ParentOf(Agent *Agent) (int, error)
 	LinksOf(Agent *Agent) []int
-	LinkRemove(ParentAgent *Agent, LinkAgent *Agent) error
+	LinkRemove(ParentAgent *Agent, LinkAgent *Agent, UpdateLinks bool)
 	LinkAdd(ParentAgent *Agent, LinkAgent *Agent) error
 	AgentHasDied(Agent *Agent) bool
 	AgentAdd(agent *Agent) []*Agent
