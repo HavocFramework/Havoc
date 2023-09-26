@@ -760,26 +760,33 @@ VOID CommandFS( PPARSER Parser )
 
             while ( RootDir )
             {
-                PackageAddWString( Package, RootDir->Path );
-                PackageAddInt32( Package, RootDir->NumFiles );
-                PackageAddInt32( Package, RootDir->NumFolders );
-                PackageAddInt64( Package, RootDir->TotalFileSize );
-
-                DirOrFile = RootDir->Content;
-                while ( DirOrFile )
+                if ( ! ( ListOnly && RootDir->NumFiles + RootDir->NumFolders == 0 ) )
                 {
-                    PackageAddWString( Package, DirOrFile->FileName );
-                    PackageAddBool( Package, DirOrFile->IsDir );
-                    PackageAddInt64( Package, DirOrFile->Size );
-                    PackageAddInt32( Package, DirOrFile->FileTime.wDay );
-                    PackageAddInt32( Package, DirOrFile->FileTime.wMonth );
-                    PackageAddInt32( Package, DirOrFile->FileTime.wYear );
-                    PackageAddInt32( Package, DirOrFile->SystemTime.wMinute );
-                    PackageAddInt32( Package, DirOrFile->SystemTime.wHour );
+                    PackageAddWString( Package, RootDir->Path );
+                    PackageAddInt32( Package, RootDir->NumFiles );
+                    PackageAddInt32( Package, RootDir->NumFolders );
+                    if ( ! ListOnly ) {
+                        PackageAddInt64( Package, RootDir->TotalFileSize );
+                    }
 
-                    TmpDirOrFile = DirOrFile->Next;
-                    DATA_FREE( DirOrFile, sizeof( DIR_OR_FILE ) );
-                    DirOrFile = TmpDirOrFile;
+                    DirOrFile = RootDir->Content;
+                    while ( DirOrFile )
+                    {
+                        PackageAddWString( Package, DirOrFile->FileName );
+                        if ( ! ListOnly ) {
+                            PackageAddBool( Package, DirOrFile->IsDir );
+                            PackageAddInt64( Package, DirOrFile->Size );
+                            PackageAddInt32( Package, DirOrFile->FileTime.wDay );
+                            PackageAddInt32( Package, DirOrFile->FileTime.wMonth );
+                            PackageAddInt32( Package, DirOrFile->FileTime.wYear );
+                            PackageAddInt32( Package, DirOrFile->SystemTime.wMinute );
+                            PackageAddInt32( Package, DirOrFile->SystemTime.wHour );
+                        }
+
+                        TmpDirOrFile = DirOrFile->Next;
+                        DATA_FREE( DirOrFile, sizeof( DIR_OR_FILE ) );
+                        DirOrFile = TmpDirOrFile;
+                    }
                 }
 
                 TmpRootDir = RootDir->Next;

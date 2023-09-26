@@ -2821,6 +2821,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						Dir       string
 						DirMap    = make(map[string]any)
 						DirArr    []map[string]string
+						WhatToRead []parser.ReadType
 					)
 
 					if ! Success {
@@ -2828,16 +2829,24 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						Output["Message"] = "Failed to enumerate files/folders at specified path: " + StartPath
 					} else {
 						IsFirst := true
-						for Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadInt32, parser.ReadInt32, parser.ReadInt64}) {
+						if ListOnly {
+							WhatToRead = []parser.ReadType{parser.ReadBytes}
+						} else {
+							WhatToRead = []parser.ReadType{parser.ReadBytes, parser.ReadInt32, parser.ReadInt32, parser.ReadInt64}
+						}
+						for Parser.CanIRead(WhatToRead) {
 							var (
-								RootDirPath   = Parser.ParseUTF16String()
-								NumFiles      = Parser.ParseInt32()
-								NumDirs       = Parser.ParseInt32()
+									RootDirPath   = Parser.ParseUTF16String()
+									NumFiles      = Parser.ParseInt32()
+									NumDirs       = Parser.ParseInt32()
+									TotalFileSize int64 = 0
+									ItemsLeft     = NumFiles + NumDirs
+								)
+							if !ListOnly {
 								TotalFileSize = Parser.ParseInt64()
-								ItemsLeft     = NumFiles + NumDirs
-							)
+							}
 
-							if NumFiles + NumDirs > 0 && !Explorer && !ListOnly {
+							if !ListOnly && !Explorer && NumFiles + NumDirs > 0 {
 								if IsFirst {
 									IsFirst = false
 									Dir += fmt.Sprintf(" Directory of %s:\n\n", RootDirPath)
@@ -2846,10 +2855,25 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 								}
 							}
 
-							for ItemsLeft > 0 && Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadBool, parser.ReadInt64, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32}) {
+							for (ItemsLeft > 0 && ((ListOnly && Parser.CanIRead([]parser.ReadType{parser.ReadBytes})) || (!ListOnly && Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadBool, parser.ReadInt64, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32})))) {
 
 								var (
 									FileName         = Parser.ParseUTF16String()
+									IsDir            = false
+									FileSize         int64 = 0
+									LastAccessDay    = 0
+									LastAccessMonth  = 0
+									LastAccessYear   = 0
+									LastAccessMinute = 0
+									LastAccessHour   = 0
+
+									Size         string
+									Type         string
+									LastModified string
+									DirText      string
+								)
+
+								if !ListOnly {
 									IsDir            = Parser.ParseBool()
 									FileSize         = Parser.ParseInt64()
 									LastAccessDay    = Parser.ParseInt32()
@@ -2857,12 +2881,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 									LastAccessYear   = Parser.ParseInt32()
 									LastAccessMinute = Parser.ParseInt32()
 									LastAccessHour   = Parser.ParseInt32()
-
-									Size         string
-									Type         string
-									LastModified string
-									DirText      string
-								)
+								}
 
 								ReadOne = true
 
@@ -2913,12 +2932,14 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 							}
 						}
 
-						if ReadOne == false {
-							Output["Type"] = "Info"
-							Output["Output"] = "No file or folder was found"
-						} else if !Explorer {
-							Output["Type"] = "Info"
-							Output["Output"] = Dir
+						if !Explorer {
+							if ReadOne == false {
+								Output["Type"] = "Info"
+								Output["Output"] = "No file or folder was found"
+							} else {
+								Output["Type"] = "Info"
+								Output["Output"] = Dir
+							}
 						}
 					}
 

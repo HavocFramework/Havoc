@@ -5,8 +5,6 @@
 
 #ifdef TRANSPORT_SMB
 
-#define PIPE_BUFFER_MAX 0x10000
-
 BOOL SmbSend( PBUFFER Send )
 {
     if ( ! Instance.Config.Transport.Handle )

