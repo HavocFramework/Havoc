@@ -28,7 +28,6 @@ BOOL SmbSend( PBUFFER Send )
                                                                             0,                               // client time-out
                                                                             &SecurityAttr );                 // security attributes
 
-        PUTS( "Smb free security attributes..." )
         SmbSecurityAttrFree( &SmbSecAttr );
 
         if ( ! Instance.Config.Transport.Handle )

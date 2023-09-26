@@ -272,12 +272,20 @@ VOID PivotPush()
                                 PackageAddBytes( Package, Output, BytesSize );
 
                                 PackageTransmit( Package );
-                            }
-                            else PRINTF( "ReadFile: Failed[%d]\n", NtGetLastError() );
 
-                            MemSet( Output, 0, Length );
-                            Instance.Win32.LocalFree( Output );
-                            Output = NULL;
+                                DATA_FREE( Output, Length );
+                            }
+                            else
+                            {
+                                PRINTF( "ReadFile: Failed[%d]\n", NtGetLastError() );
+                                DATA_FREE( Output, Length );
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            PRINTF( "PeekNamedPipe: Failed[%d]\n", NtGetLastError() );
+                            break;
                         }
                     } else break;
                 }

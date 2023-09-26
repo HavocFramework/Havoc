@@ -2492,7 +2492,7 @@ VOID CommandPivot( PPARSER Parser )
                 do {
                     if ( TempList )
                     {
-                        PRINTF( "%x ", TempList->DemonID );
+                        PRINTF( "%x\n", TempList->DemonID );
                         TempList = TempList->Next;
                     } else
                         break;
