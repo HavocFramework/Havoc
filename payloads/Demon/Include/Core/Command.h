@@ -28,6 +28,7 @@
 #define DEMON_COMMAND_SOCKET                    2540
 #define DEMON_COMMAND_KERBEROS                  2550
 #define DEMON_COMMAND_MEM_FILE                  2560
+#define DEMON_PACKAGE_DROPPED                   2570
 
 #define DEMON_INFO                      89
 #define DEMON_OUTPUT                    90

@@ -50,6 +50,7 @@ const (
 	COMMAND_SOCKET                  = 2540
 	COMMAND_KERBEROS                = 2550
 	COMMAND_MEM_FILE                = 2560
+	COMMAND_PACKAGE_DROPPED         = 2570
 
 	DEMON_INFO = 89
 

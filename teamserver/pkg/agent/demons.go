@@ -6388,6 +6388,34 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_MEM_FILE, Invalid packet", AgentID))
 		}
 
+		break;
+
+	case COMMAND_PACKAGE_DROPPED:
+		var (
+			Message    map[string]string
+		)
+		if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadInt32}) {
+			var (
+				PkgLength = Parser.ParseInt32()
+				MaxLength = Parser.ParseInt32()
+			)
+
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PACKAGE_DROPPED, PkgLength: 0x%x, MaxLength: 0x%x", AgentID, PkgLength, MaxLength))
+
+			Message = map[string]string{
+				"Type":    "Erro",
+				"Message": "A package was discarded by demon for being larger than PIPE_BUFFER_MAX",
+			}
+
+			a.RequestCompleted(RequestID)
+		} else {
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PACKAGE_DROPPED, Invalid packet", AgentID))
+		}
+
+		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+
+		break;
+
 	default:
 		logger.Debug(fmt.Sprintf("Agent: %x, Command: UNKNOWN (%d))", AgentID, CommandID))
 		/* end of the switch case output parser */
