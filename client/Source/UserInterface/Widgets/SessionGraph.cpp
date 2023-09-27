@@ -321,6 +321,8 @@ Node *GraphWidget::GraphNodeGet( QString AgentID )
             }
         }
     }
+
+    return nullptr;
 }
 
 // Initialize node properties for layout
@@ -889,7 +891,9 @@ void Node::appendChild( Node* child )
 
 void Node::removeChild( Node* child )
 {
-    Children.erase(std::find(Children.cbegin(), Children.cend(), child));
+    auto it = std::find(Children.cbegin(), Children.cend(), child);
+    if (it != Children.end())
+        Children.erase(it);
 }
 
 QRectF Node::boundingRect() const
