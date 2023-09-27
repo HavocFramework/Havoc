@@ -239,7 +239,7 @@ namespace HavocNamespace
 
             UserInterface::Widgets::DemonInteracted* InteractedWidget;
             UserInterface::Widgets::ProcessList*     ProcessList;
-            FileBrowser*                             FileBrowser;
+            class FileBrowser*                             FileBrowser;
 
             std::map<QString, PyObject*> TaskIDToPythonCallbacks;
 

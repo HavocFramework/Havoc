@@ -32,14 +32,14 @@ public:
 
 public:
     Widgets::Chat*                    TeamserverChat      = {};
-    Teamserver*                       Teamserver          = {};
+    class Teamserver*                 Teamserver          = {};
     Widgets::SessionTable*            SessionTableWidget  = {};
     GraphWidget*                      SessionGraphWidget  = {};
     Widgets::ListenersTable*          ListenerTableWidget = {};
     Widgets::PythonScriptInterpreter* PythonScriptWidget  = {};
     Widgets::ScriptManager*           ScriptManagerWidget = {};
     Payload*                          PayloadDialog       = {};
-    LootWidget*                       LootWidget          = {};
+    class LootWidget*                 LootWidget          = {};
     QStackedWidget*                   MainViewWidget      = {};
     QWidget*                          SessionTablePage    = {};
     HavocSpace::DBManager*            dbManager           = {};

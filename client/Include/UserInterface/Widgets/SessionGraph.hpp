@@ -80,7 +80,7 @@ Q_OBJECT
     typedef struct
     {
         QString Name;
-        Node*   Node;
+        class Node*   Node;
     } Member;
 
     QGraphicsScene*      GraphScene = nullptr;

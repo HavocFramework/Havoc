@@ -95,19 +95,20 @@ PyObject* PythonAPI::Havoc::Core::RegisterCommand( PyObject *self, PyObject *arg
 {
     RegisteredCommand RCommand = { };
 
-    PVOID Function      = nullptr;
-    PCHAR Agent         = nullptr;
-    PCHAR Module        = nullptr;
-    PCHAR Command       = nullptr;
-    PCHAR Description   = nullptr;
-    PCHAR Usage         = nullptr;
-    PCHAR Example       = nullptr;
-    u32   Behavior      = 0;
-    auto  CompleteText  = QString();
-    auto  Path          = HavocX::Teamserver.LoadingScript;
-    PCHAR KeyWords[]    = { "function", "module", "command", "description", "behavior", "usage", "example", "agent", NULL };
+    PVOID Function         = nullptr;
+    PCHAR Agent            = nullptr;
+    PCHAR Module           = nullptr;
+    PCHAR Command          = nullptr;
+    PCHAR Description      = nullptr;
+    PCHAR Usage            = nullptr;
+    PCHAR Example          = nullptr;
+    u32   Behavior         = 0;
+    auto  CompleteText     = QString();
+    auto  Path             = HavocX::Teamserver.LoadingScript;
+    const char* KeyWords[] = { "function", "module", "command", "description", "behavior", "usage", "example", "agent", NULL };
+    const char* format     = "Osssiss|s";
 
-    if ( ! PyArg_ParseTupleAndKeywords( args, kwargs, "Osssiss|s", KeyWords, &Function, &Module, &Command, &Description, &Behavior, &Usage, &Example, &Agent ) )
+    if ( ! PyArg_ParseTupleAndKeywords( args, kwargs, format, const_cast<char**>(KeyWords), &Function, &Module, &Command, &Description, &Behavior, &Usage, &Example, &Agent ) )
         Py_RETURN_NONE;
 
     if ( Agent != nullptr )

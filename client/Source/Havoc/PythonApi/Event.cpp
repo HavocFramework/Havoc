@@ -105,5 +105,5 @@ PyObject* EventClass_OnNewSession( PPyEvents self, PyObject *args )
 
 PyObject* EventClass_OnDemonOutput( PPyEvents self, PyObject *args )
 {
-
+    Py_RETURN_NONE;
 }
