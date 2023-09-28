@@ -179,7 +179,7 @@ func PercentageChange(part int, total int64) float64 {
 
 func IpStringToInt32(ip string) (int, error) {
 	var long uint32
-	err := binary.Read(bytes.NewBuffer(net.ParseIP(ip).To4()), binary.BigEndian, &long)
+	err := binary.Read(bytes.NewBuffer(net.ParseIP(ip).To4()), binary.LittleEndian, &long)
 	if err != nil {
 		return 0, err
 	}
@@ -194,7 +194,7 @@ func Int32ToIpString(ipInt int64) string {
 	b2 := strconv.FormatInt((ipInt>>8)&0xff, 10)
 	b3 := strconv.FormatInt(ipInt&0xff, 10)
 
-	return b0 + "." + b1 + "." + b2 + "." + b3
+	return b3 + "." + b2 + "." + b1 + "." + b0
 }
 
 func EpochTimeToSystemTime( EpochTime int64 ) int64 {

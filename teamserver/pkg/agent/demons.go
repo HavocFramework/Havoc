@@ -5618,7 +5618,6 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 					if Success == win32.TRUE {
 						a.Console(teamserver.AgentConsole, "Info", fmt.Sprintf("Started reverse port forward on %s:%d to %s:%d [Id: %x]", LclString, LclPort, FwdString, FwdPort, SocktID), "")
-						a.Console(teamserver.AgentConsole, "Warn", "Dont forget to go interactive to make it usable", "")
 
 						return
 					} else {
