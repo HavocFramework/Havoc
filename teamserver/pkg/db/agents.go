@@ -149,7 +149,7 @@ func (db *DB) AgentHasDied(AgentID int) bool {
 		return false
 	}
 
-	// execute statment
+	// execute statement
 	_, err = stmt.Exec(AgentID)
 	stmt.Close()
 
@@ -167,7 +167,7 @@ func (db *DB) AgentExist(AgentID int) bool {
 		return false
 	}
 
-	// execute statment
+	// execute statement
 	query, err := stmt.Query(AgentID)
 	defer query.Close()
 	if err != nil {
@@ -196,7 +196,7 @@ func (db *DB) AgentRemove(AgentID int) error {
 		return err
 	}
 
-	// execute statment
+	// execute statement
 	_, err = stmt.Exec(AgentID)
 	stmt.Close()
 

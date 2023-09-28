@@ -50,10 +50,10 @@ typedef struct
     /* MetaData */
     PPACKAGE MetaData;
 
-    /* The last RequestID recieved by the TS */
+    /* The last RequestID received by the TS */
     UINT32 CurrentRequestID;
 
-    /* wheather WSAStartup has been called yet */
+    /* whether WSAStartup has been called yet */
     BOOL WSAWasInitialised;
 
 #ifdef TRANSPORT_HTTP
@@ -157,7 +157,7 @@ typedef struct
 
     } Config ;
 
-    // TODO: format everything by library. inlcude syscalls too
+    // TODO: format everything by library. include syscalls too
     struct
     {
         /* Ntdll.dll */

@@ -306,7 +306,7 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
             SymbolName = ( ( PCHAR ) ( Coffee->Symbol + Coffee->Header->NumberOfSymbols ) ) + Coffee->Symbol[ SymCounter ].First.Value[ 1 ];
 
 #if _M_IX86
-        // in x86, the "go" function might actaully be named _go
+        // in x86, the "go" function might actually be named _go
         if ( SymbolName[0] == '_' )
             SymbolName++;
 #endif

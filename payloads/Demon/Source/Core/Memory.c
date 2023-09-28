@@ -200,7 +200,7 @@ BOOL FreeReflectiveLoader(
     if ( ! BaseAddress )
         return TRUE;
 
-    // page allign the address
+    // page align the address
     BaseAddress = ( PVOID ) ( ( ( ULONG_PTR )BaseAddress ) & ( ~ ( PAGE_SIZE - 1 ) ) );
 
     PRINTF( "Freeing the reflective loader at: 0x%p\n", BaseAddress )

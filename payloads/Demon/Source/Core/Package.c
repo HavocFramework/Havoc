@@ -363,7 +363,7 @@ BOOL PackageTransmitAll(
                     // update the start of the list
                     Instance.Packages = Entry->Next;
 
-                    // remove the entry if requried
+                    // remove the entry if required
                     if ( Entry->Destroy ) {
                         PackageDestroy( Entry ); Entry = NULL;
                     }
@@ -378,7 +378,7 @@ BOOL PackageTransmitAll(
                         // remove the entry from the list
                         Prev->Next = Entry->Next;
 
-                        // remove the entry if requried
+                        // remove the entry if required
                         if ( Entry->Destroy ) {
                             PackageDestroy( Entry ); Entry = NULL;
                         }

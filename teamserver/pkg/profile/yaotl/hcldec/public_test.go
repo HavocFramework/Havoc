@@ -442,7 +442,7 @@ b {
             },
             nil,
             cty.DynamicVal,
-            1, // Unconsistent argument types in b blocks
+            1, // Inconsistent argument types in b blocks
         },
         {
             `
@@ -524,7 +524,7 @@ b {
             },
             nil,
             cty.DynamicVal,
-            1, // Unconsistent argument types in b blocks
+            1, // Inconsistent argument types in b blocks
         },
         {
             `

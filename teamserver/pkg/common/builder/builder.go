@@ -516,7 +516,7 @@ func (b *Builder) Patch(ByteArray []byte) []byte {
 		if b.ProfileConfig.ReplaceStringsX64 != nil {
 			for old, _ := range b.ProfileConfig.ReplaceStringsX64 {
 				new := []byte(b.ProfileConfig.ReplaceStringsX64[old])
-				// make sure they are the same lenght
+				// make sure they are the same length
 				if len(new) < len(old) {
 					new = append(new, bytes.Repeat([]byte{0}, len(old) - len(new))...)
 				}
@@ -537,7 +537,7 @@ func (b *Builder) Patch(ByteArray []byte) []byte {
 		if b.ProfileConfig.ReplaceStringsX86 != nil {
 			for old, _ := range b.ProfileConfig.ReplaceStringsX86 {
 				new := []byte(b.ProfileConfig.ReplaceStringsX86[old])
-				// make sure they are the same lenght
+				// make sure they are the same length
 				if len(new) < len(old) {
 					new = append(new, bytes.Repeat([]byte{0}, len(old) - len(new))...)
 				}

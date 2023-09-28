@@ -330,14 +330,14 @@ When interpreted as an expression, a JSON string may be interpreted in one of
 two ways depending on the evaluation mode.
 
 If evaluating in literal-only mode (as defined by the syntax-agnostic
-information model) the literal string is intepreted directly as a HCL string
+information model) the literal string is interpreted directly as a HCL string
 value, by directly using the exact sequence of unicode characters represented.
 Template interpolations and directives MUST NOT be processed in this mode,
 allowing any characters that appear as introduction sequences to pass through
 literally:
 
 ```json
-"Hello world! Template sequences like ${ are not intepreted here."
+"Hello world! Template sequences like ${ are not interpreted here."
 ```
 
 When evaluating in full expression mode (again, as defined by the syntax-

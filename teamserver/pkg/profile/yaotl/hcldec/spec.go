@@ -506,7 +506,7 @@ func (s *BlockListSpec) decode(content *hcl.BodyContent, blockLabels []blockLabe
     // Since our target is a list, all of the decoded elements must have the
     // same type or cty.ListVal will panic below. Different types can arise
     // if there is an attribute spec of type cty.DynamicPseudoType in the
-    // nested spec; all given values must be convertable to a single type
+    // nested spec; all given values must be convertible to a single type
     // in order for the result to be considered valid.
     etys := make([]cty.Type, len(elems))
     for i, v := range elems {
@@ -517,7 +517,7 @@ func (s *BlockListSpec) decode(content *hcl.BodyContent, blockLabels []blockLabe
         // FIXME: This is a pretty terrible error message.
         diags = append(diags, &hcl.Diagnostic{
             Severity: hcl.DiagError,
-            Summary:  fmt.Sprintf("Unconsistent argument types in %s blocks", s.TypeName),
+            Summary:  fmt.Sprintf("Inconsistent argument types in %s blocks", s.TypeName),
             Detail:   "Corresponding attributes in all blocks of this type must be the same.",
             Subject:  &sourceRanges[0],
         })
@@ -530,7 +530,7 @@ func (s *BlockListSpec) decode(content *hcl.BodyContent, blockLabels []blockLabe
                 // FIXME: This is a pretty terrible error message.
                 diags = append(diags, &hcl.Diagnostic{
                     Severity: hcl.DiagError,
-                    Summary:  fmt.Sprintf("Unconsistent argument types in %s blocks", s.TypeName),
+                    Summary:  fmt.Sprintf("Inconsistent argument types in %s blocks", s.TypeName),
                     Detail:   fmt.Sprintf("Block with index %d has inconsistent argument types: %s.", i, err),
                     Subject:  &sourceRanges[i],
                 })
@@ -791,7 +791,7 @@ func (s *BlockSetSpec) decode(content *hcl.BodyContent, blockLabels []blockLabel
     // Since our target is a set, all of the decoded elements must have the
     // same type or cty.SetVal will panic below. Different types can arise
     // if there is an attribute spec of type cty.DynamicPseudoType in the
-    // nested spec; all given values must be convertable to a single type
+    // nested spec; all given values must be convertible to a single type
     // in order for the result to be considered valid.
     etys := make([]cty.Type, len(elems))
     for i, v := range elems {
@@ -802,7 +802,7 @@ func (s *BlockSetSpec) decode(content *hcl.BodyContent, blockLabels []blockLabel
         // FIXME: This is a pretty terrible error message.
         diags = append(diags, &hcl.Diagnostic{
             Severity: hcl.DiagError,
-            Summary:  fmt.Sprintf("Unconsistent argument types in %s blocks", s.TypeName),
+            Summary:  fmt.Sprintf("Inconsistent argument types in %s blocks", s.TypeName),
             Detail:   "Corresponding attributes in all blocks of this type must be the same.",
             Subject:  &sourceRanges[0],
         })
@@ -815,7 +815,7 @@ func (s *BlockSetSpec) decode(content *hcl.BodyContent, blockLabels []blockLabel
                 // FIXME: This is a pretty terrible error message.
                 diags = append(diags, &hcl.Diagnostic{
                     Severity: hcl.DiagError,
-                    Summary:  fmt.Sprintf("Unconsistent argument types in %s blocks", s.TypeName),
+                    Summary:  fmt.Sprintf("Inconsistent argument types in %s blocks", s.TypeName),
                     Detail:   fmt.Sprintf("Block with index %d has inconsistent argument types: %s.", i, err),
                     Subject:  &sourceRanges[i],
                 })

@@ -438,7 +438,7 @@ PHOST_DATA HostRotation( SHORT Strategy )
 
         for ( Count = 0; Count < HostCount();  )
         {
-            /* check if it's not an emtpy pointer */
+            /* check if it's not an empty pointer */
             if ( ! Host )
                 break;
 

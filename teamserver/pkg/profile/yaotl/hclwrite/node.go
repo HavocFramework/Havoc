@@ -56,7 +56,7 @@ func (n *node) Detach() {
 // currently in a list, this function will panic.
 //
 // The return value is the newly-constructed node, containing the given content.
-// After this function returns, the reciever is no longer attached to a list.
+// After this function returns, the receiver is no longer attached to a list.
 func (n *node) ReplaceWith(c nodeContent) *node {
 	if n.list == nil {
 		panic("can't replace node that is not in a list")

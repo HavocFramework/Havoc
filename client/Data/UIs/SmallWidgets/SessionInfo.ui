@@ -150,7 +150,7 @@
         </row>
         <row>
          <property name="text">
-          <string>MAC Adress</string>
+          <string>MAC Address</string>
          </property>
         </row>
         <column>

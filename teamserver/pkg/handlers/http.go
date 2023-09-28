@@ -213,7 +213,7 @@ func (h *HTTP) Start() {
 	h.Active = true
 
 	if h.Config.Secure {
-		// TODO: only generate certs if h.Config.Cert is emtpy
+		// TODO: only generate certs if h.Config.Cert is empty
 		if h.generateCertFiles() {
 			logger.Info("Started \"" + colors.Green(h.Config.Name) + "\" listener: " + colors.BlueUnderline("https://"+common.GetInterfaceIpv4Addr(h.Config.HostBind)+":"+h.Config.PortBind))
 

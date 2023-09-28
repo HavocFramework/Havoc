@@ -599,7 +599,7 @@ PBYTE DnsQueryIPv6( LPSTR Domain )
         return NULL;
     }
 
-    // the caller is responsible fot freeing this!
+    // the caller is responsible for freeing this!
     IPv6 = Instance.Win32.LocalAlloc( LPTR, 16 );
 
     MemCopy( IPv6, ((struct sockaddr_in6 *)res->ai_addr)->sin6_addr.u.Byte, 16 );
