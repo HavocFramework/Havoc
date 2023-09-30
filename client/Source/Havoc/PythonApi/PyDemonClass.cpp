@@ -40,6 +40,7 @@ PyMethodDef PyDemonClass_methods[] = {
         { "DllSpawn",               ( PyCFunction ) DemonClass_DllSpawn,               METH_VARARGS, "Spawn and injects a reflective dll and get output from it" },
         { "DllInject",              ( PyCFunction ) DemonClass_DllInject,              METH_VARARGS, "Injects a reflective dll into a specified process" },
         { "DotnetInlineExecute",    ( PyCFunction ) DemonClass_DotnetInlineExecute,    METH_VARARGS, "Executes a dotnet assembly in the context of the demon sessions" },
+        { "Command",                ( PyCFunction ) DemonClass_Command,                METH_VARARGS, "Run a command" },
 
         { NULL },
 };
@@ -326,6 +327,27 @@ PyObject* DemonClass_DotnetInlineExecute( PPyDemonClass self, PyObject *args )
 
     Py_RETURN_NONE;
 }
+
+PyObject* DemonClass_Command( PPyDemonClass self, PyObject *args )
+{
+    char*   TaskID    = NULL;
+    char*   Command      = NULL;
+
+    if ( ! PyArg_ParseTuple( args, "ss", &TaskID, &Command ) )
+        return NULL;
+
+    for ( auto& Session : HavocX::Teamserver.Sessions )
+    {
+        if ( Session.Name.compare( self->DemonID ) == 0 )
+        {
+            Session.InteractedWidget->DemonCommands->DispatchCommand( true, TaskID, Command );
+            break;
+        }
+    }
+
+    Py_RETURN_NONE;
+}
+
 
 // Demon.DllInject( TaskID: str, Pid: str, DllPath: str, DllArgs: str )
 PyObject* DemonClass_DllInject( PPyDemonClass self, PyObject *args )
