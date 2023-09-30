@@ -259,6 +259,7 @@ namespace HavocNamespace
             std::vector<SessionItem>       Sessions;
             std::vector<RegisteredCommand> RegisteredCommands;
             std::vector<RegisteredModule>  RegisteredModules;
+            std::vector<PyObject*>         RegisteredCallbacks;
             std::vector<ServiceAgent>      ServiceAgents;
 
             QStringList   AddedCommands;

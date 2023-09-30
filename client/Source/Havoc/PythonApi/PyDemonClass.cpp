@@ -256,7 +256,10 @@ PyObject* DemonClass_InlineExecuteGetOutput( PPyDemonClass self, PyObject *args 
     PyObject* Callback   = nullptr;
 
     if ( ! PyArg_ParseTuple( args, "OssS", &Callback, &EntryFunc, &Path, &PyArgBytes ) )
+    {
+        spdlog::error( "Invalid parameters on InlineExecuteGetOutput" );
         return nullptr;
+    }
 
     // InlineExecuteGetOutput only works in "non-threaded" mode
     // this is to avoid "RequestID" mixups

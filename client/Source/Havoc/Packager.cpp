@@ -639,6 +639,26 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
 
             HavocX::Teamserver.TabSession->SmallAppWidgets->EventViewer->AppendText( Time, Message );
 
+            if ( Agent.Marked.compare( "Alive" ) == 0 )
+            {
+                for ( auto& Callback : HavocX::Teamserver.RegisteredCallbacks )
+                {
+                    if ( PyCallable_Check( Callback ) )
+                    {
+                        PyObject* arglist = Py_BuildValue( "s", Agent.Name.toStdString().c_str() );
+                        PyObject* Return  = PyObject_CallFunctionObjArgs( Callback, arglist, NULL );
+                        if ( Return == NULL && PyErr_Occurred() )
+                        {
+                            spdlog::error( "Error calling callback" );
+                            PyErr_PrintEx(0);
+                            PyErr_Clear();
+                        }
+                    } else {
+                        spdlog::error( "Callback is not callable" );
+                    }
+                }
+            }
+
             break;
         }
 

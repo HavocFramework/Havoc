@@ -16,10 +16,11 @@ using namespace HavocNamespace::Util;
 namespace PythonAPI::Havoc
 {
     PyMethodDef PyMethode_Havoc[] = {
-            { "LoadScript",      PythonAPI::Havoc::Core::Load,                            METH_VARARGS,                 "load python script"       },
-            { "GetDemons",       PythonAPI::Havoc::Core::GetDemons,                       METH_VARARGS,                 "get list of demon ID's"   },
-            { "RegisterCommand", ( PyCFunction ) PythonAPI::Havoc::Core::RegisterCommand, METH_VARARGS | METH_KEYWORDS, "register a command/alias" },
-            { "RegisterModule",  PythonAPI::Havoc::Core::RegisterModule,                  METH_VARARGS,                 "register a module"        },
+            { "LoadScript",       PythonAPI::Havoc::Core::Load,                            METH_VARARGS,                 "load python script"       },
+            { "GetDemons",        PythonAPI::Havoc::Core::GetDemons,                       METH_VARARGS,                 "get list of demon ID's"   },
+            { "RegisterCommand",  ( PyCFunction ) PythonAPI::Havoc::Core::RegisterCommand, METH_VARARGS | METH_KEYWORDS, "register a command/alias" },
+            { "RegisterModule",   PythonAPI::Havoc::Core::RegisterModule,                  METH_VARARGS,                 "register a module"        },
+            { "RegisterCallback", PythonAPI::Havoc::Core::RegisterCallback,                METH_VARARGS,                 "register a callback"      },
 
             { NULL, NULL, 0, NULL }
     };
@@ -211,6 +212,30 @@ PyObject* PythonAPI::Havoc::Core::RegisterModule( PyObject *self, PyObject *args
 
     // Add new command
     HavocX::Teamserver.RegisteredModules.push_back( Module );
+
+    Py_RETURN_NONE;
+}
+
+PyObject* PythonAPI::Havoc::Core::RegisterCallback( PyObject *self, PyObject *args )
+{
+    spdlog::debug( "PythonAPI::Havoc::Core::RegisterCallback" );
+
+    PyObject* Callback = nullptr;
+
+    if ( ! PyArg_ParseTuple( args, "O", &Callback ) )
+    {
+        spdlog::error( "Invalid parameters on RegisterCallback" );
+        return nullptr;
+    }
+
+    if ( ! PyCallable_Check( Callback ) )
+    {
+        spdlog::error( "The callback is not callable" );
+        return nullptr;
+    }
+
+    HavocX::Teamserver.RegisteredCallbacks.push_back( Callback );
+    Py_XINCREF( Callback );
 
     Py_RETURN_NONE;
 }
