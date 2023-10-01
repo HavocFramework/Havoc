@@ -727,7 +727,7 @@ func (a *Agent) UpdateLastCallback(Teamserver TeamServer) {
 	a.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05")
 	Teamserver.AgentUpdate(a)
 
-	Teamserver.AgentLastTimeCalled(a.NameID, a.Info.SleepDelay, a.Info.SleepJitter, a.Info.KillDate, a.Info.WorkingHours)
+	Teamserver.AgentLastTimeCalled(a.NameID, a.Info.LastCallIn, a.Info.SleepDelay, a.Info.SleepJitter, a.Info.KillDate, a.Info.WorkingHours)
 }
 
 func (a *Agent) PivotAddJob(job Job) {

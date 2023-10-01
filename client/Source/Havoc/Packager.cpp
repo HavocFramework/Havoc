@@ -711,8 +711,6 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                 {
                     Session.InteractedWidget->DemonCommands->OutputDispatch.DemonCommandInstance = Session.InteractedWidget->DemonCommands;
 
-                    Session.LastUTC = QDateTime::currentDateTimeUtc();
-
                     int CommandID = QString( Package->Body.Info[ "CommandID" ].c_str() ).toInt();
                     auto Output   = QString( Package->Body.Info[ "Output" ].c_str() );
 
@@ -774,8 +772,8 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                             auto LastTime     = QString( QByteArray::fromBase64( Output.toLocal8Bit() ) );
                             auto LastTimeJson = QJsonDocument::fromJson( LastTime.toLocal8Bit() );
 
-                            //Session.Last         = LastTimeJson["Last"].toString();
-                            Session.LastUTC      = QDateTime::currentDateTimeUtc();
+                            Session.Last         = LastTimeJson["Last"].toString();
+                            Session.LastUTC      = QDateTime::fromString(Session.Last, "dd-MM-yyyy HH:mm:ss");
                             Session.SleepDelay   = (uint32_t)strtoul(LastTimeJson["Sleep"].toString().toStdString().c_str(), NULL, 0);
                             Session.SleepJitter  = (uint32_t)strtoul(LastTimeJson["Jitter"].toString().toStdString().c_str(), NULL, 0);
                             Session.KillDate     = (uint64_t)strtoull(LastTimeJson["KillDate"].toString().toStdString().c_str(), NULL, 0);

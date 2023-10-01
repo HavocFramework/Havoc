@@ -50,7 +50,7 @@ type TeamServer interface {
 	AgentSendNotify(agent *Agent)
 	AgentCallbackSize(DemonInstance *Agent, i int)
 	AgentInstance(AgentID int) *Agent
-	AgentLastTimeCalled(AgentID string, Sleep int, Jitter int, KillDate int64, WorkingHours int32)
+	AgentLastTimeCalled(AgentID string, LastCallback string, Sleep int, Jitter int, KillDate int64, WorkingHours int32)
 	AgentExist(AgentID int) bool
 	AgentConsole(DemonID string, CommandID int, Output map[string]string)
 
