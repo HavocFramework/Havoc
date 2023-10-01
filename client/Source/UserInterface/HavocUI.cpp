@@ -265,8 +265,33 @@ void HavocNamespace::UserInterface::HavocUI::UpdateSessionsHealth()
             continue;
 
         auto Now  = QDateTime::currentDateTimeUtc();
-        auto Last = QDateTime::fromString( session.Last.toStdString().c_str(), "dd-MM-yyyy hh:mm:ss" );
-        auto diff = Last.secsTo( Now );
+        auto diff = session.LastUTC.secsTo( Now );
+
+        auto seconds = QDateTime::fromTime_t( diff ).toUTC().toString("s");
+        auto minutes = QDateTime::fromTime_t( diff ).toUTC().toString("m");
+        auto hours   = QDateTime::fromTime_t( diff ).toUTC().toString("h");
+        auto days    = QDateTime::fromTime_t( diff ).toUTC().toString("d");
+
+        if ( diff < 60 )
+        {
+            session.Last = QString("%1s").arg(seconds);
+            HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue(session.Name, 8, session.Last.toStdString().c_str());
+        }
+        else if ( diff < 60 * 60 )
+        {
+            session.Last = QString("%1m %2s").arg(minutes, seconds);
+            HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue(session.Name, 8, session.Last.toStdString().c_str());
+        }
+        else if ( diff < 24 * 60 * 60 )
+        {
+            session.Last = QString("%1h %2m").arg(hours, minutes);
+            HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue(session.Name, 8, session.Last.toStdString().c_str());
+        }
+        else
+        {
+            session.Last = QString("%1d %2h").arg(days, hours);
+            HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue(session.Name, 8, session.Last.toStdString().c_str());
+        }
 
         // it is very normal for agents to delay one second due to network latency
         auto AllowedDiff = 1;

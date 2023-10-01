@@ -275,8 +275,6 @@ func handleDemonAgent(Teamserver agent.TeamServer, Header agent.Header, External
 				return Response, false
 			}
 
-			go Agent.BackgroundUpdateLastCallbackUI(Teamserver)
-
 			Agent.Info.MagicValue = Header.MagicValue
 			Agent.Info.Listener = nil /* TODO: pass here the listener instance/name */
 
@@ -328,7 +326,6 @@ func handleServiceAgent(Teamserver agent.TeamServer, Header agent.Header, Extern
 	Agent = Teamserver.AgentInstance(Header.AgentID)
 	if Agent != nil {
 		AgentData = Agent.ToMap()
-		go Agent.BackgroundUpdateLastCallbackUI(Teamserver)
 	}
 
 	Task = Teamserver.ServiceAgent(Header.MagicValue).SendResponse(AgentData, Header)

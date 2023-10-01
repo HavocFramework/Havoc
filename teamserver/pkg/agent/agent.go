@@ -562,8 +562,6 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 			                      RoutineFunc.EventAppend(pk)
 			                      RoutineFunc.EventBroadcast("", pk)
 
-			                      go PivotSession.BackgroundUpdateLastCallbackUI(RoutineFunc)
-
 			                      Session.Pivots.Links = append(Session.Pivots.Links, PivotSession)
 
 			                      PivotSession.Pivots.Parent = Session
@@ -726,48 +724,10 @@ func (a *Agent) GetQueuedJobs() []Job {
 }
 
 func (a *Agent) UpdateLastCallback(Teamserver TeamServer) {
-	var (
-		OldLastCallIn, _ = time.Parse("02-01-2006 15:04:05", a.Info.LastCallIn)
-		NewLastCallIn, _ = time.Parse("02-01-2006 15:04:05", time.Now().Format("02-01-2006 15:04:05"))
-	)
-
 	a.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05")
 	Teamserver.AgentUpdate(a)
 
-	diff := NewLastCallIn.Sub(OldLastCallIn)
-
-	Teamserver.AgentLastTimeCalled(a.NameID, diff.String(), a.Info.LastCallIn, a.Info.SleepDelay, a.Info.SleepJitter, a.Info.KillDate, a.Info.WorkingHours)
-}
-
-func (a *Agent) BackgroundUpdateLastCallbackUI(teamserver TeamServer) {
-	if !a.BackgroundCheck {
-		a.BackgroundCheck = true
-	} else {
-		return
-	}
-
-	for {
-		if !a.Active {
-			if len(a.Reason) == 0 {
-				a.Reason = "Dead"
-			}
-
-			Callback := map[string]string{"Output": a.Reason}
-			teamserver.AgentConsole(a.NameID, COMMAND_NOJOB, Callback)
-			return
-		}
-
-		var (
-			OldLastCallIn, _ = time.Parse("02-01-2006 15:04:05", a.Info.LastCallIn)
-			NewLastCallIn, _ = time.Parse("02-01-2006 15:04:05", time.Now().Format("02-01-2006 15:04:05"))
-		)
-
-		diff := NewLastCallIn.Sub(OldLastCallIn)
-
-		teamserver.AgentLastTimeCalled(a.NameID, diff.String(), a.Info.LastCallIn, a.Info.SleepDelay, a.Info.SleepJitter, a.Info.KillDate, a.Info.WorkingHours)
-
-		time.Sleep(time.Second * 1)
-	}
+	Teamserver.AgentLastTimeCalled(a.NameID, a.Info.SleepDelay, a.Info.SleepJitter, a.Info.KillDate, a.Info.WorkingHours)
 }
 
 func (a *Agent) PivotAddJob(job Job) {

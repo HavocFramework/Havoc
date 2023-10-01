@@ -5240,9 +5240,6 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 										teamserver.AgentAdd(DemonInfo)
 										teamserver.AgentSendNotify(DemonInfo)
-
-										// start a goroutine that updates the GUI last callback time each second.
-										go DemonInfo.BackgroundUpdateLastCallbackUI(teamserver)
 									}
 
 									if DemonInfo != nil {

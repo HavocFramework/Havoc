@@ -163,11 +163,9 @@ func (t *Teamserver) AgentInstance(AgentID int) *agent.Agent {
 	return nil
 }
 
-func (t *Teamserver) AgentLastTimeCalled(AgentID string, Time string, LastCallback string, Sleep int, Jitter int, KillDate int64, WorkingHours int32) {
+func (t *Teamserver) AgentLastTimeCalled(AgentID string, Sleep int, Jitter int, KillDate int64, WorkingHours int32) {
 	var (
 		Output = map[string]string{
-			"Diff": Time,
-			"Last": LastCallback,
 			"Sleep": fmt.Sprintf("%d", Sleep),
 			"Jitter": fmt.Sprintf("%d", Jitter),
 			"KillDate": fmt.Sprintf("%d", KillDate),

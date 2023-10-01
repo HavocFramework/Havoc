@@ -11,6 +11,7 @@
 #include <QGridLayout>
 #include <QLabel>
 #include <QMenu>
+#include <QDate>
 #include <QMenuBar>
 #include <QPushButton>
 #include <QSpacerItem>
@@ -228,6 +229,7 @@ namespace HavocNamespace
             QString Arch;
             QString First;
             QString Last;
+            QDateTime LastUTC;
             QString Elevated;
             QString PivotParent;
             QString Marked;
