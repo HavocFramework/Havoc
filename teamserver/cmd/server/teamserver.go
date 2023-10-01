@@ -827,6 +827,20 @@ func (t *Teamserver) SendAllPackagesToNewClient(ClientID string) {
 			return
 		}
 	}
+
+	// send all the agents that are alive right now to the new client
+	for _, demon := range t.Agents.Agents {
+		if demon.Active == false {
+			continue
+		}
+
+		pk := t.EventNewDemon(demon)
+		err := t.SendEvent(ClientID, pk)
+		if err != nil {
+			logger.Error("error while sending info to client("+ClientID+"): ", err)
+			return
+		}
+	}
 }
 
 func (t *Teamserver) FindSystemPackages() bool {
