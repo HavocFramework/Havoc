@@ -616,7 +616,11 @@ VOID DemonConfig()
     Instance.Config.Implant.ProxyLoading       = ParserGetInt32( &Parser );
     Instance.Config.Implant.SysIndirect        = ParserGetInt32( &Parser );
     Instance.Config.Implant.AmsiEtwPatch       = ParserGetInt32( &Parser );
-    Instance.Config.Implant.DownloadChunkSize  = 0x80000; /* 512k by default. */
+#ifdef TRANSPORT_HTTP
+    Instance.Config.Implant.DownloadChunkSize  = 0x80000; /* 512k */
+#else
+    Instance.Config.Implant.DownloadChunkSize  = 0xfc00; /* 63k, needs to be less than PIPE_BUFFER_MAX */
+#endif
 
     PRINTF(
         "[CONFIG] Sleep Obfuscation: \n"

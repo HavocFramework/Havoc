@@ -806,8 +806,6 @@ func (t *Teamserver) EventAppend(event packager.Package) []packager.Package {
 	if event.Head.OneTime != "true" {
 		t.EventsList = append(t.EventsList, event)
 		return append(t.EventsList, event)
-	} else {
-		logger.Debug("Onetime package. not gonna save: ", event)
 	}
 
 	return nil
