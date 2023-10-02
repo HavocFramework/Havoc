@@ -3,5 +3,5 @@
 //
 // It defines a type for body transformers, and then provides utilities in
 // terms of that type for working with transformers, including recursively
-// applying such transforms as heirarchical block structures are extracted.
+// applying such transforms as hierarchical block structures are extracted.
 package transform

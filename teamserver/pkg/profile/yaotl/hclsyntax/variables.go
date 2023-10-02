@@ -4,7 +4,7 @@ import (
     "Havoc/pkg/profile/yaotl"
 )
 
-// Variables returns all of the variables referenced within a given experssion.
+// Variables returns all of the variables referenced within a given expression.
 //
 // This is the implementation of the "Variables" method on every native
 // expression.

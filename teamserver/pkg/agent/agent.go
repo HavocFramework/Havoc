@@ -650,7 +650,7 @@ func (a *Agent) GetQueuedJobs() []Job {
 	var JobsSize = 0
 	var NumJobs = 0
 
-	// make sure we return a number of jobs that doesn't exeed DEMON_MAX_RESPONSE_LENGTH
+	// make sure we return a number of jobs that doesn't exceed DEMON_MAX_RESPONSE_LENGTH
 	for _, job := range a.JobQueue {
 
 		for i := range job.Data {

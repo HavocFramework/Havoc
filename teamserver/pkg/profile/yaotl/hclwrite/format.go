@@ -458,7 +458,7 @@ func tokenBracketChange(tok *Token) int {
 //    single-line comment token, represents the comment.
 //
 // When formatting, the leading spaces of the first tokens in each of these
-// cells is adjusted to align vertically their occurences on consecutive
+// cells is adjusted to align vertically their occurrences on consecutive
 // rows.
 type formatLine struct {
     lead    Tokens

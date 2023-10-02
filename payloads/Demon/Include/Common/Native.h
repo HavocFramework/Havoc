@@ -2,7 +2,7 @@
 	ntdll.h
 	User Mode, 32bit & 64bit version
 	Visual Studio 6.0 - Visual Studio 2010 and MingW compatible
-	Intel C++ Compiler (ICL) 11.x - 12.x prefered
+	Intel C++ Compiler (ICL) 11.x - 12.x preferred
 
 	(c) 2019 - Rokas Kupstys
 	(c) 2009, 2010, 2011 - Fyyre
@@ -744,7 +744,7 @@ typedef struct _PROCESSOR_NUMBER {
 #define FSCTL_GET_RETRIEVAL_POINTERS    CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 28,  METHOD_NEITHER, FILE_ANY_ACCESS) // STARTING_VCN_INPUT_BUFFER, RETRIEVAL_POINTERS_BUFFER
 #define FSCTL_MOVE_FILE                 CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 29, METHOD_BUFFERED, FILE_SPECIAL_ACCESS) // MOVE_FILE_DATA,
 #define FSCTL_IS_VOLUME_DIRTY           CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 30, METHOD_BUFFERED, FILE_ANY_ACCESS)
-// decomissioned fsctl value                                              31
+// decommissioned fsctl value                                              31
 #define FSCTL_ALLOW_EXTENDED_DASD_IO    CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 32, METHOD_NEITHER,  FILE_ANY_ACCESS)
 #endif /* _WIN32_WINNT >= 0x0400 */
 
@@ -1229,7 +1229,7 @@ typedef struct _FILESYSTEM_STATISTICS {
     USHORT FileSystemType;
     USHORT Version;                     // currently version 1
 
-    ULONG SizeOfCompleteStructure;      // must by a mutiple of 64 bytes
+    ULONG SizeOfCompleteStructure;      // must by a multiple of 64 bytes
 
     ULONG UserFileReads;
     ULONG UserFileReadBytes;
@@ -1362,7 +1362,7 @@ typedef struct _NTFS_STATISTICS {
         ULONG Clusters;             // number of clusters allocated
         ULONG Hints;                // number of times a hint was specified
 
-        ULONG RunsReturned;         // number of runs used to satisify all the requests
+        ULONG RunsReturned;         // number of runs used to satisfy all the requests
 
         ULONG HintsHonored;         // number of times the hint was useful
         ULONG HintsClusters;        // number of clusters allocated via the hint
@@ -2300,13 +2300,13 @@ typedef struct _SD_CHANGE_MACHINE_SID_OUTPUT {
     ULONGLONG NumSDChangedSuccess;
 
     //
-    //  How many entires failed the update in the $Secure stream
+    //  How many entries failed the update in the $Secure stream
     //
 
     ULONGLONG NumSDChangedFail;
 
     //
-    //  How many entires are unused in the current security stream
+    //  How many entries are unused in the current security stream
     //
 
     ULONGLONG NumSDUnused;
@@ -2330,7 +2330,7 @@ typedef struct _SD_CHANGE_MACHINE_SID_OUTPUT {
     ULONGLONG NumMftSDChangedFail;
 
     //
-    //  Total number of entriess process in the $MFT file
+    //  Total number of entries process in the $MFT file
     //
 
     ULONGLONG NumMftSDTotal;
@@ -7398,14 +7398,14 @@ typedef struct _CONTEXT
 
 	//
 	// This section is specified/returned if the
-	// ContextFlags word contians the flag CONTEXT_FLOATING_POINT.
+	// ContextFlags word contains the flag CONTEXT_FLOATING_POINT.
 	//
 
 	FLOATING_SAVE_AREA FloatSave;
 
 	//
 	// This section is specified/returned if the
-	// ContextFlags word contians the flag CONTEXT_SEGMENTS.
+	// ContextFlags word contains the flag CONTEXT_SEGMENTS.
 	//
 
 	DWORD   SegGs;
@@ -7415,7 +7415,7 @@ typedef struct _CONTEXT
 
 	//
 	// This section is specified/returned if the
-	// ContextFlags word contians the flag CONTEXT_INTEGER.
+	// ContextFlags word contains the flag CONTEXT_INTEGER.
 	//
 
 	DWORD   Edi;
@@ -7427,7 +7427,7 @@ typedef struct _CONTEXT
 
 	//
 	// This section is specified/returned if the
-	// ContextFlags word contians the flag CONTEXT_CONTROL.
+	// ContextFlags word contains the flag CONTEXT_CONTROL.
 	//
 
 	DWORD   Ebp;
@@ -8638,7 +8638,7 @@ LsaLookupFreeMemory(
 #define LSA_MODE_LOG_FULL               (0x00000008L)
 
 typedef enum _SECURITY_LOGON_TYPE {
-    UndefinedLogonType = 0, // This is used to specify an undefied logon type
+    UndefinedLogonType = 0, // This is used to specify an undefined logon type
     Interactive = 2,      // Interactively logged on (locally or remotely)
     Network,              // Accessing system via network
     Batch,                // Started via a batch queue
@@ -9222,7 +9222,7 @@ typedef PLSA_TRUST_INFORMATION PTRUSTED_DOMAIN_INFORMATION_BASIC;
 #define TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL             0x00000040  // Trust is to be treated as external for trust boundary purposes
 #if (_WIN32_WINNT >= 0x0600)
 #define TRUST_ATTRIBUTE_TRUST_USES_RC4_ENCRYPTION     0x00000080  // MIT trust with RC4
-#define TRUST_ATTRIBUTE_TRUST_USES_AES_KEYS           0x00000100  // Use AES keys to encrypte KRB TGTs
+#define TRUST_ATTRIBUTE_TRUST_USES_AES_KEYS           0x00000100  // Use AES keys to encrypt KRB TGTs
 #endif
 // Trust attributes 0x00000040 through 0x00200000 are reserved for future use
 #else
@@ -9610,7 +9610,7 @@ LsaEnumerateTrustedDomains(
 	IN LSA_HANDLE PolicyHandle,
 	IN OUT PLSA_ENUMERATION_HANDLE EnumerationContext,
 	OUT PVOID *Buffer,
-	IN ULONG PreferedMaximumLength,
+	IN ULONG preferredMaximumLength,
 	OUT PULONG CountReturned
 	);
 
@@ -9761,7 +9761,7 @@ LsaEnumerateTrustedDomainsEx(
 	IN LSA_HANDLE PolicyHandle,
 	IN OUT PLSA_ENUMERATION_HANDLE EnumerationContext,
 	OUT PVOID *Buffer,
-	IN ULONG PreferedMaximumLength,
+	IN ULONG preferredMaximumLength,
 	OUT PULONG CountReturned
 	);
 

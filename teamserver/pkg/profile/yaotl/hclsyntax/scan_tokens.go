@@ -4594,7 +4594,7 @@ func scanTokens(data []byte, filename string, start hcl.Pos, mode scanMode) []To
                 //line scan_tokens.rl:111
                 te = p + 1
                 {
-                    // This action is called specificially when a heredoc literal
+                    // This action is called specifically when a heredoc literal
                     // ends with a newline character.
 
                     // This might actually be our end marker.

@@ -13,6 +13,6 @@
 - Encrypt config in implant (AES or RC4? not sure)
 - add RSA for AES key exchange to avoid exposing the AES key on init request. adding extra communication security.
 - rewrite client backend. for now its single threaded which is not ideal. split it into 3 threads which handles different jobs. [reference](https://twitter.com/C5pider/status/1650926729299460096)
-- instead of hardcoding the loaded module scripts into the client load scripst from a config file (json). 
+- instead of hardcoding the loaded module scripts into the client load scripts from a config file (json). 
 
 I have planned to add more features. if you have any feature requests let me know in my discord server (link in the readme.md) or in my twitter dms.

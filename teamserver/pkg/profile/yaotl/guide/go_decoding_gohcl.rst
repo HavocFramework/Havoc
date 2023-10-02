@@ -49,7 +49,7 @@ of labels is used.
 
 By default, all declared attributes and blocks are considered to be required.
 An optional value is indicated by making its field have a pointer type, in
-which case ``nil`` is written to indicate the absense of the argument.
+which case ``nil`` is written to indicate the absence of the argument.
 
 The sections below discuss some additional decoding use-cases. For full details
 on the `gohcl` package, see

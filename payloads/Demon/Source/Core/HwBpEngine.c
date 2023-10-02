@@ -11,7 +11,7 @@ LONG ExceptionHandler(
 /*!
  * Init Hardware breakpoint engine by
  * registering a Vectored exception handler
- * @param Engine   if emtpy global handler gonna be used
+ * @param Engine   if empty global handler gonna be used
  * @param Handler
  * @return
  */
@@ -23,7 +23,7 @@ NTSTATUS HwBpEngineInit(
     PVOID        HwBpHandler = Handler;
 
     /* check if an engine object has been specified in the function param.
-     * if not then check if teh callee want's to init the global engine.
+     * if not then check if the callee wants to init the global engine.
      * tho if the global engine has been already init then abort  */
     if ( ( ! HwBpEngine && ! HwBpHandler ) && Instance.HwBpEngine ) {
         return STATUS_INVALID_PARAMETER;

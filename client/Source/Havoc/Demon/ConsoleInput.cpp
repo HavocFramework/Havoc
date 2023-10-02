@@ -552,7 +552,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 }
                 if ( jitter > 100 )
                 {
-                    CONSOLE_ERROR( "The jitter can't be larget than 100" );
+                    CONSOLE_ERROR( "The jitter can't be larger than 100" );
                     return false;
                 }
                 TaskID = CONSOLE_INFO( "Tasked demon to sleep for " + InputCommands[ 1 ] + " seconds with " + jit + "% jitter" );

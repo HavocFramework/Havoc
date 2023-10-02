@@ -108,7 +108,7 @@ func ParseFile(filename string) (*hcl.File, hcl.Diagnostics) {
             {
                 Severity: hcl.DiagError,
                 Summary:  "Failed to read file",
-                Detail:   fmt.Sprintf("The file %q was opened, but an error occured while reading it.", filename),
+                Detail:   fmt.Sprintf("The file %q was opened, but an error occurred while reading it.", filename),
             },
         }
     }

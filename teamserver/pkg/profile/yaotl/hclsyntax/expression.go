@@ -90,7 +90,7 @@ func (e *LiteralValueExpr) AsTraversal() hcl.Traversal {
     if e.Val.IsNull() {
         // In practice the parser only generates null values of the dynamic
         // pseudo-type for literals, so we can safely assume that any null
-        // was orignally the keyword "null".
+        // was originally the keyword "null".
         return hcl.Traversal{
             hcl.TraverseRoot{
                 Name:     "null",
@@ -1500,7 +1500,7 @@ func (e *SplatExpr) Value(ctx *hcl.EvalContext) (cty.Value, hcl.Diagnostics) {
     e.Item.clearValue(ctx) // clean up our temporary value
 
     if !isKnown {
-        // We'll ingore the resultTy diagnostics in this case since they
+        // We'll ignore the resultTy diagnostics in this case since they
         // will just be the same errors we saw while iterating above.
         ty, _ := resultTy()
         return cty.UnknownVal(ty), diags

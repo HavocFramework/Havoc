@@ -8,7 +8,7 @@ import (
 // unknownBody is a funny body that just reports everything inside it as
 // unknown. It uses a given other body as a sort of template for what attributes
 // and blocks are inside -- including source location information -- but
-// subsitutes unknown values of unknown type for all attributes.
+// substitutes unknown values of unknown type for all attributes.
 //
 // This rather odd process is used to handle expansion of dynamic blocks whose
 // for_each expression is unknown. Since a block cannot itself be unknown,

@@ -1679,7 +1679,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 			/* LclAddr; LclPort; FwdAddr; FwdPort */
 			Params = strings.Split(Param, ";")
 			if len(Param) < 4 {
-				return nil, fmt.Errorf("rportfwd requieres 4 arguments, received %d", len(Params))
+				return nil, fmt.Errorf("rportfwd requires 4 arguments, received %d", len(Params))
 			}
 
 			/* Parse local host & port arguments */
@@ -1743,7 +1743,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 
 		case "socks add":
 			if Param == "" {
-				return nil, fmt.Errorf("socks add requieres a port")
+				return nil, fmt.Errorf("socks add requires a port")
 			}
 
 			var Socks *socks.Socks
@@ -3747,7 +3747,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					}
 
 					if Success == 0 || Piped == 0 {
-						// if we don't expect to recieve output, then close the RequestID
+						// if we don't expect to receive output, then close the RequestID
 						a.RequestCompleted(RequestID)
 					}
 				} else {
@@ -3947,7 +3947,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 				)
 
 				OutputMap["Type"] = "Error"
-				OutputMap["Message"] = fmt.Sprintf("Exception %v [%x] accured while executing BOF at address %x", win32.StatusToString(int64(Exception)), Exception, Address)
+				OutputMap["Message"] = fmt.Sprintf("Exception %v [%x] occurred while executing BOF at address %x", win32.StatusToString(int64(Exception)), Exception, Address)
 				a.RequestCompleted(RequestID)
 				teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
 			} else {

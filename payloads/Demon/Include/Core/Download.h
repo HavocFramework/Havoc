@@ -59,7 +59,7 @@ typedef struct _MEM_FILE
     /* Pointer to file contents */
     PVOID Data;
 
-    /* Has the entire file been recieved? */
+    /* Has the entire file been received? */
     BOOL IsCompleted;
 
     /* Next file in linked list */

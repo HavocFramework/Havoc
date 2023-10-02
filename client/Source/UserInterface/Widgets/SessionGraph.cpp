@@ -560,15 +560,15 @@ void Node::contextMenuEvent( QGraphicsSceneContextMenuEvent* event )
         }
     }
 
-    auto seperator  = new QAction();
-    auto seperator2 = new QAction();
-    auto seperator3 = new QAction();
-    auto seperator4 = new QAction();
+    auto separator  = new QAction();
+    auto separator2 = new QAction();
+    auto separator3 = new QAction();
+    auto separator4 = new QAction();
 
-    seperator->setSeparator( true );
-    seperator2->setSeparator( true );
-    seperator3->setSeparator( true );
-    seperator4->setSeparator( true );
+    separator->setSeparator( true );
+    separator2->setSeparator( true );
+    separator3->setSeparator( true );
+    separator4->setSeparator( true );
 
     auto SessionMenu     = QMenu();
     auto SessionExplorer = QMenu( "Explorer" );
@@ -578,12 +578,12 @@ void Node::contextMenuEvent( QGraphicsSceneContextMenuEvent* event )
     SessionExplorer.setStyleSheet( MenuStyle );
 
     SessionMenu.addAction( "Interact" );
-    SessionMenu.addAction( seperator );
+    SessionMenu.addAction( separator );
 
     if ( Agent.MagicValue == DemonMagicValue )
     {
         SessionMenu.addAction( SessionExplorer.menuAction() );
-        SessionMenu.addAction( seperator2 );
+        SessionMenu.addAction( separator2 );
     }
 
     if ( Agent.Marked.compare( "Dead" ) != 0 )
@@ -592,7 +592,7 @@ void Node::contextMenuEvent( QGraphicsSceneContextMenuEvent* event )
         SessionMenu.addAction( "Mark as Alive" );
 
     SessionMenu.addAction( "Export" );
-    SessionMenu.addAction( seperator3 );
+    SessionMenu.addAction( separator3 );
     SessionMenu.addAction( "Remove" );
 
     if ( Agent.MagicValue == DemonMagicValue )
@@ -789,10 +789,10 @@ void Node::contextMenuEvent( QGraphicsSceneContextMenuEvent* event )
 
     }
 
-    delete seperator;
-    delete seperator2;
-    delete seperator3;
-    delete seperator4;
+    delete separator;
+    delete separator2;
+    delete separator3;
+    delete separator4;
 }
 
 void Edge::adjust()
