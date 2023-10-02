@@ -662,7 +662,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 CONSOLE_ERROR( "Sub command not found: " + InputCommands[ 1 ] )
             }
         }
-        else if ( InputCommands[ 0 ].compare( "dir" ) == 0 )
+        else if ( InputCommands[ 0 ].compare( "dir" ) == 0 || InputCommands[ 0 ].compare( "ls" ) == 0 )
         {
             auto Path      = QString( "" );
             auto SubDirs   = "false";
@@ -977,7 +977,6 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                     DemonConsole->TaskError( "Not enough arguments" );
                 }
             }
-
             else if ( InputCommands[ 1 ].compare( "blockdll" ) == 0 )
             {
                 if ( InputCommands.length() >= 3 )
@@ -1049,6 +1048,18 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 CONSOLE_ERROR( "Modules command not found: " + InputCommands[ 1 ] );
                 return false;
             }
+        }
+        else if ( InputCommands[ 0 ].compare( "ps" ) == 0 )
+        {
+            if ( InputCommands.size() != 1 )
+            {
+                    CONSOLE_ERROR( "Too many arguments" )
+                    return false;
+            }
+            // same as 'proc list'
+            TaskID = DemonConsole->TaskInfo( Send, nullptr, "Tasked demon to enumerate and list all processes" );
+            CommandInputList[ TaskID ] = commandline;
+            if ( Send ) Execute.ProcList( TaskID, false );
         }
         else if ( InputCommands[ 0 ].compare( "dll" ) == 0 )
         {
@@ -1666,7 +1677,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 return false;
             }
         }
-        else if ( InputCommands[ 0 ].compare( "cat" ) == 0 )
+        else if ( InputCommands[ 0 ].compare( "cat" ) == 0 || InputCommands[ 0 ].compare( "type" ) == 0 )
         {
             if ( InputCommands.size() >= 2 )
             {
