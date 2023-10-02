@@ -6403,7 +6403,8 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 				"Message": "A package was discarded by demon for being larger than PIPE_BUFFER_MAX",
 			}
 
-			a.RequestCompleted(RequestID)
+			// a single command can generate multiple dropped packages
+			//a.RequestCompleted(RequestID)
 		} else {
 			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PACKAGE_DROPPED, Invalid packet", AgentID))
 		}
