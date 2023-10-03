@@ -25,6 +25,34 @@ typedef struct {
     INT    size;     /* total size of this buffer */
 } datap, *PDATA, *PFORMAT;
 
+typedef struct {
+    char * ptr;
+    size_t size;
+} HEAP_RECORD;
+#define MASK_SIZE 13
+
+typedef struct {
+    char  * sleep_mask_ptr;
+    DWORD   sleep_mask_text_size;
+    DWORD   sleep_mask_total_size;
+
+    char  * beacon_ptr;
+    DWORD * sections;
+    HEAP_RECORD * heap_records;
+    char    mask[MASK_SIZE];
+} BEACON_INFO;
+
+#define DATA_STORE_TYPE_EMPTY 0
+#define DATA_STORE_TYPE_GENERAL_FILE 1
+
+typedef struct {
+    int type;
+    DWORD64 hash;
+    BOOL masked;
+    char* buffer;
+    size_t length;
+} DATA_STORE_OBJECT, *PDATA_STORE_OBJECT;
+
 VOID    BeaconDataParse( PDATA parser, PCHAR  buffer, INT size );
 INT     BeaconDataInt( PDATA parser );
 SHORT   BeaconDataShort( PDATA parser );
@@ -58,5 +86,19 @@ BOOL   toWideChar( PCHAR src, PWCHAR dst, INT max );
 UINT32 swap_endianess( UINT32 indata );
 
 BOOL   GetRequestIDForCallingObjectFile( PVOID CoffeeFunctionReturn, PUINT32 RequestID );
+
+VOID BeaconInformation(BEACON_INFO * info);
+
+BOOL BeaconAddValue(const char * key, void * ptr);
+PVOID BeaconGetValue(const char * key);
+BOOL BeaconRemoveValue(const char * key);
+
+PDATA_STORE_OBJECT BeaconDataStoreGetItem(SIZE_T index);
+VOID BeaconDataStoreProtectItem(SIZE_T index);
+VOID BeaconDataStoreUnprotectItem(SIZE_T index);
+SIZE_T BeaconDataStoreMaxEntries();
+
+/* Beacon User Data functions */
+PCHAR BeaconGetCustomUserData();
 
 #endif

@@ -103,6 +103,16 @@ typedef struct _COFFEE
     struct _COFFEE*   Next;
 } COFFEE, *PCOFFEE;
 
+#define COFFEE_KEY_VALUE_MAX_KEY 512
+
+typedef struct _COFFEE_KEY_VALUE
+{
+    CHAR   Key[COFFEE_KEY_VALUE_MAX_KEY];
+    PVOID  Value;
+
+    struct _COFFEE_KEY_VALUE*   Next;
+} COFFEE_KEY_VALUE, *PCOFFEE_KEY_VALUE;
+
 /*!
  * CoffeeLdr
  * Simply executes an object file in the current thread (blocking)

@@ -551,6 +551,7 @@ typedef struct
     PMEM_FILE            MemFiles;
     PSOCKET_DATA         Sockets;
     PCOFFEE              Coffees;
+    PCOFFEE_KEY_VALUE    CoffeKeyValueStore;
     PHWBP_ENGINE         HwBpEngine;
 
 } INSTANCE;

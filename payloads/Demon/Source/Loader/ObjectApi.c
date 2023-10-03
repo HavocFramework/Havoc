@@ -62,6 +62,15 @@ COFFAPIFUNC BeaconApi[] = {
         { .NameHash = H_COFFAPI_BEACONSPAWNTEMPORARYPROCESS,  .Pointer = BeaconSpawnTemporaryProcess      },
         { .NameHash = H_COFFAPI_BEACONINJECTTEMPORARYPROCESS, .Pointer = BeaconInjectTemporaryProcess     },
         { .NameHash = H_COFFAPI_BEACONCLEANUPPROCESS,         .Pointer = BeaconCleanupProcess             },
+        { .NameHash = H_COFFAPI_BEACONINFORMATION,            .Pointer = BeaconInformation                },
+        { .NameHash = H_COFFAPI_BEACONADDVALUE,               .Pointer = BeaconAddValue                   },
+        { .NameHash = H_COFFAPI_BEACONGETVALUE,               .Pointer = BeaconGetValue                   },
+        { .NameHash = H_COFFAPI_BEACONREMOVEVALUE,            .Pointer = BeaconRemoveValue                },
+        { .NameHash = H_COFFAPI_BEACONDATASTOREGETITEM,       .Pointer = BeaconDataStoreGetItem           },
+        { .NameHash = H_COFFAPI_BEACONDATASTOREPROTECTITEM,   .Pointer = BeaconDataStoreProtectItem       },
+        { .NameHash = H_COFFAPI_BEACONDATASTOREUNPROTECTITEM, .Pointer = BeaconDataStoreUnprotectItem     },
+        { .NameHash = H_COFFAPI_BEACONDATASTOREMAXENTRIES,    .Pointer = BeaconDataStoreMaxEntries        },
+        { .NameHash = H_COFFAPI_BEACONGETCUSTOMUSERDATA,      .Pointer = BeaconGetCustomUserData          },
 
         // End of array
         { .NameHash = 0, .Pointer = NULL },
@@ -523,6 +532,153 @@ VOID BeaconCleanupProcess( PROCESS_INFORMATION* pInfo )
     status = SysNtClose(pInfo->hThread);
     if (status != STATUS_SUCCESS)
         return;
+}
+
+// not implemented
+VOID BeaconInformation(BEACON_INFO * info)
+{
+    PUTS( "BeaconInformation is not implemented" );
+    return;
+}
+
+BOOL BeaconAddValue(const char * key, void * ptr)
+{
+    PCOFFEE_KEY_VALUE KeyValue  = NULL;
+    SIZE_T            KeyLength = 0;
+
+    if ( ! key )
+    {
+        PUTS( "No key was provided" );
+        return FALSE;
+    }
+
+    KeyLength = StringLengthA( key );
+
+    if ( KeyLength == 0 )
+    {
+        PUTS( "The key is too short" );
+        return FALSE;
+    }
+
+    if ( KeyLength >= COFFEE_KEY_VALUE_MAX_KEY )
+    {
+        PRINTF( "The key %s is too long\n", key );
+        return FALSE;
+    }
+
+    // make sure the key doesn't already exist
+    KeyValue = Instance.CoffeKeyValueStore;
+    while ( KeyValue )
+    {
+        if ( StringCompareA( KeyValue->Key, key ) == 0 ) {
+            PRINTF( "The key %s already exists\n", key );
+            return FALSE;
+        }
+
+        KeyValue = KeyValue->Next;
+    }
+
+    KeyValue = Instance.Win32.LocalAlloc( LPTR, sizeof( COFFEE_KEY_VALUE ) );
+
+    KeyValue->Value = ptr;
+    StringCopyA( KeyValue->Key, key );
+
+    // store the new item at the start of the list
+    KeyValue->Next = Instance.CoffeKeyValueStore;
+    Instance.CoffeKeyValueStore = KeyValue;
+
+    return TRUE;
+}
+
+PVOID BeaconGetValue(const char * key)
+{
+    PCOFFEE_KEY_VALUE KeyValue = NULL;
+
+    if ( ! key )
+    {
+        PUTS( "No key was provided" );
+        return NULL;
+    }
+
+    KeyValue = Instance.CoffeKeyValueStore;
+    while ( KeyValue )
+    {
+        if ( StringCompareA( KeyValue->Key, key ) == 0 ) {
+            return KeyValue->Value;
+        }
+
+        KeyValue = KeyValue->Next;
+    }
+
+    return NULL;
+}
+
+BOOL BeaconRemoveValue(const char * key)
+{
+    PCOFFEE_KEY_VALUE Current  = NULL;
+    PCOFFEE_KEY_VALUE Prev     = NULL;
+
+    if ( ! key )
+    {
+        PUTS( "No key was provided" );
+        return FALSE;
+    }
+
+    Current = Instance.CoffeKeyValueStore;
+    while ( Current )
+    {
+        if ( StringCompareA( Current->Key, key ) == 0 )
+        {
+            if ( Prev ) {
+                Prev->Next = Current->Next;
+            } else {
+                Instance.CoffeKeyValueStore = Current->Next;
+            }
+
+            DATA_FREE( Current, sizeof( COFFEE_KEY_VALUE ) );
+            return TRUE;
+        }
+
+        Prev    = Current;
+        Current = Current->Next;
+    }
+
+    return FALSE;
+}
+
+// not implemented
+PDATA_STORE_OBJECT BeaconDataStoreGetItem(SIZE_T index)
+{
+    PUTS( "BeaconDataStoreGetItem is not implemented" );
+    return NULL;
+}
+
+// not implemented
+VOID BeaconDataStoreProtectItem(SIZE_T index)
+{
+    PUTS( "BeaconDataStoreProtectItem is not implemented" );
+    return;
+}
+
+// not implemented
+VOID BeaconDataStoreUnprotectItem(SIZE_T index)
+{
+    PUTS( "BeaconDataStoreUnprotectItem is not implemented" );
+    return;
+}
+
+// not implemented
+SIZE_T BeaconDataStoreMaxEntries()
+{
+    PUTS( "BeaconDataStoreMaxEntries is not implemented" );
+    return 0;
+}
+
+// not implemented
+PCHAR BeaconGetCustomUserData()
+{
+    PUTS( "BeaconGetCustomUserData is not implemented" );
+    return NULL;
 }
 
 BOOL toWideChar( char* src, wchar_t* dst, int max )
