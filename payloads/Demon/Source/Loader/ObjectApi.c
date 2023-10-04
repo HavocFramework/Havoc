@@ -192,7 +192,7 @@ BOOL GetRequestIDForCallingObjectFile( PVOID CoffeeFunctionReturn, PUINT32 Reque
     {
         if ( ( ULONG_PTR ) CoffeeFunctionReturn >= ( ULONG_PTR ) Entry->ImageBase && ( ULONG_PTR ) CoffeeFunctionReturn < ( ( ULONG_PTR ) Entry->ImageBase + Entry->BofSize ) )
         {
-            PRINTF( "Found the RequestID for the calling BOF: %x\n", Entry->RequestID )
+            //PRINTF( "Found the RequestID for the calling BOF: %x\n", Entry->RequestID )
             *RequestID = Entry->RequestID;
             return TRUE;
         }
@@ -207,7 +207,7 @@ BOOL GetRequestIDForCallingObjectFile( PVOID CoffeeFunctionReturn, PUINT32 Reque
 
 VOID BeaconPrintf( INT Type, PCHAR fmt, ... )
 {
-    PRINTF( "BeaconPrintf( %d, %x, ... )\n", Type, fmt )
+    //PRINTF( "BeaconPrintf( %d, %x, ... )\n", Type, fmt )
 
     PPACKAGE    package              = NULL;
     va_list     VaListArg            = 0;
@@ -235,7 +235,7 @@ VOID BeaconPrintf( INT Type, PCHAR fmt, ... )
         return;
     }
 
-    CallbackOutput = Instance.Win32.LocalAlloc( LPTR, CallbackSize );
+    CallbackOutput = Instance.Win32.LocalAlloc( LPTR, CallbackSize + 1 );
     if ( ! CallbackOutput ) {
         PUTS( "Failed to allocate CallbackOutput" );
         va_end( VaListArg );
