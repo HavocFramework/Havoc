@@ -22,7 +22,7 @@
 #		`cd /go/Build/Bin/ && ./Havoc`
 #	You should now see the Havoc teamserver client running in a window!
 #
-#   	Install dependencies for running client locally 
+#   	Install dependencies for running client locally
 # 		'sudo apt-get update && sudo apt-get install -y git build-essential apt-utils cmake libfontconfig1 libglu1-mesa-dev libgtest-dev libspdlog-dev libboost-all-dev mesa-common-dev qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools libqt5websockets5 libqt5websockets5-dev qtdeclarative5-dev'
 #
 # Extras
@@ -32,7 +32,7 @@
 # 	Enter Container:
 #		'docker run exec -it <containerID> bash'
 # ------------------------------------------------------------------------------
-ARG GO_VERSION="1.19.1" 
+ARG GO_VERSION="1.19.1"
 FROM golang:${GO_VERSION}
 #
 # Set ENVs
@@ -48,7 +48,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # Manual cmake install
 RUN apt-get update && apt-get -y install wget
 #
-# Install dependencies                                            
+# Install dependencies
 RUN apt-get update && apt-get install -y \
     git \
     build-essential \
@@ -81,8 +81,28 @@ RUN apt-get update && apt-get install -y \
 RUN wget https://github.com/Kitware/CMake/releases/download/v3.24.1/cmake-3.24.1-Linux-x86_64.sh -O cmake.sh
 RUN sh cmake.sh --prefix=/usr/local/ --exclude-subdir
 #
-# Install Python3.10
-RUN apt install -y python3.10-dev libpython3.10 libpython3.10-dev python3.10 build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev wget libbz2-dev
+# Install Python3.10 from Source
+RUN apt-get install -y \
+    build-essential \
+    zlib1g-dev \
+    libncurses5-dev \
+    libgdbm-dev \
+    libnss3-dev \
+    libssl-dev \
+    libreadline-dev \
+    libffi-dev \
+    libsqlite3-dev \
+    wget \
+    libbz2-dev
+
+RUN cd /tmp/ \
+    && wget https://www.python.org/ftp/python/3.10.13/Python-3.10.13.tgz \
+    && tar -xf Python-3.10.*.tgz \
+    && cd Python-3.10.*/ \
+    && ./configure --prefix=/usr/local --enable-optimizations --enable-shared LDFLAGS="-Wl,-rpath /usr/local/lib" \
+    && make -j $(nproc) \
+    && sudo make altinstall
+
 #
 # Copy over the client
 #COPY . Build/

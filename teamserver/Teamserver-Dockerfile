@@ -43,6 +43,7 @@ RUN apt update \
 	python3-pip \
 	rpm \
 	sudo \
+	libcap2-bin \
 	upx-ucl \
 	&& pip install --upgrade jsonschema
 #
@@ -53,8 +54,8 @@ RUN apt update \
 # Pull the repo from Github
 RUN git clone https://github.com/HavocFramework/Havoc
 #
-# Build the cloned repos copy of the Teamserver-Client  
-RUN cd Havoc/teamserver/ && chmod +x ./Install.sh && ./Install.sh && make
+# Build the cloned repos copy of the Teamserver-Client
+RUN cd Havoc/teamserver/ && chmod +x ./Install.sh && ./Install.sh && cd .. && make ts-build
 #
 # ------------------------------------------------------------------------------#
 # original @author      Nicola Asuni <info@tecnick.com>
