@@ -277,8 +277,15 @@ func RegisterInfoToInstance(Header Header, RegisterInfo map[string]any) *Agent {
 		}
 	}
 
+	// Updated OS Version handling - 0xtriboulet
 	if val, ok := RegisterInfo["OS Version"]; ok {
-		agent.Info.OSVersion = val.(string)
+	    // Assuming val is a string representing the OS version, split it by '.' to get the version parts, 0xtriboulet
+	    versionParts := strings.Split(val.(string), ".")
+	    OsVersion := make([]int, len(versionParts))
+	    for i, part := range versionParts {
+		OsVersion[i], _ = strconv.Atoi(part)
+	    }
+	    agent.Info.OSVersion = getWindowsVersionString(OsVersion)
 	}
 
 	if val, ok := RegisterInfo["OS Build"]; ok {
@@ -288,6 +295,7 @@ func RegisterInfoToInstance(Header Header, RegisterInfo map[string]any) *Agent {
 	if val, ok := RegisterInfo["OS Arch"]; ok {
 		agent.Info.OSArch = val.(string)
 	}
+	
 	if val, ok := RegisterInfo["SleepDelay"]; ok { // 0xtriboulet
 		switch v := val.(type) {
 		case float64:
@@ -304,8 +312,13 @@ func RegisterInfoToInstance(Header Header, RegisterInfo map[string]any) *Agent {
 			agent.Info.SleepDelay = 0
 		}
 	}
+	
+
 	agent.Info.FirstCallIn = time.Now().Format("02/01/2006 15:04:05")
+	
 	agent.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05")
+	
+
 	agent.BackgroundCheck = false
 	agent.Active = true
 
