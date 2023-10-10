@@ -496,7 +496,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 		case DEMON_COMMAND_PROC_GREP:
 			job.Data = []interface{}{
 				SubCommand,
-				Arguments,
+				common.EncodeUTF16(Arguments),
 			}
 			break
 
@@ -3709,7 +3709,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					)
 
 					for Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadInt32, parser.ReadInt32, parser.ReadBytes, parser.ReadInt32}) {
-						ProcName = Parser.ParseString()
+						ProcName = Parser.ParseUTF16String()
 						ProcID = Parser.ParseInt32()
 						ParentPID = Parser.ParseInt32()
 						ProcUser = Parser.ParseUTF16String()

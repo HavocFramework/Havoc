@@ -10,6 +10,8 @@
 
 INT     StringCompareA( LPCSTR String1, LPCSTR String2 );
 INT     StringCompareW( LPWSTR String1, LPWSTR String2 );
+INT     StringNCompareW( LPWSTR String1, LPWSTR String2, INT Length );
+INT     StringNCompareIW( LPWSTR String1, LPWSTR String2, INT Length );
 PCHAR   StringCopyA( PCHAR String1, PCHAR String2 );
 PWCHAR  StringCopyW(PWCHAR String1, PWCHAR String2);
 SIZE_T  StringLengthA( LPCSTR String );
@@ -18,6 +20,7 @@ PCHAR   StringConcatA(PCHAR String, PCHAR String2);
 PWCHAR  StringConcatW(PWCHAR String, PWCHAR String2);
 PCHAR   StringTokenA(PCHAR String, CONST PCHAR Delim);
 LPWSTR  WcsStr( PWCHAR String, PWCHAR String2 );
+LPWSTR  WcsIStr( PWCHAR String, PWCHAR String2 );
 INT     MemCompare( PVOID s1, PVOID s2, INT len );
 UINT64  GetSystemFileTime( );
 BYTE    HideChar( BYTE C );

@@ -347,13 +347,12 @@ VOID CommandProc( PPARSER Parser )
             SIZE_T                      ProcessInfoSize = 0;
             NTSTATUS                    NtStatus        = STATUS_SUCCESS;
             ULONG32                     ProcessSize     = 0;
-            PCHAR                       ProcessName     = NULL;
+            PWCHAR                      ProcessName     = NULL;
 
-            /* Process Name and Process User token */
-            CHAR    ProcName[ MAX_PATH ] = { 0 };
-            BUFFER  UserDomain           = { 0 };
+            /* Process User token */
+            BUFFER UserDomain = { 0 };
 
-            ProcessName = ParserGetString( Parser, &ProcessSize );
+            ProcessName = ParserGetWString( Parser, &ProcessSize );
 
             if ( NT_SUCCESS( NtStatus = ProcessSnapShot( &SysProcessInfo, &ProcessInfoSize ) ) )
             {
@@ -364,10 +363,9 @@ VOID CommandProc( PPARSER Parser )
 
                 while ( TRUE )
                 {
-                    WCharStringToCharString( ProcName, SysProcessInfo->ImageName.Buffer, SysProcessInfo->ImageName.Length );
-                    INT32 MemRet = MemCompare( ProcName, ProcessName, ProcessSize );
+                    PVOID MemRet = WcsIStr( SysProcessInfo->ImageName.Buffer, ProcessName );
 
-                    if ( MemRet == 0 )
+                    if ( MemRet != NULL )
                     {
                         HANDLE hProcess = NULL;
                         HANDLE hToken   = NULL;
@@ -382,7 +380,7 @@ VOID CommandProc( PPARSER Parser )
                             }
                         }
 
-                        PackageAddString( Package, ProcName );
+                        PackageAddWString( Package, SysProcessInfo->ImageName.Buffer );
                         PackageAddInt32( Package, ( DWORD ) ( ULONG_PTR ) SysProcessInfo->UniqueProcessId  );
                         PackageAddInt32( Package, ( DWORD ) ( ULONG_PTR ) SysProcessInfo->InheritedFromUniqueProcessId );
                         PackageAddBytes( Package, UserDomain.Buffer, UserDomain.Length );

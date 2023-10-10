@@ -30,6 +30,21 @@ INT StringCompareW( LPWSTR String1, LPWSTR String2 )
 
 }
 
+INT StringNCompareW( LPWSTR String1, LPWSTR String2, INT Length )
+{
+    for (; *String1 == *String2; String1++, String2++, Length--)
+    {
+        if (*String1 == '\0')
+            return 0;
+
+        if ( Length == 1 )
+            return 0;
+    }
+
+    return ((*(LPWSTR)String1 < *(LPWSTR)String2) ? -1 : +1);
+
+}
+
 WCHAR ToLowerCaseW( WCHAR C )
 {
     return C > 0x40 && C < 0x5b ? C | 0x60 : C;
@@ -40,6 +55,21 @@ INT StringCompareIW( LPWSTR String1, LPWSTR String2 )
     for (; ToLowerCaseW( *String1 ) == ToLowerCaseW( *String2 ); String1++, String2++)
     {
         if (*String1 == '\0')
+            return 0;
+    }
+
+    return ((*(LPWSTR)String1 < *(LPWSTR)String2) ? -1 : +1);
+
+}
+
+INT StringNCompareIW( LPWSTR String1, LPWSTR String2, INT Length )
+{
+    for (; ToLowerCaseW( *String1 ) == ToLowerCaseW( *String2 ); String1++, String2++, Length--)
+    {
+        if (*String1 == '\0')
+            return 0;
+
+        if ( Length == 1 )
             return 0;
     }
 
@@ -134,15 +164,38 @@ PWCHAR StringConcatW(PWCHAR String, PWCHAR String2)
 
 LPWSTR WcsStr( PWCHAR String, PWCHAR String2 )
 {
+    if ( ! String || ! String2 )
+        return NULL;
+
     UINT32 Size1 = StringLengthW( String );
     UINT32 Size2 = StringLengthW( String2 );
 
     if ( Size2 > Size1 )
         return NULL;
 
-    for ( UINT32 i = 0; i < Size1; i++ )
+    for ( UINT32 i = 0; i < Size1 - Size2 + 1; i++ )
     {
-        if ( StringCompareW( String + i, String2 ) == 0 )
+        if ( StringNCompareW( String + i, String2, Size2 ) == 0 )
+            return String + i;
+    }
+
+    return NULL;
+}
+
+LPWSTR WcsIStr( PWCHAR String, PWCHAR String2 )
+{
+    if ( ! String || ! String2 )
+        return NULL;
+
+    UINT32 Size1 = StringLengthW( String );
+    UINT32 Size2 = StringLengthW( String2 );
+
+    if ( Size2 > Size1 )
+        return NULL;
+
+    for ( UINT32 i = 0; i < Size1 - Size2 + 1; i++ )
+    {
+        if ( StringNCompareIW( String + i, String2, Size2 ) == 0 )
             return String + i;
     }
 
