@@ -1970,9 +1970,19 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 			if Message != nil {
 				if !Socks.Failed {
 
+					var(
+						msg string
+					)
+
+					if a.Info.SleepDelay == 0 && a.Info.SleepJitter == 0 {
+						msg = fmt.Sprintf("Started socks5 server on port %v", Param)
+					} else {
+						msg = fmt.Sprintf("Started socks5 server on port %v. Consider running: sleep 0", Param)
+					}
+
 					*Message = map[string]string{
 						"Type":    "Good",
-						"Message": fmt.Sprintf("Started socks5 server on port %v", Param),
+						"Message": msg,
 						"Output":  "",
 					}
 				}
