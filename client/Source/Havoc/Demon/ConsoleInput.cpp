@@ -566,6 +566,17 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             CommandInputList[ TaskID ] = commandline;
             SEND( Execute.Sleep( TaskID, InputCommands[ 1 ] + ";" + jit ) )
         }
+        else if ( InputCommands[ 0 ].compare( "interactive" ) == 0 )
+        {
+            if ( InputCommands.size() > 1 ) {
+                CONSOLE_ERROR( "Too many arguments" );
+                return false;
+            }
+
+            TaskID = CONSOLE_INFO( "Tasked demon to enter interactive mode" );
+            CommandInputList[ TaskID ] = commandline;
+            SEND( Execute.Sleep( TaskID, "0;0" ) )
+        }
         else if ( InputCommands[ 0 ].compare( "checkin" ) == 0 )
         {
             TaskID = CONSOLE_INFO( "Tasked demon send back a checkin request" );
