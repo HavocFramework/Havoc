@@ -1,5 +1,8 @@
 #include <Havoc/PythonApi/PythonApi.h>
 #include <UserInterface/HavocUI.hpp>
+
+#include <Havoc/PythonApi/PyWidgetClass.hpp>
+
 #include <QFile>
 #include <QMessageBox>
 #include <QFileDialog>
@@ -151,5 +154,11 @@ PyObject* PythonAPI::HavocUI::Core::SaveFileDialog(PyObject *self, PyObject *arg
 
 PyMODINIT_FUNC PythonAPI::HavocUI::PyInit_HavocUI(void)
 {
-    return PyModule_Create( &PythonAPI::HavocUI::PyModule::havocui );
+    PyObject* Module = PyModule_Create2( &PythonAPI::HavocUI::PyModule::havocui, PYTHON_API_VERSION );
+
+    if ( PyType_Ready( &PyWidgetClass_Type ) < 0 )
+        spdlog::error( "Couldn't check if WidgetClass is ready" );
+    else
+        PyModule_AddObject( Module, "Widget", (PyObject*) &PyWidgetClass_Type );
+    return Module;
 }
