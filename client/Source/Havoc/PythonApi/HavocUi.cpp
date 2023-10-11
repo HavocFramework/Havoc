@@ -2,6 +2,7 @@
 #include <UserInterface/HavocUI.hpp>
 
 #include <Havoc/PythonApi/PyWidgetClass.hpp>
+#include <Havoc/PythonApi/PyDialogClass.hpp>
 
 #include <QFile>
 #include <QMessageBox>
@@ -160,5 +161,11 @@ PyMODINIT_FUNC PythonAPI::HavocUI::PyInit_HavocUI(void)
         spdlog::error( "Couldn't check if WidgetClass is ready" );
     else
         PyModule_AddObject( Module, "Widget", (PyObject*) &PyWidgetClass_Type );
+
+    if ( PyType_Ready( &PyDialogClass_Type ) < 0 )
+        spdlog::error( "Couldn't check if DialogClass is ready" );
+    else
+        PyModule_AddObject( Module, "Dialog", (PyObject*) &PyDialogClass_Type );
+
     return Module;
 }
