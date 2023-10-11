@@ -1,0 +1,50 @@
+#ifndef HAVOC_PYDIALOGCLASS_H
+#define HAVOC_PYDIALOGCLASS_H
+
+#include <UserInterface/HavocUI.hpp>
+#include <global.hpp>
+
+#include <QVBoxLayout>
+#include <QDialog>
+#include <QLabel>
+#include <QPushButton>
+#include <QCheckBox>
+#include <QLineEdit>
+#include <QCalendarWidget>
+
+typedef struct
+{
+
+    QDialog* window;
+    QVBoxLayout* layout;
+
+} PyDialogQWindow, *PPyDialogQWindow;
+
+typedef struct
+{
+    PyObject_HEAD
+
+    // Demon Info
+    char* title;
+    PPyDialogQWindow DialogWindow;
+
+} PyDialogClass, *PPyDialogClass;
+
+extern PyTypeObject PyDialogClass_Type;
+
+void        DialogClass_dealloc( PPyDialogClass self );
+PyObject*   DialogClass_new( PyTypeObject *type, PyObject *args, PyObject *kwds );
+int         DialogClass_init( PPyDialogClass self, PyObject *args, PyObject *kwds );
+
+// Methods
+
+PyObject*   DialogClass_exec( PPyDialogClass self, PyObject *args );
+PyObject*   DialogClass_close( PPyDialogClass self, PyObject *args );
+PyObject*   DialogClass_addLabel( PPyDialogClass self, PyObject *args );
+PyObject*   DialogClass_addButton( PPyDialogClass self, PyObject *args );
+PyObject*   DialogClass_addCheckbox( PPyDialogClass self, PyObject *args );
+PyObject*   DialogClass_addCombobox( PPyDialogClass self, PyObject *args );
+PyObject*   DialogClass_addLineedit( PPyDialogClass self, PyObject *args );
+PyObject*   DialogClass_addCalendar( PPyDialogClass self, PyObject *args );
+
+#endif
