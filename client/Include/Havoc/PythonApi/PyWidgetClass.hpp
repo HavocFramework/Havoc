@@ -10,6 +10,15 @@
 #include <QPushButton>
 #include <QCheckBox>
 #include <QLineEdit>
+#include <QCalendarWidget>
+
+typedef struct
+{
+
+    QWidget* window;
+    QVBoxLayout* layout;
+
+} PyWidgetQWindow, *PPyWidgetQWindow;
 
 typedef struct
 {
@@ -17,16 +26,9 @@ typedef struct
 
     // Demon Info
     char* title;
+    PPyWidgetQWindow WidgetWindow;
 
 } PyWidgetClass, *PPyWidgetClass;
-
-typedef struct
-{
-
-    QDialog* window;
-    QVBoxLayout* layout;
-
-} PyWidgetQWindow, *PPyWidgetQWindow;
 
 extern PyTypeObject PyWidgetClass_Type;
 
@@ -36,15 +38,13 @@ int         WidgetClass_init( PPyWidgetClass self, PyObject *args, PyObject *kwd
 
 // Methods
 
-// PyObject* DemonClass_( PPyDemonClass self, PyObject *args );
-
-PyObject* WidgetClass_exec( PPyWidgetClass self, PyObject *args );
-PyObject* WidgetClass_close( PPyWidgetClass self, PyObject *args );
-PyObject*   WidgetClass_addLabel( PPyWidgetClass self, PyObject *args );
+PyObject* WidgetClass_addLabel( PPyWidgetClass self, PyObject *args );
+PyObject* WidgetClass_setBottomTab( PPyWidgetClass self, PyObject *args );
+PyObject* WidgetClass_setSmallTab( PPyWidgetClass self, PyObject *args );
 PyObject*   WidgetClass_addButton( PPyWidgetClass self, PyObject *args );
 PyObject*   WidgetClass_addCheckbox( PPyWidgetClass self, PyObject *args );
 PyObject*   WidgetClass_addCombobox( PPyWidgetClass self, PyObject *args );
 PyObject*   WidgetClass_addLineedit( PPyWidgetClass self, PyObject *args );
-PyObject*   WidgetClass_ConsoleWrite( PPyWidgetClass self, PyObject *args );
+PyObject*   WidgetClass_addCalendar( PPyWidgetClass self, PyObject *args );
 
 #endif
