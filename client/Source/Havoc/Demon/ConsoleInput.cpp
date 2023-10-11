@@ -2336,7 +2336,6 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                         }
 
                         return false;
-                        break;
                     }
 
                     /* Check if command is matching */
@@ -2425,7 +2424,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                     }
                 }
                 /* Alright it's a command i hope ? Check if command is matching */
-                else if ( InputCommands[ 0 ].compare( Command.Command.c_str() ) == 0 )
+                else if ( InputCommands[ 0 ].compare( Command.Command.c_str() ) == 0 && Command.Module.length() == 0 )
                 {
                     PyObject* FuncArgs = PyTuple_New( InputCommands.size() );
                     PyObject* Return   = NULL;
