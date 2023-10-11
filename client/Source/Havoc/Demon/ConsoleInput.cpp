@@ -382,34 +382,61 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                         if ( InputCommands[ 1 ].compare( Module.Name.c_str() ) == 0 )
                         {
                             FoundCommand = true;
-                            DemonConsole->Console->append( "" );
-                            DemonConsole->Console->append( " - Command       :  " + QString( Module.Name.c_str() ) );
-                            DemonConsole->Console->append( " - Description   :  " + QString( Module.Description.c_str() ) );
 
-                            if ( ! Module.Behavior.empty() )
-                                DemonConsole->Console->append( " - Behavior      :  " + QString( Module.Behavior.c_str() ) );
-
-                            if ( ! Module.Usage.empty() )
-                                DemonConsole->Console->append( " - Usage         :  " + QString( Module.Name.c_str() ) + " " + QString( Module.Usage.c_str() )  );
-
-                            if ( ! Module.Example.empty() )
-                                DemonConsole->Console->append( " - Example       :  " + QString( Module.Name.c_str() ) + " " + QString( Module.Example.c_str() ) );
-
-                            if ( ! Module.Usage.empty() )
-                                DemonConsole->Console->append(" - Required Args :  " + QString( to_string( QString( Module.Usage.c_str() ).split(" ").size() ).c_str() ) );
-
-                            DemonConsole->Console->append( "" );
-                            DemonConsole->Console->append( "  Command                   Description      " );
-                            DemonConsole->Console->append( "  ---------                 -------------     " );
-
-                            for ( auto& Command : HavocX::Teamserver.RegisteredCommands )
+                            if ( InputCommands.size() > 2 )
                             {
-                                if ( InputCommands[ 1 ].compare( Command.Module.c_str() ) == 0 )
+                                for ( auto& Command : HavocX::Teamserver.RegisteredCommands )
                                 {
-                                    int         TotalSize   = 19;
-                                    std::string Spaces      = std::string( ( TotalSize - Command.Command.size() ), ' ' );
+                                    if ( InputCommands[ 1 ].compare( Command.Module.c_str() ) == 0 && InputCommands[ 2 ].compare( Command.Command.c_str() ) == 0 )
+                                    {
+                                        DemonConsole->Console->append( "" );
+                                        DemonConsole->Console->append( " - Command       :  " + QString( Module.Name.c_str() ) + QString( " " ) + QString( Command.Command.c_str() ) );
+                                        DemonConsole->Console->append( " - Description   :  " + QString( Command.Help.c_str() ) );
 
-                                    DemonConsole->Console->append( "  " + QString( Command.Command.c_str() ) + QString( Spaces.c_str() ) + "       " + QString( Command.Help.c_str() ) );
+                                        if ( ! Module.Usage.empty() )
+                                            DemonConsole->Console->append( " - Usage         :  " + QString( Module.Name.c_str() ) + QString( " " ) + QString( Command.Command.c_str() ) + " " + QString( Command.Usage.c_str() )  );
+
+                                        if ( ! Command.Example.empty() )
+                                            DemonConsole->Console->append( " - Example       :  " + QString( Module.Name.c_str() ) + QString( " " ) + QString( Command.Command.c_str() ) + " " + QString( Command.Example.c_str() ) );
+
+                                        if ( ! Command.Usage.empty() )
+                                            DemonConsole->Console->append(" - Required Args :  " + QString( to_string( QString( Command.Usage.c_str() ).split(" ").size() ).c_str() ) );
+
+                                        break;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                DemonConsole->Console->append( "" );
+                                DemonConsole->Console->append( " - Command       :  " + QString( Module.Name.c_str() ) );
+                                DemonConsole->Console->append( " - Description   :  " + QString( Module.Description.c_str() ) );
+
+                                if ( ! Module.Behavior.empty() )
+                                    DemonConsole->Console->append( " - Behavior      :  " + QString( Module.Behavior.c_str() ) );
+
+                                if ( ! Module.Usage.empty() )
+                                    DemonConsole->Console->append( " - Usage         :  " + QString( Module.Name.c_str() ) + " " + QString( Module.Usage.c_str() )  );
+
+                                if ( ! Module.Example.empty() )
+                                    DemonConsole->Console->append( " - Example       :  " + QString( Module.Name.c_str() ) + " " + QString( Module.Example.c_str() ) );
+
+                                if ( ! Module.Usage.empty() )
+                                    DemonConsole->Console->append(" - Required Args :  " + QString( to_string( QString( Module.Usage.c_str() ).split(" ").size() ).c_str() ) );
+
+                                DemonConsole->Console->append( "" );
+                                DemonConsole->Console->append( "  Command                   Description      " );
+                                DemonConsole->Console->append( "  ---------                 -------------     " );
+
+                                for ( auto& Command : HavocX::Teamserver.RegisteredCommands )
+                                {
+                                    if ( InputCommands[ 1 ].compare( Command.Module.c_str() ) == 0 )
+                                    {
+                                        int         TotalSize   = 19;
+                                        std::string Spaces      = std::string( ( TotalSize - Command.Command.size() ), ' ' );
+
+                                        DemonConsole->Console->append( "  " + QString( Command.Command.c_str() ) + QString( Spaces.c_str() ) + "       " + QString( Command.Help.c_str() ) );
+                                    }
                                 }
                             }
                         }
@@ -420,7 +447,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                     {
                         for ( auto& Command : HavocX::Teamserver.RegisteredCommands )
                         {
-                            if ( InputCommands[ 1 ].compare( Command.Command.c_str() ) == 0 )
+                            if ( InputCommands[ 1 ].compare( Command.Command.c_str() ) == 0 && Command.Module.length() == 0 )
                             {
                                 FoundCommand = true;
 
