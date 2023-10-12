@@ -79,7 +79,7 @@ BOOL InitWSA( VOID );
  * @param FwdPort
  * @return SocketData object pointer
  */
-PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, DWORD IPv4, PBYTE IPv6, DWORD LclPort, DWORD FwdAddr, DWORD FwdPort );
+PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, BOOL UseIpv4, DWORD IPv4, PBYTE IPv6, DWORD LclPort, DWORD FwdAddr, DWORD FwdPort );
 
 /* Check for new connections, read everything from the sockets and or close "dead" sockets */
 VOID SocketPush();

