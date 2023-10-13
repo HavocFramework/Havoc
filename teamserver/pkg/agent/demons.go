@@ -1909,7 +1909,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 								if err != io.EOF {
 
 									/* we failed to read from the socks proxy */
-									logger.Error(fmt.Sprintf("Failed to read from socket %x: %v", SocketId, err))
+									logger.Error(fmt.Sprintf("Failed to read from socket %08x: %v", SocketId, err))
 
 									a.SocksClientClose(int32(SocketId))
 
@@ -5831,7 +5831,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 								} else {
 									/* we failed to read from the portfwd */
-									logger.Error(fmt.Sprintf("Failed to read from socket %x: %v", Socket.SocktID, err))
+									logger.Error(fmt.Sprintf("Failed to read from socket %08x: %v", Socket.SocktID, err))
 								}
 
 							} else {

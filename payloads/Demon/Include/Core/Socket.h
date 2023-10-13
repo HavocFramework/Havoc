@@ -41,6 +41,7 @@ typedef struct sockaddr_in6 {
 typedef struct _SOCKET_DATA
 {
     DWORD  ID;
+    DWORD  ParentID;
     SOCKET Socket;
 
     /* what kind of socket this is */
@@ -70,16 +71,18 @@ BOOL InitWSA( VOID );
  * Create a new socket and insert it into the linked list.
  * if Type param is not SOCKET_TYPE_NONE then it is going to bind
  * to the specified Address and Port.
- * @param Type
  * @param Socket
+ * @param Type
+ * @param UseIpv4
  * @param IPv4
  * @param IPv6
  * @param LclPort
  * @param FwdAddr
  * @param FwdPort
+ * @param ParentID
  * @return SocketData object pointer
  */
-PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, BOOL UseIpv4, DWORD IPv4, PBYTE IPv6, DWORD LclPort, DWORD FwdAddr, DWORD FwdPort );
+PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, BOOL UseIpv4, DWORD IPv4, PBYTE IPv6, DWORD LclPort, DWORD FwdAddr, DWORD FwdPort, DWORD ParentID );
 
 /* Check for new connections, read everything from the sockets and or close "dead" sockets */
 VOID SocketPush();

