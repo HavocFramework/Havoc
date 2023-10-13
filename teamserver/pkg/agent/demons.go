@@ -1722,16 +1722,16 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 			break
 
 		case "rportfwd remove":
-			var SocketID int
+			var SocketID int64
 
-			SocketID, err = strconv.Atoi(Param)
+			SocketID, err = strconv.ParseInt(Param, 16, 32)
 			if err != nil {
 				return nil, err
 			}
 
 			job.Data = []interface{}{
 				SOCKET_COMMAND_RPORTFWD_REMOVE,
-				SocketID,
+				int(SocketID),
 			}
 			break
 
