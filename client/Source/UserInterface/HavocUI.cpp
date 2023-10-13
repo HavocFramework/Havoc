@@ -293,8 +293,8 @@ void HavocNamespace::UserInterface::HavocUI::UpdateSessionsHealth()
             HavocX::Teamserver.TabSession->SessionTableWidget->ChangeSessionValue(session.Name, 8, session.Last.toStdString().c_str());
         }
 
-        // it is very normal for agents to delay one second due to network latency
-        auto AllowedDiff = 1;
+        // it is very normal for agents to delay three second due to network latency
+        auto AllowedDiff = 3;
 
         if ( session.KillDate > 0 )
         {
