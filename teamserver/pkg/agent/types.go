@@ -154,6 +154,7 @@ type Agent struct {
 	 * 		 to avoid having some unnecessary data for 3rd party agent */
 	Downloads   []*Download
 	PortFwds    []*PortFwd
+	PortFwdsMtx sync.Mutex
 	SocksCli    []*SocksClient
 	SocksCliMtx sync.Mutex
 	SocksSvr    []*SocksServer

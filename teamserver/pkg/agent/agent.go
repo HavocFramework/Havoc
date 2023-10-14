@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"reflect" // <-- Added, 0xtriboulet
+	"reflect"
 
 	"Havoc/pkg/common"
 	"Havoc/pkg/common/crypt"
@@ -277,9 +277,9 @@ func RegisterInfoToInstance(Header Header, RegisterInfo map[string]any) *Agent {
 		}
 	}
 
-	// Updated OS Version handling - 0xtriboulet
+	// Updated OS Version handling
 	if val, ok := RegisterInfo["OS Version"]; ok {
-	    // Assuming val is a string representing the OS version, split it by '.' to get the version parts, 0xtriboulet
+	    // Assuming val is a string representing the OS version, split it by '.' to get the version parts
 	    versionParts := strings.Split(val.(string), ".")
 	    OsVersion := make([]int, len(versionParts))
 	    for i, part := range versionParts {
@@ -296,7 +296,7 @@ func RegisterInfoToInstance(Header Header, RegisterInfo map[string]any) *Agent {
 		agent.Info.OSArch = val.(string)
 	}
 	
-	if val, ok := RegisterInfo["SleepDelay"]; ok { // 0xtriboulet
+	if val, ok := RegisterInfo["SleepDelay"]; ok {
 		switch v := val.(type) {
 		case float64:
 			agent.Info.SleepDelay = int(v)
@@ -919,10 +919,16 @@ func (a *Agent) PortFwdNew(SocketID, LclAddr, LclPort, FwdAddr, FwdPort int, Tar
 		Target:  Target,
 	}
 
+	a.PortFwdsMtx.Lock()
+	
 	a.PortFwds = append(a.PortFwds, portfwd)
+
+	a.PortFwdsMtx.Unlock()
 }
 
 func (a *Agent) PortFwdGet(SocketID int) *PortFwd {
+	a.PortFwdsMtx.Lock()
+	defer a.PortFwdsMtx.Unlock()
 
 	for i := range a.PortFwds {
 
@@ -941,115 +947,72 @@ func (a *Agent) PortFwdGet(SocketID int) *PortFwd {
 
 func (a *Agent) PortFwdOpen(SocketID int) error {
 	var (
-		err   error
-		found bool
+		err     error
+		PortFwd *PortFwd
 	)
 
-	for i := range a.PortFwds {
+	PortFwd = a.PortFwdGet(SocketID)
 
-		/* check if it's our rportfwd connection */
-		if a.PortFwds[i].SocktID == SocketID {
-
-			/* alright we found our socket */
-			found = true
-
+	if PortFwd != nil {
+		if PortFwd.Conn == nil {
 			/* open the connection to the target */
-			a.PortFwds[i].Conn, err = net.Dial("tcp", a.PortFwds[i].Target)
-			if err != nil {
-				return err
-			}
-
-			break;
+			PortFwd.Conn, err = net.Dial("tcp", PortFwd.Target)
+			return err
+		} else {
+			return errors.New("rportfwd connection is already open")
 		}
-
-	}
-
-	if !found {
+	} else {
 		return fmt.Errorf("rportfwd socket id %x not found", SocketID)
 	}
-
-	return nil
 }
 
 func (a *Agent) PortFwdWrite(SocketID int, data []byte) error {
-	var found bool
+	var PortFwd *PortFwd
 
-	for i := range a.PortFwds {
+	PortFwd = a.PortFwdGet(SocketID)
 
-		/* check if it's our rportfwd connection */
-		if a.PortFwds[i].SocktID == SocketID {
-
-			/* alright we found our socket */
-			found = true
-
-			if a.PortFwds[i].Conn != nil {
-
-				/* write to the connection */
-				_, err := a.PortFwds[i].Conn.Write(data)
-				if err != nil {
-					return err
-				}
-
-				break
-
-			} else {
-				return errors.New("portfwd connection is empty")
-			}
-
-			break;
+	if PortFwd != nil {
+		/* write to the connection */
+		if PortFwd.Conn != nil {
+			_, err := PortFwd.Conn.Write(data)
+			return err
+		} else {
+			return nil, errors.New("rportfwd connection is empty")
 		}
-
-	}
-
-	if !found {
+	} else {
 		return fmt.Errorf("rportfwd socket id %x not found", SocketID)
 	}
-
-	return nil
 }
 
 func (a *Agent) PortFwdRead(SocketID int) ([]byte, error) {
 	var (
-		found = false
-		data  = bytes.Buffer{}
+		data    = bytes.Buffer{}
+		PortFwd *PortFwd
 	)
 
-	for i := range a.PortFwds {
+	PortFwd = a.PortFwdGet(SocketID)
 
-		/* check if it's our rportfwd connection */
-		if a.PortFwds[i].SocktID == SocketID {
-
-			/* alright we found our socket */
-			found = true
-
-			if a.PortFwds[i].Conn != nil {
-
-				/* read from our socket to the data buffer or return error */
-				_, err := io.Copy(&data, a.PortFwds[i].Conn)
-				if err != nil {
-					return nil, err
-				}
-
-				break
-
-			} else {
-				return nil, errors.New("portfwd connection is empty")
+	if PortFwd != nil {
+		if PortFwd.Conn != nil {
+			/* read from our socket to the data buffer or return error */
+			_, err := io.Copy(&data, PortFwd.Conn)
+			if err != nil {
+				return nil, err
 			}
 
-			break;
+			/* return the read data */
+			return data.Bytes(), nil
+		} else {
+			return nil, errors.New("rportfwd connection is empty")
 		}
-
-	}
-
-	if !found {
+	} else {
 		return nil, fmt.Errorf("rportfwd socket id %x not found", SocketID)
 	}
-
-	/* return the read data */
-	return data.Bytes(), nil
 }
 
 func (a *Agent) PortFwdClose(SocketID int) {
+	a.PortFwdsMtx.Lock()
+	defer a.PortFwdsMtx.Unlock()
 
 	for i := range a.PortFwds {
 
@@ -1063,6 +1026,7 @@ func (a *Agent) PortFwdClose(SocketID int) {
 
 				/* close our connection */
 				a.PortFwds[i].Conn.Close()
+				a.PortFwds[i].Conn = nil
 
 			}
 
@@ -1153,7 +1117,8 @@ func (a *Agent) SocksClientRead(client *SocksClient) ([]byte, error) {
 	}
 }
 
-func (a *Agent) SocksClientClose(SocketID int32) {
+func (a *Agent) SocksClientClose(SocketID int32) bool {
+	found := false
 
 	a.SocksCliMtx.Lock()
 
@@ -1174,11 +1139,15 @@ func (a *Agent) SocksClientClose(SocketID int32) {
 			/* remove the socks server from the array */
 			a.SocksCli = append(a.SocksCli[:i], a.SocksCli[i+1:]...)
 
+			found = true
+
 			break
 		}
 	}
 
 	a.SocksCliMtx.Unlock()
+
+	return found
 }
 
 func (a *Agent) SocksServerRemove(Addr string) {
@@ -1194,6 +1163,7 @@ func (a *Agent) SocksServerRemove(Addr string) {
 
 				/* close our connection */
 				a.SocksSvr[i].Server.Close()
+				a.SocksSvr[i].Server = nil
 
 			}
 

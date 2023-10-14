@@ -5625,7 +5625,6 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 					if Success == win32.TRUE {
 						a.Console(teamserver.AgentConsole, "Info", fmt.Sprintf("Started reverse port forward on %s:%d to %s:%d [Id: %x]", LclString, LclPort, FwdString, FwdPort, SocktID), "")
-
 						return
 					} else {
 						a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to start reverse port forward on %s:%d to %s:%d", LclString, LclPort, FwdString, FwdPort), "")
@@ -5685,10 +5684,11 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 			case SOCKET_COMMAND_RPORTFWD_REMOVE:
 
-				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32}) {
+				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32}) {
 
 					var (
 						SocktID = 0
+						Type    = 0
 						LclAddr = 0
 						LclPort = 0
 						FwdAddr = 0
@@ -5699,19 +5699,22 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					)
 
 					SocktID = Parser.ParseInt32()
+					Type    = Parser.ParseInt32()
 					LclAddr = Parser.ParseInt32()
 					LclPort = Parser.ParseInt32()
 					FwdAddr = Parser.ParseInt32()
 					FwdPort = Parser.ParseInt32()
 
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_RPORTFWD_REMOVE, SocktID: %x, LclAddr: %d, LclPort: %d, FwdAddr: %d, FwdPort: %d", AgentID, SocktID, LclAddr, LclPort, FwdAddr, FwdPort))
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_RPORTFWD_REMOVE, Type: %d, SocktID: %x, LclAddr: %d, LclPort: %d, FwdAddr: %d, FwdPort: %d", AgentID, Type, SocktID, LclAddr, LclPort, FwdAddr, FwdPort))
 
 					LclString = common.Int32ToIpString(int64(LclAddr))
 					FwdString = common.Int32ToIpString(int64(FwdAddr))
 
-					Message = map[string]string{
-						"Type":    "Info",
-						"Message": fmt.Sprintf("Successful closed and removed rportfwd [SocketID: %x] [Forward: %s:%d -> %s:%d]", SocktID, LclString, LclPort, FwdString, FwdPort),
+					if Type == SOCKET_TYPE_REVERSE_PORTFWD {
+						Message = map[string]string{
+							"Type":    "Info",
+							"Message": fmt.Sprintf("Successful closed and removed rportfwd [SocketID: %x] [Forward: %s:%d -> %s:%d]", SocktID, LclString, LclPort, FwdString, FwdPort),
+						}
 					}
 
 					/* finally close our port forwarder */
@@ -5788,10 +5791,11 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 					if Socket := a.PortFwdGet(SocktID); Socket != nil {
 						/* Socket already exists. don't do anything. */
+						logger.Debug("Socket already exists")
 						return
 					}
 
-					/* add this rportfw */
+					/* add this rportfwd */
 					a.PortFwdNew(SocktID, LclAddr, LclPort, FwdAddr, FwdPort, FwdString)
 
 					err := a.PortFwdOpen(SocktID)
@@ -5806,40 +5810,32 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 						for {
 
-							/* get rportfwd socket from array */
-							if Socket := a.PortFwdGet(SocktID); Socket != nil {
+							Data, err := a.PortFwdRead(SocktID)
+							if err == nil {
 
-								if Data, err := a.PortFwdRead(SocktID); err == nil {
+								/* only send the data if there is something... */
+								if len(Data) > 0 {
 
-									/* only send the data if there is something... */
-									if len(Data) > 0 {
-
-										/* make a new job */
-										var job = Job{
-											Command: COMMAND_SOCKET,
-											Data: []any{
-												SOCKET_COMMAND_WRITE,
-												Socket.SocktID,
-												Data,
-											},
-										}
-
-										/* append the job to the task queue */
-										a.AddJobToQueue(job)
-
+									/* make a new job */
+									var job = Job{
+										Command: COMMAND_SOCKET,
+										Data: []any{
+											SOCKET_COMMAND_WRITE,
+											SocktID,
+											Data,
+										},
 									}
 
-								} else {
-									/* we failed to read from the portfwd */
-									logger.Error(fmt.Sprintf("Failed to read from socket %08x: %v", Socket.SocktID, err))
+									/* append the job to the task queue */
+									a.AddJobToQueue(job)
+
 								}
 
 							} else {
-								/* seems like we have been removed from the list.
-								 * exit this goroutine */
+								/* we failed to read from the portfwd */
+								logger.Error(fmt.Sprintf("Failed to read from socket %08x: %v", SocktID, err))
 								return
 							}
-
 						}
 
 					}()
@@ -5867,24 +5863,15 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 								Data = Parser.ParseBytes()
 							)
 							// avoid too much spam
-							//logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ,    Id: %08x, Type: %d, DataLength: %x", AgentID, Id, Type, len(Data)))
+							//logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ, Id: %08x, Type: %d, DataLength: %x", AgentID, Id, Type, len(Data)))
 
 							if Type == SOCKET_TYPE_CLIENT {
 
-								/* check if there is a socket with that portfwd id */
-								if Socket := a.PortFwdGet(Id); Socket != nil {
-
-									/* write the data to the forwarded host */
-									err := a.PortFwdWrite(Id, Data)
-									if err != nil {
-										a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to write to reverse port forward host %s: %v", Socket.Target, err), "")
-										return
-									}
-
-								} else {
-
-									logger.Error(fmt.Sprintf("Socket id not found: %x\n", Id))
-
+								/* write the data to the forwarded host */
+								err := a.PortFwdWrite(Id, Data)
+								if err != nil {
+									a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to write to reverse port forward socket 0x%08x: %v", Id, err), "")
+									return
 								}
 
 							} else if Type == SOCKET_TYPE_REVERSE_PROXY {
@@ -5959,38 +5946,19 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					var (
 						SockId = Parser.ParseInt32()
 						Type   = Parser.ParseInt32()
-						Socket *PortFwd
 					)
 
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CLOSE,   Id: %08x, Type: %d", AgentID, SockId, Type))
 
-					/* NOTE: for now the reverse port forward close command is not used. */
-					if Type == SOCKET_TYPE_REVERSE_PORTFWD || Type == SOCKET_TYPE_CLIENT {
+					if Type == SOCKET_TYPE_REVERSE_PROXY {
 
-						/* check if there is a socket with that portfwd id */
-						if Socket = a.PortFwdGet(SockId); Socket != nil {
-
-							/* Based on the type of the socket tell the operator
-							 * for example SOCKET_TYPE_CLIENT is something we can ignore.
-							 * But if it's a SOCKET_TYPE_REVERSE_PORTFWD then let the operator know. */
-							if Type == SOCKET_TYPE_REVERSE_PORTFWD {
-								var LclString = common.Int32ToIpString(int64(Socket.LclAddr))
-								a.Console(teamserver.AgentConsole, "Info", fmt.Sprintf("Closed reverse port forward [Id: %x] [Bind %s:%d] [Forward: %s]", Socket.SocktID, LclString, Socket.LclPort, Socket.Target), "")
-							}
-
-							/* finally close our port forwarder */
-							a.PortFwdClose(SockId)
+						/* lets remove it */
+						if a.SocksClientClose(int32(SockId)) == false {
+							logger.Error(fmt.Sprintf("SockId not found: %08x", SockId))
 						}
 
-					} else if Type == SOCKET_TYPE_REVERSE_PROXY {
-
-						if Client := a.SocksClientGet(SockId); Client != nil {
-
-							/* lets remove it */
-							a.SocksClientClose(int32(SockId))
-
-						}
-
+					} else {
+						logger.Error(fmt.Sprintf("Invalid socket type: %d", Type))
 					}
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CLOSE, Invalid packet", AgentID))

@@ -2768,6 +2768,11 @@ VOID CommandSocket( PPARSER Parser )
                 if ( ! Socket )
                     break;
 
+                if ( Socket->ShouldRemove ) {
+                    Socket = Socket->Next;
+                    continue;
+                }
+
                 if ( Socket->Type == SOCKET_TYPE_REVERSE_PORTFWD )
                 {
                     PackageAddInt32( Package, Socket->ID );
@@ -2801,11 +2806,11 @@ VOID CommandSocket( PPARSER Parser )
 
                 if ( Socket->Type == SOCKET_TYPE_REVERSE_PORTFWD && Socket->ID == SocketID )
                 {
-                    Socket->Type = SOCKET_TYPE_CLIENT_REMOVED;
+                    Socket->ShouldRemove = TRUE;
                 }
                 else if ( Socket->Type == SOCKET_TYPE_CLIENT && Socket->ParentID == SocketID )
                 {
-                    Socket->Type = SOCKET_TYPE_CLIENT_REMOVED;
+                    Socket->ShouldRemove = TRUE;
                 }
 
                 Socket = Socket->Next;
@@ -2828,7 +2833,7 @@ VOID CommandSocket( PPARSER Parser )
                     break;
 
                 if ( Socket->Type == SOCKET_TYPE_REVERSE_PORTFWD || Socket->Type == SOCKET_TYPE_CLIENT )
-                    Socket->Type = SOCKET_TYPE_CLIENT_REMOVED;
+                    Socket->ShouldRemove = TRUE;
 
                 Socket = Socket->Next;
             }
@@ -2866,6 +2871,11 @@ VOID CommandSocket( PPARSER Parser )
                 {
                     PRINTF( "Could not find socket: %x\n", SocketID )
                     break;
+                }
+
+                if ( Socket->ShouldRemove ) {
+                    Socket = Socket->Next;
+                    continue;
                 }
 
                 if ( Socket->ID == SocketID )
@@ -3020,9 +3030,7 @@ VOID CommandSocket( PPARSER Parser )
                 {
                     PRINTF( "Found socket: %x\n", Socket->ID )
 
-                    Socket->Type = ( Socket->Type == SOCKET_TYPE_CLIENT ) ?
-                                   SOCKET_TYPE_CLIENT_REMOVED :
-                                   SOCKET_TYPE_SOCKS_REMOVED  ;
+                    Socket->ShouldRemove = TRUE;
 
                     break;
                 }

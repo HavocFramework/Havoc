@@ -328,7 +328,7 @@ func handleServiceAgent(Teamserver agent.TeamServer, Header agent.Header, Extern
 		AgentData = Agent.ToMap()
 	}
 	
-	// Update Callback time - 0xtriboulet
+	// Update Callback time
 	if Teamserver.AgentExist(Header.AgentID) {
 		Agent.UpdateLastCallback(Teamserver)
 	}
