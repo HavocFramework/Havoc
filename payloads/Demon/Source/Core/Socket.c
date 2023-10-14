@@ -64,8 +64,6 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, BOOL UseIpv4, DWORD IPv4, PB
     u_long          IoBlock   = 1;
     UINT32          ErrorCode = 0;
 
-    PRINTF( "SocketNew => WinSock:[%x] Type:[%d] IPv4:[%lx] IPv6:[%lx] LclPort:[%ld] FwdAddr:[%lx] FwdPort:[%ld]\n", WinSock, Type, IPv4, IPv6, LclPort, FwdAddr, FwdPort )
-
     /* if we specified SOCKET_TYPE_NONE then that means that
      * the caller only wants an object inserted into the socket linked list. */
     if ( ( Type != SOCKET_TYPE_NONE ) && ( Type != SOCKET_TYPE_CLIENT ) )
@@ -195,7 +193,7 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, BOOL UseIpv4, DWORD IPv4, PB
 
     Instance.Sockets = Socket;
 
-    PRINTF( "New Socket object: %p\n", Socket )
+    PRINTF( "SocketNew => ID:[%x] Parent:[%x] WinSock:[%x] Type:[%d] IPv4:[%lx] IPv6:[%lx] LclPort:[%ld] FwdAddr:[%lx] FwdPort:[%ld]\n", Socket->ID, ParentID, WinSock, Type, IPv4, IPv6, LclPort, FwdAddr, FwdPort )
 
     return Socket;
 
@@ -240,7 +238,6 @@ VOID SocketClients()
             WinSock = Instance.Win32.accept( Socket->Socket, NULL, NULL );
             if ( WinSock != INVALID_SOCKET )
             {
-                PRINTF( "WinSock : %p\n", WinSock )
                 /* set socket to non blocking */
                 if ( Instance.Win32.ioctlsocket( WinSock, FIONBIO, &IoBlock ) != SOCKET_ERROR )
                 {

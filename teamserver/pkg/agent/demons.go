@@ -5784,7 +5784,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					FwdPort = Parser.ParseInt32()
 
 					// avoid too much spam
-					//logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_OPEN, SocktID: %x, LclAddr: %d, LclPort: %d, FwdAddr: %d, FwdPort: %d", AgentID, SocktID, LclAddr, LclPort, FwdAddr, FwdPort))
+					//logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_OPEN, SocktID: %08x, LclAddr: %d, LclPort: %d, FwdAddr: %d, FwdPort: %d", AgentID, SocktID, LclAddr, LclPort, FwdAddr, FwdPort))
 
 					FwdString = common.Int32ToIpString(int64(FwdAddr))
 					FwdString = fmt.Sprintf("%s:%d", FwdString, FwdPort)
@@ -5800,6 +5800,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 					err := a.PortFwdOpen(SocktID)
 					if err != nil {
+						logger.Debug(fmt.Sprintf("Failed to open rportfwd: %v", err))
 						a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to open reverse port forward host %s: %v", FwdString, err), "")
 						return
 					}
@@ -5852,7 +5853,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadInt32, parser.ReadInt32}) {
 					var (
-						Id      = Parser.ParseInt32()
+						SocktID = Parser.ParseInt32()
 						Type    = Parser.ParseInt32()
 						Success = Parser.ParseInt32()
 					)
@@ -5863,26 +5864,26 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 								Data = Parser.ParseBytes()
 							)
 							// avoid too much spam
-							//logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ, Id: %08x, Type: %d, DataLength: %x", AgentID, Id, Type, len(Data)))
+							//logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ, SocktID: %08x, Type: %d, DataLength: %x", AgentID, SocktID, Type, len(Data)))
 
 							if Type == SOCKET_TYPE_CLIENT {
 
 								/* write the data to the forwarded host */
-								err := a.PortFwdWrite(Id, Data)
+								err := a.PortFwdWrite(SocktID, Data)
 								if err != nil {
-									a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to write to reverse port forward socket 0x%08x: %v", Id, err), "")
+									a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to write to reverse port forward socket 0x%08x: %v", SocktID, err), "")
 									return
 								}
 
 							} else if Type == SOCKET_TYPE_REVERSE_PROXY {
 
 								/* check if there is a socket with that socks proxy id */
-								if Socket := a.SocksClientGet(Id); Socket != nil {
+								if Socket := a.SocksClientGet(SocktID); Socket != nil {
 
 									/* write the data to socks proxy */
 									_, err := Socket.Conn.Write(Data)
 									if err != nil {
-										a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to write to socks proxy %v: %v", Id, err), "")
+										a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to write to socks proxy %v: %v", SocktID, err), "")
 
 										/* TODO: remove socks proxy client */
 										//a.SocksClientClose(SOCKET_TYPE_CLIENT)
@@ -5891,25 +5892,25 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 									}
 
 								} else {
-									logger.Error(fmt.Sprintf("Socket id not found: %x\n", Id))
+									logger.Error(fmt.Sprintf("SocketID not found: %08x\n", SocktID))
 								}
 							}
 						} else {
-							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ,    Invalid packet", AgentID))
+							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ, Invalid packet", AgentID))
 						}
 					} else {
 						if Parser.CanIRead([]parser.ReadType{parser.ReadInt32}) {
 							var (
 								ErrorCode = Parser.ParseInt32()
 							)
-							logger.Warn(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ,    Id: %08x, Type: %d, Failed with: %d", AgentID, Id, Type, ErrorCode))
-							a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to read from socks target %v: %v", Id, ErrorCode), "")
+							logger.Warn(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ, SocktID: %08x, Type: %d, Failed with: %d", AgentID, SocktID, Type, ErrorCode))
+							a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to read from socks target %v: %v", SocktID, ErrorCode), "")
 						} else {
-							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ,    Invalid packet", AgentID))
+							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ, Invalid packet", AgentID))
 						}
 					}
 				} else {
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ,    Invalid packet", AgentID))
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ, Invalid packet", AgentID))
 				}
 
 				break
