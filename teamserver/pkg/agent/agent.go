@@ -977,7 +977,7 @@ func (a *Agent) PortFwdWrite(SocketID int, data []byte) error {
 			_, err := PortFwd.Conn.Write(data)
 			return err
 		} else {
-			return nil, errors.New("rportfwd connection is empty")
+			return errors.New("rportfwd connection is empty")
 		}
 	} else {
 		return fmt.Errorf("rportfwd socket id %x not found", SocketID)
