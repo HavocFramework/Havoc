@@ -5798,48 +5798,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					/* add this rportfwd */
 					a.PortFwdNew(SocktID, LclAddr, LclPort, FwdAddr, FwdPort, FwdString)
 
-					err := a.PortFwdOpen(SocktID)
-					if err != nil {
-						logger.Debug(fmt.Sprintf("Failed to open rportfwd: %v", err))
-						a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to open reverse port forward host %s: %v", FwdString, err), "")
-						return
-					}
-
-					/* after we managed to open a socket to the forwarded host lets start a
-					 * goroutine where we read the data from the forwarded host and send it to the agent. */
-					go func() {
-
-						for {
-
-							Data, err := a.PortFwdRead(SocktID)
-							if err == nil {
-
-								/* only send the data if there is something... */
-								if len(Data) > 0 {
-
-									/* make a new job */
-									var job = Job{
-										Command: COMMAND_SOCKET,
-										Data: []any{
-											SOCKET_COMMAND_WRITE,
-											SocktID,
-											Data,
-										},
-									}
-
-									/* append the job to the task queue */
-									a.AddJobToQueue(job)
-
-								}
-
-							} else {
-								/* we failed to read from the portfwd */
-								logger.Error(fmt.Sprintf("Failed to read from socket %08x: %v", SocktID, err))
-								return
-							}
-						}
-
-					}()
+					/* we will open the rportfwd client only after we have something to write */
 
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_OPEN, Invalid packet", AgentID))
@@ -5868,11 +5827,66 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 							if Type == SOCKET_TYPE_CLIENT {
 
+								/* we only open rportfwd clients once we have data to write */
+								opened, err := a.PortFwdIsOpen(SocktID)
+								if err != nil {
+									a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to write to reverse port forward host: %v", err), "")
+									return
+								}
+
+								/* if first time, open the client */
+								if opened == false {
+									err := a.PortFwdOpen(SocktID)
+									if err != nil {
+										logger.Debug(fmt.Sprintf("Failed to open rportfwd: %v", err))	
+									a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to open reverse port forward host: %v", err), "")
+										return
+									}
+								}
+
 								/* write the data to the forwarded host */
-								err := a.PortFwdWrite(SocktID, Data)
+								err = a.PortFwdWrite(SocktID, Data)
 								if err != nil {
 									a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to write to reverse port forward socket 0x%08x: %v", SocktID, err), "")
 									return
+								}
+
+								if opened == false {
+									/* after we managed to open a socket to the forwarded host lets start a
+									 * goroutine where we read the data from the forwarded host and send it to the agent. */
+									go func() {
+
+										for {
+
+											Data, err := a.PortFwdRead(SocktID)
+											if err == nil {
+
+												/* only send the data if there is something... */
+												if len(Data) > 0 {
+
+													/* make a new job */
+													var job = Job{
+														Command: COMMAND_SOCKET,
+														Data: []any{
+															SOCKET_COMMAND_WRITE,
+															SocktID,
+															Data,
+														},
+													}
+
+													/* append the job to the task queue */
+													a.AddJobToQueue(job)
+
+												}
+
+											} else {
+												/* we failed to read from the portfwd */
+												logger.Error(fmt.Sprintf("Failed to read from socket %08x: %v", SocktID, err))
+												return
+											}
+										}
+
+									}()
 								}
 
 							} else if Type == SOCKET_TYPE_REVERSE_PROXY {

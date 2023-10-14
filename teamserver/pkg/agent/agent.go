@@ -945,6 +945,16 @@ func (a *Agent) PortFwdGet(SocketID int) *PortFwd {
 	return nil
 }
 
+func (a *Agent) PortFwdIsOpen(SocketID int) (bool, error) {
+	PortFwd := a.PortFwdGet(SocketID)
+
+	if PortFwd != nil {
+		return PortFwd.Conn != nil, nil
+	} else {
+		return false, fmt.Errorf("rportfwd socket id %x not found", SocketID)
+	}
+}
+
 func (a *Agent) PortFwdOpen(SocketID int) error {
 	var (
 		err     error
