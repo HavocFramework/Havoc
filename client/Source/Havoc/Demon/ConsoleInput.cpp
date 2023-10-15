@@ -2368,7 +2368,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                     /* Check if command is matching */
                     if ( InputCommands[ 1 ].compare( Command.Command.c_str() ) == 0 )
                     {
-                        PyObject* FuncArgs = PyTuple_New( InputCommands.size() );
+                        PyObject* FuncArgs = PyTuple_New( InputCommands.size() - 1 );
                         PyObject* Return   = nullptr;
                         auto      Path     = std::string();
 
@@ -2391,16 +2391,14 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                             PyTuple_SetItem( FuncArgs, 0, PyUnicode_FromString( this->DemonID.toStdString().c_str() ) );
 
                             spdlog::debug( "execute script command:{}", Command.Command );
-                            if ( InputCommands.size() > 1 )
+                            if ( InputCommands.size() > 2 )
                             {
                                 // Set arguments of the functions
-                                for ( u32 i = 1; i < InputCommands.size(); i++ )
-                                    PyTuple_SetItem( FuncArgs, i, PyUnicode_FromString( InputCommands[ i ].toStdString().c_str() ) );
-
-                                Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
+                                for ( u32 i = 2; i < InputCommands.size(); i++ )
+                                    PyTuple_SetItem( FuncArgs, i - 1, PyUnicode_FromString( InputCommands[ i ].toStdString().c_str() ) );
                             }
-                            else
-                                Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
+
+                            Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
 
                             if ( ! Path.empty() )
                             {
