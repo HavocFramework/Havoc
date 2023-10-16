@@ -2386,17 +2386,14 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                                 spdlog::debug( "Set current path to {}", Command.Path );
                                 std::filesystem::current_path( Command.Path );
                             }
+                            spdlog::debug( "execute script command:{}", Command.Command );
 
                             // First arg is the DemonID
                             PyTuple_SetItem( FuncArgs, 0, PyUnicode_FromString( this->DemonID.toStdString().c_str() ) );
 
-                            spdlog::debug( "execute script command:{}", Command.Command );
-                            if ( InputCommands.size() > 2 )
-                            {
-                                // Set arguments of the functions
-                                for ( u32 i = 2; i < InputCommands.size(); i++ )
-                                    PyTuple_SetItem( FuncArgs, i - 1, PyUnicode_FromString( InputCommands[ i ].toStdString().c_str() ) );
-                            }
+                            // Set arguments of the functions
+                            for ( u32 i = 2; i < InputCommands.size(); i++ )
+                                PyTuple_SetItem( FuncArgs, i - 1, PyUnicode_FromString( InputCommands[ i ].toStdString().c_str() ) );
 
                             Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
 
@@ -2406,10 +2403,13 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                                 std::filesystem::current_path( Path );
                             }
 
-                            if ( PyErr_Occurred() )
+                            if ( Return == nullptr && PyErr_Occurred() )
                             {
-                                PyErr_PrintEx( 0 );
+                                PyErr_PrintEx(0);
                                 PyErr_Clear();
+                                DemonConsole->TaskError( "Failed to execute " + InputCommands[ 0 ] + " " + InputCommands[ 1 ] + ". Python module failed" );
+                                Py_CLEAR( FuncArgs );
+                                return false;
                             }
 
                             if ( Py_IsNone( Return ) || Py_IsFalse( Return ) )
@@ -2470,20 +2470,16 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                             std::filesystem::current_path( Command.Path );
                         }
 
+                        spdlog::debug( "execute script command: {}", Command.Command );
+
                         // First arg is the DemonID
                         PyTuple_SetItem( FuncArgs, 0, PyUnicode_FromString( this->DemonID.toStdString().c_str() ) );
 
-                        spdlog::debug( "execute script command: {}", Command.Command );
-                        if ( InputCommands.size() > 1 )
-                        {
-                            // Set arguments of the functions
-                            for ( u32 i = 1; i < InputCommands.size(); i++ )
-                                PyTuple_SetItem( FuncArgs, i, PyUnicode_FromString( InputCommands[ i ].toStdString().c_str() ) );
+                        // Set arguments of the functions
+                        for ( u32 i = 1; i < InputCommands.size(); i++ )
+                            PyTuple_SetItem( FuncArgs, i, PyUnicode_FromString( InputCommands[ i ].toStdString().c_str() ) );
 
-                            Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
-                        }
-                        else
-                            Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
+                        Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
 
                         if ( ! Path.empty() )
                         {
@@ -2491,10 +2487,13 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                             std::filesystem::current_path( Path );
                         }
 
-                        if ( PyErr_Occurred() )
+                        if ( Return == nullptr && PyErr_Occurred() )
                         {
-                            PyErr_PrintEx( 0 );
+                            PyErr_PrintEx(0);
                             PyErr_Clear();
+                            DemonConsole->TaskError( "Failed to execute " + InputCommands[ 0 ] + ". Python module failed" );
+                            Py_CLEAR( FuncArgs );
+                            return false;
                         }
 
                         if ( Py_IsNone( Return ) || Py_IsTrue( Return ) )
@@ -2717,16 +2716,11 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                                 // First arg is the DemonID
                                 PyTuple_SetItem( FuncArgs, 0, PyUnicode_FromString( this->DemonID.toStdString().c_str() ) );
 
-                                if ( InputCommands.size() > 1 )
-                                {
-                                    // Set arguments of the functions
-                                    for ( u32 i = 1; i < InputCommands.size(); i++ )
-                                        PyTuple_SetItem( FuncArgs, i, PyUnicode_FromString( InputCommands[ i ].toStdString().c_str() ) );
+                                // Set arguments of the functions
+                                for ( u32 i = 1; i < InputCommands.size(); i++ )
+                                    PyTuple_SetItem( FuncArgs, i, PyUnicode_FromString( InputCommands[ i ].toStdString().c_str() ) );
 
-                                    Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
-                                }
-                                else
-                                    Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
+                                Return = PyObject_CallObject( ( PyObject* ) Command.Function, FuncArgs );
 
                                 if ( ! Path.empty() )
                                 {
@@ -2734,10 +2728,13 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                                     std::filesystem::current_path( Path );
                                 }
 
-                                if ( PyErr_Occurred() )
+                                if ( Return == nullptr && PyErr_Occurred() )
                                 {
-                                    PyErr_PrintEx( 0 );
+                                    PyErr_PrintEx(0);
                                     PyErr_Clear();
+                                    DemonConsole->TaskError( "Failed to execute " + InputCommands[ 0 ] + ". Python module failed" );
+                                    Py_CLEAR( FuncArgs );
+                                    return false;
                                 }
 
                                 if ( Py_IsNone( Return ) )
