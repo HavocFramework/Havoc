@@ -181,6 +181,7 @@ bool Packager::DispatchInitConnection( Util::Packager::PPackage Package )
                 // add some "default" scripts
                 if ( QDir( "client/Modules" ).exists( ) )
                 {
+                    ScriptManager::AddScript( "client/Modules/Packer/packer.py" );
                     ScriptManager::AddScript( "client/Modules/InvokeAssembly/invokeassembly.py" );
                     ScriptManager::AddScript( "client/Modules/PowerPick/powerpick.py" );
                     ScriptManager::AddScript( "client/Modules/SituationalAwareness/SituationalAwareness.py" );
