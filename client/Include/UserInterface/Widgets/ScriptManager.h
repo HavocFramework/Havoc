@@ -20,7 +20,7 @@ public:
     void SetupUi( QWidget *Form );
     void RetranslateUi( void );
 
-    static void AddScript( QString Path );
+    static bool AddScript( QString Path );
     void AddScriptTable( QString Path );
 
 private slots:

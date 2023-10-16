@@ -108,16 +108,23 @@ void ScriptManager::RetranslateUi( )
     tableLoadedScripts->horizontalHeaderItem(0)->setText(QCoreApplication::translate("Form", "Path", nullptr));
 }
 
-void ScriptManager::AddScript( QString Path )
+bool ScriptManager::AddScript( QString Path )
 {
     auto Script = FileRead( Path );
     auto path   = Path.toStdString();
+    int  Return = 0;
 
     HavocX::Teamserver.LoadingScript = Path.toStdString();
 
     if ( Script != nullptr ) {
-        if ( ! Script.isEmpty() )
-            PyRun_SimpleStringFlags( Script.toStdString().c_str(), NULL );
+        if ( ! Script.isEmpty() ) {
+            Return = PyRun_SimpleStringFlags( Script.toStdString().c_str(), NULL );
+            if ( Return == -1 ) {
+                spdlog::error( "Failed to run script: {}", path );
+            } else {
+                return true;
+            }
+        }
         else {
             spdlog::error( "Script path not found: {}", path );
         }
@@ -126,6 +133,8 @@ void ScriptManager::AddScript( QString Path )
     }
 
     HavocX::Teamserver.LoadingScript = "";
+
+    return false;
 }
 
 void ScriptManager::AddScriptTable( QString Path )
@@ -159,8 +168,17 @@ void ScriptManager::b_LoadScript()
         Filename = FileDialog.selectedUrls().value( 0 ).toLocalFile();
         if ( ! Filename.toString().isNull() )
         {
-            AddScript( Filename.toString() );
-            AddScriptTable( Filename.toString() );
+            if ( AddScript( Filename.toString() ) ) {
+                AddScriptTable( Filename.toString() );
+            } else {
+                auto messageBox = QMessageBox(  );
+                messageBox.setWindowTitle( "Failed to import script" );
+                messageBox.setText( "The script " + Filename.toString() + " could not be imported due to an error." );
+                messageBox.setIcon( QMessageBox::Critical );
+                messageBox.setStyleSheet( FileRead( ":/stylesheets/MessageBox" ) );
+                // messageBox.setMaximumSize( QSize( 500, 500 ) );
+                messageBox.exec();
+            }
         }
     }
 }

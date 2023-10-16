@@ -62,6 +62,7 @@ PyMODINIT_FUNC PythonAPI::Havoc::PyInit_Havoc( void )
 PyObject* PythonAPI::Havoc::Core::Load( PyObject *self, PyObject *args )
 {
     char* FilePath = NULL;
+    int   Return   = 0;
 
     if ( ! PyArg_ParseTuple( args, "s", &FilePath ) )
         Py_RETURN_NONE;
@@ -70,9 +71,15 @@ PyObject* PythonAPI::Havoc::Core::Load( PyObject *self, PyObject *args )
 
     spdlog::info( "Load Script: {}", FilePath );
 
-    PyRun_SimpleStringFlags( script.toStdString().c_str(), NULL );
+    Return = PyRun_SimpleStringFlags( script.toStdString().c_str(), NULL );
 
-    Py_RETURN_NONE;
+    if ( Return == -1 )
+    {
+        spdlog::error( "Failed to load script" );
+        Py_RETURN_FALSE;
+    }
+
+    Py_RETURN_TRUE;
 }
 
 PyObject* PythonAPI::Havoc::Core::GetDemons( PyObject *self, PyObject *args )

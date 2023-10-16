@@ -51,7 +51,11 @@ void HavocNamespace::UserInterface::Widgets::PythonScriptInterpreter::RunCode( Q
     emb::stdout_write_type write = [&] (std::string s) { buffer += s; };
     emb::set_stdout(write);
 
-    PyRun_SimpleStringFlags( code.toStdString().c_str(), NULL );
+    if ( PyRun_SimpleStringFlags( code.toStdString().c_str(), NULL ) == -1 )
+    {
+        spdlog::error( "Failed to run script" );
+        return;
+    }
 
     if ( buffer.size() > 0 )
         this->PythonScriptOutput->appendPlainText( buffer.c_str() );
