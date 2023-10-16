@@ -2372,11 +2372,13 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                         PyObject* Return   = nullptr;
                         auto      Path     = std::string();
 
+                        spdlog::debug( "Found module: {} {}", Command.Module.c_str(), Command.Command.c_str() );
+
                         if ( Send )
                         {
                             if ( ! PyCallable_Check( ( PyObject* ) Command.Function ) )
                             {
-                                PyErr_SetString( PyExc_TypeError, "a callable is required" );
+                                DemonConsole->TaskError( "A callable is required for " + InputCommands[ 0 ] + " " + InputCommands[ 1 ] );
                                 return false;
                             }
 

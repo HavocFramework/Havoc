@@ -133,6 +133,14 @@ PyObject* PythonAPI::Havoc::Core::RegisterCommand( PyObject *self, PyObject *arg
     RCommand.Example   = Example;
     RCommand.Path      = Path.substr( 0, Path.find_last_of( "\\/" ) );
 
+    Py_XINCREF( RCommand.Function );
+
+    if ( QString( RCommand.Module.c_str() ).length() > 0 ) {
+        spdlog::debug( "Registered command: {} {}", Module, Command );
+    } else {
+        spdlog::debug( "Registered command: {}", Command );
+    }
+
     // Check if command already exists... if it is already existing then replace it with new one.
     for ( u32 i = 0; i < HavocX::Teamserver.RegisteredCommands.size(); i++ )
     {
@@ -219,6 +227,8 @@ PyObject* PythonAPI::Havoc::Core::RegisterModule( PyObject *self, PyObject *args
 
     // Add new command
     HavocX::Teamserver.RegisteredModules.push_back( Module );
+
+    spdlog::debug( "Registered module: {}", Module.Name );
 
     Py_RETURN_NONE;
 }
