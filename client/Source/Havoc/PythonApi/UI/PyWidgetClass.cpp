@@ -19,6 +19,7 @@ PyMethodDef PyWidgetClass_methods[] = {
         { "setBottomTab",               ( PyCFunction ) WidgetClass_setBottomTab,               METH_VARARGS, "Set widget as Bottom Tab" },
         { "setSmallTab",               ( PyCFunction ) WidgetClass_setSmallTab,               METH_VARARGS, "Set widget as Small Tab" },
         { "addLabel",               ( PyCFunction ) WidgetClass_addLabel,               METH_VARARGS, "Insert a label in the widget" },
+        { "addImage",               ( PyCFunction ) WidgetClass_addImage,               METH_VARARGS, "Insert an image in the widget" },
         { "addButton",               ( PyCFunction ) WidgetClass_addButton,               METH_VARARGS, "Insert a button in the widget" },
         { "addCheckbox",               ( PyCFunction ) WidgetClass_addCheckbox,               METH_VARARGS, "Insert a checkbox in the window" },
         { "addCombobox",               ( PyCFunction ) WidgetClass_addCombobox,               METH_VARARGS, "Insert a checkbox in the window" },
@@ -129,6 +130,22 @@ PyObject* WidgetClass_addLabel( PPyWidgetClass self, PyObject *args )
         Py_RETURN_NONE;
     }
     QLabel* label = new QLabel(text, self->WidgetWindow->window);
+    self->WidgetWindow->layout->addWidget(label);
+
+    Py_RETURN_NONE;
+}
+
+PyObject* WidgetClass_addImage( PPyWidgetClass self, PyObject *args )
+{
+    char *text = nullptr;
+
+    if( !PyArg_ParseTuple( args, "s", &text) )
+    {
+        Py_RETURN_NONE;
+    }
+    QPixmap img(text);
+    QLabel* label = new QLabel(self->WidgetWindow->window);
+    label->setPixmap(img);
     self->WidgetWindow->layout->addWidget(label);
 
     Py_RETURN_NONE;

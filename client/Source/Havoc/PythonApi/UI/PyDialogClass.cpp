@@ -19,6 +19,7 @@ PyMethodDef PyDialogClass_methods[] = {
         { "exec",                   ( PyCFunction ) DialogClass_exec,                   METH_VARARGS, "Display the window" },
         { "close",           ( PyCFunction ) DialogClass_close,           METH_VARARGS, "Close the window" },
         { "addLabel",               ( PyCFunction ) DialogClass_addLabel,               METH_VARARGS, "Insert a label in the window" },
+        { "addImage",               ( PyCFunction ) DialogClass_addImage,               METH_VARARGS, "Insert an image in the window" },
         { "addButton",               ( PyCFunction ) DialogClass_addButton,               METH_VARARGS, "Insert a button in the window" },
         { "addCheckbox",               ( PyCFunction ) DialogClass_addCheckbox,               METH_VARARGS, "Insert a checkbox in the window" },
         { "addCombobox",               ( PyCFunction ) DialogClass_addCombobox,               METH_VARARGS, "Insert a checkbox in the window" },
@@ -137,6 +138,22 @@ PyObject* DialogClass_addLabel( PPyDialogClass self, PyObject *args )
         Py_RETURN_NONE;
     }
     QLabel* label = new QLabel(text, self->DialogWindow->window);
+    self->DialogWindow->layout->addWidget(label);
+
+    Py_RETURN_NONE;
+}
+
+PyObject* DialogClass_addImage( PPyDialogClass self, PyObject *args )
+{
+    char *text = nullptr;
+
+    if( !PyArg_ParseTuple( args, "s", &text) )
+    {
+        Py_RETURN_NONE;
+    }
+    QPixmap img(text);
+    QLabel* label = new QLabel(self->DialogWindow->window);
+    label->setPixmap(img);
     self->DialogWindow->layout->addWidget(label);
 
     Py_RETURN_NONE;
