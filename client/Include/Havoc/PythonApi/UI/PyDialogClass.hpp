@@ -40,11 +40,14 @@ int         DialogClass_init( PPyDialogClass self, PyObject *args, PyObject *kwd
 
 PyObject*   DialogClass_exec( PPyDialogClass self, PyObject *args );
 PyObject*   DialogClass_close( PPyDialogClass self, PyObject *args );
+PyObject*   DialogClass_clear( PPyDialogClass self, PyObject *args );
 PyObject*   DialogClass_addLabel( PPyDialogClass self, PyObject *args );
 PyObject*   DialogClass_addButton( PPyDialogClass self, PyObject *args );
 PyObject*   DialogClass_addCheckbox( PPyDialogClass self, PyObject *args );
 PyObject*   DialogClass_addCombobox( PPyDialogClass self, PyObject *args );
 PyObject*   DialogClass_addLineedit( PPyDialogClass self, PyObject *args );
 PyObject*   DialogClass_addCalendar( PPyDialogClass self, PyObject *args );
+PyObject*   DialogClass_replaceLabel( PPyDialogClass self, PyObject *args );
+PyObject*   DialogClass_addImage( PPyDialogClass self, PyObject *args );
 
 #endif
