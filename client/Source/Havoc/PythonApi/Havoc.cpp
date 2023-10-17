@@ -133,8 +133,6 @@ PyObject* PythonAPI::Havoc::Core::RegisterCommand( PyObject *self, PyObject *arg
     RCommand.Example   = Example;
     RCommand.Path      = Path.substr( 0, Path.find_last_of( "\\/" ) );
 
-    Py_XINCREF( RCommand.Function );
-
     if ( QString( RCommand.Module.c_str() ).length() > 0 ) {
         spdlog::debug( "Registered command: {} {}", Module, Command );
     } else {
@@ -172,6 +170,7 @@ PyObject* PythonAPI::Havoc::Core::RegisterCommand( PyObject *self, PyObject *arg
 
     // Add new command
     HavocX::Teamserver.RegisteredCommands.push_back( RCommand );
+    Py_XINCREF( RCommand.Function );
 
     Py_RETURN_NONE;
 }
