@@ -41,22 +41,22 @@ void FileBrowser::setupUi( QWidget* FileBrowser )
     FileBrowserWidget = FileBrowser;
 
     auto MenuStyle = QString(
-        "QMenu {"
-         "    background-color: #282a36;"
-         "    color: #f8f8f2;"
-         "    border: 1px solid #44475a;"
-         "}"
-         "QMenu::separator {"
-         "    background: #44475a;"
-         "}"
-         "QMenu::item:selected {"
-         "    background: #44475a;"
-         "}"
-         "QAction {"
-         "    background-color: #282a36;"
-         "    color: #f8f8f2;"
-         "}"
-     );
+            "QMenu {"
+            "    background-color: #282a36;"
+            "    color: #f8f8f2;"
+            "    border: 1px solid #44475a;"
+            "}"
+            "QMenu::separator {"
+            "    background: #44475a;"
+            "}"
+            "QMenu::item:selected {"
+            "    background: #44475a;"
+            "}"
+            "QAction {"
+            "    background-color: #282a36;"
+            "    color: #f8f8f2;"
+            "}"
+    );
 
     if ( FileBrowser->objectName().isEmpty() )
         FileBrowser->setObjectName( QString::fromUtf8( "FileBrowser" ) );
@@ -186,8 +186,8 @@ void FileBrowser::AddData( QJsonDocument JsonData )
 
     Files = QJsonDocument( JsonData[ "Files" ].toArray() );
     Data  = FileDirData {
-        .Path = Path,
-        .Data = Files
+            .Path = Path,
+            .Data = Files
     };
 
     if ( Files.isArray() )
@@ -201,11 +201,11 @@ void FileBrowser::AddData( QJsonDocument JsonData )
                 auto Size     = data.toObject()[ "Size" ].toString();
                 auto Modified = data.toObject()[ "Modified" ].toString();
                 auto fileData = FileData{
-                    .Path     = Path,
-                    .Type     = Type,
-                    .Name     = Name,
-                    .Size     = Size,
-                    .Modified = Modified,
+                        .Path     = Path,
+                        .Type     = Type,
+                        .Name     = Name,
+                        .Size     = Size,
+                        .Modified = Modified,
                 };
 
                 Data.Files.push_back( fileData );
@@ -277,8 +277,10 @@ void FileBrowser::onTableDoubleClick( int row, int column )
 
     if ( Item->Data.Type.compare( "dir" ) == 0 )
     {
+
+        QString Path = Item->Data.Path + "\\" + Item->Data.Name;
         TableClear();
-        ChangePathAndSendRequest( Item->Data.Path + "\\" + Item->Data.Name );
+        ChangePathAndSendRequest(Path );
         return;
     }
 
@@ -401,6 +403,7 @@ void FileBrowser::TreeUpdate()
                 TreeAddDisk( Split[ i ] + "\\" );
                 continue;
             }
+
 
             auto Parent = JoinAtIndex( Split, i, "\\" );
             auto Item   = new FileBrowserTreeItem;
