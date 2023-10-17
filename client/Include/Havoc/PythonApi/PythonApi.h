@@ -45,6 +45,8 @@ namespace PythonAPI
             PY_FUNCTION( OpenFileDialog )
             PY_FUNCTION( SaveFileDialog )
             PY_FUNCTION( QuestionDialog )
+            PY_FUNCTION( ColorDialog )
+            PY_FUNCTION( ProgressDialog )
         }
 
         namespace PyModule
