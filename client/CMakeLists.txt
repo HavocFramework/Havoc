@@ -68,8 +68,9 @@ set(
         Include/Havoc/PythonApi/Event.h
         Include/Havoc/PythonApi/HavocUi.h
         Include/Havoc/PythonApi/PyAgentClass.hpp
-        Include/Havoc/PythonApi/PyDialogClass.hpp
-        Include/Havoc/PythonApi/PyWidgetClass.hpp
+        Include/Havoc/PythonApi/UI/PyDialogClass.hpp
+        Include/Havoc/PythonApi/UI/PyLoggerClass.hpp
+        Include/Havoc/PythonApi/UI/PyWidgetClass.hpp
 
         # Dialogs
         Include/UserInterface/Dialogs/Payload.hpp
@@ -155,8 +156,9 @@ set(
     Source/Havoc/PythonApi/PythonApi.cpp
     Source/Havoc/PythonApi/Havoc.cpp
     Source/Havoc/PythonApi/HavocUi.cpp
-    Source/Havoc/PythonApi/PyDialogClass.cpp
-    Source/Havoc/PythonApi/PyWidgetClass.cpp
+    Source/Havoc/PythonApi/UI/PyDialogClass.cpp
+    Source/Havoc/PythonApi/UI/PyLoggerClass.cpp
+    Source/Havoc/PythonApi/UI/PyWidgetClass.cpp
     Source/Havoc/PythonApi/PyDemonClass.cpp
     Source/Havoc/PythonApi/Event.cpp
     Source/Havoc/Havoc.cpp
