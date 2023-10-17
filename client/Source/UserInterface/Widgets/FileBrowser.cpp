@@ -5,6 +5,7 @@
 
 #include <QList>
 #include <spdlog/spdlog.h>
+#include <Util/Base.hpp>
 
 static auto JoinAtIndex( QStringList list, int index, QString sep ) -> QString
 {
@@ -120,7 +121,8 @@ void FileBrowser::setupUi( QWidget* FileBrowser )
     MenuFileBrowserTable = new QMenu( this );
     MenuFileBrowserTable->setStyleSheet( MenuStyle );
     // MenuFileBrowserTable->addAction( "Remove", this, &FileBrowser::onTableMenuRemove );
-    // MenuFileBrowserTable->addAction( "Reload", this, &FileBrowser::onTableMenuReload );
+    MenuFileBrowserTable->addAction( "Download", this, &::FileBrowser::onTableMenuDownload );
+    MenuFileBrowserTable->addAction( "Reload", this, &FileBrowser::onTableMenuReload );
     // MenuFileBrowserTable->addAction( "Mkdir",  this, &FileBrowser::onTableMenuMkdir );
     TableFileBrowser->addAction( MenuFileBrowserTable->menuAction() );
 
@@ -286,6 +288,7 @@ void FileBrowser::onTableDoubleClick( int row, int column )
 
 }
 
+
 void FileBrowser::onTreeDoubleClick()
 {
 
@@ -321,6 +324,41 @@ void FileBrowser::onButtonUp()
     TableClear();
     ChangePathAndSendRequest( Path );
 }
+void FileBrowser::onTableMenuDownload(){
+    auto Item = ( ( FileBrowserTableItem* ) TableFileBrowser->item( TableFileBrowser->currentRow(), 0 ) );
+
+    if ( Item->Data.Type.compare( "dir" ) == 0 )
+    {
+
+
+        auto box = QMessageBox();
+
+        box.setWindowTitle(  "FileBrowser error" );
+        box.setText( "Please select the file type correctly" );
+        box.setIcon( QMessageBox::NoIcon );
+        box.setStyleSheet( FileRead( ":/stylesheets/MessageBox" ) );
+        box.exec();
+        return;
+
+    }else{
+
+        QString Path = Item->Data.Path + "\\" + Item->Data.Name;
+        for ( auto& Session : HavocX::Teamserver.Sessions )
+        {
+            if ( Session.Name.compare( SessionID ) == 0 )
+            {
+                QString TaskID = Session.InteractedWidget->TaskInfo(true,Util::gen_random( 8 ).c_str(),"Tasked demon to download a file "+Path);
+                Session.InteractedWidget->DemonCommands->Execute.FS( TaskID, "download", Path.toLocal8Bit().toBase64() );
+
+
+            }
+        }
+
+
+        return;
+    }
+}
+
 
 void FileBrowser::onTableContextMenu( const QPoint &pos )
 {
@@ -345,7 +383,23 @@ void FileBrowser::onTableMenuMkdir()
 
 void FileBrowser::onTableMenuReload()
 {
+    auto Item = ( ( FileBrowserTableItem* ) TableFileBrowser->item( TableFileBrowser->currentRow(), 0 ) );
+    if(!Item->Data.Path.isEmpty()){
+        QString Path = Item->Data.Path;
 
+        Path.replace( "\\*", "" );
+
+        InputFileBrowserPath->setText( Path );
+
+        for ( auto& Session : HavocX::Teamserver.Sessions )
+        {
+            if ( Session.Name.compare( SessionID ) == 0 )
+            {
+                TableClear();
+                Session.InteractedWidget->DemonCommands->Execute.FS( Util::gen_random( 8 ).c_str(), "dir;ui", Path );
+            }
+        }
+    }
 }
 
 void FileBrowser::onTableMenuRemove()
