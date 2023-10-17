@@ -115,6 +115,7 @@ private slots:
     void onTreeDoubleClick();
     void onTreeContextMenu( const QPoint &pos );
 
+    void onTableMenuDownload();
     void onButtonUp();
     void onInputPath();
 };

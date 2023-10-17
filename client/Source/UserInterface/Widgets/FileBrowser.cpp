@@ -121,7 +121,7 @@ void FileBrowser::setupUi( QWidget* FileBrowser )
     MenuFileBrowserTable = new QMenu( this );
     MenuFileBrowserTable->setStyleSheet( MenuStyle );
     // MenuFileBrowserTable->addAction( "Remove", this, &FileBrowser::onTableMenuRemove );
-    MenuFileBrowserTable->addAction( "Download", this, &::FileBrowser::onTableMenuDownload );
+    MenuFileBrowserTable->addAction( "Download", this, &FileBrowser::onTableMenuDownload );
     MenuFileBrowserTable->addAction( "Reload", this, &FileBrowser::onTableMenuReload );
     // MenuFileBrowserTable->addAction( "Mkdir",  this, &FileBrowser::onTableMenuMkdir );
     TableFileBrowser->addAction( MenuFileBrowserTable->menuAction() );
