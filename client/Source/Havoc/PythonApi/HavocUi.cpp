@@ -1,13 +1,17 @@
 #include <Havoc/PythonApi/PythonApi.h>
 #include <UserInterface/HavocUI.hpp>
 
-#include <Havoc/PythonApi/PyWidgetClass.hpp>
-#include <Havoc/PythonApi/PyDialogClass.hpp>
+#include <Havoc/PythonApi/UI/PyWidgetClass.hpp>
+#include <Havoc/PythonApi/UI/PyDialogClass.hpp>
+#include <Havoc/PythonApi/UI/PyLoggerClass.hpp>
 
 #include <QFile>
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QInputDialog>
+#include <QColorDialog>
+#include <QProgressDialog>
+#include <QTimer>
 
 namespace PythonAPI::HavocUI
 {
@@ -18,6 +22,8 @@ namespace PythonAPI::HavocUI
             { "openfiledialog", PythonAPI::HavocUI::Core::OpenFileDialog, METH_VARARGS, "Python interface for Havoc InputDialog" },
             { "savefiledialog", PythonAPI::HavocUI::Core::SaveFileDialog, METH_VARARGS, "Python interface for Havoc InputDialog" },
             { "questiondialog", PythonAPI::HavocUI::Core::QuestionDialog, METH_VARARGS, "Python interface for Havoc InputDialog" },
+            { "colordialog", PythonAPI::HavocUI::Core::ColorDialog, METH_VARARGS, "Python interface for Havoc ColorDialog" },
+            { "progressdialog", PythonAPI::HavocUI::Core::ProgressDialog, METH_VARARGS, "Python interface for Havoc ColorDialog" },
 
             { NULL, NULL, 0, NULL }
     };
@@ -153,6 +159,67 @@ PyObject* PythonAPI::HavocUI::Core::SaveFileDialog(PyObject *self, PyObject *arg
     return PyBytes_FromString(data.toStdString().c_str());
 }
 
+PyObject* PythonAPI::HavocUI::Core::ColorDialog(PyObject *self, PyObject *args)
+{
+    QColorDialog data = QColorDialog(HavocX::HavocUserInterface->HavocWindow);
+    QColor sel = data.getColor();
+    if (sel.isValid()) {
+        QString colorHex = sel.name();
+        return PyBytes_FromString(colorHex.toStdString().c_str());
+    } else {
+        Py_RETURN_NONE;
+    }
+}
+
+PyObject* PythonAPI::HavocUI::Core::ProgressDialog(PyObject *self, PyObject *args)
+{
+    char *title = nullptr;
+    char *text= nullptr;
+    int max_num = 0;
+    PyObject* callable_obj = nullptr;
+
+    if( !PyArg_ParseTuple( args, "ssOi", &title, &text, &callable_obj, &max_num) )
+    {
+        Py_RETURN_NONE;
+    }
+    if ( !PyCallable_Check(callable_obj) )
+    {
+        PyErr_SetString(PyExc_TypeError, "parameter must be callable");
+        return NULL;
+    }
+    QProgressDialog* dialog = new QProgressDialog(title, text, 0, max_num, HavocX::HavocUserInterface->HavocWindow);
+    dialog->setAutoClose(false);
+    QTimer* timer = new QTimer();
+
+    QMainWindow::connect( timer, &QTimer::timeout, HavocX::HavocUserInterface->HavocWindow, [callable_obj, dialog, timer]() {
+        PyObject *pResult = PyObject_CallFunctionObjArgs(callable_obj, nullptr);
+
+        if (pResult != NULL) {
+            if (PyLong_Check(pResult)) {
+                long resultInt = PyLong_AsLong(pResult);
+                dialog->setValue(resultInt);
+                if (resultInt < 0) {
+                    dialog->close();
+                    timer->stop();
+                }
+            }
+        } else {
+            PyErr_SetString(PyExc_TypeError, "Function needs to return an int");
+            dialog->close();
+            timer->stop();
+        }
+    });
+    QPushButton *cancelButton = dialog->findChild<QPushButton *>();
+    QMainWindow::connect( cancelButton, &QPushButton::clicked, HavocX::HavocUserInterface->HavocWindow, [dialog, timer]() {
+        dialog->close();
+        timer->stop();
+    });
+    timer->start(max_num);
+    dialog->exec();
+
+    Py_RETURN_NONE;
+}
+
 PyMODINIT_FUNC PythonAPI::HavocUI::PyInit_HavocUI(void)
 {
     PyObject* Module = PyModule_Create2( &PythonAPI::HavocUI::PyModule::havocui, PYTHON_API_VERSION );
@@ -166,6 +233,11 @@ PyMODINIT_FUNC PythonAPI::HavocUI::PyInit_HavocUI(void)
         spdlog::error( "Couldn't check if DialogClass is ready" );
     else
         PyModule_AddObject( Module, "Dialog", (PyObject*) &PyDialogClass_Type );
+
+    if ( PyType_Ready( &PyLoggerClass_Type ) < 0 )
+        spdlog::error( "Couldn't check if DialogClass is ready" );
+    else
+        PyModule_AddObject( Module, "Logger", (PyObject*) &PyLoggerClass_Type );
 
     return Module;
 }
