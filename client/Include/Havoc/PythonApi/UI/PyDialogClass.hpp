@@ -48,5 +48,6 @@ PyObject*   DialogClass_addCombobox( PPyDialogClass self, PyObject *args );
 PyObject*   DialogClass_addLineedit( PPyDialogClass self, PyObject *args );
 PyObject*   DialogClass_addCalendar( PPyDialogClass self, PyObject *args );
 PyObject*   DialogClass_replaceLabel( PPyDialogClass self, PyObject *args );
+PyObject*   DialogClass_addImage( PPyDialogClass self, PyObject *args );
 
 #endif

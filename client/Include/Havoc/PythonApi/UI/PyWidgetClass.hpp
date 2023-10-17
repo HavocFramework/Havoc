@@ -48,5 +48,6 @@ PyObject*   WidgetClass_addLineedit( PPyWidgetClass self, PyObject *args );
 PyObject*   WidgetClass_addCalendar( PPyWidgetClass self, PyObject *args );
 PyObject*   WidgetClass_replaceLabel( PPyWidgetClass self, PyObject *args );
 PyObject*   WidgetClass_clear( PPyWidgetClass self, PyObject *args );
+PyObject*   WidgetClass_addImage( PPyWidgetClass self, PyObject *args );
 
 #endif
