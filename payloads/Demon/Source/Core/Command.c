@@ -1778,44 +1778,50 @@ VOID CommandAssemblyListVersion( PPARSER Parser )
     PIEnumUnknown    pEnumClr     = { NULL };
     PICLRRuntimeInfo pRunTimeInfo = { NULL };
 
-    if ( Instance.Win32.CLRCreateInstance( &xCLSID_CLRMetaHost, &xIID_ICLRMetaHost, (LPVOID*)&pClrMetaHost ) == S_OK )
+    if ( RtMscoree() )
     {
-        if ( ( pClrMetaHost )->lpVtbl->EnumerateInstalledRuntimes( pClrMetaHost, &pEnumClr ) == S_OK )
+        if ( Instance.Win32.CLRCreateInstance( &xCLSID_CLRMetaHost, &xIID_ICLRMetaHost, (LPVOID*)&pClrMetaHost ) == S_OK )
         {
-            DWORD dwStringSize = 0;
-            while ( TRUE )
+            if ( ( pClrMetaHost )->lpVtbl->EnumerateInstalledRuntimes( pClrMetaHost, &pEnumClr ) == S_OK )
             {
-                IUnknown *UPTR      = { 0 };
-                ULONG    fetched    = 0;
-
-                if ( pEnumClr->lpVtbl->Next( pEnumClr, 1, &UPTR, &fetched ) == S_OK )
+                DWORD dwStringSize = 0;
+                while ( TRUE )
                 {
-                    pRunTimeInfo = ( PICLRRuntimeInfo ) UPTR;
-                    if ( pRunTimeInfo->lpVtbl->GetVersionString( pRunTimeInfo, NULL, &dwStringSize ) == HRESULT_FROM_WIN32( ERROR_INSUFFICIENT_BUFFER ) && dwStringSize > 0 )
+                    IUnknown *UPTR      = { 0 };
+                    ULONG    fetched    = 0;
+
+                    if ( pEnumClr->lpVtbl->Next( pEnumClr, 1, &UPTR, &fetched ) == S_OK )
                     {
-                        LPVOID Version = Instance.Win32.LocalAlloc( LPTR, dwStringSize );
-
-                        if ( pRunTimeInfo->lpVtbl->GetVersionString( pRunTimeInfo, Version, &dwStringSize ) == S_OK )
+                        pRunTimeInfo = ( PICLRRuntimeInfo ) UPTR;
+                        if ( pRunTimeInfo->lpVtbl->GetVersionString( pRunTimeInfo, NULL, &dwStringSize ) == HRESULT_FROM_WIN32( ERROR_INSUFFICIENT_BUFFER ) && dwStringSize > 0 )
                         {
-                            PRINTF( "Version[ %d ]: %ls\n", dwStringSize, Version );
-                            PackageAddWString( Package, Version );
-                        }
+                            LPVOID Version = Instance.Win32.LocalAlloc( LPTR, dwStringSize );
 
-                        Instance.Win32.LocalFree( Version );
-                        Version = NULL;
-                        dwStringSize = 0;
+                            if ( pRunTimeInfo->lpVtbl->GetVersionString( pRunTimeInfo, Version, &dwStringSize ) == S_OK )
+                            {
+                                PRINTF( "Version[ %d ]: %ls\n", dwStringSize, Version );
+                                PackageAddWString( Package, Version );
+                            }
+
+                            Instance.Win32.LocalFree( Version );
+                            Version = NULL;
+                            dwStringSize = 0;
+                        }
+                        else
+                            PUTS("Failed get Version String")
                     }
-                    else
-                        PUTS("Failed get Version String")
+                    else break;
                 }
-                else break;
             }
+            else
+                PUTS("Failed to enumerate")
         }
         else
-            PUTS("Failed to enumerate")
+            PUTS("Failed to CLRCreateInstance");
     }
     else
-        PUTS("Failed to CLRCreateInstance");
+        PUTS("Failed to load mscoree.dll")
+
 
     if ( pClrMetaHost )
     {

