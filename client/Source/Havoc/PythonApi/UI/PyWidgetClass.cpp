@@ -83,11 +83,15 @@ PyTypeObject PyWidgetClass_Type = {
 
 void WidgetClass_dealloc( PPyWidgetClass self )
 {
-    Py_XDECREF( self->title );
-    delete self->WidgetWindow->window;
-    free(self->WidgetWindow);
-
-    Py_TYPE( self )->tp_free( ( PyObject* ) self );
+    if (self) {
+        if (self->title)
+            Py_XDECREF( self->title );
+        if (self->WidgetWindow && self->WidgetWindow->window)
+            delete self->WidgetWindow->window;
+        if (self->WidgetWindow)
+            free(self->WidgetWindow);
+        Py_TYPE( self )->tp_free( ( PyObject* ) self );
+    }
 }
 
 PyObject* WidgetClass_new( PyTypeObject *type, PyObject *args, PyObject *kwds )
@@ -95,28 +99,47 @@ PyObject* WidgetClass_new( PyTypeObject *type, PyObject *args, PyObject *kwds )
     PPyWidgetClass self;
 
     self = ( PPyWidgetClass ) PyType_Type.tp_alloc( type, 0 );
-
+    if (self == NULL)
+        return NULL;
+    self->title = NULL;
+    self->WidgetWindow = NULL;
+    self->WidgetWindow = (PPyWidgetQWindow)malloc(sizeof(PyWidgetQWindow));
+    if (self->WidgetWindow == NULL)
+        return NULL;
+    self->WidgetWindow->window = NULL;
+    self->WidgetWindow->layout = NULL;
+    self->WidgetWindow->scroll= NULL;
+    self->WidgetWindow->root = NULL;
+    self->WidgetWindow->root_layout = NULL;
     return ( PyObject* ) self;
 }
 
 int WidgetClass_init( PPyWidgetClass self, PyObject *args, PyObject *kwds )
 {
-    if ( PyType_Type.tp_init( ( PyObject* ) self, args, kwds ) < 0 )
-        return -1;
+    char*       title           = NULL;
+    PyObject*   scrollable      = NULL;
+    const char* kwdlist[]       = { "title", "scrollable", NULL };
 
-    char*       title          = NULL;
-    const char* kwdlist[]        = { "title", NULL };
-
-    if ( ! PyArg_ParseTupleAndKeywords( args, kwds, "s", const_cast<char**>(kwdlist), &title ) )
+    if ( ! PyArg_ParseTupleAndKeywords( args, kwds, "s|O", const_cast<char**>(kwdlist), &title, &scrollable ) )
         return -1;
     AllocMov( self->title, title, strlen(title) );
-    self->WidgetWindow = (PPyWidgetQWindow)malloc(sizeof(PyWidgetQWindow));
-    if (self->WidgetWindow == NULL)
-        return -1;
+
     self->WidgetWindow->window = new QWidget();
     self->WidgetWindow->window->setWindowTitle(title);
-    self->WidgetWindow->layout = new QVBoxLayout(self->WidgetWindow->window);
 
+    self->WidgetWindow->root = new QWidget();
+    self->WidgetWindow->layout = new QVBoxLayout(self->WidgetWindow->root);
+
+    if (scrollable && PyBool_Check(scrollable) && scrollable == Py_True) {
+        self->WidgetWindow->scroll = new QScrollArea(self->WidgetWindow->window);
+        self->WidgetWindow->scroll->setWidgetResizable(true);
+        self->WidgetWindow->scroll->setWidget(self->WidgetWindow->root);
+    }
+    self->WidgetWindow->root_layout = new QVBoxLayout(self->WidgetWindow->window);
+    if (scrollable && PyBool_Check(scrollable) && scrollable == Py_True)
+        self->WidgetWindow->root_layout->addWidget(self->WidgetWindow->scroll);
+    else
+        self->WidgetWindow->root_layout->addWidget(self->WidgetWindow->root);
     return 0;
 }
 

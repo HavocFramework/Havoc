@@ -11,12 +11,16 @@
 #include <QCheckBox>
 #include <QLineEdit>
 #include <QCalendarWidget>
+#include <QScrollArea>
 
 typedef struct
 {
 
-    QWidget* window;
-    QVBoxLayout* layout;
+    QWidget*        window;
+    QVBoxLayout*    layout;
+    QScrollArea*    scroll;
+    QWidget*        root;
+    QVBoxLayout*    root_layout;
 
 } PyWidgetQWindow, *PPyWidgetQWindow;
 

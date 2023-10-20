@@ -90,7 +90,6 @@ void DialogClass_dealloc( PPyDialogClass self )
             delete self->DialogWindow->window;
         if (self->DialogWindow)
             free(self->DialogWindow);
-
         Py_TYPE( self )->tp_free( ( PyObject* ) self );
     }
 }
@@ -127,7 +126,6 @@ int DialogClass_init( PPyDialogClass self, PyObject *args, PyObject *kwds )
         return -1;
     AllocMov( self->title, title, strlen(title) );
 
-    printf("after alloc\n");
     self->DialogWindow->window = new QDialog(HavocX::HavocUserInterface->HavocWindow);
     self->DialogWindow->window->setWindowTitle(title);
 
