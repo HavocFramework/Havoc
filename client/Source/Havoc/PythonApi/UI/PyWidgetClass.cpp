@@ -25,6 +25,8 @@ PyMethodDef PyWidgetClass_methods[] = {
         { "addCombobox",               ( PyCFunction ) WidgetClass_addCombobox,               METH_VARARGS, "Insert a checkbox in the window" },
         { "addLineedit",               ( PyCFunction ) WidgetClass_addLineedit,               METH_VARARGS, "Insert a Line edit in the window" },
         { "addCalendar",               ( PyCFunction ) WidgetClass_addCalendar,               METH_VARARGS, "Insert a Calendar in the window" },
+        { "addDial",               ( PyCFunction ) WidgetClass_addDial,               METH_VARARGS, "Insert a dial in the window" },
+        { "addSlider",               ( PyCFunction ) WidgetClass_addSlider,               METH_VARARGS, "Insert a slider in the window" },
         { "replaceLabel",               ( PyCFunction ) WidgetClass_replaceLabel,               METH_VARARGS, "Replace a label with supplied text" },
         { "clear",               ( PyCFunction ) WidgetClass_clear,               METH_VARARGS, "clear a widget" },
 
@@ -318,6 +320,58 @@ PyObject* WidgetClass_addCalendar( PPyWidgetClass self, PyObject *args )
             PyObject_CallFunctionObjArgs(cal_callback, pyString, nullptr);
     });
 
+    Py_RETURN_NONE;
+}
+
+PyObject* WidgetClass_addDial( PPyWidgetClass self, PyObject *args )
+{
+    PyObject* cal_callback = nullptr;
+
+    if( !PyArg_ParseTuple( args, "O", &cal_callback) )
+    {
+        Py_RETURN_NONE;
+    }
+    if ( !PyCallable_Check(cal_callback) )
+    {
+        PyErr_SetString(PyExc_TypeError, "parameter must be callable");
+        return NULL;
+    }
+
+    QDial* dial = new QDial(self->WidgetWindow->window);
+    self->WidgetWindow->layout->addWidget(dial);
+    QObject::connect(dial, &QDial::valueChanged, self->WidgetWindow->window, [cal_callback](long value) {
+            PyObject* pyLong = PyLong_FromLong(value);
+            PyObject_CallFunctionObjArgs(cal_callback, pyLong, nullptr);
+    });
+    Py_RETURN_NONE;
+}
+
+PyObject* WidgetClass_addSlider( PPyWidgetClass self, PyObject *args )
+{
+    PyObject* cal_callback = nullptr;
+    PyObject* vertical = nullptr;
+
+    if( !PyArg_ParseTuple( args, "O|O", &cal_callback, &vertical) )
+    {
+        Py_RETURN_NONE;
+    }
+    if ( !PyCallable_Check(cal_callback) )
+    {
+        PyErr_SetString(PyExc_TypeError, "parameter must be callable");
+        return NULL;
+    }
+
+    QSlider* slider = nullptr;
+    if (vertical && PyBool_Check(vertical) && vertical == Py_True) {
+        slider = new QSlider(Qt::Vertical);
+    } else {
+        slider = new QSlider(Qt::Horizontal);
+    }
+    self->WidgetWindow->layout->addWidget(slider);
+    QObject::connect(slider, &QSlider::valueChanged, self->WidgetWindow->window, [cal_callback](long value) {
+            PyObject* pyLong = PyLong_FromLong(value);
+            PyObject_CallFunctionObjArgs(cal_callback, pyLong, nullptr);
+    });
     Py_RETURN_NONE;
 }
 

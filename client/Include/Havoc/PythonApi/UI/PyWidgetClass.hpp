@@ -12,6 +12,8 @@
 #include <QLineEdit>
 #include <QCalendarWidget>
 #include <QScrollArea>
+#include <QDial>
+#include <QSlider>
 
 typedef struct
 {
@@ -53,5 +55,7 @@ PyObject*   WidgetClass_addCalendar( PPyWidgetClass self, PyObject *args );
 PyObject*   WidgetClass_replaceLabel( PPyWidgetClass self, PyObject *args );
 PyObject*   WidgetClass_clear( PPyWidgetClass self, PyObject *args );
 PyObject*   WidgetClass_addImage( PPyWidgetClass self, PyObject *args );
+PyObject*   WidgetClass_addDial( PPyWidgetClass self, PyObject *args );
+PyObject* WidgetClass_addSlider( PPyWidgetClass self, PyObject *args );
 
 #endif

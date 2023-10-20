@@ -12,6 +12,8 @@
 #include <QCheckBox>
 #include <QLineEdit>
 #include <QCalendarWidget>
+#include <QDial>
+#include <QSlider>
 
 typedef struct
 {
@@ -53,5 +55,7 @@ PyObject*   DialogClass_addLineedit( PPyDialogClass self, PyObject *args );
 PyObject*   DialogClass_addCalendar( PPyDialogClass self, PyObject *args );
 PyObject*   DialogClass_replaceLabel( PPyDialogClass self, PyObject *args );
 PyObject*   DialogClass_addImage( PPyDialogClass self, PyObject *args );
+PyObject*   DialogClass_addDial( PPyDialogClass self, PyObject *args );
+PyObject*   DialogClass_addSlider( PPyDialogClass self, PyObject *args );
 
 #endif
