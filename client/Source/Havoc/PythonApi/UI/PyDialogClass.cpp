@@ -221,8 +221,9 @@ PyObject* DialogClass_addCheckbox( PPyDialogClass self, PyObject *args )
     char *text = nullptr;
     char *style = nullptr;
     PyObject* checkbox_callback = nullptr;
+    PyObject* is_checked = nullptr;
 
-    if( !PyArg_ParseTuple( args, "sO|s", &text, &checkbox_callback, &style) )
+    if( !PyArg_ParseTuple( args, "sO|Os", &text, &checkbox_callback, &is_checked, &style) )
     {
         Py_RETURN_NONE;
     }
@@ -234,6 +235,8 @@ PyObject* DialogClass_addCheckbox( PPyDialogClass self, PyObject *args )
     QCheckBox* checkbox = new QCheckBox(text, self->DialogWindow->window);
     if (style)
         checkbox->setStyleSheet(style);
+    if (is_checked && PyBool_Check(is_checked) && is_checked == Py_True)
+        checkbox->setChecked(true);
     self->DialogWindow->layout->addWidget(checkbox);
     QObject::connect(checkbox, &QCheckBox::clicked, self->DialogWindow->window, [checkbox_callback]() {
             PyObject_CallFunctionObjArgs(checkbox_callback, nullptr);
