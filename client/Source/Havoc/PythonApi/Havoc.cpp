@@ -18,6 +18,7 @@ namespace PythonAPI::Havoc
     PyMethodDef PyMethode_Havoc[] = {
             { "LoadScript",       PythonAPI::Havoc::Core::Load,                            METH_VARARGS,                 "load python script"       },
             { "GetDemons",        PythonAPI::Havoc::Core::GetDemons,                       METH_VARARGS,                 "get list of demon ID's"   },
+            { "GetListeners",     PythonAPI::Havoc::Core::GetListeners,                    METH_VARARGS,                 "get list of Listeners"   },
             { "RegisterCommand",  ( PyCFunction ) PythonAPI::Havoc::Core::RegisterCommand, METH_VARARGS | METH_KEYWORDS, "register a command/alias" },
             { "RegisterModule",   PythonAPI::Havoc::Core::RegisterModule,                  METH_VARARGS,                 "register a module"        },
             { "RegisterCallback", PythonAPI::Havoc::Core::RegisterCallback,                METH_VARARGS,                 "register a callback"      },
@@ -80,6 +81,22 @@ PyObject* PythonAPI::Havoc::Core::Load( PyObject *self, PyObject *args )
     }
 
     Py_RETURN_TRUE;
+}
+
+PyObject* PythonAPI::Havoc::Core::GetListeners( PyObject *self, PyObject *args )
+{
+    auto      Listeners        = HavocX::Teamserver.Listeners;
+    uint32_t  NumberOfSessions = Listeners.size();
+    PyObject* ListenerObjects  = PyList_New( NumberOfSessions );
+    PyObject* ListenerID       = NULL;
+
+    for ( int i = 0; i < NumberOfSessions; ++i )
+    {
+        ListenerID = Py_BuildValue( "s", Listeners[ i ].Name.c_str() );
+        PyList_SetItem( ListenerObjects, i, ListenerID );
+    }
+
+    return ListenerObjects;
 }
 
 PyObject* PythonAPI::Havoc::Core::GetDemons( PyObject *self, PyObject *args )

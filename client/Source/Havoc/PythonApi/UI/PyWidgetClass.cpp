@@ -25,6 +25,8 @@ PyMethodDef PyWidgetClass_methods[] = {
         { "addCombobox",               ( PyCFunction ) WidgetClass_addCombobox,               METH_VARARGS, "Insert a checkbox in the window" },
         { "addLineedit",               ( PyCFunction ) WidgetClass_addLineedit,               METH_VARARGS, "Insert a Line edit in the window" },
         { "addCalendar",               ( PyCFunction ) WidgetClass_addCalendar,               METH_VARARGS, "Insert a Calendar in the window" },
+        { "addDial",               ( PyCFunction ) WidgetClass_addDial,               METH_VARARGS, "Insert a dial in the window" },
+        { "addSlider",               ( PyCFunction ) WidgetClass_addSlider,               METH_VARARGS, "Insert a slider in the window" },
         { "replaceLabel",               ( PyCFunction ) WidgetClass_replaceLabel,               METH_VARARGS, "Replace a label with supplied text" },
         { "clear",               ( PyCFunction ) WidgetClass_clear,               METH_VARARGS, "clear a widget" },
 
@@ -83,11 +85,15 @@ PyTypeObject PyWidgetClass_Type = {
 
 void WidgetClass_dealloc( PPyWidgetClass self )
 {
-    Py_XDECREF( self->title );
-    delete self->WidgetWindow->window;
-    free(self->WidgetWindow);
-
-    Py_TYPE( self )->tp_free( ( PyObject* ) self );
+    if (self) {
+        if (self->title)
+            Py_XDECREF( self->title );
+        if (self->WidgetWindow && self->WidgetWindow->window)
+            delete self->WidgetWindow->window;
+        if (self->WidgetWindow)
+            free(self->WidgetWindow);
+        Py_TYPE( self )->tp_free( ( PyObject* ) self );
+    }
 }
 
 PyObject* WidgetClass_new( PyTypeObject *type, PyObject *args, PyObject *kwds )
@@ -95,28 +101,47 @@ PyObject* WidgetClass_new( PyTypeObject *type, PyObject *args, PyObject *kwds )
     PPyWidgetClass self;
 
     self = ( PPyWidgetClass ) PyType_Type.tp_alloc( type, 0 );
-
+    if (self == NULL)
+        return NULL;
+    self->title = NULL;
+    self->WidgetWindow = NULL;
+    self->WidgetWindow = (PPyWidgetQWindow)malloc(sizeof(PyWidgetQWindow));
+    if (self->WidgetWindow == NULL)
+        return NULL;
+    self->WidgetWindow->window = NULL;
+    self->WidgetWindow->layout = NULL;
+    self->WidgetWindow->scroll= NULL;
+    self->WidgetWindow->root = NULL;
+    self->WidgetWindow->root_layout = NULL;
     return ( PyObject* ) self;
 }
 
 int WidgetClass_init( PPyWidgetClass self, PyObject *args, PyObject *kwds )
 {
-    if ( PyType_Type.tp_init( ( PyObject* ) self, args, kwds ) < 0 )
-        return -1;
+    char*       title           = NULL;
+    PyObject*   scrollable      = NULL;
+    const char* kwdlist[]       = { "title", "scrollable", NULL };
 
-    char*       title          = NULL;
-    const char* kwdlist[]        = { "title", NULL };
-
-    if ( ! PyArg_ParseTupleAndKeywords( args, kwds, "s", const_cast<char**>(kwdlist), &title ) )
+    if ( ! PyArg_ParseTupleAndKeywords( args, kwds, "s|O", const_cast<char**>(kwdlist), &title, &scrollable ) )
         return -1;
     AllocMov( self->title, title, strlen(title) );
-    self->WidgetWindow = (PPyWidgetQWindow)malloc(sizeof(PyWidgetQWindow));
-    if (self->WidgetWindow == NULL)
-        return -1;
+
     self->WidgetWindow->window = new QWidget();
     self->WidgetWindow->window->setWindowTitle(title);
-    self->WidgetWindow->layout = new QVBoxLayout(self->WidgetWindow->window);
 
+    self->WidgetWindow->root = new QWidget();
+    self->WidgetWindow->layout = new QVBoxLayout(self->WidgetWindow->root);
+
+    if (scrollable && PyBool_Check(scrollable) && scrollable == Py_True) {
+        self->WidgetWindow->scroll = new QScrollArea(self->WidgetWindow->window);
+        self->WidgetWindow->scroll->setWidgetResizable(true);
+        self->WidgetWindow->scroll->setWidget(self->WidgetWindow->root);
+    }
+    self->WidgetWindow->root_layout = new QVBoxLayout(self->WidgetWindow->window);
+    if (scrollable && PyBool_Check(scrollable) && scrollable == Py_True)
+        self->WidgetWindow->root_layout->addWidget(self->WidgetWindow->scroll);
+    else
+        self->WidgetWindow->root_layout->addWidget(self->WidgetWindow->root);
     return 0;
 }
 
@@ -168,9 +193,10 @@ PyObject* WidgetClass_setSmallTab( PPyWidgetClass self, PyObject *args )
 PyObject* WidgetClass_addButton( PPyWidgetClass self, PyObject *args )
 {
     char *text = nullptr;
+    char *style = nullptr;
     PyObject* button_callback = nullptr;
 
-    if( !PyArg_ParseTuple( args, "sO", &text, &button_callback) )
+    if( !PyArg_ParseTuple( args, "sO|s", &text, &button_callback, &style) )
     {
         Py_RETURN_NONE;
     }
@@ -180,6 +206,8 @@ PyObject* WidgetClass_addButton( PPyWidgetClass self, PyObject *args )
         return NULL;
     }
     QPushButton* button = new QPushButton(text, self->WidgetWindow->window);
+    if (style)
+        button->setStyleSheet(style);
     self->WidgetWindow->layout->addWidget(button);
     QObject::connect(button, &QPushButton::clicked, self->WidgetWindow->window, [button_callback]() {
             PyObject_CallFunctionObjArgs(button_callback, nullptr);
@@ -191,9 +219,10 @@ PyObject* WidgetClass_addButton( PPyWidgetClass self, PyObject *args )
 PyObject* WidgetClass_addCheckbox( PPyWidgetClass self, PyObject *args )
 {
     char *text = nullptr;
+    char *style = nullptr;
     PyObject* checkbox_callback = nullptr;
 
-    if( !PyArg_ParseTuple( args, "sO", &text, &checkbox_callback) )
+    if( !PyArg_ParseTuple( args, "sO|s", &text, &checkbox_callback, &style) )
     {
         Py_RETURN_NONE;
     }
@@ -203,6 +232,8 @@ PyObject* WidgetClass_addCheckbox( PPyWidgetClass self, PyObject *args )
         return NULL;
     }
     QCheckBox* checkbox = new QCheckBox(text, self->WidgetWindow->window);
+    if (style)
+        checkbox->setStyleSheet(style);
     self->WidgetWindow->layout->addWidget(checkbox);
     QObject::connect(checkbox, &QCheckBox::clicked, self->WidgetWindow->window, [checkbox_callback]() {
             PyObject_CallFunctionObjArgs(checkbox_callback, nullptr);
@@ -289,6 +320,58 @@ PyObject* WidgetClass_addCalendar( PPyWidgetClass self, PyObject *args )
             PyObject_CallFunctionObjArgs(cal_callback, pyString, nullptr);
     });
 
+    Py_RETURN_NONE;
+}
+
+PyObject* WidgetClass_addDial( PPyWidgetClass self, PyObject *args )
+{
+    PyObject* cal_callback = nullptr;
+
+    if( !PyArg_ParseTuple( args, "O", &cal_callback) )
+    {
+        Py_RETURN_NONE;
+    }
+    if ( !PyCallable_Check(cal_callback) )
+    {
+        PyErr_SetString(PyExc_TypeError, "parameter must be callable");
+        return NULL;
+    }
+
+    QDial* dial = new QDial(self->WidgetWindow->window);
+    self->WidgetWindow->layout->addWidget(dial);
+    QObject::connect(dial, &QDial::valueChanged, self->WidgetWindow->window, [cal_callback](long value) {
+            PyObject* pyLong = PyLong_FromLong(value);
+            PyObject_CallFunctionObjArgs(cal_callback, pyLong, nullptr);
+    });
+    Py_RETURN_NONE;
+}
+
+PyObject* WidgetClass_addSlider( PPyWidgetClass self, PyObject *args )
+{
+    PyObject* cal_callback = nullptr;
+    PyObject* vertical = nullptr;
+
+    if( !PyArg_ParseTuple( args, "O|O", &cal_callback, &vertical) )
+    {
+        Py_RETURN_NONE;
+    }
+    if ( !PyCallable_Check(cal_callback) )
+    {
+        PyErr_SetString(PyExc_TypeError, "parameter must be callable");
+        return NULL;
+    }
+
+    QSlider* slider = nullptr;
+    if (vertical && PyBool_Check(vertical) && vertical == Py_True) {
+        slider = new QSlider(Qt::Vertical);
+    } else {
+        slider = new QSlider(Qt::Horizontal);
+    }
+    self->WidgetWindow->layout->addWidget(slider);
+    QObject::connect(slider, &QSlider::valueChanged, self->WidgetWindow->window, [cal_callback](long value) {
+            PyObject* pyLong = PyLong_FromLong(value);
+            PyObject_CallFunctionObjArgs(cal_callback, pyLong, nullptr);
+    });
     Py_RETURN_NONE;
 }
 

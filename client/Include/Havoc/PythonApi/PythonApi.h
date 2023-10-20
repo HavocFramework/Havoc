@@ -20,6 +20,7 @@ namespace PythonAPI
         {
             PY_FUNCTION( Load )
             PY_FUNCTION( GetDemons )
+            PY_FUNCTION( GetListeners )
             PY_FUNCTION_KW( RegisterCommand )
             PY_FUNCTION( RegisterModule )
             PY_FUNCTION( RegisterCallback )

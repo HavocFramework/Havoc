@@ -25,6 +25,8 @@ PyMethodDef PyDialogClass_methods[] = {
         { "addCombobox",               ( PyCFunction ) DialogClass_addCombobox,               METH_VARARGS, "Insert a checkbox in the window" },
         { "addLineedit",               ( PyCFunction ) DialogClass_addLineedit,               METH_VARARGS, "Insert a Line edit in the window" },
         { "addCalendar",               ( PyCFunction ) DialogClass_addCalendar,               METH_VARARGS, "Insert a Calendar in the window" },
+        { "addDial",                  ( PyCFunction ) DialogClass_addDial,               METH_VARARGS, "Insert a Dial in the window" },
+        { "addSlider",                  ( PyCFunction ) DialogClass_addSlider,               METH_VARARGS, "Insert a Slider in the window" },
         { "replaceLabel",               ( PyCFunction ) DialogClass_replaceLabel,               METH_VARARGS, "Replace a label with supplied text" },
         { "clear",               ( PyCFunction ) DialogClass_clear,               METH_VARARGS, "clear the dialog" },
 
@@ -83,11 +85,15 @@ PyTypeObject PyDialogClass_Type = {
 
 void DialogClass_dealloc( PPyDialogClass self )
 {
-    Py_XDECREF( self->title );
-    delete self->DialogWindow->window;
-    free(self->DialogWindow);
-
-    Py_TYPE( self )->tp_free( ( PyObject* ) self );
+    if (self) {
+        if (self->title)
+            Py_XDECREF( self->title );
+        if (self->DialogWindow && self->DialogWindow->window)
+            delete self->DialogWindow->window;
+        if (self->DialogWindow)
+            free(self->DialogWindow);
+        Py_TYPE( self )->tp_free( ( PyObject* ) self );
+    }
 }
 
 PyObject* DialogClass_new( PyTypeObject *type, PyObject *args, PyObject *kwds )
@@ -95,28 +101,53 @@ PyObject* DialogClass_new( PyTypeObject *type, PyObject *args, PyObject *kwds )
     PPyDialogClass self;
 
     self = ( PPyDialogClass ) PyType_Type.tp_alloc( type, 0 );
-
+    if (self == NULL)
+        return NULL;
+    self->DialogWindow = NULL;
+    self->title = NULL;
+    self->DialogWindow = (PPyDialogQWindow)malloc(sizeof(PyDialogQWindow));
+    if (self->DialogWindow == NULL) {
+        Py_TYPE( self )->tp_free( ( PyObject* ) self );
+        return NULL;
+    }
+    self->DialogWindow->window = NULL;
+    self->DialogWindow->layout = NULL;
+    self->DialogWindow->scroll = NULL;
+    self->DialogWindow->root = NULL;
+    self->DialogWindow->root_layout = NULL;
     return ( PyObject* ) self;
 }
 
 int DialogClass_init( PPyDialogClass self, PyObject *args, PyObject *kwds )
 {
-    if ( PyType_Type.tp_init( ( PyObject* ) self, args, kwds ) < 0 )
-        return -1;
+    char*       title       = NULL;
+    PyObject*   scrollable = NULL;
+    int         width       = 400;
+    int         height      = 300;
+    const char* kwdlist[]   = { "title", "scrollable", "width", "height", NULL };
 
-    char*       title          = NULL;
-    const char* kwdlist[]        = { "title", NULL };
-
-    if ( ! PyArg_ParseTupleAndKeywords( args, kwds, "s", const_cast<char**>(kwdlist), &title ) )
+    if ( ! PyArg_ParseTupleAndKeywords( args, kwds, "s|Oii", const_cast<char**>(kwdlist), &title, &scrollable, &width, &height) )
         return -1;
     AllocMov( self->title, title, strlen(title) );
-    self->DialogWindow = (PPyDialogQWindow)malloc(sizeof(PyDialogQWindow));
-    if (self->DialogWindow == NULL)
-        return -1;
+
     self->DialogWindow->window = new QDialog(HavocX::HavocUserInterface->HavocWindow);
     self->DialogWindow->window->setWindowTitle(title);
-    self->DialogWindow->layout = new QVBoxLayout(self->DialogWindow->window);
+    self->DialogWindow->window->resize(width, height);
 
+    self->DialogWindow->root = new QWidget();
+    self->DialogWindow->layout = new QVBoxLayout(self->DialogWindow->root);
+
+    if (scrollable && PyBool_Check(scrollable) && scrollable == Py_True) {
+        self->DialogWindow->scroll = new QScrollArea(self->DialogWindow->window);
+        self->DialogWindow->scroll->setWidgetResizable(true);
+        self->DialogWindow->scroll->setWidget(self->DialogWindow->root);
+    }
+
+    self->DialogWindow->root_layout = new QVBoxLayout(self->DialogWindow->window);
+    if (scrollable && PyBool_Check(scrollable) && scrollable == Py_True)
+        self->DialogWindow->root_layout->addWidget(self->DialogWindow->scroll);
+    else
+        self->DialogWindow->root_layout->addWidget(self->DialogWindow->root);
     return 0;
 }
 
@@ -162,9 +193,10 @@ PyObject* DialogClass_addImage( PPyDialogClass self, PyObject *args )
 PyObject* DialogClass_addButton( PPyDialogClass self, PyObject *args )
 {
     char *text = nullptr;
+    char *style = nullptr;
     PyObject* button_callback = nullptr;
 
-    if( !PyArg_ParseTuple( args, "sO", &text, &button_callback) )
+    if( !PyArg_ParseTuple( args, "sO|s", &text, &button_callback, &style) )
     {
         Py_RETURN_NONE;
     }
@@ -174,6 +206,8 @@ PyObject* DialogClass_addButton( PPyDialogClass self, PyObject *args )
         return NULL;
     }
     QPushButton* button = new QPushButton(text, self->DialogWindow->window);
+    if (style)
+        button->setStyleSheet(style);
     self->DialogWindow->layout->addWidget(button);
     QObject::connect(button, &QPushButton::clicked, self->DialogWindow->window, [button_callback]() {
             PyObject_CallFunctionObjArgs(button_callback, nullptr);
@@ -185,9 +219,10 @@ PyObject* DialogClass_addButton( PPyDialogClass self, PyObject *args )
 PyObject* DialogClass_addCheckbox( PPyDialogClass self, PyObject *args )
 {
     char *text = nullptr;
+    char *style = nullptr;
     PyObject* checkbox_callback = nullptr;
 
-    if( !PyArg_ParseTuple( args, "sO", &text, &checkbox_callback) )
+    if( !PyArg_ParseTuple( args, "sO|s", &text, &checkbox_callback, &style) )
     {
         Py_RETURN_NONE;
     }
@@ -197,6 +232,8 @@ PyObject* DialogClass_addCheckbox( PPyDialogClass self, PyObject *args )
         return NULL;
     }
     QCheckBox* checkbox = new QCheckBox(text, self->DialogWindow->window);
+    if (style)
+        checkbox->setStyleSheet(style);
     self->DialogWindow->layout->addWidget(checkbox);
     QObject::connect(checkbox, &QCheckBox::clicked, self->DialogWindow->window, [checkbox_callback]() {
             PyObject_CallFunctionObjArgs(checkbox_callback, nullptr);
@@ -283,6 +320,58 @@ PyObject* DialogClass_addCalendar( PPyDialogClass self, PyObject *args )
             PyObject_CallFunctionObjArgs(cal_callback, pyString, nullptr);
     });
 
+    Py_RETURN_NONE;
+}
+
+PyObject* DialogClass_addDial( PPyDialogClass self, PyObject *args )
+{
+    PyObject* cal_callback = nullptr;
+
+    if( !PyArg_ParseTuple( args, "O", &cal_callback) )
+    {
+        Py_RETURN_NONE;
+    }
+    if ( !PyCallable_Check(cal_callback) )
+    {
+        PyErr_SetString(PyExc_TypeError, "parameter must be callable");
+        return NULL;
+    }
+
+    QDial* dial = new QDial(self->DialogWindow->window);
+    self->DialogWindow->layout->addWidget(dial);
+    QObject::connect(dial, &QDial::valueChanged, self->DialogWindow->window, [cal_callback](long value) {
+            PyObject* pyLong = PyLong_FromLong(value);
+            PyObject_CallFunctionObjArgs(cal_callback, pyLong, nullptr);
+    });
+    Py_RETURN_NONE;
+}
+
+PyObject* DialogClass_addSlider( PPyDialogClass self, PyObject *args )
+{
+    PyObject* cal_callback = nullptr;
+    PyObject* vertical = nullptr;
+
+    if( !PyArg_ParseTuple( args, "O|O", &cal_callback, &vertical) )
+    {
+        Py_RETURN_NONE;
+    }
+    if ( !PyCallable_Check(cal_callback) )
+    {
+        PyErr_SetString(PyExc_TypeError, "parameter must be callable");
+        return NULL;
+    }
+
+    QSlider* slider = nullptr;
+    if (vertical && PyBool_Check(vertical) && vertical == Py_True) {
+        slider = new QSlider(Qt::Vertical);
+    } else {
+        slider = new QSlider(Qt::Horizontal);
+    }
+    self->DialogWindow->layout->addWidget(slider);
+    QObject::connect(slider, &QSlider::valueChanged, self->DialogWindow->window, [cal_callback](long value) {
+            PyObject* pyLong = PyLong_FromLong(value);
+            PyObject_CallFunctionObjArgs(cal_callback, pyLong, nullptr);
+    });
     Py_RETURN_NONE;
 }
 

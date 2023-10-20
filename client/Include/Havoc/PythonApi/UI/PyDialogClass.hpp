@@ -5,18 +5,24 @@
 #include <global.hpp>
 
 #include <QVBoxLayout>
+#include <QScrollArea>
 #include <QDialog>
 #include <QLabel>
 #include <QPushButton>
 #include <QCheckBox>
 #include <QLineEdit>
 #include <QCalendarWidget>
+#include <QDial>
+#include <QSlider>
 
 typedef struct
 {
 
-    QDialog* window;
-    QVBoxLayout* layout;
+    QDialog*        window;
+    QVBoxLayout*    layout;
+    QScrollArea*    scroll;
+    QWidget*        root;
+    QVBoxLayout*    root_layout;
 
 } PyDialogQWindow, *PPyDialogQWindow;
 
@@ -49,5 +55,7 @@ PyObject*   DialogClass_addLineedit( PPyDialogClass self, PyObject *args );
 PyObject*   DialogClass_addCalendar( PPyDialogClass self, PyObject *args );
 PyObject*   DialogClass_replaceLabel( PPyDialogClass self, PyObject *args );
 PyObject*   DialogClass_addImage( PPyDialogClass self, PyObject *args );
+PyObject*   DialogClass_addDial( PPyDialogClass self, PyObject *args );
+PyObject*   DialogClass_addSlider( PPyDialogClass self, PyObject *args );
 
 #endif
