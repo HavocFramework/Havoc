@@ -120,14 +120,17 @@ int DialogClass_init( PPyDialogClass self, PyObject *args, PyObject *kwds )
 {
     char*       title       = NULL;
     PyObject*   scrollable = NULL;
-    const char* kwdlist[]   = { "title", "scrollable", NULL };
+    int         width       = 400;
+    int         height      = 300;
+    const char* kwdlist[]   = { "title", "scrollable", "width", "height", NULL };
 
-    if ( ! PyArg_ParseTupleAndKeywords( args, kwds, "s|O", const_cast<char**>(kwdlist), &title, &scrollable) )
+    if ( ! PyArg_ParseTupleAndKeywords( args, kwds, "s|Oii", const_cast<char**>(kwdlist), &title, &scrollable, &width, &height) )
         return -1;
     AllocMov( self->title, title, strlen(title) );
 
     self->DialogWindow->window = new QDialog(HavocX::HavocUserInterface->HavocWindow);
     self->DialogWindow->window->setWindowTitle(title);
+    self->DialogWindow->window->resize(width, height);
 
     self->DialogWindow->root = new QWidget();
     self->DialogWindow->layout = new QVBoxLayout(self->DialogWindow->root);

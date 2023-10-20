@@ -156,7 +156,7 @@ PyObject* AgentClass_Command( PPyAgentClass self, PyObject *args )
 
     if ( ! PyArg_ParseTuple( args, "ssO", &TaskID, &Name, &CommandArg ) )
         Py_RETURN_NONE;
-        
+
     CommandLen = PyBytes_GET_SIZE( CommandArg );
     CommandArg = PyBytes_AS_STRING( CommandArg );
     Command    = QByteArray( CommandArg, CommandLen );
