@@ -5,6 +5,7 @@
 #include <global.hpp>
 
 #include <QVBoxLayout>
+#include <QScrollArea>
 #include <QDialog>
 #include <QLabel>
 #include <QPushButton>
@@ -15,8 +16,11 @@
 typedef struct
 {
 
-    QDialog* window;
-    QVBoxLayout* layout;
+    QDialog*        window;
+    QVBoxLayout*    layout;
+    QScrollArea*    scroll;
+    QWidget*        root;
+    QVBoxLayout*    root_layout;
 
 } PyDialogQWindow, *PPyDialogQWindow;
 

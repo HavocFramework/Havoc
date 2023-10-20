@@ -83,11 +83,16 @@ PyTypeObject PyDialogClass_Type = {
 
 void DialogClass_dealloc( PPyDialogClass self )
 {
-    Py_XDECREF( self->title );
-    delete self->DialogWindow->window;
-    free(self->DialogWindow);
+    if (self) {
+        if (self->title)
+            Py_XDECREF( self->title );
+        if (self->DialogWindow && self->DialogWindow->window)
+            delete self->DialogWindow->window;
+        if (self->DialogWindow)
+            free(self->DialogWindow);
 
-    Py_TYPE( self )->tp_free( ( PyObject* ) self );
+        Py_TYPE( self )->tp_free( ( PyObject* ) self );
+    }
 }
 
 PyObject* DialogClass_new( PyTypeObject *type, PyObject *args, PyObject *kwds )
@@ -95,28 +100,51 @@ PyObject* DialogClass_new( PyTypeObject *type, PyObject *args, PyObject *kwds )
     PPyDialogClass self;
 
     self = ( PPyDialogClass ) PyType_Type.tp_alloc( type, 0 );
-
+    if (self == NULL)
+        return NULL;
+    self->DialogWindow = NULL;
+    self->title = NULL;
+    self->DialogWindow = (PPyDialogQWindow)malloc(sizeof(PyDialogQWindow));
+    if (self->DialogWindow == NULL) {
+        Py_TYPE( self )->tp_free( ( PyObject* ) self );
+        return NULL;
+    }
+    self->DialogWindow->window = NULL;
+    self->DialogWindow->layout = NULL;
+    self->DialogWindow->scroll = NULL;
+    self->DialogWindow->root = NULL;
+    self->DialogWindow->root_layout = NULL;
     return ( PyObject* ) self;
 }
 
 int DialogClass_init( PPyDialogClass self, PyObject *args, PyObject *kwds )
 {
-    if ( PyType_Type.tp_init( ( PyObject* ) self, args, kwds ) < 0 )
-        return -1;
+    char*       title       = NULL;
+    PyObject*   scrollable = NULL;
+    const char* kwdlist[]   = { "title", "scrollable", NULL };
 
-    char*       title          = NULL;
-    const char* kwdlist[]        = { "title", NULL };
-
-    if ( ! PyArg_ParseTupleAndKeywords( args, kwds, "s", const_cast<char**>(kwdlist), &title ) )
+    if ( ! PyArg_ParseTupleAndKeywords( args, kwds, "s|O", const_cast<char**>(kwdlist), &title, &scrollable) )
         return -1;
     AllocMov( self->title, title, strlen(title) );
-    self->DialogWindow = (PPyDialogQWindow)malloc(sizeof(PyDialogQWindow));
-    if (self->DialogWindow == NULL)
-        return -1;
+
+    printf("after alloc\n");
     self->DialogWindow->window = new QDialog(HavocX::HavocUserInterface->HavocWindow);
     self->DialogWindow->window->setWindowTitle(title);
-    self->DialogWindow->layout = new QVBoxLayout(self->DialogWindow->window);
 
+    self->DialogWindow->root = new QWidget();
+    self->DialogWindow->layout = new QVBoxLayout(self->DialogWindow->root);
+
+    if (scrollable && PyBool_Check(scrollable) && scrollable == Py_True) {
+        self->DialogWindow->scroll = new QScrollArea(self->DialogWindow->window);
+        self->DialogWindow->scroll->setWidgetResizable(true);
+        self->DialogWindow->scroll->setWidget(self->DialogWindow->root);
+    }
+
+    self->DialogWindow->root_layout = new QVBoxLayout(self->DialogWindow->window);
+    if (scrollable && PyBool_Check(scrollable) && scrollable == Py_True)
+        self->DialogWindow->root_layout->addWidget(self->DialogWindow->scroll);
+    else
+        self->DialogWindow->root_layout->addWidget(self->DialogWindow->root);
     return 0;
 }
 
