@@ -188,9 +188,10 @@ PyObject* DialogClass_addImage( PPyDialogClass self, PyObject *args )
 PyObject* DialogClass_addButton( PPyDialogClass self, PyObject *args )
 {
     char *text = nullptr;
+    char *style = nullptr;
     PyObject* button_callback = nullptr;
 
-    if( !PyArg_ParseTuple( args, "sO", &text, &button_callback) )
+    if( !PyArg_ParseTuple( args, "sO|s", &text, &button_callback, &style) )
     {
         Py_RETURN_NONE;
     }
@@ -200,6 +201,8 @@ PyObject* DialogClass_addButton( PPyDialogClass self, PyObject *args )
         return NULL;
     }
     QPushButton* button = new QPushButton(text, self->DialogWindow->window);
+    if (style)
+        button->setStyleSheet(style);
     self->DialogWindow->layout->addWidget(button);
     QObject::connect(button, &QPushButton::clicked, self->DialogWindow->window, [button_callback]() {
             PyObject_CallFunctionObjArgs(button_callback, nullptr);
@@ -211,9 +214,10 @@ PyObject* DialogClass_addButton( PPyDialogClass self, PyObject *args )
 PyObject* DialogClass_addCheckbox( PPyDialogClass self, PyObject *args )
 {
     char *text = nullptr;
+    char *style = nullptr;
     PyObject* checkbox_callback = nullptr;
 
-    if( !PyArg_ParseTuple( args, "sO", &text, &checkbox_callback) )
+    if( !PyArg_ParseTuple( args, "sO|s", &text, &checkbox_callback, &style) )
     {
         Py_RETURN_NONE;
     }
@@ -223,6 +227,8 @@ PyObject* DialogClass_addCheckbox( PPyDialogClass self, PyObject *args )
         return NULL;
     }
     QCheckBox* checkbox = new QCheckBox(text, self->DialogWindow->window);
+    if (style)
+        checkbox->setStyleSheet(style);
     self->DialogWindow->layout->addWidget(checkbox);
     QObject::connect(checkbox, &QCheckBox::clicked, self->DialogWindow->window, [checkbox_callback]() {
             PyObject_CallFunctionObjArgs(checkbox_callback, nullptr);
