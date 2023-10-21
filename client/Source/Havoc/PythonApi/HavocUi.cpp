@@ -12,11 +12,13 @@
 #include <QColorDialog>
 #include <QProgressDialog>
 #include <QTimer>
+#include <QErrorMessage>
 
 namespace PythonAPI::HavocUI
 {
     PyMethodDef PyMethode_HavocUI[] = {
             { "messagebox", PythonAPI::HavocUI::Core::MessageBox, METH_VARARGS, "Python interface for Havoc Messagebox" },
+            { "errormessage", PythonAPI::HavocUI::Core::ErrorMessage, METH_VARARGS, "Python interface for Havoc Error Message" },
             { "createtab", PythonAPI::HavocUI::Core::CreateTab, METH_VARARGS, "Python interface for Havoc Tabs" },
             { "inputdialog", PythonAPI::HavocUI::Core::InputDialog, METH_VARARGS, "Python interface for Havoc InputDialog" },
             { "openfiledialog", PythonAPI::HavocUI::Core::OpenFileDialog, METH_VARARGS, "Python interface for Havoc InputDialog" },
@@ -98,6 +100,21 @@ PyObject* PythonAPI::HavocUI::Core::MessageBox(PyObject *self, PyObject *args)
     messageBox.setStyleSheet(messageBoxStyleSheets.readAll());
 
     messageBox.exec();
+
+    Py_RETURN_NONE;
+}
+
+PyObject* PythonAPI::HavocUI::Core::ErrorMessage(PyObject *self, PyObject *args)
+{
+    char *message = nullptr;
+
+    if( !PyArg_ParseTuple( args, "s", &message ) )
+    {
+        Py_RETURN_NONE;
+    }
+
+    QErrorMessage* errorMessage = new QErrorMessage(HavocX::HavocUserInterface->HavocWindow);
+    errorMessage->showMessage(message);
 
     Py_RETURN_NONE;
 }

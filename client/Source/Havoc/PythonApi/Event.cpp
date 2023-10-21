@@ -69,7 +69,9 @@ PyTypeObject PyEventClass_Type = {
 
 void EventClass_dealloc( PPyEvents self )
 {
-    Py_TYPE( self )->tp_free( ( PyObject* ) self );
+    if (self) {
+        Py_TYPE( self )->tp_free( ( PyObject* ) self );
+    }
 }
 
 PyObject* EventClass_new( PyTypeObject *type, PyObject *args, PyObject *kwds )
@@ -97,8 +99,12 @@ PyObject* EventClass_OnNewSession( PPyEvents self, PyObject *args )
 
     if ( ! PyArg_ParseTuple( args, "O", &Function ) )
         return NULL;
+    if ( ! PyCallable_Check( Function ) ) {
+        PyErr_SetString(PyExc_TypeError, "parameter must be callable");
+        return NULL;
+    }
 
-    // TODO: add Event list to current Teamserver Instance
+    HavocX::Teamserver.RegisteredCallbacks.push_back(Function);
 
     Py_RETURN_NONE;
 }
