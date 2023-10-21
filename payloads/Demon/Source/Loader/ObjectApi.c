@@ -8,6 +8,7 @@
 #include <Core/Win32.h>
 #include <Core/MiniStd.h>
 #include <Core/Package.h>
+#include <Core/SysNative.h>
 #include "Common/Defines.h"
 
 #include <Loader/ObjectApi.h>
@@ -83,6 +84,46 @@ COFFAPIFUNC LdrApi[] = {
         { .NameHash = H_COFFAPI_GETPROCADDRESS,               .Pointer = LdrFunctionAddrString            },
         { .NameHash = H_COFFAPI_FREELIBRARY,                  .Pointer = LdrFreeLibrary                   },
         { .NameHash = H_COFFAPI_LOCALFREE,                    .Pointer = LdrLocalFree                     },
+
+        // End of array
+        { .NameHash = 0, .Pointer = NULL },
+};
+
+COFFAPIFUNC NtApi[] = {
+        { .NameHash = H_COFFAPI_NTOPENTHREAD,                   .Pointer = SysNtOpenThread                   },
+        { .NameHash = H_COFFAPI_NTOPENPROCESS,                  .Pointer = SysNtOpenProcess                  },
+        { .NameHash = H_COFFAPI_NTTERMINATEPROCESS,             .Pointer = SysNtTerminateProcess             },
+        { .NameHash = H_COFFAPI_NTOPENTHREADTOKEN,              .Pointer = SysNtOpenThreadToken              },
+        { .NameHash = H_COFFAPI_NTOPENPROCESSTOKEN,             .Pointer = SysNtOpenProcessToken             },
+        { .NameHash = H_COFFAPI_NTDUPLICATETOKEN,               .Pointer = SysNtDuplicateToken               },
+        { .NameHash = H_COFFAPI_NTQUEUEAPCTHREAD,               .Pointer = SysNtQueueApcThread               },
+        { .NameHash = H_COFFAPI_NTSUSPENDTHREAD,                .Pointer = SysNtSuspendThread                },
+        { .NameHash = H_COFFAPI_NTRESUMETHREAD,                 .Pointer = SysNtResumeThread                 },
+        { .NameHash = H_COFFAPI_NTCREATEEVENT,                  .Pointer = SysNtCreateEvent                  },
+        { .NameHash = H_COFFAPI_NTCREATETHREADEX,               .Pointer = SysNtCreateThreadEx               },
+        { .NameHash = H_COFFAPI_NTDUPLICATEOBJECT,              .Pointer = SysNtDuplicateObject              },
+        { .NameHash = H_COFFAPI_NTGETCONTEXTTHREAD,             .Pointer = SysNtGetContextThread             },
+        { .NameHash = H_COFFAPI_NTSETCONTEXTTHREAD,             .Pointer = SysNtSetContextThread             },
+        { .NameHash = H_COFFAPI_NTQUERYINFORMATIONPROCESS,      .Pointer = SysNtQueryInformationProcess      },
+        { .NameHash = H_COFFAPI_NTQUERYSYSTEMINFORMATION,       .Pointer = SysNtQuerySystemInformation       },
+        { .NameHash = H_COFFAPI_NTWAITFORSINGLEOBJECT,          .Pointer = SysNtWaitForSingleObject          },
+        { .NameHash = H_COFFAPI_NTALLOCATEVIRTUALMEMORY,        .Pointer = SysNtAllocateVirtualMemory        },
+        { .NameHash = H_COFFAPI_NTWRITEVIRTUALMEMORY,           .Pointer = SysNtWriteVirtualMemory           },
+        { .NameHash = H_COFFAPI_NTFREEVIRTUALMEMORY,            .Pointer = SysNtFreeVirtualMemory            },
+        { .NameHash = H_COFFAPI_NTUNMAPVIEWOFSECTION,           .Pointer = SysNtUnmapViewOfSection           },
+        { .NameHash = H_COFFAPI_NTPROTECTVIRTUALMEMORY,         .Pointer = SysNtProtectVirtualMemory         },
+        { .NameHash = H_COFFAPI_NTREADVIRTUALMEMORY,            .Pointer = SysNtReadVirtualMemory            },
+        { .NameHash = H_COFFAPI_NTTERMINATETHREAD,              .Pointer = SysNtTerminateThread              },
+        { .NameHash = H_COFFAPI_NTALERTRESUMETHREAD,            .Pointer = SysNtAlertResumeThread            },
+        { .NameHash = H_COFFAPI_NTSIGNALANDWAITFORSINGLEOBJECT, .Pointer = SysNtSignalAndWaitForSingleObject },
+        { .NameHash = H_COFFAPI_NTQUERYVIRTUALMEMORY,           .Pointer = SysNtQueryVirtualMemory           },
+        { .NameHash = H_COFFAPI_NTQUERYINFORMATIONTOKEN,        .Pointer = SysNtQueryInformationToken        },
+        { .NameHash = H_COFFAPI_NTQUERYINFORMATIONTHREAD,       .Pointer = SysNtQueryInformationThread       },
+        { .NameHash = H_COFFAPI_NTQUERYOBJECT,                  .Pointer = SysNtQueryObject                  },
+        { .NameHash = H_COFFAPI_NTCLOSE,                        .Pointer = SysNtClose                        },
+        { .NameHash = H_COFFAPI_NTSETINFORMATIONTHREAD,         .Pointer = SysNtSetInformationThread         },
+        { .NameHash = H_COFFAPI_NTSETINFORMATIONVIRTUALMEMORY,  .Pointer = SysNtSetInformationVirtualMemory  },
+        { .NameHash = H_COFFAPI_NTGETNEXTTHREAD,                .Pointer = SysNtGetNextThread                },
 
         // End of array
         { .NameHash = 0, .Pointer = NULL },

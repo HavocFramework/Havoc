@@ -15,7 +15,7 @@ def hash_string( string ):
     except:
         pass
 
-def hash_proc( string ):
+def hash_coffapi( string ):
     try:
         hash = 5381
 
@@ -29,6 +29,6 @@ def hash_proc( string ):
 if __name__ in '__main__':
     try:
         print('#define H_FUNC_%s 0x%x' % ( sys.argv[ 1 ].upper(), hash_string( sys.argv[ 1 ] ) ));
-        print('#define H_COFFAPI_%s 0x%x' % ( sys.argv[ 1 ].upper(), hash_proc( sys.argv[ 1 ] ) ));
+        print('#define H_COFFAPI_%s 0x%x' % ( sys.argv[ 1 ].upper(), hash_coffapi( sys.argv[ 1 ] ) ));
     except IndexError:
         print('usage: %s [string]' % sys.argv[0]);
