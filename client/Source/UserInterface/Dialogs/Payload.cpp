@@ -239,9 +239,15 @@ void Payload::buttonGenerate()
                 { "Config",    Config },
             },
     };
+    printf("Agent Type: %s\n", this->ComboAgentType->currentText().toStdString().c_str());
+    printf("Listener: %s\n", this->ComboListener->currentText().toStdString().c_str());
+    printf("Arch: %s\n", this->ComboArch->currentText().toStdString().c_str());
+    printf("Format: %s\n", this->ComboFormat->currentText().toStdString().c_str());
+    printf("Config: %s\n", Config.c_str());
 
     Package->Head = Head;
     Package->Body = Body;
+    HavocX::GateGUI = true;
 
     HavocX::Connector->SendPackage( Package );
 }

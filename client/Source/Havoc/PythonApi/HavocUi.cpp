@@ -4,6 +4,7 @@
 #include <Havoc/PythonApi/UI/PyWidgetClass.hpp>
 #include <Havoc/PythonApi/UI/PyDialogClass.hpp>
 #include <Havoc/PythonApi/UI/PyLoggerClass.hpp>
+#include <Havoc/PythonApi/UI/PyTreeClass.hpp>
 
 #include <QFile>
 #include <QMessageBox>
@@ -252,9 +253,14 @@ PyMODINIT_FUNC PythonAPI::HavocUI::PyInit_HavocUI(void)
         PyModule_AddObject( Module, "Dialog", (PyObject*) &PyDialogClass_Type );
 
     if ( PyType_Ready( &PyLoggerClass_Type ) < 0 )
-        spdlog::error( "Couldn't check if DialogClass is ready" );
+        spdlog::error( "Couldn't check if LoggerClass is ready" );
     else
         PyModule_AddObject( Module, "Logger", (PyObject*) &PyLoggerClass_Type );
+
+    if ( PyType_Ready( &PyTreeClass_Type ) < 0 )
+        spdlog::error( "Couldn't check if TreeClass is ready" );
+    else
+        PyModule_AddObject( Module, "Tree", (PyObject*) &PyTreeClass_Type );
 
     return Module;
 }

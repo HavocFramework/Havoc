@@ -277,10 +277,12 @@ namespace HavocNamespace
 // Global Instance
 namespace HavocX
 {
-    extern bool DebugMode;
-    extern HavocNamespace::Util::ConnectionInfo    Teamserver;
-    extern HavocNamespace::UserInterface::HavocUI* HavocUserInterface;
-    extern HavocNamespace::Connector*              Connector;
+    extern bool                                     DebugMode;
+    extern bool                                     GateGUI;
+    extern PyObject*                                callbackGate;
+    extern HavocNamespace::Util::ConnectionInfo     Teamserver;
+    extern HavocNamespace::UserInterface::HavocUI*  HavocUserInterface;
+    extern HavocNamespace::Connector*               Connector;
 }
 
 #endif
