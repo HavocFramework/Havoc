@@ -1,4 +1,6 @@
 #include <global.hpp>
+#include <Havoc/Packager.hpp>
+#include <Havoc/Connector.hpp>
 #include <QFile>
 
 #include <Havoc/PythonApi/PythonApi.h>
@@ -19,6 +21,8 @@ namespace PythonAPI::Havoc
             { "LoadScript",       PythonAPI::Havoc::Core::Load,                            METH_VARARGS,                 "load python script"       },
             { "GetDemons",        PythonAPI::Havoc::Core::GetDemons,                       METH_VARARGS,                 "get list of demon ID's"   },
             { "GetListeners",     PythonAPI::Havoc::Core::GetListeners,                    METH_VARARGS,                 "get list of Listeners"   },
+            { "GetAgents",        PythonAPI::Havoc::Core::GetAgents,                       METH_VARARGS,                 "get list of Agents"   },
+            { "GeneratePayload",  ( PyCFunction ) PythonAPI::Havoc::Core::GeneratePayload, METH_VARARGS | METH_KEYWORDS, "Generate a payload and get the base64 bytestring" },
             { "RegisterCommand",  ( PyCFunction ) PythonAPI::Havoc::Core::RegisterCommand, METH_VARARGS | METH_KEYWORDS, "register a command/alias" },
             { "RegisterModule",   PythonAPI::Havoc::Core::RegisterModule,                  METH_VARARGS,                 "register a module"        },
             { "RegisterCallback", PythonAPI::Havoc::Core::RegisterCallback,                METH_VARARGS,                 "register a callback"      },
@@ -99,6 +103,24 @@ PyObject* PythonAPI::Havoc::Core::GetListeners( PyObject *self, PyObject *args )
     return ListenerObjects;
 }
 
+PyObject* PythonAPI::Havoc::Core::GetAgents( PyObject *self, PyObject *args )
+{
+    auto      Agents           = HavocX::Teamserver.ServiceAgents;
+    uint32_t  NumberOfSessions = Agents.size();
+    PyObject* AgentsObjects  = PyList_New( NumberOfSessions + 1);
+    PyObject* AgentsID       = NULL;
+
+    AgentsID = Py_BuildValue( "s", "Demon" );
+    PyList_SetItem( AgentsObjects, 0, AgentsID );
+    for ( int i = 1; i < NumberOfSessions; ++i )
+    {
+        AgentsID = Py_BuildValue( "s", Agents[ i ].Name.toStdString().c_str() );
+        PyList_SetItem( AgentsObjects, i, AgentsID );
+    }
+
+    return AgentsObjects;
+}
+
 PyObject* PythonAPI::Havoc::Core::GetDemons( PyObject *self, PyObject *args )
 {
     auto      DemonSessions    = HavocX::Teamserver.Sessions;
@@ -113,6 +135,54 @@ PyObject* PythonAPI::Havoc::Core::GetDemons( PyObject *self, PyObject *args )
     }
 
     return DemonObjects;
+}
+
+PyObject* PythonAPI::Havoc::Core::GeneratePayload( PyObject *self, PyObject *args, PyObject* kwargs )
+{
+    PyObject*   callbackGate = nullptr;
+    char*       agent = nullptr;
+    char*       listener = nullptr;
+    char*       arch = nullptr;
+    char*       format_string = nullptr;
+    char*       config = nullptr;
+    const char* KeyWords[] = { "callback", "agent", "listener", "arch", "format", "config", NULL };
+
+    if ( ! PyArg_ParseTupleAndKeywords( args, kwargs, "Osssss", const_cast<char**>(KeyWords), &callbackGate, &agent, &listener, &arch, &format_string, &config) )
+        Py_RETURN_NONE;
+    if ( !PyCallable_Check(callbackGate) )
+    {
+        PyErr_SetString(PyExc_TypeError, "parameter must be callable");
+        return NULL;
+    }
+    HavocX::callbackGate = callbackGate;
+
+    auto Package = new Util::Packager::Package;
+
+    auto Head = Util::Packager::Head_t {
+            .Event   = Util::Packager::Gate::Type,
+            .User    = HavocX::Teamserver.User.toStdString(),
+            .Time    = QTime::currentTime().toString( "hh:mm:ss" ).toStdString(),
+            .OneTime = "true",
+    };
+
+    auto Body = Util::Packager::Body_t {
+            .SubEvent = Util::Packager::Gate::Stageless,
+            .Info = {
+                { "AgentType", std::string(agent) },
+                { "Listener",  std::string(listener) },
+                { "Arch",      std::string(arch) },
+                { "Format",    std::string(format_string) },
+                { "Config",    std::string(config) },
+            },
+    };
+
+
+    Package->Head = Head;
+    Package->Body = Body;
+
+    HavocX::Connector->SendPackage( Package );
+
+    Py_RETURN_NONE;
 }
 
 // RegisterCommand( PyFunction: func, Module: str, Command: str, Description: str, Behavior: int, Usage: str, Example: str )

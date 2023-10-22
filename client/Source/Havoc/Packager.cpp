@@ -562,9 +562,25 @@ bool Packager::DispatchGate( Util::Packager::PPackage Package )
                 auto PayloadArray = QString( Package->Body.Info[ "PayloadArray" ].c_str() ).toLocal8Bit();
                 auto FileName     = QString( Package->Body.Info[ "FileName" ].c_str() );
 
-                HavocX::Teamserver.TabSession->PayloadDialog->ReceivedImplantAndSave( FileName, QByteArray::fromBase64( PayloadArray ) );
+                if (HavocX::GateGUI)
+                {
+                    HavocX::Teamserver.TabSession->PayloadDialog->ReceivedImplantAndSave( FileName, QByteArray::fromBase64( PayloadArray ) );
+                    HavocX::GateGUI = false;
+                }
+                else
+                {
+                    if ( HavocX::callbackGate )
+                    {
+                        PyObject* pyByteArray= PyUnicode_DecodeFSDefault(Package->Body.Info[ "PayloadArray" ].c_str());
+                        PyObject_CallFunctionObjArgs(HavocX::callbackGate, pyByteArray, nullptr);
+                    }
+                    else
+                    {
+                        break; // quit if there is no callback
+                    }
+                }
             }
-            else if ( Package->Body.Info[ "MessageType" ].size() > 0 )
+            else if ( Package->Body.Info[ "MessageType" ].size() > 0  && HavocX::GateGUI)
             {
                 auto MessageType = QString( Package->Body.Info[ "MessageType" ].c_str() );
                 auto Message     = QString( Package->Body.Info[ "Message" ].c_str() );
