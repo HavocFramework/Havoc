@@ -41,7 +41,7 @@ PyMethodDef PyDemonClass_methods[] = {
         { "DllInject",              ( PyCFunction ) DemonClass_DllInject,              METH_VARARGS, "Injects a reflective dll into a specified process" },
         { "DotnetInlineExecute",    ( PyCFunction ) DemonClass_DotnetInlineExecute,    METH_VARARGS, "Executes a dotnet assembly in the context of the demon sessions" },
         { "Command",                ( PyCFunction ) DemonClass_Command,                METH_VARARGS, "Run a command" },
-        { "CommandGetOutput",       ( PyCFunction ) DemonClass_CommandGetOutput,                METH_VARARGS, "Run a command and retreive the base 64 output" },
+        { "CommandGetOutput",       ( PyCFunction ) DemonClass_CommandGetOutput,                METH_VARARGS, "Run a command and retreive the output" },
 
         { NULL },
 };
@@ -367,6 +367,13 @@ PyObject* DemonClass_CommandGetOutput( PPyDemonClass self, PyObject *args )
     {
         if ( Session.Name.compare( self->DemonID ) == 0 )
         {
+            //auto TaskID = QString( Util::gen_random( 8 ).c_str() );
+            // TODO: In the future if the Demon returns back the command
+            // ID this section can be changed to a list in the same way
+            // of BOF_callback. Currently there is no way to match a request
+            // to data received for regular commands to we hook the callback
+            // to work with the next one received.
+
             HavocX::callbackMessage = Callback;
             Py_XINCREF(Callback);
             Session.InteractedWidget->DemonCommands->DispatchCommand( true, TaskID, Command );

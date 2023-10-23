@@ -15,9 +15,11 @@ using namespace HavocNamespace::HavocSpace;
 void DispatchOutput::MessageOutput( QString JsonString, const QString& Date = "" ) const
 {
     auto JsonDocument = QJsonDocument::fromJson( QByteArray::fromBase64( JsonString.toLocal8Bit( ) ) );
+    auto TaskID       = JsonDocument[ "TaskID" ].toString();
     auto MessageType  = JsonDocument[ "Type" ].toString();
     auto Message      = JsonDocument[ "Message" ].toString();
     auto Output       = JsonDocument[ "Output" ].toString();
+
 
     if ( Message.length() > 0 )
     {
@@ -35,6 +37,14 @@ void DispatchOutput::MessageOutput( QString JsonString, const QString& Date = ""
 
     if ( ! Output.isEmpty() )
     {
+        printf("task: %s\n", TaskID.toUtf8().constData());
+        if (HavocX::callbackMessage)
+        {
+            PyObject *arglist = Py_BuildValue( "s", Output.toUtf8().constData() );
+            PyObject_CallFunctionObjArgs( HavocX::callbackMessage, arglist, NULL );
+            Py_XDECREF( HavocX::callbackMessage );
+            HavocX::callbackMessage = NULL;
+        }
         this->DemonCommandInstance->DemonConsole->AppendRaw( Output );
     }
 
