@@ -22,13 +22,6 @@ int main( int argc, char** argv )
         HavocX::DebugMode = true;
     }
 
-    auto FontID = QFontDatabase::addApplicationFont( ":/icons/Monaco" );
-    auto Family = QFontDatabase::applicationFontFamilies( FontID ).at( 0 );
-    auto Monaco = QFont( Family );
-
-    Monaco.setPointSize( 9 );
-    QApplication::setFont( Monaco );
-
     QGuiApplication::setWindowIcon( QIcon( ":/Havoc.ico" ) );
 
     HavocNamespace::HavocApplication = new HavocNamespace::HavocSpace::Havoc( new QMainWindow );

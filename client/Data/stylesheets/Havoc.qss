@@ -1,3 +1,7 @@
+* {
+  font-family: "Monaco";
+  font-size: 9pt;
+}
 
 QMainWindow {
     background: #313342;
