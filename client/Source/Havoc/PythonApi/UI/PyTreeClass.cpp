@@ -235,10 +235,14 @@ PyObject* TreeClass_setPanel( PPyTreeClass self, PyObject *args )
     {
         Py_RETURN_NONE;
     }
-    self->TreeWindow->panel->clear();
+    if (self->TreeWindow->panel) {
+        self->TreeWindow->panel->clear();
 
-    QString Qtext = QString(str);
-    self->TreeWindow->panel->append(Qtext);
+        QString Qtext = QString(str);
+        self->TreeWindow->panel->append(Qtext);
+    } else {
+        PyErr_SetString(PyExc_TypeError, "The tree panel was not activated on initialization");
+    }
 
     Py_RETURN_NONE;
 }
