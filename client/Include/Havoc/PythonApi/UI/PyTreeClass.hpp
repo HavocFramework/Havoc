@@ -6,17 +6,20 @@
 
 #include <QWidget>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QScrollArea>
+#include <QTextEdit>
 #include <QTreeView>
 #include <QStandardItemModel>
 #include <QStandardItem>
+#include <QSplitter>
 
 
 typedef struct
 {
 
     QWidget*            window;
-    QVBoxLayout*        layout;
+    QHBoxLayout*        layout;
     QScrollArea*        scroll;
     QWidget*            root;
     QVBoxLayout*        root_layout;
@@ -24,6 +27,8 @@ typedef struct
     QStandardItemModel* item_model;
     QStandardItem*      root_item;
     QTreeView*          tree_view;
+    QTextEdit*          panel;
+    QSplitter*          splitter;
 
 } PyTreeQWindow, *PPyTreeQWindow;
 
@@ -49,5 +54,6 @@ PyObject* TreeClass_setBottomTab( PPyTreeClass self, PyObject *args );
 PyObject* TreeClass_setSmallTab( PPyTreeClass self, PyObject *args );
 PyObject* TreeClass_addRow( PPyTreeClass self, PyObject *args );
 PyObject* TreeClass_setItem( PPyTreeClass self, PyObject *args );
+PyObject* TreeClass_setPanel( PPyTreeClass self, PyObject *args );
 
 #endif
