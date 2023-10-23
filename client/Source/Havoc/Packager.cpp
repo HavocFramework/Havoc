@@ -744,6 +744,13 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
                                 Session.InteractedWidget->Console->verticalScrollBar()->setValue(
                                         Session.InteractedWidget->Console->verticalScrollBar()->maximum()
                                 );
+                                if (HavocX::callbackMessage) {
+                                    auto data = Package->Body.Info[ "Output" ].c_str();
+                                    PyObject *arglist = Py_BuildValue( "s", data );
+                                    PyObject_CallFunctionObjArgs( HavocX::callbackMessage, arglist, NULL );
+                                    Py_XDECREF( HavocX::callbackMessage );
+                                    HavocX::callbackMessage = NULL;
+                                }
                             }
 
                             break;

@@ -21,6 +21,7 @@ HavocNamespace::UserInterface::HavocUI* HavocX::HavocUserInterface;
 bool                                    HavocX::DebugMode = false;
 bool                                    HavocX::GateGUI = false;
 PyObject*                               HavocX::callbackGate = nullptr;
+PyObject*                               HavocX::callbackMessage = nullptr;
 
 QString HavocSpace::Listener::PayloadHTTPS    = "Https";
 QString HavocSpace::Listener::PayloadHTTP     = "Http";
