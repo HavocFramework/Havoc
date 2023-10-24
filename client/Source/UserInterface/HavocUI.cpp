@@ -532,7 +532,7 @@ void HavocNamespace::UserInterface::HavocUI::ConnectEvents()
 
     QMainWindow::connect( actionAbout, &QAction::triggered, this, [&]() {
         if ( AboutDialog == nullptr ) {
-            AboutDialog = new About( new QDialog );
+            AboutDialog = new About( new QDialog(HavocX::HavocUserInterface->HavocWindow) );
             AboutDialog->setupUi();
         }
 
