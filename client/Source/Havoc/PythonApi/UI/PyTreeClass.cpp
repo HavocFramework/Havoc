@@ -72,7 +72,7 @@ PyTypeObject PyTreeClass_Type = {
     {                                                       \
         des = ( char* ) malloc( size * sizeof( char ) );    \
         memset( des, 0, size );                             \
-        std::strcpy( des, src );                            \
+        std::strncpy( des, src, size );                     \
     }
 
 void TreeClass_dealloc( PPyTreeClass self )
@@ -151,8 +151,10 @@ int TreeClass_init( PPyTreeClass self, PyObject *args, PyObject *kwds )
 
     if (has_panel && PyBool_Check(has_panel) && has_panel == Py_True) {
         self->TreeWindow->splitter = new QSplitter();
-        self->TreeWindow->panel = new QTextEdit();
-        self->TreeWindow->panel->setReadOnly(true);
+        self->TreeWindow->panel = new QTextBrowser();
+        //self->TreeWindow->panel->setOpenLinks(false);
+        self->TreeWindow->panel->setOpenExternalLinks(true);
+        //self->TreeWindow->panel->setReadOnly(true);
         self->TreeWindow->splitter->addWidget(self->TreeWindow->tree_view);
         self->TreeWindow->splitter->addWidget(self->TreeWindow->panel);
         self->TreeWindow->layout->addWidget(self->TreeWindow->splitter);
@@ -239,7 +241,8 @@ PyObject* TreeClass_setPanel( PPyTreeClass self, PyObject *args )
         self->TreeWindow->panel->clear();
 
         QString Qtext = QString(str);
-        self->TreeWindow->panel->append(Qtext);
+        //self->TreeWindow->panel->append(Qtext);
+        self->TreeWindow->panel->setHtml(Qtext);
     } else {
         PyErr_SetString(PyExc_TypeError, "The tree panel was not activated on initialization");
     }
