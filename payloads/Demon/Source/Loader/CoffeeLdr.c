@@ -24,6 +24,8 @@
     #define COFF_PREP_BEACON        0x4c20aa4f
     #define COFF_PREP_BEACON_SIZE   ( COFF_PREP_SYMBOL_SIZE + 6 )
 #endif
+    // .refptr.Instance
+    #define COFF_INSTANCE           0xbfded9c9
 
 PVOID CoffeeFunctionReturn = NULL;
 
@@ -216,6 +218,12 @@ BOOL CoffeeProcessSymbol( PCOFFEE Coffee, LPSTR SymbolName, UINT16 SymbolType, P
     {
         // TODO: should we also fail if the symbol is not a function?
         goto SymbolNotFound;
+    }
+
+    // allow BOFs to reference the Instance struct
+    if ( HashStringA( SymbolName ) == COFF_INSTANCE )
+    {
+        *pFuncAddr = &Instance;
     }
 
     return TRUE;
