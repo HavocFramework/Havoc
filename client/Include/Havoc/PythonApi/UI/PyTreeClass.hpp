@@ -9,6 +9,7 @@
 #include <QHBoxLayout>
 #include <QScrollArea>
 #include <QTextEdit>
+#include <QTextBrowser>
 #include <QTreeView>
 #include <QStandardItemModel>
 #include <QStandardItem>
@@ -27,7 +28,7 @@ typedef struct
     QStandardItemModel* item_model;
     QStandardItem*      root_item;
     QTreeView*          tree_view;
-    QTextEdit*          panel;
+    QTextBrowser*          panel;
     QSplitter*          splitter;
 
 } PyTreeQWindow, *PPyTreeQWindow;
