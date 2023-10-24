@@ -19,6 +19,7 @@ PyMethodDef PyTreeClass_methods[] = {
         { "setBottomTab",               ( PyCFunction ) TreeClass_setBottomTab,               METH_VARARGS, "Set widget as Bottom Tab" },
         { "setSmallTab",               ( PyCFunction ) TreeClass_setSmallTab,               METH_VARARGS, "Set widget as Small Tab" },
         { "addRow",               ( PyCFunction ) TreeClass_addRow,               METH_VARARGS, "add a row to the tree" },
+        { "setPanel",               ( PyCFunction ) TreeClass_setPanel,               METH_VARARGS, "Set the data inside of the panel" },
         { "setItem",               ( PyCFunction ) TreeClass_setItem,               METH_VARARGS, "set an item in the tree" },
 
         { NULL },
@@ -103,6 +104,7 @@ PyObject* TreeClass_new( PyTypeObject *type, PyObject *args, PyObject *kwds )
     self->TreeWindow->layout = NULL;
     self->TreeWindow->scroll= NULL;
     self->TreeWindow->root = NULL;
+    self->TreeWindow->panel = NULL;
     self->TreeWindow->root_layout = NULL;
     return ( PyObject* ) self;
 }
@@ -111,9 +113,10 @@ int TreeClass_init( PPyTreeClass self, PyObject *args, PyObject *kwds )
 {
     char*       title          = NULL;
     PyObject* class_callback    = nullptr;
-    const char* kwdlist[]        = { "title", "callback", NULL };
+    PyObject* has_panel         = nullptr;
+    const char* kwdlist[]        = { "title", "callback", "panel", NULL };
 
-    if ( ! PyArg_ParseTupleAndKeywords( args, kwds, "sO", const_cast<char**>(kwdlist), &title, &class_callback ) )
+    if ( ! PyArg_ParseTupleAndKeywords( args, kwds, "sO|O", const_cast<char**>(kwdlist), &title, &class_callback, &has_panel ) )
         return -1;
     if ( !PyCallable_Check(class_callback) )
     {
@@ -127,7 +130,7 @@ int TreeClass_init( PPyTreeClass self, PyObject *args, PyObject *kwds )
     self->TreeWindow->window->setWindowTitle(title);
 
     self->TreeWindow->root = new QWidget();
-    self->TreeWindow->layout = new QVBoxLayout(self->TreeWindow->root);
+    self->TreeWindow->layout = new QHBoxLayout(self->TreeWindow->root);
 
     self->TreeWindow->scroll = new QScrollArea(self->TreeWindow->window);
     self->TreeWindow->scroll->setWidgetResizable(true);
@@ -141,10 +144,21 @@ int TreeClass_init( PPyTreeClass self, PyObject *args, PyObject *kwds )
 
     self->TreeWindow->root_item = new QStandardItem(title);
     self->TreeWindow->tree_view = new QTreeView();
+    self->TreeWindow->tree_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
     self->TreeWindow->tree_view->setModel(self->TreeWindow->item_model);
     self->TreeWindow->item_model->invisibleRootItem()->appendRow(self->TreeWindow->root_item);
-    self->TreeWindow->layout->addWidget(self->TreeWindow->tree_view);
+
+    if (has_panel && PyBool_Check(has_panel) && has_panel == Py_True) {
+        self->TreeWindow->splitter = new QSplitter();
+        self->TreeWindow->panel = new QTextEdit();
+        self->TreeWindow->panel->setReadOnly(true);
+        self->TreeWindow->splitter->addWidget(self->TreeWindow->tree_view);
+        self->TreeWindow->splitter->addWidget(self->TreeWindow->panel);
+        self->TreeWindow->layout->addWidget(self->TreeWindow->splitter);
+    } else {
+        self->TreeWindow->layout->addWidget(self->TreeWindow->tree_view);
+    }
 
     QObject::connect(self->TreeWindow->tree_view->selectionModel(), &QItemSelectionModel::selectionChanged, [self, class_callback](const QItemSelection &selected, const QItemSelection &deselected) {
         for (const QModelIndex &index : selected.indexes()) {
@@ -210,6 +224,25 @@ PyObject* TreeClass_setItem( PPyTreeClass self, PyObject *args )
     QStandardItem* element = new QStandardItem(str);
 
     self->TreeWindow->item_model->setItem(x, y, element);
+
+    Py_RETURN_NONE;
+}
+
+PyObject* TreeClass_setPanel( PPyTreeClass self, PyObject *args )
+{
+    char *str;
+    if( !PyArg_ParseTuple( args, "s", &str) )
+    {
+        Py_RETURN_NONE;
+    }
+    if (self->TreeWindow->panel) {
+        self->TreeWindow->panel->clear();
+
+        QString Qtext = QString(str);
+        self->TreeWindow->panel->append(Qtext);
+    } else {
+        PyErr_SetString(PyExc_TypeError, "The tree panel was not activated on initialization");
+    }
 
     Py_RETURN_NONE;
 }
