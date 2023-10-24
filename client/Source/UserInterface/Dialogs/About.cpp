@@ -30,6 +30,7 @@ About::About( QDialog* dialog )
 
     textBrowser = new QTextBrowser(AboutDialog);
     textBrowser->setObjectName(QString::fromUtf8("textBrowser"));
+    textBrowser->setOpenExternalLinks(true);
 
     gridLayout->addWidget(textBrowser, 1, 0, 1, 3);
     label->setText(QCoreApplication::translate("Dialogs", R"(<html><head/><body><p align="center"><span style=" font-size:22pt;">Havoc</span></p></body></html>)", nullptr));
