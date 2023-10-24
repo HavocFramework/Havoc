@@ -16,6 +16,8 @@
     // __imp_Beacon
     #define COFF_PREP_BEACON        0xd0a409b0
     #define COFF_PREP_BEACON_SIZE   ( COFF_PREP_SYMBOL_SIZE + 6 )
+    // .refptr.Instance
+    #define COFF_INSTANCE           0xbfded9c9
 #else
     // __imp__
     #define COFF_PREP_SYMBOL        0x79dff807
@@ -23,9 +25,9 @@
     // __imp__Beacon
     #define COFF_PREP_BEACON        0x4c20aa4f
     #define COFF_PREP_BEACON_SIZE   ( COFF_PREP_SYMBOL_SIZE + 6 )
+    // _Instance
+    #define COFF_INSTANCE           0xb341b5b9
 #endif
-    // .refptr.Instance
-    #define COFF_INSTANCE           0xbfded9c9
 
 PVOID CoffeeFunctionReturn = NULL;
 
