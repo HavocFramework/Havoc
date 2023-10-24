@@ -37,7 +37,7 @@ void DispatchOutput::MessageOutput( QString JsonString, const QString& Date = ""
 
     if ( ! Output.isEmpty() )
     {
-        printf("task: %s\n", TaskID.toUtf8().constData());
+        //printf("task: %s\n", TaskID.toUtf8().constData());
         if (HavocX::callbackMessage)
         {
             PyObject *arglist = Py_BuildValue( "s", Output.toUtf8().constData() );

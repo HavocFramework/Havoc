@@ -2421,7 +2421,20 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                                     PrintModuleCachedMessages();
 
                                     if ( Py_IsNone( Return ) )
-                                        DemonConsole->TaskError( "Failed to execute " + InputCommands[ 0 ] + ". Script return is None" );
+                                        DemonConsole->TaskError( "Failed to execute " + InputCommands[ 0 ] + " " + InputCommands[ 1 ] + ". Script return is None" );
+                                }
+                                Py_CLEAR( Return );
+                                Py_CLEAR( FuncArgs );
+                                return false;
+                            }
+
+                            if ( ! Py_IS_TYPE( Return, &PyUnicode_Type ) )
+                            {
+                                if ( Send )
+                                {
+                                    PrintModuleCachedMessages();
+
+                                    DemonConsole->TaskError( "Failed to execute " + InputCommands[ 0 ] + " " + InputCommands[ 1 ] + ". Script return is invalid" );
                                 }
                                 Py_CLEAR( Return );
                                 Py_CLEAR( FuncArgs );
@@ -2506,6 +2519,19 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
 
                                 if ( Py_IsNone( Return ) )
                                     DemonConsole->TaskError( "Failed to execute " + InputCommands[ 0 ] + ". Script return is None" );
+                            }
+                            Py_CLEAR( Return );
+                            Py_CLEAR( FuncArgs );
+                            return false;
+                        }
+
+                        if ( ! Py_IS_TYPE( Return, &PyUnicode_Type ) )
+                        {
+                            if ( Send )
+                            {
+                                PrintModuleCachedMessages();
+
+                                DemonConsole->TaskError( "Failed to execute " + InputCommands[ 0 ] + ". Script return is invalid" );
                             }
                             Py_CLEAR( Return );
                             Py_CLEAR( FuncArgs );
