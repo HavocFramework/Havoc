@@ -2414,7 +2414,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                                 return false;
                             }
 
-                            if ( Py_IsNone( Return ) || Py_IsFalse( Return ) )
+                            if ( Py_IsNone( Return ) || Py_IsTrue( Return ) || Py_IsFalse( Return ) )
                             {
                                 if ( Send )
                                 {
@@ -2498,7 +2498,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                             return false;
                         }
 
-                        if ( Py_IsNone( Return ) || Py_IsTrue( Return ) )
+                        if ( Py_IsNone( Return ) || Py_IsTrue( Return ) || Py_IsFalse( Return ) )
                         {
                             if ( Send )
                             {
