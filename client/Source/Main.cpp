@@ -23,14 +23,7 @@ int main(int argc, char** argv)
         HavocX::DebugMode = true;
     }
 
-    auto Monaco = QFont("Monospace", 10);  
-    QApplication::setFont(Monaco);
-
-    auto setFontAgain = []() {
-        auto Monaco = QFont("Monospace", 10);  
-        QApplication::setFont(Monaco);
-    };
-    QTimer::singleShot(10, setFontAgain);
+    HavocApp.setStyleSheet("* { font-family: \"Monaco\"; font-size: 10pt; }");
 
     QGuiApplication::setWindowIcon(QIcon(":/Havoc.ico"));
 
