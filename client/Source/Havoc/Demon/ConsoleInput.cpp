@@ -819,7 +819,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             CommandInputList[ TaskID ] = commandline;
             SEND( Execute.FS( TaskID, "cp", PathFrom.toLocal8Bit().toBase64() + ";" + PathTo.toLocal8Bit().toBase64() ) );
         }
-        else if ( InputCommands[ 0 ].compare( "mv" ) == 0)
+        else if ( InputCommands[ 0 ].compare( "mv" ) == 0 || InputCommands[ 0 ].compare( "move" ) == 0 )
         {
             if ( InputCommands.size() < 3 )
             {
