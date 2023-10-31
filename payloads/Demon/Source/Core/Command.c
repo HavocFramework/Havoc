@@ -285,7 +285,7 @@ VOID CommandProc( PPARSER Parser )
             if ( Parser->Length > 0 ) {
                 ProcessID = ParserGetInt32( Parser );
                 hProcess  = ProcessOpen( ProcessID, PROCESS_ALL_ACCESS );
-                if ( hProcess ) {
+                if ( ! hProcess ) {
                     PACKAGE_ERROR_WIN32
                     break;
                 }
