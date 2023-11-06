@@ -44,12 +44,11 @@ void HavocSpace::Havoc::Init( int argc, char** argv )
     }
 
     if ( Path.empty() ) {
-        Path = "data/config.toml";
+        Path = "client/config.toml";
     }
 
     if ( ! QFile::exists( Path.c_str() ) ) {
         spdlog::error( "couldn't find config file" );
-
         Exit();
     }
 
