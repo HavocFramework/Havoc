@@ -1,0 +1,67 @@
+QDialog {
+    background-color: #282a36;
+    color: #f8f8f2;
+}
+
+QPushButton {
+    background-color: #bd93f9;
+    color: #282a36;
+}
+
+QLineEdit {
+    background-color: #44475a;
+    color: #f8f8f2;
+    border-radius: 2px;
+    padding: 3px;
+    padding-left: 5px;
+}
+
+QListView {
+    background-color: #44475a;
+    color: #f8f8f2;
+}
+
+QLabel {
+    color: #f8f8f2;
+}
+
+#bool {
+    background-color: #282a36;
+    color: #f8f8f2;
+}
+
+QComboBox {
+    background-color: #44475a;
+    color: #f8f8f2;
+}
+
+QComboBox:!enabled {
+    background-color: #282a36;
+    color: #6272a4;
+}
+
+QComboBox::item {
+    background: #44475a;
+    color: #f8f8f2;
+}
+
+QComboBox::item:selected {
+    background: #6272a4;
+    color: #f8f8f2;
+}
+
+QLineEdit:read-only {
+    background-color: #313342;
+    color: #f8f8f2;
+}
+
+QGroupBox:!enabled {
+    background: #1c1e25;
+    border: 1px solid #1c1e25;
+    border-radius: 3px;
+}
+
+QGroupBox::title {
+    color: #f8f8f2;
+}
+
