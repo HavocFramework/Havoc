@@ -1,4 +1,0 @@
-QTabBar::close-button {
-    image: url(:/icons/tab-close-button);
-    subcontrol-position: right;
-}

@@ -1,0 +1,9 @@
+[submodule "client/external/spdlog"]
+	path = client/external/spdlog
+	url = https://github.com/gabime/spdlog
+[submodule "client/external/json"]
+	path = client/external/json
+	url = https://github.com/nlohmann/json
+[submodule "client/external/toml"]
+	path = client/external/toml
+	url = https://github.com/ToruNiina/toml11
