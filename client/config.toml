@@ -17,5 +17,6 @@ files = [
   "client/Modules/nanodump/nanodump.py",
   "client/Modules/nanorobeus/nanorobeus.py",
   "client/Modules/Bofbelt/bofbelt.py",
-  "client/Modules/SamDump/samdump.py"
+  "client/Modules/SamDump/samdump.py",
+  "client/Modules/NoConsolation/no-consolation.py"
 ]
