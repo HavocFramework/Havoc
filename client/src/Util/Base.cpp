@@ -7,8 +7,7 @@ auto FileRead( const QString& FilePath ) -> QByteArray
 
     if ( FilePath[ 0 ] != ':' )
     {
-        if ( ! QFile::exists( FilePath ) )
-        {
+        if ( ! QFile::exists( FilePath ) ) {
             spdlog::error( "Failed to find file: {}", path );
             return nullptr;
         }

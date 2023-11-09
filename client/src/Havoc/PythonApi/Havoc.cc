@@ -78,8 +78,7 @@ PyObject* PythonAPI::Havoc::Core::Load( PyObject *self, PyObject *args )
 
     Return = PyRun_SimpleStringFlags( script.toStdString().c_str(), NULL );
 
-    if ( Return == -1 )
-    {
+    if ( Return == -1 ) {
         spdlog::error( "Failed to load script" );
         Py_RETURN_FALSE;
     }
