@@ -669,7 +669,7 @@ void Node::contextMenuEvent( QGraphicsSceneContextMenuEvent* event )
                             Package->Head = Util::Packager::Head_t {
                                     .Event= Util::Packager::Session::Type,
                                     .User = HavocX::Teamserver.User.toStdString(),
-                                    .Time = QTime::currentTime().toString( "hh:mm:ss" ).toStdString(),
+                                    .Time = CurrentTime().toStdString(),
                             };
 
                             auto Marked = QString();

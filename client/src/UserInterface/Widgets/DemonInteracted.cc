@@ -227,7 +227,7 @@ void DemonInteracted::AppendText( const QString& text )
     }
 
     DemonCommands->Prompt = QString(
-        ColorText::Comment( CurrenTime() + " [" + HavocX::Teamserver.User + "] " ) +
+        ColorText::Comment( CurrentDateTime() + " [" + HavocX::Teamserver.User + "] " ) +
         ColorText::UnderlinePink( AgentTypeName ) + ColorText::Cyan(" » ") + text
     );
 

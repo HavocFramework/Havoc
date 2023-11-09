@@ -16,7 +16,7 @@ auto NewPackageCommand( const QString& TeamserverName, Util::Packager::Body_t Bo
     auto Head = Util::Packager::Head_t {
         .Event   = Util::Packager::Session::Type,
         .User    = HavocX::Teamserver.User.toStdString(),
-        .Time    = QTime::currentTime().toString( "hh:mm:ss" ).toStdString(),
+        .Time    = CurrentTime().toStdString(),
     };
 
     Package->Head = Head;

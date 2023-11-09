@@ -32,7 +32,7 @@ void HavocNamespace::UserInterface::Widgets::TeamserverTabSession::setupUi( QWid
     SmallAppWidgets = new SmallAppWidgets_t;
     SmallAppWidgets->EventViewer = new UserInterface::SmallWidgets::EventViewer;
     SmallAppWidgets->EventViewer->setupUi( new QWidget );
-    SmallAppWidgets->EventViewer->AppendText( CurrenTime(), "Havoc Framework [Version: " + QString( Version.c_str() ) + "] [CodeName: " + QString( CodeName.c_str() ) + "]" );
+    SmallAppWidgets->EventViewer->AppendText( CurrentDateTime(), "Havoc Framework [Version: " + QString( Version.c_str() ) + "] [CodeName: " + QString( CodeName.c_str() ) + "]" );
 
     auto MenuStyle = QString(
         "QMenu {"
@@ -344,7 +344,7 @@ void UserInterface::Widgets::TeamserverTabSession::handleDemonContextMenu( const
                             Package->Head = Util::Packager::Head_t {
                                     .Event= Util::Packager::Session::Type,
                                     .User = HavocX::Teamserver.User.toStdString(),
-                                    .Time = QTime::currentTime().toString( "hh:mm:ss" ).toStdString(),
+                                    .Time = CurrentTime().toStdString(),
                             };
 
                             auto Marked = QString();

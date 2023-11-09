@@ -160,7 +160,7 @@ PyObject* PythonAPI::Havoc::Core::GeneratePayload( PyObject *self, PyObject *arg
     auto Head = Util::Packager::Head_t {
             .Event   = Util::Packager::Gate::Type,
             .User    = HavocX::Teamserver.User.toStdString(),
-            .Time    = QTime::currentTime().toString( "hh:mm:ss" ).toStdString(),
+            .Time    = CurrentTime().toStdString(),
             .OneTime = "true",
     };
 

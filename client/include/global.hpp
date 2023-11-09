@@ -109,7 +109,7 @@ namespace HavocNamespace
             std::string Protocol;
             std::string Status;
 
-            std::any Info;
+            std::any    Info;
         } ListenerItem;
     };
 
