@@ -78,7 +78,7 @@ void Connector::SendLogin()
 
     Head.Event              = Util::Packager::InitConnection::Type;
     Head.User               = this->Teamserver->User.toStdString();
-    Head.Time               = QTime::currentTime().toString( "hh:mm:ss" ).toStdString();
+    Head.Time               = CurrentTime().toStdString();
 
     Body.SubEvent           = Util::Packager::InitConnection::Login;
     Body.Info[ "User" ]     = this->Teamserver->User.toStdString();

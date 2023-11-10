@@ -278,8 +278,6 @@ void HavocNamespace::UserInterface::Widgets::ListenersTable::ListenerAdd( Util::
     std::string Protocol = item.Protocol;
     std::transform( Protocol.begin(), Protocol.end(), Protocol.begin(), ::tolower );
 
-    auto Time = QTime::currentTime().toString( "hh:mm:ss" );
-
     HavocX::Teamserver.Listeners.push_back( item );
 }
 
@@ -293,9 +291,9 @@ Util::Packager::Package UserInterface::Widgets::ListenersTable::CreateNewPackage
     Util::Packager::Package ListenerPackage;
 
     auto Head = Util::Packager::Head_t {
-            .Event = Util::Packager::Listener::Type,
-            .User  = HavocX::Teamserver.User.toStdString(),
-            .Time  = QTime::currentTime().toString( "hh:mm:ss" ).toStdString(),
+        .Event = Util::Packager::Listener::Type,
+        .User  = HavocX::Teamserver.User.toStdString(),
+        .Time  = CurrentTime().toStdString(),
     };
 
     Util::Packager::Body_t Body;

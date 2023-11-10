@@ -8,6 +8,13 @@ HavocSpace::Havoc::Havoc( QMainWindow* w )
 {
     w->setVisible( false );
 
+    spdlog::set_pattern( "[%T] [%^%l%$] %v" );
+    spdlog::info(
+        "Havoc Framework [Version: {}] [CodeName: {}]",
+        HavocNamespace::Version,
+        HavocNamespace::CodeName
+    );
+
     this->HavocMainWindow = w;
     this->dbManager = new HavocSpace::DBManager( "data/client.db", DBManager::CreateSqlFile );
 }
@@ -23,12 +30,6 @@ void HavocSpace::Havoc::Init( int argc, char** argv )
     Arguments.add( "config", '\0', "toml config path" );
     Arguments.parse_check( argc, argv );
 
-    spdlog::set_pattern( "[%T] [%^%l%$] %v" );
-    spdlog::info(
-        "Havoc Framework [Version: {}] [CodeName: {}]",
-        HavocNamespace::Version,
-        HavocNamespace::CodeName
-    );
 
     if ( Arguments.exist( "debug" ) ) {
         spdlog::set_level( spdlog::level::debug );
@@ -48,8 +49,12 @@ void HavocSpace::Havoc::Init( int argc, char** argv )
     }
 
     if ( ! QFile::exists( Path.c_str() ) ) {
-        spdlog::error( "couldn't find config file" );
-        Exit();
+        Path = "config.toml";
+
+        if ( ! QFile::exists( Path.c_str() ) ) {
+            spdlog::error( "couldn't find config file" );
+            Exit();
+        }
     }
 
     Config = toml::parse( Path );

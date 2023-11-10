@@ -78,8 +78,7 @@ PyObject* PythonAPI::Havoc::Core::Load( PyObject *self, PyObject *args )
 
     Return = PyRun_SimpleStringFlags( script.toStdString().c_str(), NULL );
 
-    if ( Return == -1 )
-    {
+    if ( Return == -1 ) {
         spdlog::error( "Failed to load script" );
         Py_RETURN_FALSE;
     }
@@ -161,7 +160,7 @@ PyObject* PythonAPI::Havoc::Core::GeneratePayload( PyObject *self, PyObject *arg
     auto Head = Util::Packager::Head_t {
             .Event   = Util::Packager::Gate::Type,
             .User    = HavocX::Teamserver.User.toStdString(),
-            .Time    = QTime::currentTime().toString( "hh:mm:ss" ).toStdString(),
+            .Time    = CurrentTime().toStdString(),
             .OneTime = "true",
     };
 

@@ -341,8 +341,11 @@ NewListener::NewListener( QDialog* Dialog )
         auto Item = new QLineEdit;
         Item->setFocus();
 
-        if ( HostsData.size() == 0 )
-            Item->setText( HavocX::Teamserver.IpAddresses[ 0 ] );
+        if ( HostsData.size() == 0 ) {
+            if ( ! HavocX::Teamserver.IpAddresses.isEmpty() ) {
+                Item->setText( HavocX::Teamserver.IpAddresses[ 0 ] );
+            }
+        }
 
         formLayout_Hosts->setWidget( HostsData.size(), QFormLayout::FieldRole, Item );
 

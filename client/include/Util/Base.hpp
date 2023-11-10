@@ -34,8 +34,12 @@ auto GrayScale(
     QImage image
 ) -> QImage;
 
-auto CurrenTime(
+auto CurrentDateTime(
     void
+) -> QString;
+
+auto CurrentTime(
+        void
 ) -> QString;
 
 #endif

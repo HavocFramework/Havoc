@@ -273,8 +273,7 @@ bool Packager::DispatchListener( Util::Packager::PPackage Package )
                     .ProxyPassword  = Package->Body.Info[ "Proxy Password" ].c_str(),
                 };
 
-                if ( Package->Body.Info[ "Secure" ] == "true" )
-                {
+                if ( Package->Body.Info[ "Secure" ] == "true" ) {
                     ListenerInfo.Protocol = Listener::PayloadHTTPS.toStdString();
                 }
             }
@@ -287,7 +286,7 @@ bool Packager::DispatchListener( Util::Packager::PPackage Package )
             else if ( ListenerInfo.Protocol == Listener::PayloadExternal.toStdString() )
             {
                 ListenerInfo.Info = Listener::External {
-                        .Endpoint = Package->Body.Info[ "Endpoint" ].c_str(),
+                    .Endpoint = Package->Body.Info[ "Endpoint" ].c_str(),
                 };
             }
             else

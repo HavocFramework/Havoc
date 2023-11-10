@@ -7,8 +7,7 @@ auto FileRead( const QString& FilePath ) -> QByteArray
 
     if ( FilePath[ 0 ] != ':' )
     {
-        if ( ! QFile::exists( FilePath ) )
-        {
+        if ( ! QFile::exists( FilePath ) ) {
             spdlog::error( "Failed to find file: {}", path );
             return nullptr;
         }
@@ -186,23 +185,34 @@ auto WinVersionImage( QString OSVersion, bool High ) -> QImage
     }
 }
 
-auto CurrenTime(
+auto CurrentDateTime(
     void
 ) -> QString {
-    return ( QDateTime::currentDateTime().toString( "dd/MM/yyyy" ) + " " + QTime::currentTime().toString( "hh:mm:ss" ) );
+    return ( QDateTime::currentDateTime().toString( "dd/MM/yyyy" ) + " " + CurrentTime() );
 }
 
-auto GrayScale( QImage image ) -> QImage
-{
-    QImage im = image.convertToFormat(QImage::Format_ARGB32);
-    for (int y = 0; y < im.height(); ++y) {
-        QRgb *scanLine = (QRgb*)im.scanLine(y);
-        for (int x = 0; x < im.width(); ++x) {
-            QRgb pixel = *scanLine;
-            uint ci = uint(qGray(pixel));
-            *scanLine = qRgba(ci, ci, ci, qAlpha(pixel)/3);
+auto CurrentTime(
+    void
+) -> QString {
+    return ( QTime::currentTime().toString( "hh:mm:ss" ) );
+}
+
+auto GrayScale(
+    QImage image
+) -> QImage {
+    auto im = image.convertToFormat( QImage::Format_ARGB32 );
+
+    for ( int y = 0; y < im.height(); ++y ) {
+        auto scanLine = ( QRgb* ) im.scanLine( y );
+
+        for ( int x = 0; x < im.width(); ++x ) {
+            auto pixel = *scanLine;
+            auto ci    = uint( qGray( pixel ) );
+
+            *scanLine = qRgba( ci, ci, ci, qAlpha( pixel ) / 3 );
             ++scanLine;
         }
     }
+
     return im;
 }
