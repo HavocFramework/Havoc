@@ -657,7 +657,8 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 			ObjectFile   []byte
 			Parameters   []byte
 			Flags        uint32
-			MemFileId    uint32
+			BofFileId    uint32
+			ParamsFileId uint32
 			ok           bool
 		)
 
@@ -691,7 +692,9 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 			}
 		}
 
-		MemFileId = a.UploadMemFileInChunks(ObjectFile)
+		BofFileId    = a.UploadMemFileInChunks(ObjectFile)
+		// a BOF can have an entire PE in its parameters, so chunk them
+		ParamsFileId = a.UploadMemFileInChunks(Parameters)
 
 		if FunctionName, ok = Optional["FunctionName"].(string); !ok {
 			return nil, errors.New("CoffeeLdr: FunctionName not defined")
@@ -722,8 +725,8 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 
 		job.Data = []interface{}{
 			FunctionName,
-			MemFileId,
-			Parameters,
+			BofFileId,
+			ParamsFileId,
 			Flags,
 		}
 
