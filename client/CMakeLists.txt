@@ -109,6 +109,7 @@ set( HAVOC_INCLUDE
         include/UserInterface/Widgets/LootWidget.h
         include/UserInterface/Widgets/FileBrowser.hpp
         include/UserInterface/Widgets/Teamserver.hpp
+        include/UserInterface/Widgets/Store.hpp
 
         include/UserInterface/HavocUI.hpp
 )
@@ -138,6 +139,7 @@ set(
         src/UserInterface/Widgets/LootWidget.cc
         src/UserInterface/Widgets/FileBrowser.cc
         src/UserInterface/Widgets/Teamserver.cc
+        src/UserInterface/Widgets/Store.cc
         src/UserInterface/Widgets/ProcessList.cc
 
         # SmallWidgets
