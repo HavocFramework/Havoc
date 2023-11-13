@@ -4,8 +4,11 @@
 #include <QtWidgets/QWidget>
 #include <QSplitter>
 #include <QHBoxLayout>
+#include <QVBoxLayout>
 #include <QTableWidget>
 #include <QTableWidgetItem>
+#include <QLabel>
+#include <QScrollArea>
 
 #include <QtCore/QVariant>
 #include <QtWidgets/QApplication>
@@ -29,6 +32,16 @@ public:
     QTableWidgetItem    *labelTitle;
     QTableWidgetItem    *labelAuthor;
     QTableWidgetItem    *labelDescription;
+
+    QWidget*            panelStore;
+    QVBoxLayout*        panelLayout;
+
+    QWidget*            root_panelStore;
+    QVBoxLayout*        root_panelLayout;
+    QScrollArea*        panelScroll;
+
+    QLabel*             headerLabelTitle;
+    QLabel*             panelLabelDescription;
 
     QGridLayout*    gridLayout;
     QTextEdit*      StoreLogger;
