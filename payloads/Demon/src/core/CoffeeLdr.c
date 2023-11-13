@@ -305,7 +305,7 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
             if ( ( Coffee->Section->Characteristics & IMAGE_SCN_MEM_NOT_CACHED ) == IMAGE_SCN_MEM_NOT_CACHED  )
                 Protection |= PAGE_NOCACHE;
 
-            Success = MemoryProtect( DX_MEM_SYSCALL, NtCurrentProcess(), Coffee->SecMap[ SectionCnt ].Ptr, Coffee->SecMap[ SectionCnt ].Size, Protection );
+            Success = MmVirtualProtect( DX_MEM_SYSCALL, NtCurrentProcess(), Coffee->SecMap[ SectionCnt ].Ptr, Coffee->SecMap[ SectionCnt ].Size, Protection );
             if ( ! Success )
             {
                 PUTS( "Failed to protect memory" )
@@ -317,7 +317,7 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
     if ( Coffee->FunMapSize )
     {
         // set the FunctionMap section to READONLY
-        Success = MemoryProtect( DX_MEM_SYSCALL, NtCurrentProcess(), Coffee->FunMap, Coffee->FunMapSize, PAGE_READONLY );
+        Success = MmVirtualProtect( DX_MEM_SYSCALL, NtCurrentProcess(), Coffee->FunMap, Coffee->FunMapSize, PAGE_READONLY );
         if ( ! Success )
         {
             PUTS( "Failed to protect memory" )
@@ -400,7 +400,7 @@ VOID CoffeeCleanup( PCOFFEE Coffee )
     if ( ! Coffee || ! Coffee->ImageBase )
         return;
 
-    if ( MemoryProtect( DX_MEM_SYSCALL, NtCurrentProcess(), Coffee->ImageBase, Coffee->BofSize, PAGE_READWRITE ) )
+    if ( MmVirtualProtect( DX_MEM_SYSCALL, NtCurrentProcess(), Coffee->ImageBase, Coffee->BofSize, PAGE_READWRITE ) )
         MemSet( Coffee->ImageBase, 0, Coffee->BofSize );
 
     Pointer = Coffee->ImageBase;
@@ -736,7 +736,7 @@ VOID CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSize
     // at the bottom of the BOF, store the Function map, to ensure all reloc offsets are below 4K
     Coffee->BofSize += Coffee->FunMapSize;
 
-    Coffee->ImageBase = MemoryAlloc( DX_MEM_DEFAULT, NtCurrentProcess(), Coffee->BofSize, PAGE_READWRITE );
+    Coffee->ImageBase = MmVirtualAlloc( DX_MEM_DEFAULT, NtCurrentProcess(), Coffee->BofSize, PAGE_READWRITE );
     if ( ! Coffee->ImageBase )
     {
         PUTS( "Failed to allocate memory for the BOF" )

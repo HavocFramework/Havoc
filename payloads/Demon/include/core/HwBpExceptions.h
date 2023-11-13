@@ -52,11 +52,11 @@
 #endif
 
 VOID HwBpExAmsiScanBuffer(
-    IN OUT PEXCEPTION_POINTERS Exception
+    _Inout_ PEXCEPTION_POINTERS Exception
 );
 
 VOID HwBpExNtTraceEvent(
-    IN OUT PEXCEPTION_POINTERS Exception
+    _Inout_ PEXCEPTION_POINTERS Exception
 );
 
 #endif //DEMON_HWBPEXCEPTIONS_H

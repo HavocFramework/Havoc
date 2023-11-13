@@ -22,14 +22,14 @@ PVOID SpoofRetAddr(
     IN     PVOID  Module,
     IN     ULONG  Size,
     IN     HANDLE Function,
-    IN OUT PVOID  a,
-    IN OUT PVOID  b,
-    IN OUT PVOID  c,
-    IN OUT PVOID  d,
-    IN OUT PVOID  e,
-    IN OUT PVOID  f,
-    IN OUT PVOID  g,
-    IN OUT PVOID  h
+    _Inout_ PVOID  a,
+    _Inout_ PVOID  b,
+    _Inout_ PVOID  c,
+    _Inout_ PVOID  d,
+    _Inout_ PVOID  e,
+    _Inout_ PVOID  f,
+    _Inout_ PVOID  g,
+    _Inout_ PVOID  h
 ) {
     PVOID Trampoline = NULL;
 

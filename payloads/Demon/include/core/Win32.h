@@ -245,7 +245,7 @@ VOID SharedSleep(
 );
 
 VOID ShuffleArray(
-    IN OUT PVOID* array,
+    _Inout_ PVOID* array,
     IN     SIZE_T n
 );
 

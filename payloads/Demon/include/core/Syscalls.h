@@ -55,7 +55,7 @@ VOID SysSetConfig(
 );
 
 NTSTATUS SysInvoke(
-    IN OUT /* Args... */
+    _Inout_ /* Args... */
 );
 
 BOOL IsWoW64();

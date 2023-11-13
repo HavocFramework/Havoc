@@ -47,7 +47,7 @@ VOID Int32ToBuffer(
 }
 
 VOID PackageAddInt32(
-    IN OUT PPACKAGE Package,
+    _Inout_ PPACKAGE Package,
     IN     UINT32   Data
 ) {
     if ( ! Package ) {
@@ -83,7 +83,7 @@ VOID PackageAddInt64( PPACKAGE Package, UINT64 dataInt )
 }
 
 VOID PackageAddBool(
-    IN OUT PPACKAGE Package,
+    _Inout_ PPACKAGE Package,
     IN     BOOLEAN  Data
 ) {
     if ( ! Package ) {
@@ -227,7 +227,7 @@ VOID PackageDestroy(
 
 // used to send the demon's metadata
 BOOL PackageTransmitNow(
-    IN OUT PPACKAGE Package,
+    _Inout_ PPACKAGE Package,
     OUT    PVOID*   Response,
     OUT    PSIZE_T  Size
 ) {

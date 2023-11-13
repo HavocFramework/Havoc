@@ -177,7 +177,7 @@ VOID SmbSecurityAttrOpen( PSMB_PIPE_SEC_ATTR SmbSecAttr, PSECURITY_ATTRIBUTES Se
     }
     PRINTF( "sidLow: %p\n", SmbSecAttr->SidLow );
 
-    SmbSecAttr->SAcl = NtHeapAlloc( MAX_PATH );
+    SmbSecAttr->SAcl = MmHeapAlloc( MAX_PATH );
     if ( ! Instance.Win32.InitializeAcl( SmbSecAttr->SAcl, MAX_PATH, ACL_REVISION_DS ) )
     {
         PRINTF( "InitializeAcl failed: %u\n", NtGetLastError() );
@@ -189,7 +189,7 @@ VOID SmbSecurityAttrOpen( PSMB_PIPE_SEC_ATTR SmbSecAttr, PSECURITY_ATTRIBUTES Se
     }
 
     // now build the descriptor
-    SmbSecAttr->SecDec = NtHeapAlloc( SECURITY_DESCRIPTOR_MIN_LENGTH );
+    SmbSecAttr->SecDec = MmHeapAlloc( SECURITY_DESCRIPTOR_MIN_LENGTH );
     if ( ! Instance.Win32.InitializeSecurityDescriptor( SmbSecAttr->SecDec, SECURITY_DESCRIPTOR_REVISION ) )
     {
         PRINTF( "InitializeSecurityDescriptor failed: %u\n", NtGetLastError() );
@@ -226,13 +226,13 @@ VOID SmbSecurityAttrFree( PSMB_PIPE_SEC_ATTR SmbSecAttr )
 
     if ( SmbSecAttr->SAcl )
     {
-        NtHeapFree( SmbSecAttr->SAcl );
+        MmHeapFree( SmbSecAttr->SAcl );
         SmbSecAttr->SAcl = NULL;
     }
 
     if ( SmbSecAttr->SecDec )
     {
-        NtHeapFree( SmbSecAttr->SecDec );
+        MmHeapFree( SmbSecAttr->SecDec );
         SmbSecAttr->SecDec = NULL;
     }
 }

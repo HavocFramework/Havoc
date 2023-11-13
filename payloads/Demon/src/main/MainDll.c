@@ -24,7 +24,7 @@ DLLEXPORT VOID Start(  )
 DLLEXPORT BOOL WINAPI DllMain(
     IN     HINSTANCE hDllBase,
     IN     DWORD     Reason,
-    IN OUT LPVOID    Reserved
+    _Inout_ LPVOID    Reserved
 ) {
     PVOID Kernel32 = NULL;
 

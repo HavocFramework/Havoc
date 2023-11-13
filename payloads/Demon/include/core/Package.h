@@ -38,7 +38,7 @@ VOID PackageAddInt64(
 );
 
 VOID PackageAddBool(
-    IN OUT PPACKAGE Package,
+    _Inout_ PPACKAGE Package,
     IN     BOOLEAN  Data
 );
 

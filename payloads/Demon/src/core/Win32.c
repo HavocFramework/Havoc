@@ -111,7 +111,7 @@ PVOID LdrModulePebByString(
         Instance.Teb = NtCurrentTeb();
     }
 
-    Name = NtHeapAlloc( MAX_PATH );
+    Name = MmHeapAlloc( MAX_PATH );
 
     Peb = Instance.Teb->ProcessEnvironmentBlock;
     Hdr = & Peb->Ldr->InLoadOrderModuleList;
@@ -149,7 +149,7 @@ PVOID LdrModulePebByString(
 
     if ( Name ) {
         MemZero( Name, MAX_PATH );
-        NtHeapFree( Name );
+        MmHeapFree( Name );
         Name = NULL;
     }
 
@@ -865,7 +865,7 @@ NTSTATUS ProcessSnapShot(
         Length += 0x1000;
 
         /* allocate memory */
-        *SnapShot = NtHeapAlloc( Length );
+        *SnapShot = MmHeapAlloc( Length );
         if ( *SnapShot ) {
             if ( ! NT_SUCCESS( NtStatus = SysNtQuerySystemInformation( SystemProcessInformation, *SnapShot, Length, &Length ) ) ) {
                 PRINTF( "NtQuerySystemInformation Failed: Status[%lx]\n", NtStatus )
@@ -1377,7 +1377,7 @@ VOID SharedSleep(
 }
 
 VOID ShuffleArray(
-    IN OUT PVOID* array,
+    _Inout_ PVOID* array,
     IN     SIZE_T n
 ) {
     SIZE_T j = 0;

@@ -7,7 +7,7 @@ PDOWNLOAD_DATA DownloadAdd( HANDLE hFile, LONGLONG MaxSize )
 {
     PDOWNLOAD_DATA Download = NULL;
 
-    Download            = NtHeapAlloc( sizeof( DOWNLOAD_DATA ) );
+    Download            = MmHeapAlloc( sizeof( DOWNLOAD_DATA ) );
     Download->FileID    = RandomNumber32();
     Download->hFile     = hFile;
     Download->Size      = MaxSize;
@@ -49,7 +49,7 @@ VOID DownloadFree( PDOWNLOAD_DATA Download )
 
     /* Now free the struct */
     MemSet( Download, 0, sizeof( DOWNLOAD_DATA ) );
-    NtHeapFree( Download );
+    MmHeapFree( Download );
     Download = NULL;
 }
 
@@ -106,7 +106,7 @@ VOID DownloadPush()
         if ( Instance.DownloadChunk.Buffer )
         {
             MemSet( Instance.DownloadChunk.Buffer, 0, Instance.DownloadChunk.Length );
-            NtHeapFree( Instance.DownloadChunk.Buffer );
+            MmHeapFree( Instance.DownloadChunk.Buffer );
             Instance.DownloadChunk.Buffer = NULL;
         }
 
@@ -123,7 +123,7 @@ VOID DownloadPush()
          * allocate a chunk of memory to use for the chunks. */
         if ( ! Instance.DownloadChunk.Buffer )
         {
-            Instance.DownloadChunk.Buffer = NtHeapAlloc( Instance.Config.Implant.DownloadChunkSize );
+            Instance.DownloadChunk.Buffer = MmHeapAlloc( Instance.Config.Implant.DownloadChunkSize );
             Instance.DownloadChunk.Length = Instance.Config.Implant.DownloadChunkSize;
 
             PRINTF( "Allocated memory for DownloadChunk. Buffer:[%p] Size:[%d]\n", Instance.DownloadChunk.Buffer, Instance.DownloadChunk.Length )
@@ -255,10 +255,10 @@ PMEM_FILE NewMemFile( ULONG32 ID, SIZE_T Size, PVOID Data, ULONG32 ReadSize )
 {
     PMEM_FILE MemFile = NULL;
 
-    MemFile           = NtHeapAlloc( sizeof( MEM_FILE ) );
+    MemFile           = MmHeapAlloc( sizeof( MEM_FILE ) );
     MemFile->ID       = ID;
     MemFile->Size     = Size;
-    MemFile->Data     = NtHeapAlloc( MemFile->Size );
+    MemFile->Data     = MmHeapAlloc( MemFile->Size );
     MemFile->ReadSize = 0;
     MemFile->Next     = Instance.MemFiles;
 
@@ -342,13 +342,13 @@ VOID MemFileFree( PMEM_FILE MemFile )
         MemSet( MemFile->Data, 0, MemFile->Size );
 
     if ( MemFile->Data )
-        NtHeapFree( MemFile->Data );
+        MmHeapFree( MemFile->Data );
 
     MemFile->Data = NULL;
     MemFile->Size = 0;
 
     MemSet( MemFile, 0, sizeof( MEM_FILE ) );
-    NtHeapFree( MemFile );
+    MmHeapFree( MemFile );
     MemFile = NULL;
 }
 

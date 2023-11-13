@@ -4,7 +4,7 @@
 #if _WIN64
 
 VOID HwBpExAmsiScanBuffer(
-    IN OUT PEXCEPTION_POINTERS Exception
+    _Inout_ PEXCEPTION_POINTERS Exception
 ) {
     PVOID Return = NULL;
 
@@ -21,7 +21,7 @@ VOID HwBpExAmsiScanBuffer(
 }
 
 VOID HwBpExNtTraceEvent(
-    IN OUT PEXCEPTION_POINTERS Exception
+    _Inout_ PEXCEPTION_POINTERS Exception
 ) {
     PVOID Return = NULL;
 

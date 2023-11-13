@@ -192,7 +192,7 @@ NTSTATUS NTAPI SysNtDuplicateObject(
 
 NTSTATUS NTAPI SysNtGetContextThread (
     IN     HANDLE   ThreadHandle,
-    IN OUT PCONTEXT ThreadContext
+    _Inout_ PCONTEXT ThreadContext
 ) {
     NTSTATUS   NtStatus  = STATUS_SUCCESS;
     SYS_CONFIG SysConfig = { 0 };
@@ -258,9 +258,9 @@ NTSTATUS NTAPI SysNtWaitForSingleObject(
 
 NTSTATUS NTAPI SysNtAllocateVirtualMemory(
     IN     HANDLE    ProcessHandle,
-    IN OUT PVOID*    BaseAddress,
+    _Inout_ PVOID*    BaseAddress,
     IN     ULONG_PTR ZeroBits,
-    IN OUT PSIZE_T   RegionSize,
+    _Inout_ PSIZE_T   RegionSize,
     IN     ULONG     AllocationType,
     IN     ULONG     Protect
 ) {
@@ -289,8 +289,8 @@ NTSTATUS NTAPI SysNtWriteVirtualMemory(
 
 NTSTATUS NTAPI SysNtFreeVirtualMemory(
     IN     HANDLE  ProcessHandle,
-    IN OUT PVOID*  BaseAddress,
-    IN OUT PSIZE_T RegionSize,
+    _Inout_ PVOID*  BaseAddress,
+    _Inout_ PSIZE_T RegionSize,
     IN     ULONG   FreeType
 ) {
     NTSTATUS   NtStatus  = STATUS_SUCCESS;
@@ -315,8 +315,8 @@ NTSTATUS NTAPI SysNtUnmapViewOfSection(
 
 NTSTATUS NTAPI SysNtProtectVirtualMemory(
     IN     HANDLE  ProcessHandle,
-    IN OUT PVOID*  BaseAddress,
-    IN OUT PSIZE_T RegionSize,
+    _Inout_ PVOID*  BaseAddress,
+    _Inout_ PSIZE_T RegionSize,
     IN     ULONG   NewProtect,
     OUT    PULONG  OldProtect
 ) {

@@ -10,14 +10,27 @@ typedef enum _DX_MEMORY
     DX_MEM_SYSCALL  = 2,
 } DX_MEMORY;
 
-PVOID MemoryAlloc(
+PVOID MmHeapAlloc(
+    _In_ ULONG Length
+);
+
+PVOID MmHeapReAlloc(
+    _In_ PVOID Memory,
+    _In_ ULONG Length
+);
+
+BOOL MmHeapFree(
+    _In_ PVOID Memory
+);
+
+PVOID MmVirtualAlloc(
     IN DX_MEMORY Method,
     IN HANDLE    Process,
     IN SIZE_T    Size,
     IN DWORD     Protect
 );
 
-BOOL MemoryProtect(
+BOOL MmVirtualProtect(
     IN DX_MEMORY Method,
     IN HANDLE    Process,
     IN PVOID     Memory,
@@ -25,14 +38,14 @@ BOOL MemoryProtect(
     IN DWORD     Protect
 );
 
-BOOL MemoryWrite(
+BOOL MmVirtualWrite(
     IN  HANDLE Process,
     OUT PVOID  Memory,
     IN  PVOID  Buffer,
     IN  SIZE_T Size
 );
 
-BOOL MemoryFree(
+BOOL MmVirtualFree(
     IN  HANDLE Process,
     OUT PVOID  Memory
 );

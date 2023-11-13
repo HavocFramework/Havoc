@@ -2,6 +2,55 @@
 #include <core/Memory.h>
 
 /*!
+ * @brief
+ *  allocate memory on the heap
+ *
+ * @param Length
+ *  size of memory to allocate
+ *
+ * @return
+ *  allocated buffer pointer on the heap
+ */
+PVOID MmHeapAlloc(
+    _In_ ULONG Length
+) {
+    return Instance.Win32.RtlAllocateHeap( NtProcessHeap(), HEAP_ZERO_MEMORY, Length );
+}
+
+/*!
+ * @brief
+ *  allocate memory on the heap
+ *
+ * @param Length
+ *  size of memory to reallocate
+ *
+ * @return
+ *  allocated buffer pointer on the heap
+ */
+PVOID MmHeapReAlloc(
+    _In_ PVOID Memory,
+    _In_ ULONG Length
+) {
+    return Instance.Win32.RtlReAllocateHeap( NtProcessHeap(), HEAP_ZERO_MEMORY, Memory, Length );
+}
+
+/*!
+ * @brief
+ *  free memory on the heap
+ *
+ * @param Memory
+ *  memory to free
+ *
+ * @return
+ *  if successfully freed memory on the heap
+ */
+BOOL MmHeapFree(
+    _In_ PVOID Memory
+) {
+    return Instance.Win32.RtlFreeHeap( NtProcessHeap(), 0, Memory );
+}
+
+/*!
  * Allocates virtual memory
  * @param Method
  * @param Process
@@ -9,7 +58,7 @@
  * @param Protect
  * @return
  */
-PVOID MemoryAlloc(
+PVOID MmVirtualAlloc(
     IN DX_MEMORY Methode,
     IN HANDLE    Process,
     IN SIZE_T    Size,
@@ -28,8 +77,8 @@ PVOID MemoryAlloc(
     {
         case DX_MEM_DEFAULT: PUTS( "DX_MEM_DEFAULT" ) {
             Memory = Instance.Config.Memory.Alloc != DX_MEM_DEFAULT ?
-                     MemoryAlloc( Instance.Config.Memory.Alloc, Process, Size, Protect ) :  // if the config memory alloc ain't default then use that
-                     MemoryAlloc( DX_MEM_SYSCALL, Process, Size, Protect );                 // if it is default then simply choose Native/Syscall
+                     MmVirtualAlloc( Instance.Config.Memory.Alloc, Process, Size, Protect ) :  // if the config memory alloc ain't default then use that
+                     MmVirtualAlloc( DX_MEM_SYSCALL, Process, Size, Protect );                 // if it is default then simply choose Native/Syscall
 
             return Memory;
         }
@@ -80,7 +129,7 @@ PVOID MemoryAlloc(
  * @param Protect
  * @return
  */
-BOOL MemoryProtect(
+BOOL MmVirtualProtect(
     IN DX_MEMORY Method,
     IN HANDLE    Process,
     IN PVOID     Memory,
@@ -96,9 +145,9 @@ BOOL MemoryProtect(
     {
         case DX_MEM_DEFAULT: PUTS( "DX_MEM_DEFAULT" ) {
             if ( Instance.Config.Memory.Alloc != DX_MEM_DEFAULT ) {
-                return MemoryProtect( Instance.Config.Memory.Alloc, Process, Memory, Size, Protect );
+                return MmVirtualProtect( Instance.Config.Memory.Alloc, Process, Memory, Size, Protect );
             } else {
-                return MemoryProtect( DX_MEM_SYSCALL, Process, Memory, Size, Protect );
+                return MmVirtualProtect( DX_MEM_SYSCALL, Process, Memory, Size, Protect );
             }
         }
 
@@ -136,7 +185,7 @@ BOOL MemoryProtect(
     return Success;
 }
 
-BOOL MemoryWrite(
+BOOL MmVirtualWrite(
     IN  HANDLE Process,
     OUT PVOID  Memory,
     IN  PVOID  Buffer,
@@ -156,34 +205,33 @@ BOOL MemoryWrite(
  * @param Memory
  * @return
  */
-BOOL MemoryFree(
+BOOL MmVirtualFree(
     IN HANDLE Process,
     IN PVOID  Memory
 ) {
-    SIZE_T                   Length   = 0;
-    MEMORY_INFORMATION_CLASS mic      = 0;
-    MEMORY_BASIC_INFORMATION mbi      = { 0 };
-    BOOL                     IsMapped = FALSE;
-    NTSTATUS                 NtStatus = STATUS_UNSUCCESSFUL;
+    SIZE_T                   Length   = { 0 };
+    MEMORY_BASIC_INFORMATION MmBasic  = { 0 };
 
-    NtStatus = SysNtQueryVirtualMemory(
+    //
+    // query memory type
+    //
+    if ( ! NT_SUCCESS( SysNtQueryVirtualMemory(
         Process,
         Memory,
-        mic,
-        &mbi,
-        sizeof(mbi),
-        NULL);
-    if ( NT_SUCCESS ( NtStatus ) )
-    {
-        IsMapped = mbi.Type == MEM_MAPPED;
+        MemoryBasicInformation,
+        &MmBasic,
+        sizeof( MmBasic ),
+        NULL
+    ) ) ) {
+        return FALSE;
     }
 
-    if ( IsMapped )
-    {
+    //
+    // check if it's a mapped image
+    //
+    if ( ( MmBasic.Type == MEM_MAPPED ) ) {
         return NT_SUCCESS( SysNtUnmapViewOfSection( NtCurrentProcess(), Memory ) );
-    }
-    else
-    {
+    } else {
         return NT_SUCCESS( SysNtFreeVirtualMemory( Process, &Memory, &Length, MEM_RELEASE ) );
     }
 }
@@ -205,6 +253,6 @@ BOOL FreeReflectiveLoader(
 
     PRINTF( "Freeing the reflective loader at: 0x%p\n", BaseAddress )
 
-    return MemoryFree( NtCurrentProcess(), BaseAddress );
+    return MmVirtualFree( NtCurrentProcess(), BaseAddress );
 }
 #endif

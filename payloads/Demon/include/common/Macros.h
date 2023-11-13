@@ -17,8 +17,6 @@
 
 /* Heap allocation functions */
 #define NtProcessHeap()                 Instance.Teb->ProcessEnvironmentBlock->ProcessHeap
-#define NtHeapAlloc( x )                Instance.Win32.RtlAllocateHeap( NtProcessHeap(), HEAP_ZERO_MEMORY, x );
-#define NtHeapFree( x )                 Instance.Win32.RtlFreeHeap( NtProcessHeap(), 0, x );
 #define DLLEXPORT                       __declspec( dllexport )
 
 #define RVA( TYPE, DLLBASE, RVA )  ( TYPE ) ( ( PBYTE ) DLLBASE + RVA )

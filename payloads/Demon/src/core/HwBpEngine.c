@@ -5,7 +5,7 @@
 #include <core/MiniStd.h>
 
 LONG ExceptionHandler(
-    IN OUT PEXCEPTION_POINTERS Exception
+    _Inout_ PEXCEPTION_POINTERS Exception
 );
 
 /*!
@@ -35,7 +35,7 @@ NTSTATUS HwBpEngineInit(
 
     /* since we did not specify an engine let's use the global one */
     if ( ! HwBpEngine ) {
-        HwBpEngine  = Instance.HwBpEngine = NtHeapAlloc( sizeof( HWBP_ENGINE ) );
+        HwBpEngine  = Instance.HwBpEngine = MmHeapAlloc( sizeof( HWBP_ENGINE ) );
         HwBpHandler = &ExceptionHandler;
     }
 
@@ -177,7 +177,7 @@ NTSTATUS HwBpEngineAdd(
     }
 
     /* create bp entry */
-    BpEntry = NtHeapAlloc( sizeof( BP_LIST ) );
+    BpEntry = MmHeapAlloc( sizeof( BP_LIST ) );
     BpEntry->Tid      = Tid;
     BpEntry->Address  = Address;
     BpEntry->Function = Function;
@@ -199,7 +199,7 @@ NTSTATUS HwBpEngineAdd(
 
 FAILED:
     if ( BpEntry ) {
-        NtHeapFree( BpEntry );
+        MmHeapFree( BpEntry );
         BpEntry = NULL;
     }
 
@@ -246,7 +246,7 @@ NTSTATUS HwBpEngineRemove(
             MemZero( BpEntry, sizeof( BP_LIST ) );
 
             /* free memory struct */
-            NtHeapFree( BpEntry );
+            MmHeapFree( BpEntry );
 
             break;
         }
@@ -295,14 +295,14 @@ NTSTATUS HwBpEngineDestroy(
         MemZero( BpEntry, sizeof( BP_LIST ) );
 
         /* free memory struct */
-        NtHeapFree( BpEntry );
+        MmHeapFree( BpEntry );
 
         BpEntry = BpNext;
     } while ( TRUE );
 
     /* free global state */
     if ( HwBpEngine == Instance.HwBpEngine ) {
-        NtHeapFree( HwBpEngine );
+        MmHeapFree( HwBpEngine );
 
         Instance.HwBpEngine = NULL;
     }
@@ -318,7 +318,7 @@ NTSTATUS HwBpEngineDestroy(
  * @return
  */
 LONG ExceptionHandler(
-    IN OUT PEXCEPTION_POINTERS Exception
+    _Inout_ PEXCEPTION_POINTERS Exception
 ) {
     PBP_LIST BpEntry = NULL;
     BOOL     Found   = FALSE;
