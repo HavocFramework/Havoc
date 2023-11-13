@@ -25,22 +25,22 @@ NTSTATUS HwBpEngineInit(
     /* check if an engine object has been specified in the function param.
      * if not then check if the callee wants to init the global engine.
      * tho if the global engine has been already init then abort  */
-    if ( ( ! HwBpEngine && ! HwBpHandler ) && Instance.HwBpEngine ) {
+    if ( ( ! HwBpEngine && ! HwBpHandler ) && Instance->HwBpEngine ) {
         return STATUS_INVALID_PARAMETER;
     }
 
-    if ( Instance.HwBpEngine ) {
+    if ( Instance->HwBpEngine ) {
 
     }
 
     /* since we did not specify an engine let's use the global one */
     if ( ! HwBpEngine ) {
-        HwBpEngine  = Instance.HwBpEngine = MmHeapAlloc( sizeof( HWBP_ENGINE ) );
+        HwBpEngine  = Instance->HwBpEngine = MmHeapAlloc( sizeof( HWBP_ENGINE ) );
         HwBpHandler = &ExceptionHandler;
     }
 
     /* register Vectored exception handler */
-    if ( ! ( HwBpEngine->Veh = Instance.Win32.RtlAddVectoredExceptionHandler( TRUE, HwBpHandler ) ) ) {
+    if ( ! ( HwBpEngine->Veh = Instance->Win32.RtlAddVectoredExceptionHandler( TRUE, HwBpHandler ) ) ) {
         return STATUS_UNSUCCESSFUL;
     }
 
@@ -64,7 +64,7 @@ NTSTATUS HwBpEngineSetBp(
     IN BYTE  Position,
     IN BYTE  Add
 ) {
-    DWORD             Pid     = Instance.Session.PID;
+    DWORD             Pid     = Instance->Session.PID;
     CLIENT_ID         Client  = { 0 };
     CONTEXT           Context = { 0 };
     HANDLE            Thread  = NULL;
@@ -162,7 +162,7 @@ NTSTATUS HwBpEngineAdd(
     PRINTF( "Engine:[%p] Tid:[%d] Address:[%p] Function:[%p] Position:[%d]\n", Engine, Tid, Address, Function, Position )
 
     /* check if engine has been specified */
-    if ( ! HwBpEngine && ! Instance.HwBpEngine ) {
+    if ( ! HwBpEngine && ! Instance->HwBpEngine ) {
         return STATUS_INVALID_PARAMETER;
     }
 
@@ -173,7 +173,7 @@ NTSTATUS HwBpEngineAdd(
 
     /* if no engine specified use the global one */
     if ( ! HwBpEngine ) {
-        HwBpEngine = Instance.HwBpEngine;
+        HwBpEngine = Instance->HwBpEngine;
     }
 
     /* create bp entry */
@@ -215,12 +215,12 @@ NTSTATUS HwBpEngineRemove(
     PBP_LIST     BpEntry    = NULL;
     PBP_LIST     BpLast     = NULL;
 
-    if ( ! Engine && ! Instance.HwBpEngine ) {
+    if ( ! Engine && ! Instance->HwBpEngine ) {
         return STATUS_INVALID_PARAMETER;
     }
 
     if ( ! HwBpEngine ) {
-        HwBpEngine = Instance.HwBpEngine;
+        HwBpEngine = Instance->HwBpEngine;
     }
 
     /* set linked list */
@@ -265,16 +265,16 @@ NTSTATUS HwBpEngineDestroy(
     PBP_LIST     BpEntry    = NULL;
     PBP_LIST     BpNext     = NULL;
 
-    if ( ! Engine && ! Instance.HwBpEngine ) {
+    if ( ! Engine && ! Instance->HwBpEngine ) {
         return STATUS_INVALID_PARAMETER;
     }
 
     if ( ! HwBpEngine ) {
-        HwBpEngine = Instance.HwBpEngine;
+        HwBpEngine = Instance->HwBpEngine;
     }
 
     /* remove Vector exception handler */
-    Instance.Win32.RtlRemoveVectoredExceptionHandler( HwBpEngine->Veh );
+    Instance->Win32.RtlRemoveVectoredExceptionHandler( HwBpEngine->Veh );
 
     BpEntry = HwBpEngine->Breakpoints;
 
@@ -301,10 +301,10 @@ NTSTATUS HwBpEngineDestroy(
     } while ( TRUE );
 
     /* free global state */
-    if ( HwBpEngine == Instance.HwBpEngine ) {
+    if ( HwBpEngine == Instance->HwBpEngine ) {
         MmHeapFree( HwBpEngine );
 
-        Instance.HwBpEngine = NULL;
+        Instance->HwBpEngine = NULL;
     }
 
     HwBpEngine = NULL;
@@ -327,7 +327,7 @@ LONG ExceptionHandler(
     {
         PRINTF( "Exception Address: %p\n", Exception->ExceptionRecord->ExceptionAddress )
 
-        BpEntry = Instance.HwBpEngine->Breakpoints;
+        BpEntry = Instance->HwBpEngine->Breakpoints;
 
         /* search in linked list for bp entry */
         while ( BpEntry )

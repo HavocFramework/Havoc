@@ -50,6 +50,13 @@ BOOL MmVirtualFree(
     OUT PVOID  Memory
 );
 
+PVOID MmGadgetFind(
+    _In_ PVOID  Memory,
+    _In_ SIZE_T Length,
+    _In_ PVOID  PatternBuffer,
+    _In_ SIZE_T PatternLength
+);
+
 BOOL FreeReflectiveLoader(
     IN PVOID BaseAddress
 );

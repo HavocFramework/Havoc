@@ -9,9 +9,9 @@
 
 typedef struct
 {
-    const PVOID trampoline;
-    PVOID       function;
-    PVOID       rbx;
+    PVOID Trampoline;
+    PVOID Function;
+    PVOID Rbx;
 } PRM, *PPRM;
 
 static ULONG_PTR Spoof();
@@ -30,9 +30,9 @@ static ULONG_PTR Spoof();
 #define SpoofFunc(...) SPOOF_MACRO_CHOOSER(__VA_ARGS__)(__VA_ARGS__)
 
 PVOID SpoofRetAddr(
-    IN     PVOID  Module,
-    IN     ULONG  Size,
-    IN     HANDLE Function,
+    _In_    PVOID  Module,
+    _In_    ULONG  Size,
+    _In_    HANDLE Function,
     _Inout_ PVOID  a,
     _Inout_ PVOID  b,
     _Inout_ PVOID  c,

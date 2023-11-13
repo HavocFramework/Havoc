@@ -9,7 +9,7 @@ VOID ParserNew( PPARSER parser, PBYTE Buffer, UINT32 size )
     if ( parser == NULL )
         return;
 
-    parser->Original = Instance.Win32.LocalAlloc( LPTR, size );
+    parser->Original = Instance->Win32.LocalAlloc( LPTR, size );
     
     MemCopy( parser->Original, Buffer, size );
 
@@ -170,7 +170,7 @@ VOID ParserDestroy( PPARSER Parser )
     if ( Parser->Original )
     {
         MemSet( Parser->Original, 0, Parser->Size );
-        Instance.Win32.LocalFree( Parser->Original );
+        Instance->Win32.LocalFree( Parser->Original );
         Parser->Original = NULL;
         Parser->Buffer   = NULL;
     }

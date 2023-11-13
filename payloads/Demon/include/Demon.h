@@ -88,12 +88,13 @@ typedef struct
         DWORD Jitter;
 
         struct {
+            UINT64     KillDate;
+            UINT32     WorkingHours;
+
 #ifdef TRANSPORT_HTTP
             PHOST_DATA Host;  /* current using host */
             PHOST_DATA Hosts; /* host linked list */
             UINT32     NumHosts;
-            UINT64     KillDate;
-            UINT32     WorkingHours;
             LPWSTR     Method; /* TODO: use WCHAR[4] instead of LPWSTR. */
             SHORT      HostRotation;
             DWORD      HostIndex;
@@ -114,13 +115,12 @@ typedef struct
 #ifdef TRANSPORT_SMB
             LPSTR   Name;   /* TODO: change type to BUFFER */
             HANDLE  Handle;
-            UINT64  KillDate;
-            UINT32  WorkingHours;
 #endif
         } Transport;
 
         struct _CONFIG {
-            DWORD SleepMaskTechnique;
+            ULONG SleepMaskTechnique;
+            ULONG SleepJmpBypass;
             BOOL  StackSpoof;
             BOOL  SysIndirect;
             BYTE  ProxyLoading;
@@ -129,7 +129,7 @@ typedef struct
             PVOID ThreadStartAddr;
             BOOL  CoffeeThreaded;
             BOOL  CoffeeVeh;
-            DWORD DownloadChunkSize;
+            ULONG DownloadChunkSize;
         } Implant;
 
         struct {
@@ -554,9 +554,9 @@ typedef struct
     PCOFFEE_KEY_VALUE    CoffeKeyValueStore;
     PHWBP_ENGINE         HwBpEngine;
 
-} INSTANCE;
+} INSTANCE, *PINSTANCE;
 
-extern INSTANCE Instance;
+extern PINSTANCE Instance;
 
 VOID DemonMain( PVOID ModuleInst, PKAYN_ARGS KArgs );
 VOID DemonRoutine( );

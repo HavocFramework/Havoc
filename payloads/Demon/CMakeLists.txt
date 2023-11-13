@@ -17,7 +17,7 @@ set( COMMON_SOURCE
         src/core/MiniStd.c
         src/core/Token.c
         src/core/Package.c
-        src/core/SleepObf.c
+        src/core/Obf.c
         src/core/Spoof.c
         src/core/Syscalls.c
         src/core/SysNative.c

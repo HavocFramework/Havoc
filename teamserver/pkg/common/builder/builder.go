@@ -44,6 +44,12 @@ const (
 )
 
 const (
+	SLEEPOBF_BYPASS_NONE   = 0
+	SLEEPOBF_BYPASS_JMPRAX = 1
+	SLEEPOBF_BYPASS_JMPRBX = 2
+)
+
+const (
 	PROXYLOADING_NONE             = 0
 	PROXYLOADING_RTLREGISTERWAIT  = 1
 	PROXYLOADING_RTLCREATETIMER   = 2
@@ -562,6 +568,7 @@ func (b *Builder) PatchConfig() ([]byte, error) {
 		ConfigSpawn64      string
 		ConfigSpawn32      string
 		ConfigObfTechnique int
+		ConfigObfBypass    int
 		ConfigProxyLoading = PROXYLOADING_NONE
 		ConfigStackSpoof   = win32.FALSE
 		ConfigSyscall      = win32.FALSE
@@ -722,6 +729,43 @@ func (b *Builder) PatchConfig() ([]byte, error) {
 		return nil, errors.New("sleep Obfuscation technique is undefined")
 	}
 
+	if val, ok := b.config.Config["Sleep Jmp Gadget"].(string); ok && len(val) > 0 {
+
+		if ConfigObfTechnique != SLEEPOBF_NO_OBF {
+			switch val {
+			case "jmp rax":
+				ConfigObfTechnique = SLEEPOBF_BYPASS_JMPRAX
+				if !b.silent {
+					b.SendConsoleMessage("Info", "sleep jump gadget \"jmp rax\" has been specified")
+				}
+				break
+
+			case "jmp rbx":
+				ConfigObfBypass = SLEEPOBF_BYPASS_JMPRBX
+				if !b.silent {
+					b.SendConsoleMessage("Info", "sleep jump gadget \"jmp rbx\" has been specified")
+				}
+				break
+
+			default:
+				ConfigObfBypass = SLEEPOBF_BYPASS_NONE
+				if !b.silent {
+					b.SendConsoleMessage("Info", "no sleep jump gadget has been specified")
+				}
+				break
+			}
+		} else {
+			// if no sleep obfuscation technique has been specified then
+			// no jmp gadgets are going to be used.
+			if !b.silent {
+				b.SendConsoleMessage("Info", "sleep jump gadget option ignored")
+			}
+		}
+
+	} else {
+		return nil, errors.New("sleep Obfuscation technique is undefined")
+	}
+
 	if val, ok := b.config.Config["Stack Duplication"].(bool); ok {
 		if ConfigObfTechnique != SLEEPOBF_NO_OBF {
 			if val {
@@ -811,6 +855,7 @@ func (b *Builder) PatchConfig() ([]byte, error) {
 
 	// bypass techniques
 	DemonConfig.AddInt(ConfigObfTechnique)
+	DemonConfig.AddInt(ConfigObfBypass)
 	DemonConfig.AddInt(ConfigStackSpoof)
 	DemonConfig.AddInt(ConfigProxyLoading)
 	DemonConfig.AddInt(ConfigSyscall)

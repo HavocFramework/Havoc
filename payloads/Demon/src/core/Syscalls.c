@@ -27,7 +27,7 @@ BOOL SysInitialize(
 
         /* check if we managed to resolve it  */
         if ( SysIndirectAddr ) {
-            Instance.Syscall.SysAddress = SysIndirectAddr;
+            Instance->Syscall.SysAddress = SysIndirectAddr;
         } else {
             PUTS_DONT_SEND( "Failed to resolve SysIndirectAddr" );
         }
@@ -36,7 +36,7 @@ BOOL SysInitialize(
 #if _M_IX86
     if ( IsWoW64() )
     {
-        Instance.Syscall.SysAddress = __readfsdword(0xC0);
+        Instance->Syscall.SysAddress = __readfsdword(0xC0);
     }
 #endif
 

@@ -302,7 +302,7 @@ UINT64 GetSystemFileTime( )
     FILETIME ft;
     LARGE_INTEGER li;
 
-    Instance.Win32.GetSystemTimeAsFileTime(&ft); //returns ticks in UTC
+    Instance->Win32.GetSystemTimeAsFileTime(&ft); //returns ticks in UTC
     li.LowPart  = ft.dwLowDateTime;
     li.HighPart = ft.dwHighDateTime;
 

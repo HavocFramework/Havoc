@@ -478,7 +478,6 @@ auto Payload::DefaultConfig() -> void
     auto DemonConfig             = HavocX::Teamserver.DemonConfig;
     auto ConfigSleep             = new QTreeWidgetItem( TreeConfig );
     auto ConfigJitter            = new QTreeWidgetItem( TreeConfig );
-
     auto ConfigServiceName       = ( QTreeWidgetItem* ) nullptr;
     auto ConfigServiceNameInput  = ( QLineEdit* ) nullptr;
 
@@ -490,6 +489,7 @@ auto Payload::DefaultConfig() -> void
     auto ConfigIndirectSyscalls  = new QTreeWidgetItem( TreeConfig );
     auto ConfigSleepStackSpoof   = new QTreeWidgetItem( TreeConfig );
     auto ConfigSleepObfTechnique = new QTreeWidgetItem( TreeConfig );
+    auto ConfigSleepJmpBypass    = new QTreeWidgetItem( TreeConfig );
     auto ConfigProxyLoading      = new QTreeWidgetItem( TreeConfig );
     auto ConfigAmsiEtwPatch      = new QTreeWidgetItem( TreeConfig );
     auto ConfigInjection         = new QTreeWidgetItem( TreeConfig );
@@ -497,14 +497,15 @@ auto Payload::DefaultConfig() -> void
     auto ConfigInjectionExecute  = new QTreeWidgetItem( ConfigInjection );
     auto ConfigInjectionSpawn64  = new QTreeWidgetItem( ConfigInjection );
     auto ConfigInjectionSpawn32  = new QTreeWidgetItem( ConfigInjection );
-    auto SleepObfTechnique       = new QComboBox;
-    auto SleepObfSpoofAddress    = new QLineEdit;
 
     auto Jitter = DemonConfig[ "Jitter" ].toInt();
     if ( Jitter < 0 || Jitter > 100 ) {
         Jitter = 0;
     }
 
+    auto SleepObfTechnique       = new QComboBox;
+    auto SleepObfJmpBypass       = new QComboBox;
+    auto SleepObfSpoofAddress    = new QLineEdit;
     auto ConfigSleepLineEdit     = new QLineEdit( QString::number( DemonConfig[ "Sleep" ].toInt() ) );
     auto ConfigJitterLineEdit    = new QLineEdit( QString::number( Jitter ) );
     auto ConfigIndSyscallCheck   = new QCheckBox;
@@ -534,6 +535,7 @@ auto Payload::DefaultConfig() -> void
     ConfigProxyLoading->setFlags( Qt::NoItemFlags );
     ConfigAmsiEtwPatch->setFlags( Qt::NoItemFlags );
     ConfigSleepObfTechnique->setFlags( Qt::NoItemFlags );
+    ConfigSleepJmpBypass->setFlags( Qt::NoItemFlags );
     ConfigSleepStackSpoof->setFlags( Qt::NoItemFlags );
     ConfigInjectionSpawn64->setFlags( Qt::NoItemFlags );
     ConfigInjectionSpawn32->setFlags( Qt::NoItemFlags );
@@ -547,6 +549,7 @@ auto Payload::DefaultConfig() -> void
     ConfigSpawn64LineEdit->setObjectName( "ConfigItem" );
     ConfigSpawn32LineEdit->setObjectName( "ConfigItem" );
     SleepObfTechnique->setObjectName( "ConfigItem" );
+    SleepObfJmpBypass->setObjectName( "ConfigItem" );
     SleepObfSpoofAddress->setObjectName( "ConfigItem" );
     ProxyLoading->setObjectName( "ConfigItem" );
     AmsiEtwPatch->setObjectName( "ConfigItem" );
@@ -554,6 +557,7 @@ auto Payload::DefaultConfig() -> void
     ConfigIndSyscallCheck->setChecked( DefaultIndSyscallCheck );
     ConfigStackSpoof->setChecked( DefaultStackDuplication );
 
+    SleepObfJmpBypass->addItems( QStringList() << "None" << "jmp rax" << "jmp rbx" );
     ConfigInjectAlloc->addItems( QStringList() << "Win32" << "Native/Syscall" );
     ConfigInjectExecute->addItems( QStringList() << "Win32" << "Native/Syscall" );
     SleepObfTechnique->addItems( QStringList() << "WaitForSingleObjectEx" << "Foliage" << "Ekko" << "Zilean" );
@@ -596,6 +600,7 @@ auto Payload::DefaultConfig() -> void
     }
     TreeConfig->setItemWidget( ConfigIndirectSyscalls, 1, ConfigIndSyscallCheck );
     TreeConfig->setItemWidget( ConfigSleepObfTechnique,1, SleepObfTechnique );
+    TreeConfig->setItemWidget( ConfigSleepJmpBypass,   1, SleepObfJmpBypass );
     TreeConfig->setItemWidget( ConfigSleepStackSpoof,  1, ConfigStackSpoof );
     TreeConfig->setItemWidget( ConfigProxyLoading,     1, ProxyLoading );
     TreeConfig->setItemWidget( ConfigAmsiEtwPatch,     1, AmsiEtwPatch );
@@ -614,6 +619,7 @@ auto Payload::DefaultConfig() -> void
 
     ConfigIndirectSyscalls->setText(  0, "Indirect Syscall" );
     ConfigSleepObfTechnique->setText( 0, "Sleep Technique" );
+    ConfigSleepJmpBypass->setText( 0, "Sleep Jmp Gadget" );
     ConfigSleepStackSpoof->setText( 0, "Stack Duplication" );
     ConfigProxyLoading->setText( 0, "Proxy Loading" );
     ConfigAmsiEtwPatch->setText( 0, "Amsi/Etw Patch" );

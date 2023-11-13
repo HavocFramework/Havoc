@@ -12,18 +12,18 @@
 #define NT_SUCCESS(Status)              ( ( ( NTSTATUS ) ( Status ) ) >= 0 )
 #define NtCurrentProcess()              ( ( HANDLE ) ( LONG_PTR ) - 1 )
 #define NtCurrentThread()               ( ( HANDLE ) ( LONG_PTR ) - 2 )
-#define NtGetLastError()                Instance.Teb->LastErrorValue
-#define NtSetLastError(x)               Instance.Teb->LastErrorValue = x
+#define NtGetLastError()                Instance->Teb->LastErrorValue
+#define NtSetLastError(x)               Instance->Teb->LastErrorValue = x
 
 /* Heap allocation functions */
-#define NtProcessHeap()                 Instance.Teb->ProcessEnvironmentBlock->ProcessHeap
+#define NtProcessHeap()                 Instance->Teb->ProcessEnvironmentBlock->ProcessHeap
 #define DLLEXPORT                       __declspec( dllexport )
 
 #define RVA( TYPE, DLLBASE, RVA )  ( TYPE ) ( ( PBYTE ) DLLBASE + RVA )
 #define DATA_FREE( d, l ) \
     if ( d ) { \
         MemSet( d, 0, l ); \
-        Instance.Win32.LocalFree( d ); \
+        Instance->Win32.LocalFree( d ); \
         d = NULL; \
     }
 

@@ -19,14 +19,14 @@
 #endif
 
 #define SYS_EXTRACT( NtName )                                                       \
-    if ( Instance.Win32.NtName ) {                                                  \
+    if ( Instance->Win32.NtName ) {                                                  \
         SysExtract(                                                                 \
-            Instance.Win32.NtName,                                                  \
+            Instance->Win32.NtName,                                                  \
             TRUE,                                                                   \
-            &Instance.Syscall.NtName,                                               \
+            &Instance->Syscall.NtName,                                               \
             NULL                                                                    \
         );                                                                          \
-        PRINTF( "Extracted \"%s\": [Ssn: %x] Ptr:[%p]\n", #NtName, Instance.Syscall.NtName, Instance.Win32.NtName ) \
+        PRINTF( "Extracted \"%s\": [Ssn: %x] Ptr:[%p]\n", #NtName, Instance->Syscall.NtName, Instance->Win32.NtName ) \
     }
 
 typedef struct _SYS_CONFIG {

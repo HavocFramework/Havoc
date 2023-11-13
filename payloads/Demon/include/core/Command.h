@@ -3,7 +3,6 @@
 
 #include <core/Parser.h>
 
-
 /* Commands */
 #define DEMON_COMMAND_CHECKIN                   100
 #define DEMON_COMMAND_GET_JOB                   1
