@@ -1,28 +1,22 @@
 # Havoc Demon Agent
 
-Havoc Demon Agent source code written in C 
+Havoc Demon Agent source code written in C and assembly  
 
 # Directories
 
-## Source/Asm
+## src/asm
 assembly code (return address stack spoofing)
 
-## Source/Core
+## src/core
 core functions ( connect to server, dynamically load win32 apis / syscalls )
 
-## Source/Crypt
+## src/crypt
 encryption / decryption functions
 
-## Source/Extra
-extra code ( KaynLdr Reflective Loader )
-
-## Source/Inject 
+## src/inject 
 injection functions and utilities
 
-## Source/Loader
-loaders ( COFF Loader + Beacon Api )
-
-## Source/Main
+## src/main
 Entry point of an PE executable 
 - MainExe.c
 
