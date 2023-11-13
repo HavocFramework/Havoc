@@ -139,15 +139,14 @@ func NewBuilder(config BuilderConfig) *Builder {
 	builder.config.Arch = ARCHITECTURE_X64
 
 	builder.compilerOptions.SourceDirs = []string{
-		"Source/Core",
-		"Source/Crypt",
-		"Source/Inject",
-		"Source/Loader",
-		"Source/Asm",
+		"src/core",
+		"src/crypt",
+		"src/inject",
+		"src/asm",
 	}
 
 	builder.compilerOptions.IncludeDirs = []string{
-		"Include",
+		"include",
 	}
 
 	/*
@@ -194,9 +193,9 @@ func NewBuilder(config BuilderConfig) *Builder {
 		}
 	}
 
-	builder.compilerOptions.Main.Dll = "Source/Main/MainDll.c"
-	builder.compilerOptions.Main.Exe = "Source/Main/MainExe.c"
-	builder.compilerOptions.Main.Svc = "Source/Main/MainSvc.c"
+	builder.compilerOptions.Main.Dll = "src/main/MainDll.c"
+	builder.compilerOptions.Main.Exe = "src/main/MainExe.c"
+	builder.compilerOptions.Main.Svc = "src/main/MainSvc.c"
 
 	builder.compilerOptions.Config = config
 
@@ -333,7 +332,7 @@ func (b *Builder) Build() bool {
 			}
 		}
 	}
-	CompileCommand += "Source/Demon.c "
+	CompileCommand += "src/Demon.c "
 
 	// add include directories
 	for _, dir := range b.compilerOptions.IncludeDirs {
@@ -518,7 +517,7 @@ func (b *Builder) Patch(ByteArray []byte) []byte {
 				new := []byte(b.ProfileConfig.ReplaceStringsX64[old])
 				// make sure they are the same length
 				if len(new) < len(old) {
-					new = append(new, bytes.Repeat([]byte{0}, len(old) - len(new))...)
+					new = append(new, bytes.Repeat([]byte{0}, len(old)-len(new))...)
 				}
 				if len(new) > len(old) {
 					logger.Error(fmt.Sprintf("invalid replacement rule, new value (%s) can be longer than the old value (%s)", string(new), old))
@@ -539,7 +538,7 @@ func (b *Builder) Patch(ByteArray []byte) []byte {
 				new := []byte(b.ProfileConfig.ReplaceStringsX86[old])
 				// make sure they are the same length
 				if len(new) < len(old) {
-					new = append(new, bytes.Repeat([]byte{0}, len(old) - len(new))...)
+					new = append(new, bytes.Repeat([]byte{0}, len(old)-len(new))...)
 				}
 				if len(new) > len(old) {
 					logger.Error(fmt.Sprintf("invalid replacement rule, new value (%s) can be longer than the old value (%s)", string(new), old))
