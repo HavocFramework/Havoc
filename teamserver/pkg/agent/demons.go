@@ -29,11 +29,13 @@ import (
 
 // we upload heavy files to the implant in chunks, so SMB agents can handle the size
 func (a *Agent) UploadMemFileInChunks(FileData []byte) uint32 {
-	var ID uint32
+	var ID uint32 = 0
 	var chunkSize = DEMON_MAX_RESPONSE_LENGTH
 
-	// generate a random ID
-	ID = rand.Uint32()
+	// generate a random ID that is not 0
+	for ID == 0 {
+		ID = rand.Uint32()
+	}
 
 	FileSize := len(FileData)
 	// split the file in chunks of DEMON_MAX_RESPONSE_LENGTH
@@ -694,7 +696,11 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 
 		BofFileId    = a.UploadMemFileInChunks(ObjectFile)
 		// a BOF can have an entire PE in its parameters, so chunk them
-		ParamsFileId = a.UploadMemFileInChunks(Parameters)
+		if len(Parameters) == 0 {
+			ParamsFileId = 0;
+		} else {
+			ParamsFileId = a.UploadMemFileInChunks(Parameters)
+		}
 
 		if FunctionName, ok = Optional["FunctionName"].(string); !ok {
 			return nil, errors.New("CoffeeLdr: FunctionName not defined")

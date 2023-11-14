@@ -1143,21 +1143,23 @@ VOID CommandInlineExecute( PPARSER Parser )
         goto CLEANUP;
     }
 
-    ParamsMemFile = GetMemFile( ParamsFileID );
-    if ( ParamsMemFile && ParamsMemFile->IsCompleted )
-    {
-        ArgBuffer = ParamsMemFile->Data;
-        ArgSize   = ParamsMemFile->Size;
-    }
-    else if ( ParamsMemFile && ! ParamsMemFile->IsCompleted )
-    {
-        PRINTF( "ParamsMemFile [%x] was not completed\n", ParamsFileID );
-        goto CLEANUP;
-    }
-    else
-    {
-        PRINTF( "ParamsMemFile [%x] not found\n", ParamsFileID );
-        goto CLEANUP;
+    if ( ParamsFileID != 0 ) {
+        ParamsMemFile = GetMemFile( ParamsFileID );
+        if ( ParamsMemFile && ParamsMemFile->IsCompleted )
+        {
+            ArgBuffer = ParamsMemFile->Data;
+            ArgSize   = ParamsMemFile->Size;
+        }
+        else if ( ParamsMemFile && ! ParamsMemFile->IsCompleted )
+        {
+            PRINTF( "ParamsMemFile [%x] was not completed\n", ParamsFileID );
+            goto CLEANUP;
+        }
+        else
+        {
+            PRINTF( "ParamsMemFile [%x] not found\n", ParamsFileID );
+            goto CLEANUP;
+        }
     }
 
     switch ( Flags )
@@ -1197,7 +1199,10 @@ VOID CommandInlineExecute( PPARSER Parser )
 
 CLEANUP:
     RemoveMemFile( BofFileID );
-    RemoveMemFile( ParamsFileID );
+    if ( ParamsFileID != 0 ) {
+        RemoveMemFile( ParamsFileID );
+    }
+   
 }
 
 VOID CommandInjectDLL( PPARSER Parser )
