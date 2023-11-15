@@ -37,7 +37,7 @@ func (a *Agent) UploadMemFileInChunks(FileData []byte) uint32 {
 
 	FileSize := len(FileData)
 	// split the file in chunks of DEMON_MAX_RESPONSE_LENGTH
-	for start := 0; start < FileSize; start += chunkSize {
+	for start := 0; start <= FileSize; start += chunkSize {
 		end := start + chunkSize
 
 		// necessary check to avoid slicing beyond FileData capacity
