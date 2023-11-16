@@ -595,11 +595,11 @@ BOOL TokenRemove( DWORD TokenID )
     } while ( TRUE );
 }
 
-HANDLE TokenMake( LPWSTR User, LPWSTR Password, LPWSTR Domain )
+HANDLE TokenMake( LPWSTR User, LPWSTR Password, LPWSTR Domain, DWORD LogonType )
 {
     HANDLE hToken = NULL;
 
-    PRINTF( "TokenMake( %ls, %ls, %ls )\n", User, Password, Domain )
+    PRINTF( "TokenMake( %ls, %ls, %ls, %d )\n", User, Password, Domain, LogonType )
 
     if ( ! TokenRevSelf() )
     {
@@ -608,7 +608,7 @@ HANDLE TokenMake( LPWSTR User, LPWSTR Password, LPWSTR Domain )
         // TODO: at this point should I return NULL or just continue ? For now i just continue.
     }
 
-    if ( ! Instance->Win32.LogonUserW( User, Domain, Password, LOGON32_LOGON_NEW_CREDENTIALS, LOGON32_PROVIDER_DEFAULT, &hToken ) )
+    if ( ! Instance->Win32.LogonUserW( User, Domain, Password, LogonType, LogonType == LOGON32_LOGON_NEW_CREDENTIALS ? LOGON32_PROVIDER_WINNT50 : LOGON32_PROVIDER_DEFAULT, &hToken ) )
     {
         PUTS( "LogonUserW: Failed" )
         PACKAGE_ERROR_WIN32

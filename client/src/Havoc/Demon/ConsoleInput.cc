@@ -1372,20 +1372,55 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                     return false;
                 }
 
+                if ( InputCommands.size() > 6 )
+                {
+                    CONSOLE_ERROR( "Too many arguments" )
+                    return false;
+                }
+
                 // token make Domain\user password
-                auto Domain   = QString();
-                auto User     = QString();
-                auto Password = QString();
+                auto Domain    = QString();
+                auto User      = QString();
+                auto Password  = QString();
+                auto LogonType = QString();
 
                 // token make domain user password
                 Domain   = InputCommands[ 2 ];
                 User     = InputCommands[ 3 ];
                 Password = InputCommands[ 4 ];
 
+                if ( InputCommands.size() == 6 )
+                {
+                    if ( InputCommands[ 5 ].compare( "LOGON_INTERACTIVE" ) == 0 )
+                        LogonType = "2";
+                    else if ( InputCommands[ 5 ].compare( "LOGON_NETWORK" ) == 0 )
+                        LogonType = "3";
+                    else if ( InputCommands[ 5 ].compare( "LOGON_BATCH" ) == 0 )
+                        LogonType = "4";
+                    else if ( InputCommands[ 5 ].compare( "LOGON_SERVICE" ) == 0 )
+                        LogonType = "5";
+                    else if ( InputCommands[ 5 ].compare( "LOGON_UNLOCK" ) == 0 )
+                        LogonType = "7";
+                    else if ( InputCommands[ 5 ].compare( "LOGON_NETWORK_CLEARTEXT" ) == 0 )
+                        LogonType = "8";
+                    else if ( InputCommands[ 5 ].compare( "LOGON_NEW_CREDENTIALS" ) == 0 )
+                        LogonType = "9";
+                    else
+                    {
+                        CONSOLE_ERROR( "Invalid token type" )
+                        return false;
+                    }
+                }
+                else
+                {
+                    // default: LOGON_NEW_CREDENTIALS
+                    LogonType = "9";
+                }
+
                 TaskID = CONSOLE_INFO( "Tasked demon to make a new network token for " + Domain + "\\" + User );
                 CommandInputList[ TaskID ] = commandline;
 
-                SEND( Execute.Token( TaskID, "make", Domain.toLocal8Bit().toBase64() + ";" + User.toLocal8Bit().toBase64() + ";" + Password.toLocal8Bit().toBase64() ) );
+                SEND( Execute.Token( TaskID, "make", Domain.toLocal8Bit().toBase64() + ";" + User.toLocal8Bit().toBase64() + ";" + Password.toLocal8Bit().toBase64() + ";" + LogonType ) );
             }
             else if ( InputCommands[ 1 ].compare( "revert" ) == 0 )
             {

