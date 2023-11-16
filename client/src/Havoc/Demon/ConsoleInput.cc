@@ -874,7 +874,8 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             if ( InputCommands.length() > 1 )
             {
                 auto Program = QString("c:\\windows\\system32\\cmd.exe");
-                auto Args = QString( "/c " + JoinAtIndex( InputCommands, 1 ) ).toUtf8().toBase64(); // InputCommands[ 1 ].;
+                // NOTE: the 'shell' command does not need to escape quotes
+                auto Args = QString( "/c " + JoinAtIndex( commandline.split( " " ), 1 ) ).toUtf8().toBase64();
 
                 TaskID = CONSOLE_INFO( "Tasked demon to execute a shell command" );
                 CommandInputList[ TaskID ] = commandline;
@@ -1464,7 +1465,10 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             auto Args = QByteArray();
 
             if ( InputCommands.size() > 3 )
-                Args = JoinAtIndex( InputCommands, 3 ).toUtf8();
+            {
+                // NOTE: the 'dotnet inline-execute assembly.exe (args)' command does not need to escape quotes
+                Args = JoinAtIndex( commandline.split( " " ), 3 ).toUtf8();
+            }
 
             if ( ! QFile::exists( Path ) )
             {
@@ -1778,7 +1782,8 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             if ( InputCommands.length() > 1 )
             {
                 auto Program = QString("C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe");
-                auto Args    = QString( "-C " + JoinAtIndex( InputCommands, 1 ) ).toUtf8().toBase64(); // InputCommands[ 1 ].;
+                // NOTE: the 'powershell' command does not need to escape quotes
+                auto Args    = QString( "-C " + JoinAtIndex( commandline.split( " " ), 1 ) ).toUtf8().toBase64();
 
                 TaskID = CONSOLE_INFO( "Tasked demon to execute a powershell command/script" );
                 CommandInputList[ TaskID ] = commandline;
