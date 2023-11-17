@@ -1,10 +1,14 @@
 #include <UserInterface/Widgets/Store.hpp>
+#include <global.hpp>
 
 #include <QScrollBar>
 
 void Store::setupUi( QWidget* Store)
 {
     StoreWidget = Store;
+    QUrl url("https://raw.githubusercontent.com/p4p1/havoc-store/main/public/havoc-modules.json");
+    QNetworkAccessManager* manager = new QNetworkAccessManager();
+    QNetworkReply *reply = manager->get(QNetworkRequest(url));
 
     if ( Store->objectName().isEmpty() )
         Store->setObjectName( QString::fromUtf8( "Extentions" ) );
@@ -25,25 +29,31 @@ void Store::setupUi( QWidget* Store)
     panelScroll = new QScrollArea(panelStore);
     panelScroll->setWidgetResizable(true);
     panelScroll->setWidget(root_panelStore);
+    panelScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
     root_panelLayout = new QVBoxLayout(panelStore);
     root_panelLayout->addWidget(panelScroll);
 
     headerLabelTitle = new QLabel( "<h1>Havoc Extentions!</h1>", panelStore );
+    headerLabelTitle->setWordWrap(true);
     panelLayout->addWidget(headerLabelTitle);
+    panelLabelAuthor = new QLabel( "<span style='color:#71e0cb'>The author</span>", panelStore );
+    panelLabelAuthor->setWordWrap(true);
+    panelLayout->addWidget(panelLabelAuthor);
     panelLabelDescription = new QLabel( "This tab is to install extentions inside of havoc!", panelStore );
+    panelLabelDescription->setWordWrap(true);
     panelLayout->addWidget(panelLabelDescription);
+    installButton = new QPushButton("Install");
+    installButton->setEnabled(false);
+    panelLayout->addWidget(installButton);
 
     StoreTable = new QTableWidget();
-    StoreTable->setRowCount(3);
-    StoreTable->setColumnCount(3);
+    StoreTable->setColumnCount(2);
 
     labelTitle = new QTableWidgetItem( "Title"       );
-    labelDescription  = new QTableWidgetItem( "Description" );
     labelAuthor  = new QTableWidgetItem( "Author"      );
     StoreTable->setHorizontalHeaderItem( 0, labelTitle   );
     StoreTable->setHorizontalHeaderItem( 1, labelAuthor  );
-    StoreTable->setHorizontalHeaderItem( 2, labelDescription  );
 
     StoreTable->setEnabled( true );
     StoreTable->setShowGrid( false );
@@ -59,14 +69,52 @@ void Store::setupUi( QWidget* Store)
     StoreTable->verticalHeader()->setVisible( false );
     StoreTable->setFocusPolicy( Qt::NoFocus );
 
+    QObject::connect(reply, &QNetworkReply::finished, [reply, this]() {
+        if (reply->error() == QNetworkReply::NoError) {
+            QByteArray data = reply->readAll();
+            QJsonDocument jsonDoc = QJsonDocument::fromJson(data);
 
+            if (!jsonDoc.isNull() && jsonDoc.isArray()) {
+                this->dataStore = new QJsonArray(jsonDoc.array());
+                QJsonArray jsonArray = jsonDoc.array();
+                int row_num = 0;
+                this->StoreTable->setRowCount(jsonArray.size());
+                for (const QJsonValue &value : jsonArray) {
+                    if (value.isObject()) {
+                        QJsonObject jsonObj = value.toObject();
+                        QString title = jsonObj.value("title").toString();
+                        QString author = jsonObj.value("author").toString();
 
-    for (int row = 0; row < 3; ++row) {
-        for (int col = 0; col < 3; ++col) {
-            QTableWidgetItem *item = new QTableWidgetItem(QString("Item %1-%2").arg(row + 1).arg(col + 1));
-            StoreTable->setItem(row, col, item);
+                        QTableWidgetItem *title_widget= new QTableWidgetItem(title);
+                        QTableWidgetItem *author_widget = new QTableWidgetItem(author);
+                        this->StoreTable->setItem(row_num, 0, title_widget);
+                        this->StoreTable->setItem(row_num, 1, author_widget);
+                        row_num++;
+                    }
+                }
+            } else {
+                spdlog::error( "[STORE] Failed to parse the JSON data" );
+            }
+        } else {
+            spdlog::error( "[STORE] Failed to get json from web" );
         }
-    }
+
+        reply->deleteLater();
+    });
+
+    QObject::connect(StoreTable, &QTableWidget::itemSelectionChanged, [this]() {
+        QList<QTableWidgetItem *> selectedItems = this->StoreTable->selectedItems();
+        if (!selectedItems.isEmpty()) {
+            displayData(selectedItems.first()->row());
+        }
+    });
+
+    QObject::connect(installButton, &QPushButton::clicked, [this]() {
+        QList<QTableWidgetItem *> selectedItems = this->StoreTable->selectedItems();
+        if (!selectedItems.isEmpty()) {
+            installScript(selectedItems.first()->row());
+        }
+    });
 
 
     StoreSplitter->addWidget( StoreTable );
@@ -77,6 +125,77 @@ void Store::setupUi( QWidget* Store)
     retranslateUi(  );
 
     QMetaObject::connectSlotsByName( StoreWidget );
+}
+
+void Store::displayData(int position)
+{
+    QJsonObject jsonObj = dataStore->at(position).toObject();
+    QString title = jsonObj.value("title").toString();
+    QString description = jsonObj.value("description").toString();
+    QString author = jsonObj.value("author").toString();
+
+    headerLabelTitle->setText(QString("<h1>%1</h1>").arg(title));
+    panelLabelDescription->setText(description);
+    panelLabelAuthor->setText(QString("<span style='color:#71e0cb'>%1</span>").arg(author));
+    installButton->setEnabled(true);
+}
+
+bool Store::AddScript( QString Path )
+{
+    auto Script = FileRead( Path );
+    auto path   = Path.toStdString();
+    int  Return = 0;
+
+    HavocX::Teamserver.LoadingScript = Path.toStdString();
+
+    if ( Script != nullptr ) {
+        if ( ! Script.isEmpty() ) {
+            Return = PyRun_SimpleStringFlags( Script.toStdString().c_str(), NULL );
+            if ( Return == -1 ) {
+                spdlog::error( "Failed to run script: {}", path );
+            } else {
+                return true;
+            }
+        }
+        else {
+            spdlog::error( "Script path not found: {}", path );
+        }
+    } else {
+        spdlog::error( "Failed to load script: {}", path );
+    }
+
+    HavocX::Teamserver.LoadingScript = "";
+
+    return false;
+}
+
+void Store::installScript(int position)
+{
+    QString gistUrl = "https://gist.githubusercontent.com/%1/%2/raw/%3";
+    QJsonObject jsonObj = dataStore->at(position).toObject();
+    QString url = jsonObj.value("link").toString();
+    QString entrypoint = jsonObj.value("entrypoint").toString();
+    QString author = jsonObj.value("author").toString();
+    QString currentPath = QDir::currentPath();
+    QDir extension_path(QString("./data/extensions"));
+
+    if (!extension_path.exists())
+        extension_path.mkpath(QString("./data/extensions"));
+    int is_gist = url.indexOf(QString("gist.github.com"));
+    if (is_gist != -1) {
+        QStringList urlParts = url.split('/');
+        QString github_hash = urlParts.last();
+
+        QString downloadURL = gistUrl.arg(author, github_hash, entrypoint);
+        QString pathScript = QString("%1/data/extensions/%2").arg(currentPath).arg(entrypoint);
+        /*if ( AddScript( pathScript ) ) {
+            if ( ! HavocX::Teamserver.TabSession->dbManager->CheckScript(pathScript) )
+                HavocX::Teamserver.TabSession->dbManager->AddScript(pathScript);
+        }*/
+        printf("github_url: %s\n", downloadURL.toUtf8().constData());
+        printf("path to script: %s\n", pathScript.toUtf8().constData());
+    }
+    printf("num: %d\n", position);
 }
 
 void Store::retranslateUi()
