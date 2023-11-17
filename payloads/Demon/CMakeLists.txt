@@ -9,63 +9,61 @@ set( CMAKE_C_COMPILER x86_64-w64-mingw32-gcc )
 set( CMAKE_C_FLAGS "-Wl,--pic-executable,-e,main -Wl,-Bstatic -s -w -ffunction-sections -fdata-sections -Wno-write-strings -fno-exceptions -fmerge-all-constants -static-libgcc -Wl,-Bstatic " )
 
 # adding demon sources
-include_directories( Include )
+include_directories( include )
 
 set( COMMON_SOURCE
-        Source/Core/Command.c
-        Source/Core/Win32.c
-        Source/Core/MiniStd.c
-        Source/Core/Token.c
-        Source/Core/Package.c
-        Source/Core/SleepObf.c
-        Source/Core/Spoof.c
-        Source/Core/Syscalls.c
-        Source/Core/SysNative.c
-        Source/Core/Command.c
-        Source/Core/Transport.c
-        Source/Core/TransportHttp.c
-        Source/Core/TransportSmb.c
-        Source/Core/Parser.c
-        Source/Core/Pivot.c
-        Source/Core/Jobs.c
-        Source/Core/Download.c
-        Source/Core/Dotnet.c
-        Source/Core/Socket.c
-        Source/Core/Kerberos.c
-        Source/Core/Thread.c
-        Source/Core/Memory.c
-        Source/Core/Runtime.c
-        Source/Core/HwBpEngine.c
-        Source/Core/HwBpExceptions.c
+        src/core/Command.c
+        src/core/Win32.c
+        src/core/MiniStd.c
+        src/core/Token.c
+        src/core/Package.c
+        src/core/Obf.c
+        src/core/Spoof.c
+        src/core/Syscalls.c
+        src/core/SysNative.c
+        src/core/Command.c
+        src/core/Transport.c
+        src/core/TransportHttp.c
+        src/core/TransportSmb.c
+        src/core/Parser.c
+        src/core/Pivot.c
+        src/core/Jobs.c
+        src/core/Download.c
+        src/core/Dotnet.c
+        src/core/Socket.c
+        src/core/Kerberos.c
+        src/core/Thread.c
+        src/core/Memory.c
+        src/core/Runtime.c
+        src/core/HwBpEngine.c
+        src/core/HwBpExceptions.c
+        src/core/CoffeeLdr.c
+        src/core/ObjectApi.c
 )
 
 set( INJECT_SOURCE
-        Source/Inject/Inject.c
-        Source/Inject/InjectUtil.c
+        src/inject/Inject.c
+        src/inject/InjectUtil.c
 )
 
-set( LOADER_SOURCE
-        Source/Loader/CoffeeLdr.c
-        Source/Loader/ObjectApi.c
+set( CRYPT_SOURCE
+        src/crypt/AesCrypt.c
 )
 
 set( MAIN_SOURCE
         # Demon Main entrypoint
-        Source/Demon.c
+        src/Demon.c
 
         # windows exe
-        Source/Main/MainExe.c
+        src/main/MainExe.c
 
         # windows dll
-        Source/Main/MainDll.c
+        src/main/MainDll.c
 
         # windows service
-        Source/Main/MainSvc.c
+        src/main/MainSvc.c
 )
 
-set( CRYPT_SOURCE
-        Source/Crypt/AesCrypt.c
-)
 
 # preprocessor flags
 add_compile_definitions( DEBUG )

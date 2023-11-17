@@ -413,7 +413,7 @@ std::vector<DemonCommands::Command_t> DemonCommands::DemonCommandList = {
                     .Description    = "make token from user credentials",
                     .Behavior       = BEHAVIOR_API_ONLY,
                     .MitreTechniques = {"T1134", "T1134.003"},
-                    .Usage          = "[Domain] [Username] [Password] ",
+                    .Usage          = "[Domain] [Username] [Password] (LogonType)\nValid types are:\nLOGON_INTERACTIVE\nLOGON_NETWORK\nLOGON_BATCH\nLOGON_SERVICE\nLOGON_UNLOCK\nLOGON_NETWORK_CLEARTEXT\nLOGON_NEW_CREDENTIALS (default)",
                     .Example        = "domain.local Administrator Passw0rd@1234",
                 },
                 {

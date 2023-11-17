@@ -37,7 +37,7 @@ func (a *Agent) UploadMemFileInChunks(FileData []byte) uint32 {
 
 	FileSize := len(FileData)
 	// split the file in chunks of DEMON_MAX_RESPONSE_LENGTH
-	for start := 0; start < FileSize; start += chunkSize {
+	for start := 0; start <= FileSize; start += chunkSize {
 		end := start + chunkSize
 
 		// necessary check to avoid slicing beyond FileData capacity
@@ -1131,9 +1131,10 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 				if val, ok = Optional["Arguments"].(string); ok {
 
 					var (
-						Domain   string
-						User     string
-						Password string
+						Domain    string
+						User      string
+						Password  string
+						LogonType int
 
 						ArrayData []string
 					)
@@ -1158,11 +1159,17 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 						Password = string(val)
 					}
 
+					LogonType, err = strconv.Atoi(ArrayData[3])
+					if err != nil {
+						return job, errors.New("Failed to convert LogonType to int: " + err.Error())
+					}
+
 					job.Data = []interface{}{
 						SubCommand,
 						common.EncodeUTF16(Domain),
 						common.EncodeUTF16(User),
 						common.EncodeUTF16(Password),
+						LogonType,
 					}
 
 					logger.Debug(job.Data)

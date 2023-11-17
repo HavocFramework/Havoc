@@ -874,7 +874,8 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             if ( InputCommands.length() > 1 )
             {
                 auto Program = QString("c:\\windows\\system32\\cmd.exe");
-                auto Args = QString( "/c " + JoinAtIndex( InputCommands, 1 ) ).toUtf8().toBase64(); // InputCommands[ 1 ].;
+                // NOTE: the 'shell' command does not need to escape quotes
+                auto Args = QString( "/c " + JoinAtIndex( commandline.split( " " ), 1 ) ).toUtf8().toBase64();
 
                 TaskID = CONSOLE_INFO( "Tasked demon to execute a shell command" );
                 CommandInputList[ TaskID ] = commandline;
@@ -1371,20 +1372,55 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                     return false;
                 }
 
+                if ( InputCommands.size() > 6 )
+                {
+                    CONSOLE_ERROR( "Too many arguments" )
+                    return false;
+                }
+
                 // token make Domain\user password
-                auto Domain   = QString();
-                auto User     = QString();
-                auto Password = QString();
+                auto Domain    = QString();
+                auto User      = QString();
+                auto Password  = QString();
+                auto LogonType = QString();
 
                 // token make domain user password
                 Domain   = InputCommands[ 2 ];
                 User     = InputCommands[ 3 ];
                 Password = InputCommands[ 4 ];
 
+                if ( InputCommands.size() == 6 )
+                {
+                    if ( InputCommands[ 5 ].compare( "LOGON_INTERACTIVE" ) == 0 )
+                        LogonType = "2";
+                    else if ( InputCommands[ 5 ].compare( "LOGON_NETWORK" ) == 0 )
+                        LogonType = "3";
+                    else if ( InputCommands[ 5 ].compare( "LOGON_BATCH" ) == 0 )
+                        LogonType = "4";
+                    else if ( InputCommands[ 5 ].compare( "LOGON_SERVICE" ) == 0 )
+                        LogonType = "5";
+                    else if ( InputCommands[ 5 ].compare( "LOGON_UNLOCK" ) == 0 )
+                        LogonType = "7";
+                    else if ( InputCommands[ 5 ].compare( "LOGON_NETWORK_CLEARTEXT" ) == 0 )
+                        LogonType = "8";
+                    else if ( InputCommands[ 5 ].compare( "LOGON_NEW_CREDENTIALS" ) == 0 )
+                        LogonType = "9";
+                    else
+                    {
+                        CONSOLE_ERROR( "Invalid token type" )
+                        return false;
+                    }
+                }
+                else
+                {
+                    // default: LOGON_NEW_CREDENTIALS
+                    LogonType = "9";
+                }
+
                 TaskID = CONSOLE_INFO( "Tasked demon to make a new network token for " + Domain + "\\" + User );
                 CommandInputList[ TaskID ] = commandline;
 
-                SEND( Execute.Token( TaskID, "make", Domain.toLocal8Bit().toBase64() + ";" + User.toLocal8Bit().toBase64() + ";" + Password.toLocal8Bit().toBase64() ) );
+                SEND( Execute.Token( TaskID, "make", Domain.toLocal8Bit().toBase64() + ";" + User.toLocal8Bit().toBase64() + ";" + Password.toLocal8Bit().toBase64() + ";" + LogonType ) );
             }
             else if ( InputCommands[ 1 ].compare( "revert" ) == 0 )
             {
@@ -1464,7 +1500,10 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             auto Args = QByteArray();
 
             if ( InputCommands.size() > 3 )
-                Args = JoinAtIndex( InputCommands, 3 ).toUtf8();
+            {
+                // NOTE: the 'dotnet inline-execute assembly.exe (args)' command does not need to escape quotes
+                Args = JoinAtIndex( commandline.split( " " ), 3 ).toUtf8();
+            }
 
             if ( ! QFile::exists( Path ) )
             {
@@ -1778,7 +1817,8 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             if ( InputCommands.length() > 1 )
             {
                 auto Program = QString("C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe");
-                auto Args    = QString( "-C " + JoinAtIndex( InputCommands, 1 ) ).toUtf8().toBase64(); // InputCommands[ 1 ].;
+                // NOTE: the 'powershell' command does not need to escape quotes
+                auto Args    = QString( "-C " + JoinAtIndex( commandline.split( " " ), 1 ) ).toUtf8().toBase64();
 
                 TaskID = CONSOLE_INFO( "Tasked demon to execute a powershell command/script" );
                 CommandInputList[ TaskID ] = commandline;
