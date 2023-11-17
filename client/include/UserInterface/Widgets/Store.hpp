@@ -3,12 +3,14 @@
 
 #include <QtWidgets/QWidget>
 #include <QSplitter>
+#include <QPushButton>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QTableWidget>
 #include <QTableWidgetItem>
 #include <QLabel>
 #include <QScrollArea>
+#include <QDir>
 
 #include <QtCore/QVariant>
 #include <QtWidgets/QApplication>
@@ -21,6 +23,15 @@
 #include <QtWidgets/QTextEdit>
 #include <QtWidgets/QTreeWidget>
 
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
+#include <QEventLoop>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonValue>
+#include <QJsonArray>
+
 class Store
 {
 public:
@@ -31,7 +42,6 @@ public:
 
     QTableWidgetItem    *labelTitle;
     QTableWidgetItem    *labelAuthor;
-    QTableWidgetItem    *labelDescription;
 
     QWidget*            panelStore;
     QVBoxLayout*        panelLayout;
@@ -39,14 +49,20 @@ public:
     QWidget*            root_panelStore;
     QVBoxLayout*        root_panelLayout;
     QScrollArea*        panelScroll;
+    QJsonArray*         dataStore;
 
     QLabel*             headerLabelTitle;
     QLabel*             panelLabelDescription;
+    QLabel*             panelLabelAuthor;
+    QPushButton*        installButton;
 
     QGridLayout*    gridLayout;
     QTextEdit*      StoreLogger;
 
     void setupUi( QWidget* Store );
+    void displayData( int position );
+    void installScript( int position );
+    bool AddScript( QString Path );
     void retranslateUi(  );
 };
 
