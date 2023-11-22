@@ -40,6 +40,9 @@ ULONG HashEx(
 
             if ( !*Ptr ) {
                 ++Ptr;
+                //We need to reassign the value of `character` after `++Ptr`.
+                //Beacuse `Hash` is calculated from character,not `*Ptr`
+                character = *Ptr;
             }
         }
 
