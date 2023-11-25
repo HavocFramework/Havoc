@@ -1,3 +1,7 @@
+#include <UserInterface/Widgets/ScriptManager.h>
+#include <UserInterface/Widgets/TeamserverTabSession.h>
+#include <Havoc/DBManager/DBManager.hpp>
+
 #include <UserInterface/Widgets/Store.hpp>
 #include <global.hpp>
 
@@ -172,15 +176,19 @@ bool Store::AddScript( QString Path )
 void Store::installScript(int position)
 {
     QString gistUrl = "https://gist.githubusercontent.com/%1/%2/raw/%3";
+
     QJsonObject jsonObj = dataStore->at(position).toObject();
     QString url = jsonObj.value("link").toString();
     QString entrypoint = jsonObj.value("entrypoint").toString();
     QString author = jsonObj.value("author").toString();
+
     QString currentPath = QDir::currentPath();
     QDir extension_path(QString("./data/extensions"));
 
-    if (!extension_path.exists())
-        extension_path.mkpath(QString("./data/extensions"));
+    if (!extension_path.exists()) {
+        QDir tmp_dir(currentPath);
+        tmp_dir.mkpath(QString("./data/extensions"));
+    }
     int is_gist = url.indexOf(QString("gist.github.com"));
     if (is_gist != -1) {
         QStringList urlParts = url.split('/');
@@ -188,14 +196,29 @@ void Store::installScript(int position)
 
         QString downloadURL = gistUrl.arg(author, github_hash, entrypoint);
         QString pathScript = QString("%1/data/extensions/%2").arg(currentPath).arg(entrypoint);
-        /*if ( AddScript( pathScript ) ) {
+        QString command = QString("wget %1 -O %2").arg(downloadURL).arg(pathScript);
+
+        // Yes there is a command injection vulnerability here. Now this is not the best
+        // but since the front-end will be fully redone I am not putting to much effort
+        // here it's just to code the base concept nothing else :)
+        system(command.toUtf8().constData());
+
+        if ( AddScript( pathScript ) ) {
             if ( ! HavocX::Teamserver.TabSession->dbManager->CheckScript(pathScript) )
                 HavocX::Teamserver.TabSession->dbManager->AddScript(pathScript);
-        }*/
-        printf("github_url: %s\n", downloadURL.toUtf8().constData());
-        printf("path to script: %s\n", pathScript.toUtf8().constData());
+        }
+    } else { // Must be a repo then and not a gist ^^ now we can be happy for that entrypoint var
+        QStringList urlParts = url.split('/');
+        QString repo_name = urlParts.last();
+        QString pathScript = QString("%1/data/extensions/%2/%3").arg(currentPath).arg(repo_name).arg(entrypoint);
+        QString command = QString("git clone %1 %2/data/extensions/%3").arg(url).arg(currentPath).arg(repo_name);
+
+        system(command.toUtf8().constData());
+        if ( AddScript( pathScript ) ) {
+            if ( ! HavocX::Teamserver.TabSession->dbManager->CheckScript(pathScript) )
+                HavocX::Teamserver.TabSession->dbManager->AddScript(pathScript);
+        }
     }
-    printf("num: %d\n", position);
 }
 
 void Store::retranslateUi()
