@@ -211,7 +211,7 @@ void Store::installScript(int position)
         QStringList urlParts = url.split('/');
         QString repo_name = urlParts.last();
         QString pathScript = QString("%1/data/extensions/%2/%3").arg(currentPath).arg(repo_name).arg(entrypoint);
-        QString command = QString("git clone --recurse-submodules %1 %2/data/extensions/%3").arg(url).arg(currentPath).arg(repo_name);
+        QString command = QString("git clone --recurse-submodules --remote-submodules %1 %2/data/extensions/%3").arg(url).arg(currentPath).arg(repo_name);
 
         system(command.toUtf8().constData());
         if ( AddScript( pathScript ) ) {
