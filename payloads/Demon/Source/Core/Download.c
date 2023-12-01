@@ -220,7 +220,7 @@ VOID DownloadPush()
             {
                 DownLast->Next = Download->Next;
                 DownloadFree( Download );
-                DownLast = NULL;
+                Download = DownLast->Next;//Iterate to next non-null item Just Like the code `Socket = SkLast->Next;` located in  Socket.c - void SocketCleanDead()  
             }
         }
         else
