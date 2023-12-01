@@ -56,6 +56,9 @@ void HavocNamespace::UserInterface::HavocUi::setupUi(QMainWindow *Havoc)
     actionTeamserver = new QAction( HavocWindow );
     actionTeamserver->setObjectName( QString::fromUtf8( "actionTeamserver" ) );
 
+    actionStore = new QAction( HavocWindow );
+    actionStore->setObjectName( QString::fromUtf8( "actionStore" ) );
+
     actionGeneratePayload = new QAction( HavocWindow );
     actionGeneratePayload->setObjectName( QString::fromUtf8( "actionGeneratePayload" ) );
 
@@ -168,7 +171,9 @@ void HavocNamespace::UserInterface::HavocUi::setupUi(QMainWindow *Havoc)
     menuView->addSeparator();
     menuView->addAction( actionLogs );
     menuView->addAction( actionTeamserver );
+
     menuAttack->addAction( actionGeneratePayload );
+    menuAttack->addAction( actionStore );
 
     menuScripts->addAction( actionLoad_Script );
     menuScripts->addAction( actionPythonConsole );
@@ -362,6 +367,7 @@ void HavocNamespace::UserInterface::HavocUi::retranslateUi(QMainWindow* Havoc ) 
     actionDisconnect->setText( "Disconnect" );
     actionExit->setText( "Exit" );
     actionTeamserver->setText( "Teamserver" );
+    actionStore->setText( "Extentions" );
     actionGeneratePayload->setText( "Payload" );
     actionLoad_Script->setText(  "Scripts Manager" );
     actionPythonConsole->setText( "Script Console" );
@@ -455,6 +461,18 @@ void HavocNamespace::UserInterface::HavocUi::ConnectEvents()
         NewBottomTab(
             HavocX::Teamserver.TabSession->Teamserver->TeamserverWidget,
             "Teamserver"
+        );
+    } );
+
+    QMainWindow::connect( actionStore, &QAction::triggered, this, [&](){
+        if ( HavocX::Teamserver.TabSession->Store == nullptr ) {
+            HavocX::Teamserver.TabSession->Store = new Store;
+            HavocX::Teamserver.TabSession->Store->setupUi( new QDialog );
+        }
+
+        NewBottomTab(
+            HavocX::Teamserver.TabSession->Store->StoreWidget,
+            "Extentions"
         );
     } );
 

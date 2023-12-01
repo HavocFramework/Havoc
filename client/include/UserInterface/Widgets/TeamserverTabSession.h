@@ -8,6 +8,7 @@
 #include <UserInterface/Widgets/LootWidget.h>
 #include <UserInterface/Widgets/SessionGraph.hpp>
 #include <UserInterface/Widgets/Teamserver.hpp>
+#include <UserInterface/Widgets/Store.hpp>
 
 #include <UserInterface/Dialogs/Payload.hpp>
 
@@ -33,6 +34,7 @@ public:
 public:
     Widgets::Chat*                    TeamserverChat      = {};
     class Teamserver*                 Teamserver          = {};
+    class Store*                      Store               = {};
     Widgets::SessionTable*            SessionTableWidget  = {};
     GraphWidget*                      SessionGraphWidget  = {};
     Widgets::ListenersTable*          ListenerTableWidget = {};

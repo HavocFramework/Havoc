@@ -35,6 +35,7 @@ public:
     QAction*               actionDisconnect              = {};
     QAction*               actionExit                    = {};
     QAction*               actionTeamserver              = {};
+    QAction*               actionStore                   = {};
     QAction*               actionGeneratePayload         = {};
     QAction*               actionLoad_Script             = {};
     QAction*               actionPythonConsole           = {};
