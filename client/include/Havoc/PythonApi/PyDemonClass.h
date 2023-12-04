@@ -51,6 +51,7 @@ PyObject*   DemonClass_DotnetInlineExecute( PPyDemonClass self, PyObject *args )
 PyObject*   DemonClass_RegisterCallback( PPyDemonClass self, PyObject *args );
 PyObject*   DemonClass_Command( PPyDemonClass self, PyObject *args );
 PyObject* DemonClass_CommandGetOutput( PPyDemonClass self, PyObject *args );
+PyObject*   DemonClass_ShellcodeSpawn( PPyDemonClass self, PyObject *args );
 
 // Utils
 PyObject*   DemonClass_ConsoleWrite( PPyDemonClass self, PyObject *args );
