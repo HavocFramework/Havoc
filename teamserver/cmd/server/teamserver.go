@@ -192,8 +192,6 @@ func (t *Teamserver) Start() {
 	// start teamserver service
 	if t.Profile.Config.Service != nil {
 
-		logger.Warn("Service api has been disabled for this version.")
-
 		// 3rd Party Agent Support Enabled
 		t.Service = service.NewService(t.Server.Engine)
 		t.Service.Teamserver = t
