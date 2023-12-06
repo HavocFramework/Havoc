@@ -21,8 +21,9 @@ func (demons) NewDemon(Agent *agent.Agent) packager.Package {
 		Package    packager.Package
 	)
 
-	Package.Head.Event = packager.Type.Session.Type
-	Package.Head.Time = time.Now().Format("02/01/2006 15:04:05")
+	Package.Head.Event   = packager.Type.Session.Type
+	Package.Head.Time    = time.Now().Format("02/01/2006 15:04:05")
+	Package.Head.OneTime = "true"
 
 	Package.Body.SubEvent = packager.Type.Session.NewSession
 	Package.Body.Info = make(map[string]interface{})

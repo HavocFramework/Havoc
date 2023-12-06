@@ -1,0 +1,22 @@
+[font]
+size   = 9
+family = "Monospace"
+
+[scripts]
+files = [
+  "client/Modules/Packer/packer.py",
+  "client/Modules/InvokeAssembly/invokeassembly.py",
+  "client/Modules/PowerPick/powerpick.py",
+  "client/Modules/SituationalAwareness/SituationalAwareness.py",
+  "client/Modules/Delegation/delegation.py",
+  "client/Modules/RemoteOps/RemoteOps.py",
+  "client/Modules/Domaininfo/Domaininfo.py",
+  "client/Modules/Jump-exec/ScShell/scshell.py",
+  "client/Modules/Jump-exec/Psexec/psexec.py",
+  "client/Modules/Jump-exec/WMI/wmi.py",
+  "client/Modules/nanodump/nanodump.py",
+  "client/Modules/nanorobeus/nanorobeus.py",
+  "client/Modules/Bofbelt/bofbelt.py",
+  "client/Modules/SamDump/samdump.py",
+  "client/Modules/NoConsolation/no-consolation.py"
+]

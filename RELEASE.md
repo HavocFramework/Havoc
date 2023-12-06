@@ -57,3 +57,15 @@ Commit: https://github.com/HavocFramework/Havoc/commit/133f6ead8085147dc39beb368
 - refactor TS logs
 
 Commits/PR: https://github.com/HavocFramework/Havoc/pull/310
+
+### Version `0.6` | `Hierophant Green`
+
+- refactored/rewritten indirect syscalls (no more RX/RWX stubs)
+- proxy library loading
+- random order module & function resolving.
+- x86 demon implants.
+- cross process arch injection
+- AMSI/ETW patching using Hardware breakpoints
+- overall agent refactoring and bug fixes
+
+Push: https://github.com/HavocFramework/Havoc/pull/371

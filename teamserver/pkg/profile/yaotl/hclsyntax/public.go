@@ -89,7 +89,7 @@ func ParseTemplate(src []byte, filename string, start hcl.Pos) (Expression, hcl.
 
 // ParseTraversalAbs parses the given buffer as a standalone absolute traversal.
 //
-// Parsing as a traversal is more limited than parsing as an expession since
+// Parsing as a traversal is more limited than parsing as an expression since
 // it allows only attribute and indexing operations on variables. Traverals
 // are useful as a syntax for referring to objects without necessarily
 // evaluating them.

@@ -60,17 +60,11 @@ func (p *Packer) AddUInt32(data uint32) {
 }
 
 func (p *Packer) AddString(data string) {
-    var buffer = make([]byte, 4)
-    binary.LittleEndian.PutUint32(buffer, uint32(len(data)))
-    p.data = append(p.data, buffer...)
-    p.data = append(p.data, []byte(data)...)
-
-    p.size += 4
-    p.size += len(data)
+    p.AddBytes(common.EncodeUTF8(data))
 }
 
 func (p *Packer) AddWString(data string) {
-    p.AddString(common.EncodeUTF16(data))
+    p.AddBytes(common.EncodeUTF16(data))
 }
 
 func (p *Packer) AddBytes(data []byte) {

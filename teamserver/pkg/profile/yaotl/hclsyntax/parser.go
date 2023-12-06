@@ -1305,7 +1305,7 @@ func (p *parser) parseObjectCons() (Expression, hcl.Diagnostics) {
         }
 
         // Wrapping parens are not explicitly represented in the AST, but
-        // we want to use them here to disambiguate intepreting a mapping
+        // we want to use them here to disambiguate interpreting a mapping
         // key as a full expression rather than just a name, and so
         // we'll remember this was present and use it to force the
         // behavior of our final ObjectConsKeyExpr.
@@ -2055,7 +2055,7 @@ func (p *parser) oppositeBracket(ty TokenType) TokenType {
     case TokenTemplateInterp:
         return TokenTemplateSeqEnd
     case TokenTemplateSeqEnd:
-        // This is ambigous, but we return Interp here because that's
+        // This is ambiguous, but we return Interp here because that's
         // what's assumed by the "recover" method.
         return TokenTemplateInterp
 

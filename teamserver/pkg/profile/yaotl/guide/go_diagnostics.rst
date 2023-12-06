@@ -16,7 +16,7 @@ possible concerns that do not block processing.
 HCL deviates from usual Go API practice by returning its own ``hcl.Diagnostics``
 type, instead of Go's own ``error`` type. This allows functions to return
 warnings without accompanying errors while not violating the usual expectation
-that the absense of errors is indicated by a nil ``error``.
+that the absence of errors is indicated by a nil ``error``.
 
 In order to easily accumulate and return multiple diagnostics at once, the
 usual pattern for functions returning diagnostics is to gather them in a

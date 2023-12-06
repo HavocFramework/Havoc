@@ -115,7 +115,7 @@ func DecodeUTF16(b []byte) string {
 	return ret.String()
 }
 
-func EncodeUTF16(s string) string {
+func EncodeUTF16(s string) []byte {
 	var err error
 
 	// in C, strings terminate with a null-byte
@@ -126,10 +126,19 @@ func EncodeUTF16(s string) string {
 	encoded, err := uni.NewEncoder().String(s)
 	if err != nil {
 		logger.Error("Failed to convert UTF8 to UTF16")
-		return ""
+		return []byte("")
 	}
 
-	return encoded
+	return []byte(encoded)
+}
+
+func EncodeUTF8(s string) []byte {
+	// in C, strings terminate with a null-byte
+	if strings.HasSuffix(s, "\x00") == false {
+		s += "\x00"
+	}
+
+	return []byte(s)
 }
 
 func ByteCountSI(b int64) string {
@@ -179,7 +188,7 @@ func PercentageChange(part int, total int64) float64 {
 
 func IpStringToInt32(ip string) (int, error) {
 	var long uint32
-	err := binary.Read(bytes.NewBuffer(net.ParseIP(ip).To4()), binary.BigEndian, &long)
+	err := binary.Read(bytes.NewBuffer(net.ParseIP(ip).To4()), binary.LittleEndian, &long)
 	if err != nil {
 		return 0, err
 	}
@@ -194,7 +203,7 @@ func Int32ToIpString(ipInt int64) string {
 	b2 := strconv.FormatInt((ipInt>>8)&0xff, 10)
 	b3 := strconv.FormatInt(ipInt&0xff, 10)
 
-	return b0 + "." + b1 + "." + b2 + "." + b3
+	return b3 + "." + b2 + "." + b1 + "." + b0
 }
 
 func EpochTimeToSystemTime( EpochTime int64 ) int64 {

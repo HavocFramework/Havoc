@@ -5,6 +5,7 @@ import (
 	"Havoc/pkg/agent"
 	"Havoc/pkg/common/certs"
 	"Havoc/pkg/db"
+	"Havoc/pkg/service"
 	"Havoc/pkg/webhook"
 	"bytes"
 	"encoding/hex"
@@ -191,9 +192,7 @@ func (t *Teamserver) Start() {
 	// start teamserver service
 	if t.Profile.Config.Service != nil {
 
-    logger.Warn("Service api has been disabled for this version.")
-
-    /*
+		// 3rd Party Agent Support Enabled
 		t.Service = service.NewService(t.Server.Engine)
 		t.Service.Teamserver = t
 		t.Service.Data.ServerAgents = &t.Agents
@@ -204,7 +203,7 @@ func (t *Teamserver) Start() {
 			logger.Info(fmt.Sprintf("%v starting service handle on %v", "["+colors.BoldWhite("SERVICE")+"]", colors.BlueUnderline(TeamserverWs+"/"+t.Service.Config.Endpoint)))
 		} else {
 			logger.Error("Teamserver service error: Endpoint not specified")
-		}*/
+		}
 	}
 
 	/* now load up our db or start a new one if none exist */
@@ -805,8 +804,6 @@ func (t *Teamserver) EventAppend(event packager.Package) []packager.Package {
 	if event.Head.OneTime != "true" {
 		t.EventsList = append(t.EventsList, event)
 		return append(t.EventsList, event)
-	} else {
-		logger.Debug("Onetime package. not gonna save: ", event)
 	}
 
 	return nil
@@ -821,6 +818,20 @@ func (t *Teamserver) EventRemove(EventID int) []packager.Package {
 func (t *Teamserver) SendAllPackagesToNewClient(ClientID string) {
 	for _, Package := range t.EventsList {
 		err := t.SendEvent(ClientID, Package)
+		if err != nil {
+			logger.Error("error while sending info to client("+ClientID+"): ", err)
+			return
+		}
+	}
+
+	// send all the agents that are alive right now to the new client
+	for _, demon := range t.Agents.Agents {
+		if demon.Active == false {
+			continue
+		}
+
+		pk := t.EventNewDemon(demon)
+		err := t.SendEvent(ClientID, pk)
 		if err != nil {
 			logger.Error("error while sending info to client("+ClientID+"): ", err)
 			return

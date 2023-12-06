@@ -285,7 +285,7 @@ requirement.
    If error diagnostics are returned, the result is invalid and should not be
    used.
 
-   This is the fucntion that Terraform uses to interpret the expression
+   This is the function that Terraform uses to interpret the expression
    assigned to ``depends_on`` in our example above, then in turn using
    ``AbsTraversalForExpr`` on each enclosed expression.
 

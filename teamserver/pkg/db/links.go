@@ -50,7 +50,7 @@ func (db *DB) LinkExist(ParentAgentID int, LinkAgentID int) bool {
 		return false
 	}
 
-	// execute statment
+	// execute statement
 	query, err := stmt.Query(ParentAgentID, LinkAgentID)
 	defer query.Close()
 	if err != nil {
@@ -83,7 +83,7 @@ func (db *DB) ParentOf(AgentID int) (int, error) {
 		return 0, err
 	}
 
-	// execute statment
+	// execute statement
 	query, err := stmt.Query(AgentID)
 	defer query.Close()
 	if err != nil {
@@ -113,7 +113,7 @@ func (db *DB) LinksOf(AgentID int) []int {
 		return IDs
 	}
 
-	// execute statment
+	// execute statement
 	query, err := stmt.Query(AgentID)
 	defer query.Close()
 	if err != nil {
@@ -140,7 +140,7 @@ func (db *DB) LinkRemove(ParentAgentID int, LinkAgentID int) error {
 		return err
 	}
 
-	// execute statment
+	// execute statement
 	_, err = stmt.Exec(ParentAgentID, LinkAgentID)
 	stmt.Close()
 

@@ -69,7 +69,7 @@ decoding API:
 
    .. go:function:: func (b Body) JustAttributes() (Attributes, Diagnostics)
 
-      Decode the content from the receving body in a special *attributes-only*
+      Decode the content from the receiving body in a special *attributes-only*
       mode, allowing the calling application to enumerate the arguments given
       inside the body without needing to predict them in schema.
 
@@ -88,7 +88,7 @@ decoding API:
 
       Returns a source range that points to where an absent required item in
       the body might be placed. This is a "best effort" sort of thing, required
-      only to be somewhere inside the receving body, as a way to give source
+      only to be somewhere inside the receiving body, as a way to give source
       location information for a "missing required argument" sort of error.
 
 The main content-decoding methods each require a :go:type:`hcl.BodySchema`

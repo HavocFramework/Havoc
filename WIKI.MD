@@ -268,7 +268,7 @@ Here is a full list of arguments that can be passed to the teamserver:
 | -------- | ---- | ----------- | ----- |
 | `server` |`--profile` | The configuration profile to load at start | Teamserver profile path (`string`) |
 |  | `-v` / `--verbose` | Enable verbose output | |
-|  | `-d` / `--debug` | Enable debug ouput | |
+|  | `-d` / `--debug` | Enable debug output | |
 |  | `-h` / `--help` | Output server help | |
 |  | `--debug-dev` | Enables DEBUG output (see below for caveats) | |
 
@@ -276,7 +276,7 @@ Here is a full list of arguments that can be passed to the teamserver:
 
 > DEBUG output can be enabled by passing the `--debug-dev` flag to the Teamserver.
 
-When this flag is set, the Teamserver's `builder` class adds the `-D DEBUG` flag to the `builder.compilerOptions.CFlags` array and removes the `-nostdlib` flag to enable output to be printed to the console. Demon agent payloads genereated from the Havoc client will print visible DEBUG text in the console window after execution. The stdlib will be linked into the payload for this to occur, increasing the payload size.
+When this flag is set, the Teamserver's `builder` class adds the `-D DEBUG` flag to the `builder.compilerOptions.CFlags` array and removes the `-nostdlib` flag to enable output to be printed to the console. Demon agent payloads generated from the Havoc client will print visible DEBUG text in the console window after execution. The stdlib will be linked into the payload for this to occur, increasing the payload size.
 
 ### <a name="tprofiles"></a>Profiles
 
@@ -515,7 +515,7 @@ During sleep, x64 demons may implement [return address spoofing](https://www.unk
 
 Demon implements a multi-threaded job management system that allows the operator to manage long-running tasks. 
 
-> OPSEC NOTE: Long-running jobs will PREVENT sleep obfuscation from occuring at the specified sleep interval due to the other threads running. Sleep obfuscation will only occur when there are no job threads in a running state.
+> OPSEC NOTE: Long-running jobs will PREVENT sleep obfuscation from occurring at the specified sleep interval due to the other threads running. Sleep obfuscation will only occur when there are no job threads in a running state.
 
 - `job list` - Lists all running jobs.
 - `job suspend 1` - Suspends a job with the ID of 1

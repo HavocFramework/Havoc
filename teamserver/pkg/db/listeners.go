@@ -156,7 +156,7 @@ func (db *DB) ListenerRemove(Name string) error {
 		return err
 	}
 
-	// execute statment
+	// execute statement
 	_, err = stmt.Exec(Name)
 	stmt.Close()
 
