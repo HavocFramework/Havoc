@@ -187,6 +187,23 @@ func (t *Teamserver) Start() {
 				t.WebHooks.SetDiscord(AvatarUrl, UserName, t.Profile.Config.WebHook.Discord.WebHook)
 			}
 		}
+
+		if t.Profile.Config.WebHook.Mattermost != nil {
+			var (
+				AvatarUrl string
+				UserName  string
+			)
+			if len(t.Profile.Config.WebHook.Mattermost.AvatarUrl) > 0 {
+				AvatarUrl = t.Profile.Config.WebHook.Mattermost.AvatarUrl
+			}
+			if len(t.Profile.Config.WebHook.Mattermost.UserName) > 0 {
+				UserName = t.Profile.Config.WebHook.Mattermost.UserName
+			}
+
+			if len(t.Profile.Config.WebHook.Mattermost.WebHook) > 0 {
+				t.WebHooks.SetMattermost(AvatarUrl, UserName, t.Profile.Config.WebHook.Mattermost.WebHook)
+			}
+		}
 	}
 
 	// start teamserver service

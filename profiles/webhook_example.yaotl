@@ -14,6 +14,20 @@ WebHook {
         # optional
         User = "Havoc" # User name of the webhook bot
     }
+    
+#    
+#   Mattermost {
+#       # required
+#       Url = "..." # replace this with your webhook
+#
+#       # optional
+#       AvatarUrl = "https://raw.githubusercontent.com/HavocFramework/Havoc/main/assets/Havoc.png" # url to an image to use as an avatar
+#
+#       # optional
+#       User = "Havoc" # User name of the webhook bot
+#   }
+#
+
 }
 
 Operators {
