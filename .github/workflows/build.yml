@@ -3,7 +3,7 @@ name: CI/CD
 on:
   push:
     branches:
-      - cicd
+      - '*' # replace with branch if you only want a specific branch
 
 jobs:
   build:
