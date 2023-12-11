@@ -2,7 +2,7 @@
 
 MYDIR=$(pwd)
 if [ "$(basename "$MYDIR")" == "teamserver" ]; then
-    cd ..
+	cd ..
 fi
 
 if [ ! -d "data/x86_64-w64-mingw32-cross" ]; then
