@@ -2,8 +2,6 @@ name: build
 
 on:
   push:
-    branches:
-      - '*' # replace with branch if you only want a specific branch
     branches-ignore:
       - client-rewrite
       
