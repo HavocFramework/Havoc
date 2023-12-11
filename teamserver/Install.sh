@@ -1,5 +1,10 @@
 #!/bin/bash
 
+MYDIR=$(pwd)
+if [ "$(basename "$MYDIR")" == "teamserver" ]; then
+    cd ..
+fi
+
 if [ ! -d "data/x86_64-w64-mingw32-cross" ]; then
 	sudo apt -qq --yes install golang-go nasm mingw-w64 wget >/dev/null 2>&1
 
@@ -20,3 +25,5 @@ if [ ! -d "data/x86_64-w64-mingw32-cross" ]; then
 
 	tar zxf /tmp/mingw-musl-32.tgz -C data
 fi
+
+cd "$MYDIR"
