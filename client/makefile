@@ -7,8 +7,7 @@ endif
 all:
 	@ git submodule update --init --recursive
 	@ mkdir -p Build; cd Build; cmake ..
-	#@ if [ -d "Modules" ]; then echo "Modules installed"; else git clone --recurse-submodules https://github.com/HavocFramework/Modules Modules --single-branch --branch `git rev-parse --abbrev-ref HEAD`; fi
-	@ if [ -d "Modules" ]; then echo "Modules installed"; else git clone --recurse-submodules https://github.com/HavocFramework/Modules Modules --single-branch --branch dev; fi
+	@ if [ -d "Modules" ]; then echo "Modules installed"; else git clone --recurse-submodules https://github.com/HavocFramework/Modules Modules --single-branch --branch `git rev-parse --abbrev-ref HEAD`; fi
 	@ cmake --build Build -- -j 4
 
 clean:
