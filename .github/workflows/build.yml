@@ -24,5 +24,5 @@ jobs:
     - name: Build teamserver
       run: make ts-build
 
-    - name: Build teamserver
+    - name: Build client
       run: make client-build
