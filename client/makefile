@@ -12,7 +12,6 @@ all:
 
 clean:
 	@ rm -rf Build
-	@ rm -rf Bin/*
 	@ rm -rf ../data/client.db
 	@ rm -rf .idea
 	@ rm -rf cmake-build-debug
