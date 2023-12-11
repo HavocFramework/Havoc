@@ -63,5 +63,4 @@ func startMenu() {
 	fmt.Println()
 	fmt.Println("  	", colors.Red("pwn"), "and", colors.Blue("elevate"), "until it's done")
 	fmt.Println()
-	fmt.Println("test...")
 }
