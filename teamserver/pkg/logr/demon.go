@@ -37,6 +37,7 @@ func (l Logr) AddAgentInput(AgentType, AgentID, User, TaskID, Input string, time
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer f.Close()
 
 	InputString = fmt.Sprintf("\n[Time: %v] [User: %v] [TaskID: %v] %v => %v\n", time, User, TaskID, AgentType, Input)
 
@@ -71,6 +72,7 @@ func (l Logr) AddAgentRaw(AgentID, Raw string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer f.Close()
 
 	_, err = f.Write([]byte(Raw))
 	if err != nil {
@@ -103,6 +105,7 @@ func (l Logr) DemonAddOutput(DemonID string, Output map[string]string, time stri
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer f.Close()
 
 	var OutputString string
 
