@@ -15,7 +15,7 @@ void Store::setupUi( QWidget* Store)
     QNetworkReply *reply = manager->get(QNetworkRequest(url));
 
     if ( Store->objectName().isEmpty() )
-        Store->setObjectName( QString::fromUtf8( "Extentions" ) );
+        Store->setObjectName( QString::fromUtf8( "Extensions" ) );
 
     horizontalLayout = new QHBoxLayout( Store );
     horizontalLayout->setObjectName( QString::fromUtf8( "horizontalLayout" ) );
@@ -38,13 +38,13 @@ void Store::setupUi( QWidget* Store)
     root_panelLayout = new QVBoxLayout(panelStore);
     root_panelLayout->addWidget(panelScroll);
 
-    headerLabelTitle = new QLabel( "<h1>Havoc Extentions!</h1>", panelStore );
+    headerLabelTitle = new QLabel( "<h1>Havoc Extensions!</h1>", panelStore );
     headerLabelTitle->setWordWrap(true);
     panelLayout->addWidget(headerLabelTitle);
     panelLabelAuthor = new QLabel( "<span style='color:#71e0cb'>The author</span>", panelStore );
     panelLabelAuthor->setWordWrap(true);
     panelLayout->addWidget(panelLabelAuthor);
-    panelLabelDescription = new QLabel( "This tab is to install extentions inside of havoc!", panelStore );
+    panelLabelDescription = new QLabel( "This tab is to install extensions inside of havoc!", panelStore );
     panelLabelDescription->setWordWrap(true);
     panelLayout->addWidget(panelLabelDescription);
     installButton = new QPushButton("Install");
@@ -223,5 +223,5 @@ void Store::installScript(int position)
 
 void Store::retranslateUi()
 {
-    StoreWidget->setWindowTitle( QCoreApplication::translate( "Extentions", "Extentions", nullptr ) );
+    StoreWidget->setWindowTitle( QCoreApplication::translate( "Extensions", "Extensions", nullptr ) );
 }
