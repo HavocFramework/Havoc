@@ -367,7 +367,7 @@ void HavocNamespace::UserInterface::HavocUi::retranslateUi(QMainWindow* Havoc ) 
     actionDisconnect->setText( "Disconnect" );
     actionExit->setText( "Exit" );
     actionTeamserver->setText( "Teamserver" );
-    actionStore->setText( "Extentions" );
+    actionStore->setText( "Extensions" );
     actionGeneratePayload->setText( "Payload" );
     actionLoad_Script->setText(  "Scripts Manager" );
     actionPythonConsole->setText( "Script Console" );
@@ -472,7 +472,7 @@ void HavocNamespace::UserInterface::HavocUi::ConnectEvents()
 
         NewBottomTab(
             HavocX::Teamserver.TabSession->Store->StoreWidget,
-            "Extentions"
+            "Extensions"
         );
     } );
 
