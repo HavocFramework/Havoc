@@ -22,3 +22,5 @@ clean:
 	@ rm -rf ../data/server.*
 	@ rm -rf .idea
 	@ rm -rf ../havoc
+	@ rm -rf /tmp/mingw-musl-64.tgz
+	@ rm -rf /tmp/mingw-musl-32.tgz
