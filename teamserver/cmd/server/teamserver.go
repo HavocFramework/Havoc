@@ -253,6 +253,7 @@ func (t *Teamserver) Start() {
 				Headers:      listener.Headers,
 				Uris:         listener.Uris,
 				Secure:       listener.Secure,
+				HostHeader:   listener.HostHeader,
 			}
 
 			if listener.Cert != nil {
