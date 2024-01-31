@@ -140,6 +140,17 @@ func (h *HTTP) request(ctx *gin.Context) {
 		}
 	}
 
+	if len(h.Config.HostHeader) > 0 {
+		if strings.ToLower(ctx.Request.Host) == strings.ToLower(h.Config.HostHeader) {
+			valid = true
+		} else if strings.ToLower(ctx.Request.Header.Get("X-Forwarded-Host")) == strings.ToLower(h.Config.HostHeader) {
+			valid = true
+		} else {
+			MissingHdr = "Host: " + ctx.Request.Host + "; X-Forwarded-Host: " + ctx.Request.Header.Get("X-Forwarded-Host")
+			valid = false
+		}
+	}
+
 	if valid == false {
 		logger.Warn(fmt.Sprintf("got a request with an invalid header: %s", MissingHdr))
 		h.fake404(ctx)
