@@ -77,6 +77,7 @@ type ListenerHTTP struct {
 	Headers   []string `yaotl:"Headers,optional"`
 	Uris      []string `yaotl:"Uris,optional"`
 	Secure    bool     `yaotl:"Secure,optional"`
+    HostHeader string  `yaotl:"HostHeader,optional"`
 
 	/* optional sub blocks */
 	Cert     *ListenerHttpCerts    `yaotl:"Cert,block"`
