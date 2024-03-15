@@ -8,14 +8,6 @@ body:
   - type: markdown
     attributes:
       value: "Thanks for taking the time to fill out this bug report!"
-  - type: input
-    id: contact
-    attributes: 
-      label: "Contact Details"
-      description: "How can we get in touch with you if we need more info?"
-      placeholder: "ex. email@example.com"
-    validations: 
-      required: false
   - type: textarea
     id: what-happened
     attributes: 
@@ -26,22 +18,12 @@ body:
     validations: 
       required: true
   - type: dropdown
-    id: version
-    attributes: 
-      label: Did You Do a Pull First?
-      description: "What version of our software are you running?"
-      options: 
-        - "Latest (You performed a pull first)"
-        - "Anything else (You didn't pull...)"
-    validations: 
-      required: true
-  - type: dropdown
     id: branch
     attributes: 
       label: Did You Try With the Dev Branch?
       description: "This branch has the latest features and fixes so it might solve your problem"
       options: 
-        - "Yes (You tried using the dev branch but the problem persist)"
+        - "Yes (You tried using the dev branch but the problem persists)"
         - "No (You only tried the main branch...)"
     validations: 
       required: true
