@@ -9,6 +9,10 @@ auto main(
     auto HavocApp = QApplication( argc, argv );
     auto Status   = 0;
 
+#ifdef Q_OS_MAC
+    QApplication::setStyle("Fusion");
+#endif
+
     QGuiApplication::setWindowIcon( QIcon( ":/Havoc.ico" ) );
 
     HavocNamespace::HavocApplication = new HavocNamespace::HavocSpace::Havoc( new QMainWindow );
