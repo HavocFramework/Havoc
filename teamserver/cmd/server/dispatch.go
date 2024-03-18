@@ -873,6 +873,9 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 						PayloadBuilder.SetArch(builder.ARCHITECTURE_X86)
 					}
 
+					var Name string
+					Name = "demon"
+
 					var Ext string
 					if Arch == "x64" {
 						Ext = ".x64"
@@ -886,6 +889,7 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 					} else if Format == "Windows Service Exe" {
 						PayloadBuilder.SetFormat(builder.FILETYPE_WINDOWS_SERVICE_EXE)
 						Ext += ".exe"
+						Name += "_svc"
 					} else if Format == "Windows Dll" {
 						PayloadBuilder.SetFormat(builder.FILETYPE_WINDOWS_DLL)
 						Ext += ".dll"
@@ -915,7 +919,7 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 					if PayloadBuilder.Build() {
 						pal := PayloadBuilder.GetPayloadBytes()
 						if len(pal) > 0 {
-							err := t.SendEvent(PayloadBuilder.ClientId, events.Gate.SendStageless("demon"+Ext, pal))
+							err := t.SendEvent(PayloadBuilder.ClientId, events.Gate.SendStageless(Name+Ext, pal))
 							if err != nil {
 								logger.Error("Error while sending event: " + err.Error())
 								return
