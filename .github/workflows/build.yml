@@ -1,0 +1,25 @@
+name: build
+
+on: [pull_request, push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.18
+
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+
+    - name: Build teamserver
+      run: make ts-build
+
+    - name: Build client
+      run: make client-build
