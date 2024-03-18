@@ -4858,7 +4858,7 @@ func (a *Agent) TaskDispatch(RequestID uint32, CommandID uint32, Parser *parser.
 						}
 
 						Message["Type"] = "Good"
-						Message["Message"] = "Successful took screenshot"
+						Message["Message"] = "Successfully took screenshot"
 
 						Message["MiscType"] = "screenshot"
 						Message["MiscData"] = base64.StdEncoding.EncodeToString(BmpBytes)
