@@ -12,6 +12,8 @@
 #include <QScrollBar>
 #include <QKeyEvent>
 #include <QGraphicsSceneWheelEvent>
+#include <QSaveFile>
+#include <QFileDialog>
 
 // imagelabel.cpp
 ImageLabel::ImageLabel( QWidget* parent ) : QWidget( parent )
@@ -328,6 +330,28 @@ void LootWidget::onScreenshotTableClick( const QModelIndex &index )
 
 void LootWidget::onDownloadTableClick( const QModelIndex &index )
 {
+    auto DemonID  = ComboAgentID->currentText();
+    auto FileName = DownloadTable->item( index.row(), 0 )->text();
+
+    for ( auto& item : LootItems )
+    {
+        if ( DemonID.compare( "[ All ]" ) == 0 || DemonID.compare( item.AgentID ) == 0 )
+        {
+            if ( item.Type == LOOT_FILE )
+            {
+                if ( item.Data.Name.compare( FileName ) == 0 )
+                {
+                    QFileInfo fi(FileName);
+                    QString saveFileName = QFileDialog::getSaveFileName(this, tr("Save File"),
+                            fi.fileName(), tr("All (*)"));
+                    QSaveFile file(saveFileName);
+                    file.open(QIODevice::WriteOnly);
+                    file.write(item.Data.Data);
+                    file.commit();
+                }
+            }
+        }
+    }
 
 }
 
