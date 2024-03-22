@@ -128,7 +128,7 @@ COFFAPIFUNC NtApi[] = {
         { .NameHash = 0, .Pointer = NULL },
 };
 
-uint32_t swap_endianess(uint32_t indata) {
+uint32_t swap_endianness(uint32_t indata) {
     uint32_t testint = 0xaabbccdd;
     uint32_t outint = indata;
     if (((unsigned char*)&testint)[0] == 0xdd) {
@@ -415,7 +415,7 @@ VOID BeaconFormatInt( PFORMAT format, int value)
     if (format->length + 4 > format->size) {
         return;
     }
-    outdata = swap_endianess(indata);
+    outdata = swap_endianness(indata);
     MemCopy(format->buffer, &outdata, 4);
     format->length += 4;
     format->buffer += 4;
