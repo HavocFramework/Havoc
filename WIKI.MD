@@ -73,7 +73,7 @@ Havoc is a modern and malleable post-exploitation command and control framework.
 
 ## <a name="kissues"></a>Known Issues
 
-> See the Issues tab for all open issues. 
+> See the Issues tab for all open issues.
 
 ### Kali Linux Font/Formatting Issues
 
@@ -81,7 +81,7 @@ Kali has issues loading the proper font (Monaco) from the embedeed Qt resources 
 
 _You will experience formatting issues in the Havoc client if you are not using a monospace/fixed-width font!_
 
-### Build Errors 
+### Build Errors
 
 #### `fatal error: Python.h: No such file or directory`
 
@@ -175,7 +175,7 @@ make client-build
 
 Install additional Go dependencies:
 ```
-go mod download golang.org/x/sys  
+go mod download golang.org/x/sys
 go mod download github.com/ugorji/go
 ```
 
@@ -186,7 +186,7 @@ make ts-build
 
 # Run the teamserver
 sudo ./havoc server --profile ./profiles/havoc.yaotl -v --debug
-``` 
+```
 
 All files created during interaction with the Teamserver are stored within the `/Havoc/data/*` folder.
 
@@ -222,7 +222,7 @@ This part assumes you have a Teamserver running, with a Teamserver-client connec
 - Creating a Listener:
     1. To create a new listener, we must first open the `Listeners` subwindow.
         * To do this, in the upper left hand corner, click on the `View` button, and then on the `Listeners` button in the drop down menu.
-        * ![Listeners-select](./assets/Screenshots/Listeners-select.png)    
+        * ![Listeners-select](./assets/Screenshots/Listeners-select.png)
     2. You should see a new sub window in the bottom of the server window, with the title of `Listeners` on the header tab.
     3. You should also now see three(3) buttons on the bottom of the server window, `Add`, `Remove` and `Edit`.
         * ![Listeners-Add-select](./assets/Screenshots/Listeners-Add-New-Remove.png)
@@ -236,7 +236,7 @@ This part assumes you have a Teamserver running, with a Teamserver-client connec
     9. We now have an active Listener, and are ready to receive an incoming agent's communications!
 - Spawning an Agent:
     1. To create an Agent Payload, we must first open the `Payload` window.
-        * We can do so by going up to the upper left hand corner, and clicking on the `Attack` button. 
+        * We can do so by going up to the upper left hand corner, and clicking on the `Attack` button.
     2. Doing so, we see the `Payload` button appear in the drop down menu. We want to then click on it.
         * ![Agent-select](./assets/Screenshots/Agent-select.png)
     3. This will open the `Payload` window, where we may then configure the various options for generating our payload.
@@ -264,13 +264,13 @@ Usage: `teamserver [command] [flags]`
 
 Here is a full list of arguments that can be passed to the teamserver:
 
-| Command  | Flag | Description | Args |
-| -------- | ---- | ----------- | ----- |
-| `server` |`--profile` | The configuration profile to load at start | Teamserver profile path (`string`) |
-|  | `-v` / `--verbose` | Enable verbose output | |
-|  | `-d` / `--debug` | Enable debug output | |
-|  | `-h` / `--help` | Output server help | |
-|  | `--debug-dev` | Enables DEBUG output (see below for caveats) | |
+| Command  | Flag               | Description                                  | Args                               |
+|----------|--------------------|----------------------------------------------|------------------------------------|
+| `server` | `--profile`        | The configuration profile to load at start   | Teamserver profile path (`string`) |
+|          | `-v` / `--verbose` | Enable verbose output                        |                                    |
+|          | `-d` / `--debug`   | Enable debug output                          |                                    |
+|          | `-h` / `--help`    | Output server help                           |                                    |
+|          | `--debug-dev`      | Enables DEBUG output (see below for caveats) |                                    |
 
 #### Enabling DEBUG Output
 
@@ -291,7 +291,7 @@ The default example profile can be found at `Havoc/Teamserver/profiles/havoc_def
 The teamserver can be configured to listen on a specific bind address and port with the following directive:
 
 ```hcl
-Teamserver { 
+Teamserver {
     Host = "0.0.0.0"
     Port = 40056
 }
@@ -423,11 +423,11 @@ Running `./havoc client` will start the Client.
 
 ### <a name="cctt"></a>Connecting to the Teamserver
 
-When the client opens, you will be presented with a profile window similar to that in other C2 frameworks like Cobalt Strike. 
+When the client opens, you will be presented with a profile window similar to that in other C2 frameworks like Cobalt Strike.
 
 ![teamserver-client](./assets/Screenshots/Teamserver-Client-Fresh.png)
 
-Enter the profile name, teamserver bind address (`Host`) and `Port`, along with your defined username/password in the teamserver profile. 
+Enter the profile name, teamserver bind address (`Host`) and `Port`, along with your defined username/password in the teamserver profile.
 Then hit 'Connect' to connect your configured teamserver.
 
 ![teamserver-and-client](./assets/Screenshots/Teamserver-LoggedIn.png)
@@ -446,25 +446,25 @@ Demon is the primary Havoc agent, written in C/ASM. The source-code is located a
 
 > Currently, only x64 EXE/DLL formats are supported.
 
-From the Havoc UI, nagivate to `Attack -> Payload`. 
+From the Havoc UI, nagivate to `Attack -> Payload`.
 
 #### <a name="adlay"></a>Layout
 
-| Directory       | Description                                           |
-| --------------- | ----------------------------------------------------- |
-| `Source/Asm`    | Assembly code (return address stack spoofing)         |
-| `Source/Core`   | Core functionality (transport, win32 apis, syscalls)  |
-| `Source/Crypt`  | AES encryption functionality                          |
-| `Source/Extra`  | KaynLdr (reflective loader)                           |
-| `Source/Inject` | Injection functionality                               |
-| `Source/Loader` | COFF Loader, Beacon API                               |
-| `Source/Main`   | PE/DLL/RDLL Entry Points                              |
+| Directory       | Description                                          |
+|-----------------|------------------------------------------------------|
+| `Source/Asm`    | Assembly code (return address stack spoofing)        |
+| `Source/Core`   | Core functionality (transport, win32 apis, syscalls) |
+| `Source/Crypt`  | AES encryption functionality                         |
+| `Source/Extra`  | KaynLdr (reflective loader)                          |
+| `Source/Inject` | Injection functionality                              |
+| `Source/Loader` | COFF Loader, Beacon API                              |
+| `Source/Main`   | PE/DLL/RDLL Entry Points                             |
 
 #### <a name="adft"></a> Features
 
 ##### Indirect Syscalls
 
-When compiled with `OBF_SYSCALL`, Demon performs indirect syscalls for many Nt* APIs. By masquerading the `RIP` to point to a location within `ntdll.dll`, traps placed by EDR solutions (such as process instrumentation callbacks or other forms of sycall tracing)may be evaded. 
+When compiled with `OBF_SYSCALL`, Demon performs indirect syscalls for many Nt* APIs. By masquerading the `RIP` to point to a location within `ntdll.dll`, traps placed by EDR solutions (such as process instrumentation callbacks or other forms of sycall tracing)may be evaded.
 
 The Syscall logic is primarily contained within `/Teamserver/data/implants/Demon/Source/Core/Syscalls.c`
 
@@ -513,7 +513,7 @@ During sleep, x64 demons may implement [return address spoofing](https://www.unk
 
 ##### `job`
 
-Demon implements a multi-threaded job management system that allows the operator to manage long-running tasks. 
+Demon implements a multi-threaded job management system that allows the operator to manage long-running tasks.
 
 > OPSEC NOTE: Long-running jobs will PREVENT sleep obfuscation from occurring at the specified sleep interval due to the other threads running. Sleep obfuscation will only occur when there are no job threads in a running state.
 
@@ -531,9 +531,9 @@ Process management and enumeration system.
 - `proc list` - Display a list of running processes on the target.
 - `proc kill [pid]` - Kills a process with the specified PID
 - `proc create [state] [process] (args)` Start a process either in suspended or normal mode.
-- `proc module [pid]` lists loaded modules from the specified process. 
+- `proc module [pid]` lists loaded modules from the specified process.
 - `proc grep [process name]` searches for specified running process and shows Process Name, Process ID, Process Parent PID, Process User, Process Arch
-- `proc memory [pid] [memory protection]` queries process memory pages with specified Protection. 
+- `proc memory [pid] [memory protection]` queries process memory pages with specified Protection.
 
 
 ##### `token`
@@ -561,7 +561,7 @@ Demon is capable of injecting shellcode (supplied in raw format as a path) into 
 - `shellcode inject x64 [pid] [path-to-raw-shellcode]` - Injects shellcode into the remote process
 - `shellcode spawn x64 [path-to-raw-shellcode]` - Launches the defined fork & run process and injects the shellcode
 
-> OPSEC NOTE: Depending on your injection technique and configuration settings, certain API calls may be performed outside of indirect syscalls. 
+> OPSEC NOTE: Depending on your injection technique and configuration settings, certain API calls may be performed outside of indirect syscalls.
 
 Here is a high-level overview of each supported process injection technique:
 
@@ -574,7 +574,7 @@ Here is a high-level overview of each supported process injection technique:
     - `DX_MEM_SYSCALL -> NtAllocateVirtualMemory*`
 3. `NtWriteVirtualMemory*`
 4. `NtProtectVirtualMemory*`
-5. Create Thread 
+5. Create Thread
     - `DX_THREAD_WIN32 -> CreateRemoteThread`
     - `DX_THREAD_SYSCALL -> NtCreateThreadEx*`
 6. `NtResumeThread*`
@@ -597,7 +597,7 @@ The `inline-execute` works by first creating an instance of the CLR (Common Lang
 
 Havoc supports custom agents and ExternalC2 by using Teamserver service endpoints. These are configured using `Service` directives (see the Teamserver Profiles documentation).
 
-The Service module is for interacting with external services (custom agents, ExternalC2, etc). 
+The Service module is for interacting with external services (custom agents, ExternalC2, etc).
 
 By registering a Service directive, the Teamserver will automatically spawn a service listener that can route commands to/from the Teamserver.
 
@@ -608,7 +608,7 @@ Service {
 }
 ```
 
-This would create a service endpoint at `<teamserver-host>:<teamserver-port>/service-endpoint` that is authenticated with `service-password`. 
+This would create a service endpoint at `<teamserver-host>:<teamserver-port>/service-endpoint` that is authenticated with `service-password`.
 
 
 ## <a name="ca"></a>Custom Agents
@@ -655,7 +655,7 @@ class CommandShell(Command):
     ]
     Mitr = []
 
-    def job_generate( self, arguments: dict ) -> bytes:        
+    def job_generate( self, arguments: dict ) -> bytes:
         Task = Packer()
 
         Task.add_int( self.CommandId )
@@ -698,7 +698,7 @@ Official Modules:
 ## <a name="faq"></a>FAQ
 
 ### Why does Havoc not perform sleep obfuscation when jobs are running?
-Jobs are ran in their own threads, and sleep obfuscation requires that all threads are suspended in order to encrypt the heap, otherwise the process would crash. 
+Jobs are ran in their own threads, and sleep obfuscation requires that all threads are suspended in order to encrypt the heap, otherwise the process would crash.
 
 ---
 
