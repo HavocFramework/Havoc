@@ -1,0 +1,22 @@
+[font]
+size   = 15
+family = "Helvetica"
+
+[scripts]
+files = [
+  "Modules/Packer/packer.py",
+  "Modules/InvokeAssembly/invokeassembly.py",
+  "Modules/PowerPick/powerpick.py",
+  "Modules/SituationalAwareness/SituationalAwareness.py",
+  "Modules/Delegation/delegation.py",
+  "Modules/RemoteOps/RemoteOps.py",
+  "Modules/Domaininfo/Domaininfo.py",
+  "Modules/Jump-exec/ScShell/scshell.py",
+  "Modules/Jump-exec/Psexec/psexec.py",
+  "Modules/Jump-exec/WMI/wmi.py",
+  "Modules/nanodump/nanodump.py",
+  "Modules/nanorobeus/nanorobeus.py",
+  "Modules/Bofbelt/bofbelt.py",
+  "Modules/SamDump/samdump.py",
+  "Modules/NoConsolation/no-consolation.py"
+]
