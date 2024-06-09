@@ -1,3 +1,4 @@
+SHELL := /bin/bash
 ifndef VERBOSE
 .SILENT:
 endif
@@ -27,11 +28,19 @@ ts-cleanup:
 	@ rm -rf ./havoc
 
 # client building and cleanup targets 
-client-build: 
+client-build:
 	@ echo "[*] building client"
 	@ git submodule update --init --recursive
-	@ mkdir client/Build; cd client/Build; cmake ..
+	@ mkdir -p client/Build; cd client/Build; cmake ..
 	@ if [ -d "client/Modules" ]; then echo "Modules installed"; else git clone --recurse-submodules https://github.com/HavocFramework/Modules client/Modules --single-branch --branch `git rev-parse --abbrev-ref HEAD`; fi
+	@ cmake --build client/Build -- -j 4
+
+client-build-mac:
+	@ echo "[*] building client"
+	@ git submodule update --init --recursive
+	@ mkdir -p client/Build; cd client/Build; cmake ..
+	@ if [ -d "client/Modules" ]; then echo "Modules installed"; else git clone --recurse-submodules https://github.com/HavocFramework/Modules client/Modules --single-branch --branch `git rev-parse --abbrev-ref HEAD`; fi
+	@ rm client/external/toml/toml/exception.hpp ; cp exception_mac.hpp client/external/toml/toml/exception.hpp
 	@ cmake --build client/Build -- -j 4
 
 client-cleanup:
