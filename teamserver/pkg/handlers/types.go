@@ -9,6 +9,15 @@ import (
 )
 
 type (
+	ProxyConfig struct {
+		Enabled  bool
+		Type     string
+		Host     string
+		Port     string
+		Username string
+		Password string
+	}
+
 	HTTPConfig struct {
 		Name         string
 		KillDate     int64
@@ -31,14 +40,7 @@ type (
 			Key  string
 		}
 
-		Proxy struct {
-			Enabled  bool
-			Type     string
-			Host     string
-			Port     string
-			Username string
-			Password string
-		}
+		Proxy ProxyConfig
 
 		Response struct {
 			Headers []string
