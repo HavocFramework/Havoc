@@ -42,7 +42,7 @@ auto operator * ( string a, unsigned int b ) -> string
     return output;
 }
 
-static auto JoinAtIndex( QStringList list, int index ) -> QString
+static auto JoinAtIndex(QStringList list, int index) -> QString
 {
     QString string;
 
@@ -53,6 +53,26 @@ static auto JoinAtIndex( QStringList list, int index ) -> QString
             string.append( list[ index + i ] );
         else
             string.append( " " + list[ index + i ] );
+    }
+
+    return string;
+}
+
+static auto JoinAtIndexPreserveQuotes(QStringList list, int index) -> QString
+{
+    QString string;
+
+    int size = list.size();
+    for (int i = 0; i < (size - index); ++i)
+    {
+        if (i == 0) string.append(list[index + i]);
+        else
+        {
+            if (list[index + i].contains(" "))
+                string.append(" \"" + list[index + i] + "\"");
+            else
+                string.append(" " + list[index + i]);
+        }
     }
 
     return string;
@@ -2698,7 +2718,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
             auto ParamSize    = ParamArray.size();
             auto CommandFound = false;
 
-            ParamArray.erase( ParamArray.begin() );
+            ParamArray.erase(ParamArray.begin());
 
             if ( ! Send )
             {
@@ -2738,7 +2758,7 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                             }
                         }
                         else if (ParamSize > 1 && command.Params.size() < ParamSize && (command.Params.size() - i) == 1) 
-                            Value = JoinAtIndex(ParamArray, i);
+                            Value = JoinAtIndexPreserveQuotes(ParamArray, i);
                         else if (!command.Params[i].IsOptional)
                         {
                             if (i < ParamSize - 1) Value = ParamArray[i];
