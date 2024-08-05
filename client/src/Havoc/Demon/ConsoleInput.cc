@@ -2737,7 +2737,8 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                                 return false;
                             }
                         }
-                        else if (ParamSize > 1 && (command.Params.size() - i) == 1) Value = JoinAtIndex(ParamArray, i);
+                        else if (ParamSize > 1 && command.Params.size() < ParamSize && (command.Params.size() - i) == 1) 
+                            Value = JoinAtIndex(ParamArray, i);
                         else if (!command.Params[i].IsOptional)
                         {
                             if (i < ParamSize - 1) Value = ParamArray[i];
