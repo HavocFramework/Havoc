@@ -2693,7 +2693,8 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
         else
         {
             auto CommandInput = QMap<string, string>();
-            auto ParamArray   = commandline.split( " " );
+            auto ParamArray   = commandline.split(" ");
+            auto ParamSize    = ParamArray.size();
             auto CommandFound = false;
 
             ParamArray.erase( ParamArray.begin() );
@@ -2708,36 +2709,48 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                 }
             }
 
-            for ( auto & command : AgentData.Commands )
+            for (auto & command : AgentData.Commands)
             {
-                if ( InputCommands[ 0 ].compare( command.Name ) == 0 )
+                if (InputCommands[0].compare(command.Name) == 0)
                 {
                     TaskID       = Util::gen_random( 8 ).c_str();
                     CommandFound = true;
 
-                    CommandInput.insert( "TaskID",      TaskID.toStdString() );
-                    CommandInput.insert( "CommandLine", commandline.toStdString() );
-                    CommandInput.insert( "DemonID",     DemonConsole->SessionInfo.Name.toStdString() );
-                    CommandInput.insert( "Command",     command.Name.toStdString() );
+                    CommandInput.insert("TaskID",      TaskID.toStdString());
+                    CommandInput.insert("CommandLine", commandline.toStdString());
+                    CommandInput.insert("DemonID",     DemonConsole->SessionInfo.Name.toStdString());
+                    CommandInput.insert("Command",     command.Name.toStdString());
 
                     ParamArray.push_back("");
-                    for ( u32 i = 0; i < command.Params.size(); i++ )
+                    for (u32 i = 0; i < command.Params.size(); ++i)
                     {
                         auto Value = QString();
 
-                        if ( command.Params[ i ].IsFilePath )
+                        if (command.Params[i].IsFilePath)
                         {
-                            Value = FileRead( ParamArray[ i ] ).toBase64();
-                        }
-                        else
-                        {
-                            if ( ParamArray.size() > 1 && command.Params.size() == 1 )
-                                Value = ParamArray.join( " " );
+                            auto f = FileRead(ParamArray[i]);
+                            if (f != nullptr) Value = f.toBase64();
                             else
-                                Value = ParamArray[ i ];
+                            {
+                                CONSOLE_ERROR("File not found: " + ParamArray[i]);
+                                return false;
+                            }
                         }
+                        else if (!command.Params[i].IsOptional)
+                        {
+                            if (ParamSize > 1 && command.Params.size() == 1)
+                                Value = ParamArray.join(" ");
+                            else if (i < ParamSize - 1)
+                                Value = ParamArray[i];
+                            else
+                            {
+                                CONSOLE_ERROR("Required parameter not given: " + command.Params[i].Name);
+                                return false;
+                            }
+                        }
+                        else if (i < ParamSize - 1) Value = ParamArray[i];
 
-                        CommandInput.insert( command.Params[ i ].Name.toStdString(), Value.toStdString() );
+                        CommandInput.insert(command.Params[i].Name.toStdString(), Value.toStdString());
                     }
                 }
             }
