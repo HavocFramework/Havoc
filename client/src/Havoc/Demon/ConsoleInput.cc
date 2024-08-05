@@ -2737,12 +2737,10 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
                                 return false;
                             }
                         }
+                        else if (ParamSize > 1 && (command.Params.size() - i) == 1) Value = JoinAtIndex(ParamArray, i);
                         else if (!command.Params[i].IsOptional)
                         {
-                            if (ParamSize > 1 && command.Params.size() == 1)
-                                Value = ParamArray.join(" ");
-                            else if (i < ParamSize - 1)
-                                Value = ParamArray[i];
+                            if (i < ParamSize - 1) Value = ParamArray[i];
                             else
                             {
                                 CONSOLE_ERROR("Required parameter not given: " + command.Params[i].Name);
