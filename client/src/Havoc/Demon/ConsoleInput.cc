@@ -2693,7 +2693,8 @@ auto DemonCommands::DispatchCommand( bool Send, QString TaskID, const QString& c
         else
         {
             auto CommandInput = QMap<string, string>();
-            auto ParamArray   = commandline.split(" ");
+            auto ParamArray   = ParseQuotes(commandline);
+
             auto ParamSize    = ParamArray.size();
             auto CommandFound = false;
 
