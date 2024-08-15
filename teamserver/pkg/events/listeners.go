@@ -28,7 +28,7 @@ func (listeners) ListenerAdd(FromUser string, Type int, Config any) packager.Pac
 		Package.Body.Info = structs.Map(Config.(*handlers.HTTP).Config)
 
 		Package.Body.Info["Protocol"] = handlers.AGENT_HTTP
-		Package.Body.Info["Headers"] = strings.Join(Config.(*handlers.HTTP).Config.Headers, ", ")
+		Package.Body.Info["Headers"] = strings.Join(Config.(*handlers.HTTP).Config.Headers, "\r\n")
 		Package.Body.Info["Uris"] = strings.Join(Config.(*handlers.HTTP).Config.Uris, ", ")
 
 		/* proxy settings */
@@ -109,7 +109,7 @@ func (listeners) ListenerEdit(Type int, Config any) packager.Package {
 		Package.Body.Info = structs.Map(Config.(*handlers.HTTPConfig))
 
 		Package.Body.Info["Protocol"] = handlers.AGENT_HTTP
-		Package.Body.Info["Headers"] = strings.Join(Config.(*handlers.HTTPConfig).Headers, ", ")
+		Package.Body.Info["Headers"] = strings.Join(Config.(*handlers.HTTPConfig).Headers, "\r\n")
 		Package.Body.Info["Uris"] = strings.Join(Config.(*handlers.HTTPConfig).Uris, ", ")
 
 		// Proxy settings
@@ -129,7 +129,7 @@ func (listeners) ListenerEdit(Type int, Config any) packager.Package {
 		}
 
 		/* response */
-		Package.Body.Info["Response Headers"] = strings.Join(Config.(*handlers.HTTPConfig).Response.Headers, ", ")
+		Package.Body.Info["Response Headers"] = strings.Join(Config.(*handlers.HTTPConfig).Response.Headers, "\r\n")
 
 		delete(Package.Body.Info, "Proxy")
 		delete(Package.Body.Info, "Response")

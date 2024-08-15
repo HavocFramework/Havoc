@@ -371,7 +371,7 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 					}
 				}
 
-				for _, s := range strings.Split(pk.Body.Info["Headers"].(string), ", ") {
+				for _, s := range strings.Split(pk.Body.Info["Headers"].(string), "\r\n") {
 					if len(s) > 0 {
 						Headers = append(Headers, s)
 					}
@@ -665,7 +665,7 @@ func (t *Teamserver) DispatchEvent(pk packager.Package) {
 					}
 				}
 
-				for _, s := range strings.Split(pk.Body.Info["Headers"].(string), ", ") {
+				for _, s := range strings.Split(pk.Body.Info["Headers"].(string), "\r\n") {
 					if len(s) > 0 {
 						Headers = append(Headers, s)
 					}

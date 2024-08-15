@@ -389,7 +389,7 @@ func (t *Teamserver) Start() {
 			HandlerData.HostRotation = Data["HostRotation"].(string)
 			HandlerData.PortBind = Data["PortBind"].(string)
 			HandlerData.UserAgent = Data["UserAgent"].(string)
-			HandlerData.Headers = strings.Split(Data["Headers"].(string), ", ")
+			HandlerData.Headers = strings.Split(Data["Headers"].(string), "\r\n")
 			HandlerData.Uris = strings.Split(Data["Uris"].(string), ", ")
 			HandlerData.BehindRedir = t.Profile.Config.Demon.TrustXForwardedFor
 
@@ -403,7 +403,7 @@ func (t *Teamserver) Start() {
 				switch Data["Response Headers"].(type) {
 
 				case string:
-					HandlerData.Response.Headers = strings.Split(Data["Response Headers"].(string), ", ")
+					HandlerData.Response.Headers = strings.Split(Data["Response Headers"].(string), "\r\n")
 					break
 
 				default:

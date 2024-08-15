@@ -238,7 +238,7 @@ bool Packager::DispatchListener( Util::Packager::PPackage Package )
             if ( ListenerInfo.Protocol == Listener::PayloadHTTP.toStdString() )
             {
                 auto Headers = QStringList();
-                for ( auto& header : QString( Package->Body.Info[ "Headers" ].c_str() ).split( ", " ) ) {
+                for ( auto& header : QString( Package->Body.Info[ "Headers" ].c_str() ).split( "\r\n" ) ) {
                     Headers << header;
                 }
 
@@ -376,7 +376,7 @@ bool Packager::DispatchListener( Util::Packager::PPackage Package )
             if ( ListenerInfo.Protocol == Listener::PayloadHTTP.toStdString() )
             {
                 auto Headers = QStringList();
-                for ( auto& header : QString( Package->Body.Info[ "Headers" ].c_str() ).split( ", " ) )
+                for ( auto& header : QString( Package->Body.Info[ "Headers" ].c_str() ).split( "\r\n" ) )
                     Headers << header;
 
                 auto Uris = QStringList();
