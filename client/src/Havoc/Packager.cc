@@ -637,7 +637,7 @@ bool Packager::DispatchSession( Util::Packager::PPackage Package )
             TeamserverTab->SessionTableWidget->NewSessionItem( Agent );
             TeamserverTab->LootWidget->AddSessionSection( Agent.Name );
 
-            auto Time    = QString( Package->Head.Time.c_str() );
+            auto Time    = Agent.First;
             auto Message = "[" + Util::ColorText::Cyan( "*" ) + "]" + " Initialized " + Util::ColorText::Cyan( Agent.Name ) + " :: " + Util::ColorText::Yellow( Agent.User + "@" + Agent.Internal ) + Util::ColorText::Cyan( " (" ) + Util::ColorText::Red( Agent.Computer ) + Util::ColorText::Cyan( ")" );
 
             HavocX::Teamserver.TabSession->SmallAppWidgets->EventViewer->AppendText( Time, Message );
