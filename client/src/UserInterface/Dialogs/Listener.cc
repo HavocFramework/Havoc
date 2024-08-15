@@ -656,7 +656,7 @@ MapStrStr NewListener::Start( Util::ListenerItem Item, bool Edit )
                 if ( i == ( HeadersData.size() - 1 ) )
                     Headers += HeadersData.at( i )->text().toStdString();
                 else
-                    Headers += HeadersData.at( i )->text().toStdString() + ", ";
+                    Headers += HeadersData.at( i )->text().toStdString() + "\r\n";
 
                 delete HeadersData.at( i );
             }

@@ -239,7 +239,7 @@ func (t *Teamserver) ListenerAdd(FromUser string, Type int, Config any) packager
 
 		/* Now set the config/info */
 		Info["Hosts"] = strings.Join(Config.(*handlers.HTTP).Config.Hosts, ", ")
-		Info["Headers"] = strings.Join(Config.(*handlers.HTTP).Config.Headers, ", ")
+		Info["Headers"] = strings.Join(Config.(*handlers.HTTP).Config.Headers, "\r\n")
 		Info["Uris"] = strings.Join(Config.(*handlers.HTTP).Config.Uris, ", ")
 
 		/* proxy settings */
@@ -253,7 +253,7 @@ func (t *Teamserver) ListenerAdd(FromUser string, Type int, Config any) packager
 		Info["Secure"] = Config.(*handlers.HTTP).Config.Secure
 		Info["Status"] = Config.(*handlers.HTTP).Active
 
-		Info["Response Headers"] = strings.Join(Config.(*handlers.HTTP).Config.Response.Headers, ", ")
+		Info["Response Headers"] = strings.Join(Config.(*handlers.HTTP).Config.Response.Headers, "\r\n")
 
 		Info["Secure"] = "false"
 		if Config.(*handlers.HTTP).Config.Secure {
