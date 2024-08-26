@@ -1309,7 +1309,7 @@ ULONG RandomNumber32(
     Seed = NtGetTickCount();
     Seed = Instance->Win32.RtlRandomEx( &Seed );
 
-    return Seed % LONG_MAX;
+    return Seed;
 }
 
 /*!
