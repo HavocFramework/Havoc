@@ -42,6 +42,7 @@ type serverFlags struct {
 	Host string
 	Port string
 
+	Database string
 	Profile  string
 	Verbose  bool
 	Debug    bool
