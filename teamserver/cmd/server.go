@@ -33,7 +33,10 @@ var CobraServer = &cobra.Command{
 			}
 			os.Exit(0)
 		}
-
+		
+		if flags.Server.Database != "" {
+			DatabasePath = (flags.Server.Database)
+		}
 		Server = server.NewTeamserver(DatabasePath)
 		Server.SetServerFlags(flags)
 
