@@ -2,6 +2,8 @@ package builder
 
 import (
 	"bytes"
+	"io/fs"
+
 	//"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -67,6 +69,32 @@ const (
 	ARCHITECTURE_X86 = 2
 )
 
+// Test Injection Interfaces
+
+type OSOperations interface {
+	Mkdir(path string, perm os.FileMode) error
+	ReadDir(name string) ([]fs.DirEntry, error)
+	ReadFile(filename string) ([]byte, error)
+	Remove(name string) error
+}
+
+type FilePathOperations interface {
+	Abs(path string) (string, error)
+}
+
+// Default Implementations of Test Injections
+
+type RealOSOperations struct{}
+
+func (RealOSOperations) Mkdir(path string, perm os.FileMode) error  { return os.Mkdir(path, perm) }
+func (RealOSOperations) ReadDir(name string) ([]fs.DirEntry, error) { return os.ReadDir(name) }
+func (RealOSOperations) ReadFile(filename string) ([]byte, error)   { return os.ReadFile(filename) }
+func (RealOSOperations) Remove(name string) error                   { return os.Remove(name) }
+
+type RealFilePathOperations struct{}
+
+func (RealFilePathOperations) Abs(path string) (string, error) { return filepath.Abs(path) }
+
 type BuilderConfig struct {
 	Compiler64 string
 	Compiler86 string
@@ -76,6 +104,12 @@ type BuilderConfig struct {
 }
 
 type Builder struct {
+	osOps           OSOperations
+	fpOps           FilePathOperations
+	PatchConfigImpl func() ([]byte, error)
+	CompileCmdImpl  func(cmd string) bool
+	CmdImpl         func(cmd string) bool
+
 	buildSource bool
 	sourcePath  string
 	silent      bool
@@ -140,6 +174,12 @@ type Builder struct {
 
 func NewBuilder(config BuilderConfig) *Builder {
 	var builder = new(Builder)
+
+	builder.osOps = &RealOSOperations{}
+	builder.fpOps = &RealFilePathOperations{}
+	builder.PatchConfigImpl = builder.PatchConfig
+	builder.CompileCmdImpl = builder.CompileCmd
+	builder.CmdImpl = builder.Cmd
 
 	builder.sourcePath = utils.GetTeamserverPath() + "/" + PayloadDir + "/Demon"
 	builder.config.Arch = ARCHITECTURE_X64
@@ -221,7 +261,7 @@ func (b *Builder) Build() bool {
 	)
 
 	b.CompileDir = "/tmp/" + utils.GenerateID(10) + "/"
-	err := os.Mkdir(b.CompileDir, os.ModePerm)
+	err := b.osOps.Mkdir(b.CompileDir, os.ModePerm)
 	if err != nil {
 		logger.Error("Failed to create compile directory: " + err.Error())
 		return false
@@ -241,7 +281,7 @@ func (b *Builder) Build() bool {
 		b.SendConsoleMessage("Info", "starting build")
 	}
 
-	Config, err := b.PatchConfig()
+	Config, err := b.PatchConfigImpl()
 	if err != nil {
 		b.SendConsoleMessage("Error", err.Error())
 		return false
@@ -283,7 +323,7 @@ func (b *Builder) Build() bool {
 
 	// add compiler
 	if b.config.Arch == ARCHITECTURE_X64 {
-		abs, err := filepath.Abs(b.compilerOptions.Config.Compiler64)
+		abs, err := b.fpOps.Abs(b.compilerOptions.Config.Compiler64)
 
 		if err != nil {
 			if !b.silent {
@@ -295,7 +335,7 @@ func (b *Builder) Build() bool {
 
 		CompileCommand += "\"" + b.compilerOptions.Config.Compiler64 + "\" "
 	} else {
-		abs, err := filepath.Abs(b.compilerOptions.Config.Compiler86)
+		abs, err := b.fpOps.Abs(b.compilerOptions.Config.Compiler86)
 
 		if err != nil {
 			if !b.silent {
@@ -310,7 +350,7 @@ func (b *Builder) Build() bool {
 
 	// add sources
 	for _, dir := range b.compilerOptions.SourceDirs {
-		files, err := os.ReadDir(b.sourcePath + "/" + dir)
+		files, err := b.osOps.ReadDir(b.sourcePath + "/" + dir)
 		if err != nil {
 			logger.Error(err)
 		}
@@ -330,7 +370,7 @@ func (b *Builder) Build() bool {
 					}
 					logger.Debug(AsmCompile)
 					b.FilesCreated = append(b.FilesCreated, AsmObj)
-					b.Cmd(AsmCompile)
+					b.CmdImpl(AsmCompile)
 					CompileCommand += AsmObj + " "
 				}
 			} else if path.Ext(f.Name()) == ".c" {
@@ -426,7 +466,7 @@ func (b *Builder) Build() bool {
 				ShellcodePath = utils.GetTeamserverPath() + "/" + PayloadDir + "/Shellcode.x86.bin"
 			}
 
-			ShellcodeTemplate, err := os.ReadFile(ShellcodePath)
+			ShellcodeTemplate, err := b.osOps.ReadFile(ShellcodePath)
 			if err != nil {
 				logger.Error("Couldn't read content of file: " + err.Error())
 				b.SendConsoleMessage("Error", "couldn't read content of file: "+err.Error())
@@ -451,7 +491,7 @@ func (b *Builder) Build() bool {
 	}
 
 	//logger.Debug(CompileCommand)
-	Successful := b.CompileCmd(CompileCommand)
+	Successful := b.CompileCmdImpl(CompileCommand)
 
 	return Successful
 }
@@ -1041,7 +1081,7 @@ func (b *Builder) GetPayloadBytes() []byte {
 		return nil
 	}
 
-	FileBuffer, err = os.ReadFile(b.outputPath)
+	FileBuffer, err = b.osOps.ReadFile(b.outputPath)
 	if err != nil {
 		logger.Error("Couldn't read content of file: " + err.Error())
 		if !b.silent {
@@ -1089,7 +1129,7 @@ func (b *Builder) Cmd(cmd string) bool {
 
 func (b *Builder) CompileCmd(cmd string) bool {
 
-	if b.Cmd(cmd) {
+	if b.CmdImpl(cmd) {
 		if !b.silent {
 			b.SendConsoleMessage("Info", "finished compiling source")
 		}
@@ -1124,7 +1164,7 @@ func (b *Builder) DeletePayload() {
 	b.FilesCreated = append(b.FilesCreated, b.CompileDir)
 	for _, FileCreated := range b.FilesCreated {
 		if strings.HasSuffix(FileCreated, ".bin") == false {
-			if err := os.Remove(FileCreated); err != nil {
+			if err := b.osOps.Remove(FileCreated); err != nil {
 				logger.Debug("Couldn't remove " + FileCreated + ": " + err.Error())
 			}
 		}
