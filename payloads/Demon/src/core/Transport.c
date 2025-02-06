@@ -61,8 +61,11 @@ BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T RecvSize 
 
     if ( HttpSend( &Send, &Resp ) )
     {
-        if ( RecvData )
+        if ( RecvData ) {
             *RecvData = Resp.Buffer;
+        } lse {
+            Instance->Win32.LocalFree( Resp.Buffer );
+        }
 
         if ( RecvSize )
             *RecvSize = Resp.Length;
