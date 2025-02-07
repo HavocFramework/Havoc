@@ -63,7 +63,7 @@ BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T RecvSize 
     {
         if ( RecvData ) {
             *RecvData = Resp.Buffer;
-        } lse {
+        } else {
             Instance->Win32.LocalFree( Resp.Buffer );
         }
 
