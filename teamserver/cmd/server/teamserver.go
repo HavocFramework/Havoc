@@ -553,8 +553,11 @@ func (t *Teamserver) handleRequest(id string) {
 	if isExist {
 		return
 	}
+
+	
+
 	if !t.ClientAuthenticate(pk) {
-		logger.Error("Client [User: " + pk.Body.Info["User"].(string) + "] failed to Authenticate! (" + colors.Red(client.GlobalIP) + ")")
+		logger.Error("Client [User: " + pk.Head.User + "] failed to Authenticate! (" + colors.Red(client.GlobalIP) + ")")
 		err := t.SendEvent(id, events.Authenticated(false))
 		if err != nil {
 			logger.Error("client (" + colors.Red(id) + ") error while sending authenticate message: " + colors.Red(err))
@@ -566,7 +569,7 @@ func (t *Teamserver) handleRequest(id string) {
 		return
 	} else {
 
-		logger.Good("User <" + colors.Blue(pk.Body.Info["User"].(string)) + "> " + colors.Green("Authenticated"))
+		logger.Good("User <" + colors.Blue(pk.Head.User) + "> " + colors.Green("Authenticated"))
 
 		client.Authenticated = true
 		client.ClientID = id
@@ -577,7 +580,7 @@ func (t *Teamserver) handleRequest(id string) {
 		}
 	}
 
-	client.Username = pk.Body.Info["User"].(string)
+	client.Username = pk.Head.User
 	packageNewUser := events.ChatLog.NewUserConnected(client.Username)
 	t.EventAppend(packageNewUser)
 	t.EventBroadcast(id, packageNewUser)
@@ -661,7 +664,7 @@ func (t *Teamserver) ClientAuthenticate(pk packager.Package) bool {
 
 					// check if the operator was even found
 					if UserFound {
-						if pk.Body.Info["Password"].(string) == UserPassword {
+						if password, ok := pk.Body.Info["Password"].(string); ok && password == UserPassword {
 							logger.Debug("User " + colors.Red(UserName) + " is authenticated")
 							return true
 						}
@@ -683,7 +686,11 @@ func (t *Teamserver) ClientAuthenticate(pk packager.Package) bool {
 		logger.Error("Not a Authenticate request")
 	}
 
-	logger.Error("Client failed to authenticate with password hash :: " + pk.Body.Info["Password"].(string))
+	if password, ok := pk.Body.Info["Password"].(string); ok {
+		logger.Error("Client failed to authenticate with password hash :: " + pk.Body.Info["Password"].(string))
+	} else {
+		logger.Error("Client failed to authenticate, password is nil")
+	}
 	return false
 }
 
