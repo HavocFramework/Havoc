@@ -687,7 +687,7 @@ func (t *Teamserver) ClientAuthenticate(pk packager.Package) bool {
 	}
 
 	if password, ok := pk.Body.Info["Password"].(string); ok {
-		logger.Error("Client failed to authenticate with password hash :: " + pk.Body.Info["Password"].(string))
+		logger.Error("Client failed to authenticate with password hash :: " + password)
 	} else {
 		logger.Error("Client failed to authenticate, password is nil")
 	}
