@@ -112,7 +112,7 @@ Please see https://github.com/HavocFramework/Havoc/issues/105.
 #### Pre-requisites
 > The immediate following is for Debian based Distros only.
 ```
-sudo apt install -y git build-essential apt-utils cmake libfontconfig1 libglu1-mesa-dev libgtest-dev libspdlog-dev libboost-all-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev mesa-common-dev qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools libqt5websockets5 libqt5websockets5-dev qtdeclarative5-dev golang-go qtbase5-dev libqt5websockets5-dev libspdlog-dev python3-dev libboost-all-dev mingw-w64 nasm
+sudo apt install -y git build-essential apt-utils cmake libfontconfig1 libglu1-mesa-dev libgtest-dev libspdlog-dev libboost-all-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev mesa-common-dev qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools libqt5websockets5 libqt5websockets5-dev qtdeclarative5-dev golang-go python3-dev mingw-w64 nasm
 ```
 
 
@@ -139,7 +139,7 @@ sudo apt install python3-dev python3.10-dev libpython3.10 libpython3.10-dev pyth
 #### Arch-based Distros
 
 ```
-sudo pacman -S git gcc base-devel cmake fontconfig glu gtest spdlog boost boost-libs ncurses gdbm openssl readline libffi sqlite bzip2 mesa qt5-base qt5-websockets python3 nasm mingw-w64-gcc
+sudo pacman -S --needed git gcc base-devel cmake fontconfig glu gtest spdlog boost boost-libs ncurses gdbm openssl readline libffi sqlite bzip2 mesa qt5-base qt5-websockets python3 nasm mingw-w64-gcc
 ```
 
 #### MacOS
