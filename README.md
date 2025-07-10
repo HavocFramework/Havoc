@@ -11,12 +11,6 @@
   
 </div>
 
-> :warning: Havoc is in an early state of release. Breaking changes may be made to APIs/core structures as the framework matures.
-
-### Support
-
-Consider supporting C5pider on [Patreon](https://www.patreon.com/5pider)/[Github Sponsors](https://github.com/sponsors/Cracked5pider). Additional features are planned for supporters in the future, such as custom agents/plugins/commands/etc.
-
 ### Quick Start
 
 > Please see the [Wiki](https://github.com/HavocFramework/Havoc/wiki) for complete documentation.
@@ -78,17 +72,8 @@ See the [Installation](https://havocframework.com/docs/installation) docs for in
 
 You can join the official [Havoc Discord](https://discord.gg/z3PF3NRDE5) to chat with the community! 
 
-### Contributing
-
-To contribute to the Havoc Framework, please review the guidelines in [Contributing.md](https://github.com/HavocFramework/Havoc/blob/main/CONTRIBUTING.MD) and then open a pull-request! 
-
 ### Note
 
 Please do not open any issues regarding detection. 
 
 The Havoc Framework hasn't been developed to be evasive. Rather it has been designed to be as malleable & modular as possible. Giving the operator the capability to add custom features or modules that evades their targets detection system. 
-
-### Sponsors 
-JetBrains has sponsored this project by providing us with OSS licenses for Havoc development.
-
-<img width="400" src="https://resources.jetbrains.com/storage/products/company/brand/logos/jetbrains.png" alt="JetBrains logo.">
