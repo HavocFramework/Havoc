@@ -30,6 +30,8 @@ DLLEXPORT BOOL WINAPI DllMain(
 
     if ( Reason == DLL_PROCESS_ATTACH )
     {
+        static INSTANCE Inst = { 0 };
+        Instance = & Inst;
 
 #if !defined(SHELLCODE) && defined(DEBUG)
         /* if the dll is compiled in debug mode start a console to write our debug prints to */
