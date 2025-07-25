@@ -15,8 +15,15 @@ type WebHookDiscordConfig struct {
 	UserName  string `yaotl:"User,optional"`
 }
 
+type WebHookMattermostConfig struct {
+	WebHook   string `yaotl:"Url"`
+	AvatarUrl string `yaotl:"AvatarUrl,optional"`
+	UserName  string `yaotl:"User,optional"`
+}
+
 type WebHookConfig struct {
-	Discord *WebHookDiscordConfig `yaotl:"Discord,block"`
+	Discord    *WebHookDiscordConfig    `yaotl:"Discord,block"`
+	Mattermost *WebHookMattermostConfig `yaotl:"Mattermost,block"`
 }
 
 type BuildConfig struct {
