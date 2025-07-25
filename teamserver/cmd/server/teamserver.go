@@ -49,7 +49,42 @@ func (t *Teamserver) SetServerFlags(flags TeamserverFlags) {
 	t.Flags = flags
 }
 
+
+
+func (t *Teamserver) ReturnJsonTeamServer() *TeamserverJson {
+	
+	var (
+		countClients int = 0
+	)
+	t.Clients.Range(func(key, value interface{}) bool {
+		countClients++
+		return true
+	})
+	
+	var json *TeamserverJson = &TeamserverJson{
+		Clients: make(map[string]*ClientJson, countClients),
+        Users:   t.Users,
+        Agents:  t.Agents,
+        Listeners: t.Listeners,
+        Endpoints: t.Endpoints,
+	}
+
+	t.Clients.Range(func(key, value interface{}) bool {
+		json.Clients[fmt.Sprint(key)] = &ClientJson{
+			ClientID:      value.(*Client).ClientID,
+            Username:      value.(*Client).Username,
+            GlobalIP:      value.(*Client).GlobalIP,
+            ClientVersion: value.(*Client).ClientVersion,
+            Authenticated: value.(*Client).Authenticated,
+            SessionID:     value.(*Client).SessionID,
+		}
+		return true
+	})
+	return json
+}
+
 func (t *Teamserver) Start() {
+
 	logger.Debug("Starting teamserver...")
 	var (
 		ServerFinished      chan bool
@@ -105,6 +140,16 @@ func (t *Teamserver) Start() {
 
 		// Handle connections in a new goroutine.
 		go t.handleRequest(ClientID)
+	})
+
+	//quick and dirty way to dump jason	
+	t.Server.Engine.GET("/quick", func ( context *gin.Context) {
+		
+
+		var  jsonReturn *TeamserverJson = t.ReturnJsonTeamServer()
+		//dumping the clients 
+		
+		context.JSON(http.StatusAccepted, jsonReturn)
 	})
 
 	// TODO: pass this as a profile/command line flag
