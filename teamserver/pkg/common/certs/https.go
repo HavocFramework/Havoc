@@ -283,7 +283,7 @@ func generateCertificate(caType string, subject pkix.Name, isCA bool, isClient b
 
     if certErr != nil {
         // We maybe don't want this to be fatal, but it should basically never happen afaik
-        logger.Fatal(fmt.Sprintf("Failed to create certificate: %s", certErr))
+        logger.Fatal(fmt.Sprintf("Failed to create certificate: %s", certErr.Error()))
     }
 
     // Encode certificate and key
@@ -306,7 +306,7 @@ func HTTPSGenerateRSACertificate(host string) ([]byte, []byte, error) {
     // Generate private key
     privateKey, err = rsa.GenerateKey(rand.Reader, RSAKeySize)
     if err != nil {
-        logger.Debug("Failed to generate private key %s", err)
+        logger.Debug("Failed to generate private key: " + err.Error())
         return nil, nil, err
     }
     subject := randomSubject(host)
