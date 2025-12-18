@@ -63,6 +63,7 @@ See the [Installation](https://havocframework.com/docs/installation) docs for in
 - [External C2](https://github.com/HavocFramework/Havoc/wiki#external-c2)
 - Custom Agent Support
   - [Talon](https://github.com/HavocFramework/Talon)
+  - [HavocHub](https://github.com/ProcessusT/HavocHub)
 - [Python API](https://github.com/HavocFramework/havoc-py)
 - [Modules](https://github.com/HavocFramework/Modules)
 
