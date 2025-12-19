@@ -33,11 +33,6 @@ SEC_DATA BYTE      AgentConfig[] = CONFIG_BYTES;
  */
 VOID DemonMain( PVOID ModuleInst, PKAYN_ARGS KArgs )
 {
-    INSTANCE Inst = { 0 };
-
-    /* "allocate" instance on stack */
-    Instance = & Inst;
-
     /* Initialize Win32 API, Load Modules and Syscalls stubs (if we specified it) */
     DemonInit( ModuleInst, KArgs );
 
