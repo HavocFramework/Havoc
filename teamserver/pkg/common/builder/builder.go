@@ -734,7 +734,7 @@ func (b *Builder) PatchConfig() ([]byte, error) {
 		if ConfigObfTechnique != SLEEPOBF_NO_OBF {
 			switch val {
 			case "jmp rax":
-				ConfigObfTechnique = SLEEPOBF_BYPASS_JMPRAX
+				ConfigObfBypass = SLEEPOBF_BYPASS_JMPRAX
 				if !b.silent {
 					b.SendConsoleMessage("Info", "sleep jump gadget \"jmp rax\" has been specified")
 				}
