@@ -31,6 +31,15 @@ type Client struct {
 	Mutex         sync.Mutex
 }
 
+type ClientJson struct {
+	ClientID      string
+	Username      string
+	GlobalIP      string
+	ClientVersion string
+	Authenticated bool
+	SessionID     string
+}
+
 type Users struct {
 	Name     string
 	Password string
@@ -94,4 +103,12 @@ type Teamserver struct {
 		Compiler32 string
 		Nasm       string
 	}
+}
+
+type TeamserverJson struct {
+	Clients map[string]*ClientJson
+	Users   []Users
+	Agents    agent.Agents
+	Listeners []*Listener
+	Endpoints []*Endpoint
 }
