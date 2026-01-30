@@ -42,6 +42,13 @@ type (
 
 		Response struct {
 			Headers []string
+			Prepend string
+			Append  string
+		}
+
+		Request struct {
+			Prepend string
+			Append  string
 		}
 	}
 

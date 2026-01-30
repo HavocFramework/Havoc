@@ -110,6 +110,20 @@ typedef struct
                 LPWSTR Username; /* TODO: Instead of using LPWSTR use BUFFER (to have the size of the string too) */
                 LPWSTR Password; /* TODO: Instead of using LPWSTR use BUFFER (to have the size of the string too) */
             } Proxy;
+
+            struct {
+                LPSTR  Prepend;
+                UINT32 PrependSize;
+                LPSTR  Append;
+                UINT32 AppendSize;
+            } Request;
+
+            struct {
+                LPSTR  Prepend;
+                UINT32 PrependSize;
+                LPSTR  Append;
+                UINT32 AppendSize;
+            } Response;
 #endif
 
 #ifdef TRANSPORT_SMB

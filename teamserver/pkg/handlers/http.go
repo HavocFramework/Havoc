@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"context"
-	//"encoding/hex"
+	"encoding/hex"
 	"io"
 	"log"
 	"net/http"
@@ -99,6 +99,32 @@ func (h *HTTP) request(ctx *gin.Context) {
 		logger.Debug("Error while reading request: " + err.Error())
 	}
 
+	logger.Debug("POST " + ctx.Request.RequestURI)
+	logger.Debug("Host: " + ctx.Request.Host)
+	for name, values := range ctx.Request.Header {
+		for _, value := range values {
+			logger.Debug(name + ": " + value)
+		}
+	}
+	logger.Debug("\n" + hex.Dump(Body))
+	// Strip request prepend/append
+	if len(h.Config.Request.Prepend) > 0 || len(h.Config.Request.Append) > 0 {
+		prepLen := len(h.Config.Request.Prepend)
+		appLen := len(h.Config.Request.Append)
+		if len(Body) >= prepLen+appLen {
+			Body = Body[prepLen : len(Body)-appLen]
+		}
+	}
+
+	logger.Debug("POST " + ctx.Request.RequestURI)
+	logger.Debug("Host: " + ctx.Request.Host)
+	for name, values := range ctx.Request.Header {
+		for _, value := range values {
+			logger.Debug(name + ": " + value)
+		}
+	}
+	logger.Debug("\n" + hex.Dump(Body))
+
 	if h.Config.BehindRedir {
 		ExternalIP = ctx.Request.Header.Get("X-Forwarded-For")
 	} else {
@@ -184,7 +210,17 @@ func (h *HTTP) request(ctx *gin.Context) {
 	}
 
 	if Response, Success := parseAgentRequest(h.Teamserver, Body, ExternalIP); Success {
-		_, err := ctx.Writer.Write(Response.Bytes())
+		// Add response prepend/append
+		var responseData []byte
+		if len(h.Config.Response.Prepend) > 0 {
+			responseData = append(responseData, []byte(h.Config.Response.Prepend)...)
+		}
+		responseData = append(responseData, Response.Bytes()...)
+		if len(h.Config.Response.Append) > 0 {
+			responseData = append(responseData, []byte(h.Config.Response.Append)...)
+		}
+
+		_, err := ctx.Writer.Write(responseData)
 		if err != nil {
 			logger.Debug("Failed to write to request: " + err.Error())
 			h.fake404(ctx)

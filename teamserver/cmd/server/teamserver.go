@@ -277,6 +277,13 @@ func (t *Teamserver) Start() {
 
 			if listener.Response != nil {
 				HandlerData.Response.Headers = listener.Response.Headers
+				HandlerData.Response.Prepend = listener.Response.Prepend
+				HandlerData.Response.Append = listener.Response.Append
+			}
+
+			if listener.Request != nil {
+				HandlerData.Request.Prepend = listener.Request.Prepend
+				HandlerData.Request.Append = listener.Request.Append
 			}
 
 			if err := t.ListenerStart(handlers.LISTENER_HTTP, HandlerData); err != nil {

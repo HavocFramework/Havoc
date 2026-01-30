@@ -19,6 +19,30 @@ Operators {
     }
 }
 
+Listeners {
+    Http {
+        Name         = "http-listener"
+        Hosts        = ["192.168.1.236"]
+        HostBind     = "0.0.0.0"
+        HostRotation = "round-robin"
+        PortBind     = 80
+        Secure       = false
+        UserAgent    = "Mozilla/5.0"
+        Uris = ["/api/v1/data"]
+        
+        Request {
+            Prepend = "<start>"
+            Append  = "</start>"
+        }
+        
+        Response {
+            Headers = ["Content-Type: text/html"]
+            Prepend = "<html><body>"
+            Append  = "</body></html>"
+        }
+    }
+}
+
 # this is optional. if you dont use it you can remove it.
 Service {
     Endpoint = "service-endpoint"

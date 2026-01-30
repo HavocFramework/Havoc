@@ -996,6 +996,14 @@ func (b *Builder) PatchConfig() ([]byte, error) {
 			DemonConfig.AddInt(win32.FALSE)
 		}
 
+		// adding request prepend/append (use AddBytes to avoid null terminator)
+		DemonConfig.AddBytes([]byte(Config.Config.Request.Prepend))
+		DemonConfig.AddBytes([]byte(Config.Config.Request.Append))
+
+		// adding response prepend/append (use AddBytes to avoid null terminator)
+		DemonConfig.AddBytes([]byte(Config.Config.Response.Prepend))
+		DemonConfig.AddBytes([]byte(Config.Config.Response.Append))
+
 		break
 
 	case handlers.LISTENER_PIVOT_SMB:

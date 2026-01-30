@@ -81,6 +81,7 @@ type ListenerHTTP struct {
 	/* optional sub blocks */
 	Cert     *ListenerHttpCerts    `yaotl:"Cert,block"`
 	Response *ListenerHttpResponse `yaotl:"Response,block"`
+	Request  *ListenerHttpRequest  `yaotl:"Request,block"`
 	Proxy    *ListenerHttpProxy    `yaotl:"Proxy,block"`
 }
 
@@ -101,6 +102,13 @@ type ListenerExternal struct {
 
 type ListenerHttpResponse struct {
 	Headers []string `yaotl:"Headers,optional"`
+	Prepend string   `yaotl:"Prepend,optional"`
+	Append  string   `yaotl:"Append,optional"`
+}
+
+type ListenerHttpRequest struct {
+	Prepend string `yaotl:"Prepend,optional"`
+	Append  string `yaotl:"Append,optional"`
 }
 
 type ListenerHttpProxy struct {
